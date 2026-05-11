@@ -42,20 +42,56 @@ To be answered by `codex@memoryOS` (WP-0008-A):
 - **Q4 — Domain filter**: V1 includes only myworld+hivemind+memoryOS+CapabilityOS. Confirm or restrict further (e.g. exclude `.ai-runs/`).
 - **Q5 — CLI surface**: `memoryos ingest-doc-radar <path-to-radar.json>` or extend `import-run`? Recommend a new subcommand for clarity.
 
-## Scope (stub — WP-0008-A fills)
+## Scope
 
-- repos: `[memoryOS, myworld]` — myworld provides the radar input file path; memoryOS implements the ingestion CLI and schema.
-- allowed_files: _to be filled — at minimum `memoryOS/memoryos/cli.py`, `memoryOS/memoryos/importers.py` (or new ingest module), `memoryOS/memoryos/schema.py` (if `SourceArtifact.kind` enum extended), `memoryOS/tests/test_doc_radar_ingest.py`._
-- forbidden_files: `hivemind/**`, `CapabilityOS/**`, `myworld/scripts/aios_doc_scout.py` (ASC-0007 territory), `_from_desktop/**`, `dain/**`, raw exports, secrets, weights.
+repos:
 
-## Per-OS Responsibility (stub)
+- `memoryOS`
+- `myworld`
+
+allowed_files:
+
+- `memoryOS/memoryos/cli.py`
+- `memoryOS/memoryos/importers.py`
+- `memoryOS/memoryos/schema.py`
+- `memoryOS/memoryos/store.py`
+- `memoryOS/tests/test_doc_radar_ingest.py`
+- `memoryOS/docs/AGENT_WORKLOG.md`
+- `docs/AIOS_TASK_RADAR.md`
+- `docs/discoveries/2026-05-11-jaewon-search.md`
+- `docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md`
+- `docs/contracts/README.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+forbidden_files:
+
+- `hivemind/**`
+- `CapabilityOS/**`
+- `myworld/scripts/aios_doc_scout.py`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
+- `.aios/**`
+- `.runs/**`
+- `.ai-runs/**`
+- `data/**`
+- `raw_exports/**`
+- `exports/**`
+- `logs/**`
+- `weights/**`
+- `**/*secret*`
+- `**/*credential*`
+- `.env`
+- `.env.*`
+
+## Per-OS Responsibility
 
 - **memoryos.must_produce**: `ingest-doc-radar` CLI, MemoryObject draft entries with provenance hyperedges, regression test, `SourceArtifact.kind=workspace_doc_signal` schema addition.
 - **myworld.must_produce**: nothing further — radar already exists. Closeout receipt entry only.
 - **hive_mind / capabilityos**: not in scope.
 - **operator.must_produce**: closeout review (claude@myworld), confirm no raw bodies in MemoryObjects.
 
-## Verification Gate (stub)
+## Verification Gate
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
@@ -72,7 +108,7 @@ Expected evidence:
 - No MemoryObject contains a `body`/`text`/`raw` field with document content.
 - Test includes a privacy assertion that no doc body string appears in the JSONL store.
 
-## Stop Conditions (stub)
+## Stop Conditions
 
 - `raw_body_in_memory`: any MemoryObject contains document text bodies.
 - `from_desktop_ingest_creep`: V1 ingests `_from_desktop/`, `dain/`, or other founder-gated paths.

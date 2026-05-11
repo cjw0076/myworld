@@ -43,20 +43,55 @@ To be answered by `codex@hivemind` (WP-0010-A):
 - **Q4 — Rationale length cap**: prevent verbose blob output. Recommend ≤ 300 characters per candidate.
 - **Q5 — Privacy**: ensure rationale does NOT reproduce raw doc content. Use signal labels + path only.
 
-## Scope (stub — WP-0010-A fills)
+## Scope
 
-- repos: `[hivemind]`. CapabilityOS and memoryOS are not in scope.
-- allowed_files: _to be filled — at minimum `hivemind/hivemind/hive.py` (new subcommand), `hivemind/hivemind/local_workers.py` (new WorkerSpec if Q3 chooses new worker), `hivemind/tests/test_radar_review.py` (new), and the chosen output path (Q2)._
-- forbidden_files: `CapabilityOS/**`, `memoryOS/**`, `myworld/scripts/aios_doc_scout.py`, `_from_desktop/**`, `dain/**`, raw exports, secrets, weights.
+repos:
 
-## Per-OS Responsibility (stub)
+- `hivemind`
+
+allowed_files:
+
+- `hivemind/hivemind/hive.py`
+- `hivemind/hivemind/local_workers.py`
+- `hivemind/hivemind/radar_classifier.py`
+- `hivemind/tests/test_radar_review.py`
+- `hivemind/docs/RADAR_REVIEW.md`
+- `hivemind/docs/radar_review.json`
+- `hivemind/docs/AGENT_WORKLOG.md`
+- `docs/AIOS_TASK_RADAR.md`
+- `docs/discoveries/2026-05-11-jaewon-search.md`
+- `docs/contracts/ASC-0010-hive-semantic-quality-gate.md`
+- `docs/contracts/README.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+forbidden_files:
+
+- `CapabilityOS/**`
+- `memoryOS/**`
+- `myworld/scripts/aios_doc_scout.py`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
+- `.runs/**`
+- `.ai-runs/**`
+- `data/**`
+- `raw_exports/**`
+- `exports/**`
+- `logs/**`
+- `weights/**`
+- `**/*secret*`
+- `**/*credential*`
+- `.env`
+- `.env.*`
+
+## Per-OS Responsibility
 
 - **hive_mind.must_produce**: `radar-review` CLI, optional new `radar_classifier` worker, tests, sample output committed.
 - **capabilityos / memoryos**: not in scope.
 - **myworld**: nothing further; radar already exists.
 - **operator.must_produce**: closeout review, then use verdicts to drive next ASC-NNNN selection.
 
-## Verification Gate (stub)
+## Verification Gate
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld/hivemind
@@ -69,7 +104,7 @@ Expected evidence:
 - review JSON contains 10 entries with `verdict in {executable, needs_context, needs_capability, ambiguous, out_of_scope}` and a rationale ≤ 300 chars.
 - Output references signals/paths only — no raw doc body strings.
 
-## Stop Conditions (stub)
+## Stop Conditions
 
 - `external_llm_call`: any path calls Claude/Codex/Gemini/etc.
 - `verdict_overclaim`: returns `executable` without checking that referenced paths/tests exist.

@@ -42,20 +42,57 @@ To be answered by `codex@CapabilityOS` (WP-0009-A):
 - **Q4 — "Needs new capability" gap output**: separate JSON file (`CapabilityOS/data/observed_gaps.json` if `data/` is gitignored) or stdout only? Recommend stdout-only for V1.
 - **Q5 — Schema versioning**: new `aios.capability_observation.v1` schema, or extend existing card? Recommend a new sibling schema for non-destructive evolution.
 
-## Scope (stub — WP-0009-A fills)
+## Scope
 
-- repos: `[CapabilityOS, myworld]` — myworld provides the result corpus and radar; CapabilityOS implements observation ingestion.
-- allowed_files: _to be filled — at minimum `CapabilityOS/capabilityos/observation.py` (new), `CapabilityOS/capabilityos/cli.py` (extend), `CapabilityOS/capabilityos/schema.py` (extend), `CapabilityOS/tests/test_observation.py` (new), `CapabilityOS/tests/fixtures/capabilities.json` (extend evidence_refs)._
-- forbidden_files: `hivemind/**`, `memoryOS/**`, `myworld/scripts/aios_doc_scout.py`, `_from_desktop/**`, `dain/**`, raw exports, secrets, weights.
+repos:
 
-## Per-OS Responsibility (stub)
+- `CapabilityOS`
+- `myworld`
+
+allowed_files:
+
+- `CapabilityOS/capabilityos/observation.py`
+- `CapabilityOS/capabilityos/cli.py`
+- `CapabilityOS/capabilityos/schema.py`
+- `CapabilityOS/capabilityos/catalog.py`
+- `CapabilityOS/tests/test_observation.py`
+- `CapabilityOS/tests/fixtures/capabilities.json`
+- `CapabilityOS/README.md`
+- `docs/AIOS_TASK_RADAR.md`
+- `docs/discoveries/2026-05-11-jaewon-search.md`
+- `docs/contracts/ASC-0009-capability-observation-feedback.md`
+- `docs/contracts/README.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+forbidden_files:
+
+- `hivemind/**`
+- `memoryOS/**`
+- `myworld/scripts/aios_doc_scout.py`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
+- `.aios/logs/**`
+- `.runs/**`
+- `.ai-runs/**`
+- `data/**`
+- `raw_exports/**`
+- `exports/**`
+- `logs/**`
+- `weights/**`
+- `**/*secret*`
+- `**/*credential*`
+- `.env`
+- `.env.*`
+
+## Per-OS Responsibility
 
 - **capabilityos.must_produce**: observation dataclass + CLI + ingestion + tests; updated catalog with evidence_refs from real ASC-0001..0007 closeouts.
 - **myworld.must_produce**: nothing further; result packets and radar already exist.
 - **hive_mind / memoryos**: not in scope.
 - **operator.must_produce**: closeout review, confirm recommendation-only invariant intact.
 
-## Verification Gate (stub)
+## Verification Gate
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld/CapabilityOS
@@ -70,7 +107,7 @@ Expected evidence:
 - audit `execution_enabled` remains `[]` and `recommendation_only` remains `true`.
 - catalog gains evidence_refs entries pointing to real result packets and contract paths.
 
-## Stop Conditions (stub)
+## Stop Conditions
 
 - `execution_creep`: any code path executes a tool or makes a network call.
 - `auto_catalog_grow`: V1 adds new capabilities without operator approval.

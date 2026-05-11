@@ -53,19 +53,49 @@ To be answered by `codex@myworld` (WP-0011-A):
 - **Q4 — Privacy gating**: confirm `_from_desktop/` and `dain/`, `minyoung/` paths are always `hold_for_operator` (not `accept_now`). Include in stop conditions.
 - **Q5 — Output schema**: `aios.loop_policy.v1` with `generated_at`, `open_contract_count`, `decisions[]` where each decision = `(contract_candidate_id, verdict, reason, sources[])`.
 
-## Scope (stub — WP-0011-A fills)
+## Scope
 
-- repos: `[myworld]`.
-- allowed_files: _to be filled — at minimum `scripts/aios_loop_policy.py`, `tests/test_aios_loop_policy.py`, `docs/AIOS_WORK_DISPATCH.md` (document the policy)._
-- forbidden_files: `hivemind/**`, `memoryOS/**`, `CapabilityOS/**`, `_from_desktop/**`, `dain/**`, `minyoung/**`, `.runs/**`, raw exports, secrets, weights.
+repos:
 
-## Per-OS Responsibility (stub)
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_loop_policy.py`
+- `tests/test_aios_loop_policy.py`
+- `docs/AIOS_WORK_DISPATCH.md`
+- `docs/contracts/ASC-0011-control-plane-loop-policy.md`
+- `docs/contracts/README.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+forbidden_files:
+
+- `hivemind/**`
+- `memoryOS/**`
+- `CapabilityOS/**`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
+- `.aios/**`
+- `.runs/**`
+- `.ai-runs/**`
+- `data/**`
+- `raw_exports/**`
+- `exports/**`
+- `logs/**`
+- `weights/**`
+- `**/*secret*`
+- `**/*credential*`
+- `.env`
+- `.env.*`
+
+## Per-OS Responsibility
 
 - **myworld.must_produce**: policy script, tests, doc update, sample output committed.
 - **hive_mind / memoryos / capabilityos**: not in scope.
 - **operator.must_produce**: closeout review; integrate policy output into the next acceptance turn.
 
-## Verification Gate (stub)
+## Verification Gate
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
@@ -78,7 +108,7 @@ Expected evidence:
 - output JSON has `schema_version: aios.loop_policy.v1`, `decisions[]` with each verdict and reason.
 - no `_from_desktop/`/`dain/`/`minyoung/` candidate ever marked `accept_now`.
 
-## Stop Conditions (stub)
+## Stop Conditions
 
 - `auto_acceptance`: policy code calls anything that flips a contract status.
 - `privacy_path_accept`: `_from_desktop/`/`dain/`/`minyoung/` candidate marked `accept_now`.
