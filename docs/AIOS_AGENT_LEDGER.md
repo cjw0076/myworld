@@ -418,3 +418,48 @@ For repo-local implementation details, also update that repo's own worklog.
   ASC-0009/ASC-0010/ASC-0011 to CapabilityOS, MemoryOS, and Hive respectively
   once their scopes are accepted.
 - status: done
+
+## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
+
+- repo: myworld
+- role: acting operator + research synthesis
+- goal: per founder directive ("jaewon 아래 모든 docs를 search → 다음 작업
+  추출 → contract 발행 → 그 행위 자체를 시스템에 이식, 절대 멈추지 마,
+  모든 것을 활용해"), perform first cross-workspace search, synthesize
+  findings, and issue the next-loop contracts the doc scout proposed.
+- changed: `docs/discoveries/2026-05-11-jaewon-search.md` (new — synthesis of
+  6 Explore agents + ASC-0007 scout output);
+  `docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md` (new, accepted);
+  `docs/contracts/ASC-0009-capability-observation-feedback.md` (new,
+  accepted); `docs/contracts/ASC-0010-hive-semantic-quality-gate.md` (new,
+  accepted); `docs/contracts/ASC-0011-control-plane-loop-policy.md` (new,
+  accepted); `docs/contracts/README.md` (index extended); also commits Codex's
+  ASC-0007 implementation (`scripts/aios_doc_scout.py`,
+  `tests/test_aios_doc_scout.py`, `docs/AIOS_TASK_RADAR.md`,
+  `scripts/aios_pingpong.sh` updates, `docs/AIOS_WORK_DISPATCH.md` updates).
+- evidence: 6 parallel Explore agents covered conscious_runtime+jarvis_AI,
+  deepfake, universe quantum, docs+ablation+fire, graphRAG+GoEN, and
+  dipeen+Uri+zeiint+competition. Codex's `aios_doc_scout.py` then scanned
+  1822 docs, found signals in 1167, and auto-proposed
+  ASC-0008/0009/0010/0011 with concrete slugs and goals matching the human
+  synthesis. ASC-0007 verification gate ran clean (2 unittest pass +
+  scout JSON output + radar markdown produced).
+- decision: (1) ASC-0008 = MemoryOS ingest of radar signals (drafts only,
+  no raw bodies, V1 scope = control-plane and OS-internal docs);
+  (2) ASC-0009 = CapabilityOS observation feedback from result packets
+  (recommendation-only invariant intact); (3) ASC-0010 = Hive semantic
+  quality gate over radar candidates (advisory verdicts, no external LLM);
+  (4) ASC-0011 = control-plane loop policy with capacity cap N=4 and
+  privacy gating (`_from_desktop`/`dain`/`minyoung` paths NEVER auto-accept).
+- risk: Codex is implementing in parallel — the ASC-0007 file shows status
+  `accepted` here while the README index says `closed`. Resolved by the
+  README being authoritative for status snapshots. The discoveries doc was
+  also touched by Codex (scout output rerun with different counts) — both
+  versions are valid snapshots of an evolving system.
+- next: (1) commit this checkpoint; (2) wake child agents for ASC-0008
+  (codex@memoryOS) and ASC-0010 (codex@hivemind) via aios_dispatch loop or
+  child watcher; (3) continue cross-workspace search (Uri docs are high
+  signal but founder-gated — surface as questions, not contracts);
+  (4) when ASC-0008 lands, re-run scout; expect new candidates as the
+  feedback loop closes.
+- status: done
