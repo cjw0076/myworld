@@ -200,52 +200,64 @@ def candidate_task(item: DocItem) -> str:
     return "triage as external workspace context before importing into AIOS"
 
 
-def proposed_contracts(items: list[DocItem]) -> list[dict[str, Any]]:
+def existing_contract_dir(root: Path) -> Path | None:
+    candidates = [root / "docs" / "contracts", root / "myworld" / "docs" / "contracts"]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def next_contract_number(root: Path) -> int:
+    contract_dir = existing_contract_dir(root)
+    if contract_dir is None:
+        return 8
+    highest = 7
+    for path in contract_dir.glob("ASC-*.md"):
+        match = re.match(r"ASC-(\d{4})-", path.name)
+        if match:
+            highest = max(highest, int(match.group(1)))
+    return highest + 1
+
+
+def proposed_contracts(items: list[DocItem], root: Path) -> list[dict[str, Any]]:
     domains = {item.domain for item in items}
-    contracts = [
+    templates = [
         {
-            "contract_id": "ASC-0008",
-            "slug": "workspace-doc-ingest-memoryos",
-            "owner": "memoryOS",
-            "goal": "turn selected doc scout signals into reviewed MemoryOS context records with provenance, without raw export ingestion",
-            "trigger": "docs mention long-term context, decisions, or cross-repo state future AIOS runs should retrieve",
-            "depends_on": "ASC-0007",
-        },
-        {
-            "contract_id": "ASC-0009",
-            "slug": "capability-observation-feedback",
-            "owner": "CapabilityOS",
-            "goal": "consume task radar and dispatch result packets to record capability observations and fallback plans",
-            "trigger": "tool choice matters for next contracts and needs a recommendation surface",
-            "depends_on": "ASC-0007",
-        },
-        {
-            "contract_id": "ASC-0010",
-            "slug": "hive-semantic-quality-gate",
-            "owner": "hivemind",
-            "goal": "add a Hive verification packet that reviews top task-radar candidates for executable next steps",
-            "trigger": "task radar candidates need execution-quality validation before broad dispatch",
-            "depends_on": "ASC-0007",
-        },
-        {
-            "contract_id": "ASC-0011",
-            "slug": "control-plane-loop-policy",
-            "owner": "myworld",
-            "goal": "decide which radar candidates become accepted contracts and which remain held",
-            "trigger": "doc scout finds more candidates than the operator loop can safely release at once",
-            "depends_on": "ASC-0007",
-        },
-        {
-            "contract_id": "ASC-0012",
             "slug": "workspace-instruction-index",
             "owner": "myworld",
             "goal": "index AGENTS, CLAUDE, CODEX, CURRENT, and repo ownership rules into a control-plane instruction map",
             "trigger": "multi-agent work needs durable instruction lookup without depending on chat context",
             "depends_on": "ASC-0007",
         },
+        {
+            "slug": "hive-worklog-gap-cleanup",
+            "owner": "hivemind",
+            "goal": "turn Hive task-radar worklog and gap signals into a bounded cleanup packet with semantic review evidence",
+            "trigger": "Hive worklog and gap docs remain top executable radar candidates",
+            "depends_on": "ASC-0007",
+        },
+        {
+            "slug": "capability-gap-triage",
+            "owner": "CapabilityOS",
+            "goal": "triage task-radar candidates marked hold_for_capability into explicit capability records or operator-review gaps",
+            "trigger": "loop policy reports many high-score candidates blocked on capability evidence",
+            "depends_on": "ASC-0007",
+        },
+        {
+            "slug": "memoryos-radar-review-queue",
+            "owner": "memoryOS",
+            "goal": "convert MemoryOS radar holds into review-queue entries with provenance and no raw document bodies",
+            "trigger": "MemoryOS TODO and worklog docs remain high-score context candidates",
+            "depends_on": "ASC-0007",
+        },
     ]
     if "myworld" not in domains:
-        return contracts[:-1]
+        templates = [template for template in templates if template["owner"] != "myworld"]
+    next_number = next_contract_number(root)
+    contracts = []
+    for offset, template in enumerate(templates):
+        contracts.append({"contract_id": f"ASC-{next_number + offset:04d}", **template})
     return contracts
 
 
@@ -283,7 +295,7 @@ def build_report(root: Path, limit: int) -> dict[str, Any]:
             }
             for item in top
         ],
-        "proposed_contracts": proposed_contracts(top),
+        "proposed_contracts": proposed_contracts(top, root),
     }
 
 

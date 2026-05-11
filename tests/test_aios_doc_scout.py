@@ -80,8 +80,25 @@ class AiosDocScoutTest(unittest.TestCase):
             text = output.read_text(encoding="utf-8")
             self.assertIn("# AIOS Task Radar", text)
             self.assertIn("CapabilityOS/README.md", text)
-            self.assertIn("ASC-0009", text)
-            self.assertIn("ASC-0011", text)
+            self.assertIn("ASC-0008", text)
+
+    def test_proposed_contract_ids_follow_existing_contract_index(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "myworld" / "docs" / "contracts").mkdir(parents=True)
+            (root / "myworld" / "docs" / "contracts" / "ASC-0012-existing.md").write_text(
+                "---\ncontract_id: ASC-0012\nstatus: closed\n---\n",
+                encoding="utf-8",
+            )
+            (root / "myworld" / "docs" / "TODO.md").write_text(
+                "# AIOS TODO\n\nTODO next verification.\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(root, "--json")
+            data = json.loads(result.stdout)
+
+            self.assertEqual(data["proposed_contracts"][0]["contract_id"], "ASC-0013")
 
 
 if __name__ == "__main__":
