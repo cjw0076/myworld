@@ -477,6 +477,48 @@ For repo-local implementation details, also update that repo's own worklog.
   CapabilityOS gaps should be prioritized.
 - status: done
 
+## 2026-05-11 22:50 KST — codex — ASC-0012 durability closeout issued
+
+- repo: myworld
+- role: acting operator
+- goal: prevent the radar feedback loop from closing only in myworld while
+  child repo implementation changes remain non-durable.
+- changed: `docs/contracts/ASC-0012-child-repo-durability-closeout.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `git -C memoryOS status --short`, `git -C CapabilityOS status
+  --short`, and `git -C hivemind status --short` show implementation changes
+  from ASC-0008, ASC-0009, ASC-0010, plus pre-existing dirty files.
+- decision: issue ASC-0012 before starting another feature contract. Each child
+  repo must either commit its owned slice locally or return a hold reason.
+- risk: commits can accidentally absorb unrelated dirty files; ASC-0012
+  explicitly forbids runtime/raw/private paths and allows held results.
+- next: dispatch ASC-0012 to memoryOS, CapabilityOS, and hivemind.
+- status: issued
+
+## 2026-05-11 22:55 KST — codex — ASC-0012 durability closeout closed
+
+- repo: myworld
+- role: acting operator
+- goal: make child repo implementations from ASC-0008, ASC-0009, and ASC-0010
+  durable through repo-local commits or explicit holds.
+- changed: `docs/contracts/ASC-0012-child-repo-durability-closeout.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`; child repo commits
+  `memoryOS@52ea40e`, `CapabilityOS@a1fd15d`, `hivemind@6320492`.
+- evidence: memoryOS `tests/test_doc_radar_ingest.py` passed 3/3;
+  CapabilityOS `tests/test_cli.py tests/test_observation.py` passed 9/9 and
+  audit preserved recommendation-only; hivemind `tests/test_capability_bridge.py
+  tests/test_radar_review.py` passed 6/6 and radar-review smoke returned 10
+  entries. ASC-0012 result packets were collected for all three repos and
+  dispatch was released.
+- decision: close ASC-0012. Leave unrelated/forbidden dirty files uncommitted:
+  `memoryOS/data/**`, memoryOS pre-existing worklog hunk,
+  `hivemind/.ai-runs/**`, and ambiguous `hivemind/harness.py`.
+- risk: myworld gitlinks now point at older child commit SHAs until the
+  superproject records updated gitlink pointers.
+- next: update myworld gitlinks for child repo commits, rerun readiness and
+  monitor, then continue from loop policy.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld

@@ -97,3 +97,4 @@ decision rather than draft churn.
 | ASC-0009 | capability-observation-feedback | closed | Consume task-radar entries and dispatch result packets to record CapabilityOS observations and fallback plans. |
 | ASC-0010 | hive-semantic-quality-gate | closed | Add a Hive verification packet that reviews top task-radar candidates for executable next steps before broad dispatch. |
 | ASC-0011 | control-plane-loop-policy | closed | Decide which doc-radar candidates become accepted contracts and which remain held through a checkable policy. |
+| ASC-0012 | child-repo-durability-closeout | closed | Turn ASC-0008, ASC-0009, and ASC-0010 child-repo working-tree implementations into repo-local durable commits or explicit holds. |

@@ -87,8 +87,20 @@ def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, A
             row["reason"] = event.get("reason")
 
     for row in rows.values():
-        contract_path = root / str(row.get("contract_path") or "")
-        frontmatter = parse_frontmatter(contract_path)
+        contract_path_value = str(row.get("contract_path") or "")
+        contract_path = root / contract_path_value if contract_path_value else None
+        if contract_path is None or not contract_path.is_file():
+            frontmatter = {}
+            if row.get("recorded_contract_status"):
+                alerts.append(
+                    {
+                        "code": "dispatch_contract_path_missing",
+                        "dispatch_id": row["dispatch_id"],
+                        "contract_path": contract_path_value,
+                    }
+                )
+        else:
+            frontmatter = parse_frontmatter(contract_path)
         current_status = frontmatter.get("status")
         row["current_contract_status"] = current_status
         if current_status and row.get("recorded_contract_status") and current_status != row.get("recorded_contract_status"):
