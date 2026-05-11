@@ -220,6 +220,23 @@ def next_contract_number(root: Path) -> int:
     return highest + 1
 
 
+def existing_contract_slugs(root: Path) -> set[str]:
+    contract_dir = existing_contract_dir(root)
+    if contract_dir is None:
+        return set()
+    slugs: set[str] = set()
+    for path in contract_dir.glob("ASC-*.md"):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        match = re.search(r"^slug:\s*(.+?)\s*$", text, flags=re.MULTILINE)
+        if match:
+            slugs.add(match.group(1).strip())
+            continue
+        parts = path.stem.split("-", 2)
+        if len(parts) == 3:
+            slugs.add(parts[2])
+    return slugs
+
+
 def proposed_contracts(items: list[DocItem], root: Path) -> list[dict[str, Any]]:
     domains = {item.domain for item in items}
     templates = [
@@ -254,6 +271,8 @@ def proposed_contracts(items: list[DocItem], root: Path) -> list[dict[str, Any]]
     ]
     if "myworld" not in domains:
         templates = [template for template in templates if template["owner"] != "myworld"]
+    existing_slugs = existing_contract_slugs(root)
+    templates = [template for template in templates if template["slug"] not in existing_slugs]
     next_number = next_contract_number(root)
     contracts = []
     for offset, template in enumerate(templates):

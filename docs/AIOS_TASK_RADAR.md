@@ -7,11 +7,11 @@ content, secrets, or full document bodies.
 
 ## Summary
 
-- generated_at: `2026-05-11T22:59:31+09:00`
+- generated_at: `2026-05-11T23:04:24+09:00`
 - root: `/home/user/workspaces/jaewon`
-- documents_scanned: `1684`
-- documents_with_signals: `1072`
-- by_domain: `{"CapabilityOS": 3, "_from_desktop": 786, "deepfake": 7, "fire": 10, "hivemind": 120, "memoryOS": 49, "myworld": 30, "universe": 67}`
+- documents_scanned: `1686`
+- documents_with_signals: `1074`
+- by_domain: `{"CapabilityOS": 3, "_from_desktop": 786, "deepfake": 7, "fire": 10, "hivemind": 120, "memoryOS": 49, "myworld": 32, "universe": 67}`
 
 ## Top Task Signals
 
@@ -59,13 +59,6 @@ content, secrets, or full document bodies.
 | 179 | _from_desktop | `_from_desktop/Uri/docs/business/uri_사업/strategic_vision_2026_04_28_part4_collaboration_strategy.md` | `gap:1,memoryos:12,next:12,p0:7,verify:4` | triage as external workspace context before importing into AIOS |
 
 ## Proposed Next Contracts
-
-### ASC-0013 — workspace-instruction-index
-
-- owner: `myworld`
-- goal: index AGENTS, CLAUDE, CODEX, CURRENT, and repo ownership rules into a control-plane instruction map
-- trigger: multi-agent work needs durable instruction lookup without depending on chat context
-- depends_on: `ASC-0007`
 
 ### ASC-0014 — hive-worklog-gap-cleanup
 

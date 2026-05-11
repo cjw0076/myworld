@@ -100,6 +100,27 @@ class AiosDocScoutTest(unittest.TestCase):
 
             self.assertEqual(data["proposed_contracts"][0]["contract_id"], "ASC-0013")
 
+    def test_proposed_contracts_skip_existing_slugs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract_dir = root / "myworld" / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (contract_dir / "ASC-0013-workspace-instruction-index.md").write_text(
+                "---\ncontract_id: ASC-0013\nslug: workspace-instruction-index\nstatus: closed\n---\n",
+                encoding="utf-8",
+            )
+            (root / "myworld" / "docs" / "TODO.md").write_text(
+                "# AIOS TODO\n\nTODO next verification.\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(root, "--json")
+            data = json.loads(result.stdout)
+
+            slugs = [contract["slug"] for contract in data["proposed_contracts"]]
+            self.assertNotIn("workspace-instruction-index", slugs)
+            self.assertEqual(data["proposed_contracts"][0]["contract_id"], "ASC-0014")
+
 
 if __name__ == "__main__":
     unittest.main()
