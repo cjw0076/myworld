@@ -786,3 +786,30 @@ For repo-local implementation details, also update that repo's own worklog.
   then decide whether ASC-0022 should target source-read registry or watcher
   execution reliability.
 - status: done
+
+## 2026-05-12 01:31 KST — codex — ASC-0022 goal evolution loop closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: let one active north-star goal drive the next AIOS contract
+  recommendation with monitor, readiness, radar, and loop-policy evidence.
+- changed: `scripts/aios_goal_evolution.py`,
+  `tests/test_aios_goal_evolution.py`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, `docs/AIOS_BUILD_METHOD.md`,
+  `docs/contracts/ASC-0022-aios-goal-evolution-loop.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: goal evolution unit tests passed 4/4; JSON planner returned
+  `schema_version=aios.goal_evolution.v1`; markdown planner wrote
+  `docs/goals/AIOS-GOAL-0001-evolution.md`; dispatch `asc-0022` collected and
+  released; monitor assessment returned `health=clear`.
+- decision: AIOS now has a goal-level recommendation loop. It is intentionally
+  recommendation-only and does not auto-open contracts, dispatch child work, or
+  accept private/archive paths.
+- risk: the radar source still contains stale high-score worklog signals; the
+  goal planner compensates by boosting explicit preferred-next signals while
+  preserving loop-policy holds and closed-contract rejections.
+- next: open the recommended Hive-owned source-read registry contract so
+  future arrival packs can say which agents read which source artifacts and
+  where divergent interpretations need reconciliation.
+- status: done

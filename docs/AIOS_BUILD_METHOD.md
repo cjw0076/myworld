@@ -205,3 +205,29 @@ Loop non-responsibilities:
 This makes AIOS autonomous at the control-plane layer first. Execution
 autonomy belongs in a later contract that wires repo-local watchers or Hive
 Mind supervisor processes to consume inbox packets.
+
+## Goal Evolution Loop
+
+Task-level autonomy is not enough for the final AIOS shape. A higher-level
+goal loop starts from one active goal file and asks which next contract best
+improves that goal:
+
+```bash
+python scripts/aios_goal_evolution.py plan \
+  --goal docs/goals/AIOS-GOAL-0001-make-something-great.md \
+  --json
+
+python scripts/aios_goal_evolution.py plan \
+  --goal docs/goals/AIOS-GOAL-0001-make-something-great.md \
+  --write docs/goals/AIOS-GOAL-0001-evolution.md
+```
+
+The planner reads the goal's quality function and anti-cheat checks, then
+combines monitor health, readiness level, task radar, and loop-policy
+decisions. It is recommendation-only: it does not open contracts, dispatch
+packets, edit child repos, or auto-accept private paths.
+
+Use this loop when the operator gives a broad objective such as "make
+something great." The output should name the next best contract candidate or a
+hold reason, with evidence that another agent can inspect without chat
+context.
