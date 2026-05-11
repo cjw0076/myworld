@@ -519,6 +519,29 @@ For repo-local implementation details, also update that repo's own worklog.
   monitor, then continue from loop policy.
 - status: done
 
+## 2026-05-11 23:02 KST — codex — ASC-0013 instruction index closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: make repo instruction surfaces discoverable without chat context.
+- changed: `scripts/aios_instruction_index.py`,
+  `tests/test_aios_instruction_index.py`, `docs/AIOS_INSTRUCTION_INDEX.md`,
+  `docs/contracts/ASC-0013-workspace-instruction-index.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_instruction_index.py` passed;
+  `python -m unittest tests/test_aios_instruction_index.py` passed 2/2; full
+  myworld unittest suite passed 23 tests; instruction index command produced
+  `schema_version=aios.instruction_index.v1` and 12 instruction files across
+  myworld, hivemind, memoryOS, and CapabilityOS; dispatch watch/collect/release
+  for `asc-0013` passed.
+- decision: close ASC-0013. The index is metadata-only and excludes runtime,
+  raw-data, export, log, and weight paths.
+- risk: the index records headings and signal counts, not full instructions;
+  agents must still open the source instruction file before acting.
+- next: rerun radar/policy; likely next contract is ASC-0014 Hive worklog/gap
+  cleanup or ASC-0015 capability-gap triage.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld
