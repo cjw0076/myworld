@@ -925,3 +925,26 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: rerun goal evolution. The expected next preferred item is
   `memory_feedback_tightening`.
 - status: done
+
+## 2026-05-12 02:40 KST — codex — ASC-0027 memory feedback directives closed
+
+- repo: myworld + memoryOS + hivemind
+- role: acting operator + child repo implementation
+- goal: turn selected accepted MemoryOS context into explicit next-run
+  feedback directives and render them inside Hive context packs.
+- changed: `docs/contracts/ASC-0027-memory-feedback-directives.md`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, `docs/AIOS_AGENT_LEDGER.md`,
+  MemoryOS commit `06caf78`, and Hive commit `0d8557e`.
+- evidence: MemoryOS focused context directive test passed; Hive focused
+  memory bridge test passed; both ASC-0027 dispatch result packets were
+  written, collected, and released; monitor returned `health=clear`.
+- decision: directives are derived, privacy-safe context output. MemoryOS owns
+  directive semantics; Hive only renders them and records
+  `feedback_directives_count`.
+- risk: child watcher provider fallback order is still static. The next
+  improvement should bind CapabilityOS observation-aware recommendations into
+  watcher/provider route choice.
+- next: open `capability_route_binding` as the next goal-selected contract.
+- status: done

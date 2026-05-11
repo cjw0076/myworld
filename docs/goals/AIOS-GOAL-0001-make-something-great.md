@@ -51,8 +51,10 @@ user relay.
 
 ## Preferred Next Improvements
 
-- memory_feedback_tightening: make MemoryOS accepted context shape more next
-  Hive runs without manual relay.
+- capability_route_binding: use CapabilityOS observation-aware recommendations
+  to choose child watcher/provider routes instead of static fallback order.
+- capability_observation_memory_import: decide which CapabilityOS observations
+  should enter MemoryOS as reviewable durable memory.
 
 ## Completed Improvements
 
@@ -62,3 +64,5 @@ user relay.
   provider-access fallback and structured attempt evidence.
 - capability_routing_memory: ASC-0026 made CapabilityOS recommendations consume
   prior AIOS observation outcomes in-memory.
+- memory_feedback_tightening: ASC-0027 added MemoryOS feedback directives and
+  Hive context-pack rendering for next-run shaping.
