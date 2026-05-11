@@ -51,8 +51,6 @@ user relay.
 
 ## Preferred Next Improvements
 
-- watcher_execution_reliability: remove provider access-denied fallbacks from
-  child watcher implementation runs.
 - capability_routing_memory: make CapabilityOS observations influence later
   routing decisions.
 - memory_feedback_tightening: make MemoryOS accepted context shape more next
@@ -62,3 +60,5 @@ user relay.
 
 - source_read_registry: ASC-0023 added Hive source-read records and arrival-pack
   reconciliation hints.
+- watcher_execution_reliability: ASC-0025 added bounded child watcher
+  provider-access fallback and structured attempt evidence.

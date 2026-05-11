@@ -869,3 +869,29 @@ For repo-local implementation details, also update that repo's own worklog.
   packets no longer require manual fallback after provider access-denied
   watcher failures.
 - status: done
+
+## 2026-05-12 02:29 KST — codex — ASC-0025 child watcher provider fallback closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: remove the manual fallback gap when child watcher implementation
+  agents fail at the provider access/auth boundary.
+- changed: `scripts/aios_child_watcher.sh`,
+  `tests/test_aios_child_watcher.py`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `docs/contracts/ASC-0025-child-watcher-provider-fallback.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: fake-provider tests passed 2/2; full myworld suite passed 37/37;
+  `bash -n scripts/aios_child_watcher.sh` passed; dispatch watcher wrote a
+  passed `asc-0025` result packet; collect and release succeeded; monitor
+  returned `health=clear`.
+- decision: the child watcher now classifies provider access/auth failures and
+  may try exactly one alternate agent. Timeouts, missing commands, unsupported
+  agents, and ordinary child-agent failures do not fallback.
+- risk: fallback order is still static (`codex` <-> `claude`). A later
+  CapabilityOS contract should use capability observations to choose provider
+  routes instead of hard-coded alternates.
+- next: rerun goal evolution. The expected next preferred item is
+  `capability_routing_memory`.
+- status: done

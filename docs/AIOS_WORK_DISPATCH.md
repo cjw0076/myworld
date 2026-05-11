@@ -222,6 +222,12 @@ Guardrails:
   dogfood tests before `start --repo all`.
 - `aios_child_watcher.sh` writes full agent stdout/stderr only to local
   `.aios/logs/` and stores a bounded result packet in outbox.
+- `aios_child_watcher.sh` classifies provider invocation failures. When the
+  assigned agent fails with an access/auth/permission-denied class error, it may
+  try one alternate provider agent and record `agent_attempts`,
+  `fallback_used`, `final_agent`, and failure categories in the result packet.
+  It does not fallback on timeouts, missing commands, unsupported agents, or
+  ordinary child-agent failures.
 - The child watcher prompt includes `AIOS_DEFINITION.md`; if a packet cannot
   advance a valid completion level, the child agent should return a checkpoint
   instead of claiming done.

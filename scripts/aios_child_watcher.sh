@@ -23,6 +23,7 @@ CODEX_TIMEOUT="${CODEX_TIMEOUT:-1800}"
 CLAUDE_TIMEOUT="${CLAUDE_TIMEOUT:-1800}"
 CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 WATCH_INTERVAL="${WATCH_INTERVAL:-5}"
+AIOS_CHILD_AGENT_FALLBACKS="${AIOS_CHILD_AGENT_FALLBACKS:-1}"
 
 mkdir -p "$OUTBOX_DIR" "$LOG_DIR" "$PROMPT_DIR" "$RUN_DIR" "$STATE_DIR"
 
@@ -45,6 +46,7 @@ Environment:
   CODEX_TIMEOUT=1800
   CLAUDE_TIMEOUT=1800
   WATCH_INTERVAL=5
+  AIOS_CHILD_AGENT_FALLBACKS=1
 
 Global stop file:
   .aios/STOP
@@ -212,14 +214,15 @@ write_result() {
   local log_file="$7"
   local before_file="$8"
   local after_file="$9"
+  local attempts_file="${10}"
   mkdir -p "$(dirname "$result_path")"
-  python3 - "$result_path" "$repo" "$packet" "$status" "$exit_code" "$prompt_file" "$log_file" "$before_file" "$after_file" <<'PY'
+  python3 - "$result_path" "$repo" "$packet" "$status" "$exit_code" "$prompt_file" "$log_file" "$before_file" "$after_file" "$attempts_file" <<'PY'
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-result_path, repo, packet_path, status, exit_code, prompt_file, log_file, before_file, after_file = sys.argv[1:]
+result_path, repo, packet_path, status, exit_code, prompt_file, log_file, before_file, after_file, attempts_file = sys.argv[1:]
 packet = json.load(open(packet_path, encoding="utf-8"))
 
 def read_lines(path: str) -> list[str]:
@@ -230,8 +233,23 @@ def read_lines(path: str) -> list[str]:
 
 before = read_lines(before_file)
 after = read_lines(after_file)
+attempts = []
+attempts_path = Path(attempts_file)
+if attempts_path.exists():
+    for line in attempts_path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        attempts.append(json.loads(line))
 changed = after
 result_status = "passed" if status == "done" else status
+failed_categories = [
+    item.get("failure_category")
+    for item in attempts
+    if item.get("exit_code") != 0 and item.get("failure_category")
+]
+failure_category = failed_categories[0] if failed_categories else ("none" if int(exit_code) == 0 else "child_agent_failed")
+stop_conditions = [] if int(exit_code) == 0 else [failure_category]
 row = {
     "schema_version": "aios.dispatch.result.v1",
     "executed_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
@@ -240,6 +258,11 @@ row = {
     "contract_id": packet.get("contract_id"),
     "agent_assigned": packet.get("agent"),
     "agent_executed": "aios_child_watcher",
+    "agent_attempts": attempts,
+    "fallback_used": len(attempts) > 1,
+    "final_agent": attempts[-1].get("agent") if attempts else packet.get("agent"),
+    "failure_category": failure_category,
+    "final_failure_category": attempts[-1].get("failure_category") if attempts else failure_category,
     "executed_reason": "child_repo_packet",
     "status": result_status,
     "exit_code": int(exit_code),
@@ -262,7 +285,7 @@ row = {
     "git_status_before_count": len(before),
     "git_status_after_count": len(after),
     "changed_files": changed[:200],
-    "stop_conditions_triggered": [] if int(exit_code) == 0 else ["child_agent_failed"],
+    "stop_conditions_triggered": stop_conditions,
     "privacy": {
         "raw_prompt_included": False,
         "stdout_included": False,
@@ -275,41 +298,35 @@ Path(result_path).write_text(json.dumps(row, ensure_ascii=False, indent=2, sort_
 PY
 }
 
-run_packet() {
-  local repo="$1"
-  local packet="$2"
-  local result_path
-  result_path="$(packet_result_path "$packet" "$repo")"
-  if [[ -f "$result_path" ]]; then
-    return 0
+failure_category() {
+  local rc="$1"
+  local log_file="$2"
+  if [[ "$rc" -eq 0 ]]; then
+    echo "none"
+  elif [[ "$rc" -eq 124 ]]; then
+    echo "timeout"
+  elif [[ "$rc" -eq 127 ]]; then
+    echo "command_missing"
+  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied' "$log_file" 2>/dev/null; then
+    echo "provider_access_denied"
+  else
+    echo "child_agent_failed"
   fi
+}
 
-  local repo_dir
-  repo_dir="$(repo_path "$repo")"
-  if [[ ! -d "$repo_dir" ]]; then
-    echo "repo directory not found: $repo_dir" >&2
-    return 2
-  fi
+fallback_agent_for() {
+  case "$1" in
+    codex) echo "claude" ;;
+    claude) echo "codex" ;;
+    *) echo "" ;;
+  esac
+}
 
-  local dispatch_id agent safe_id prompt_file log_file before_file after_file lock_file
-  dispatch_id="$(json_get "$packet" "dispatch_id")"
-  agent="$(json_get "$packet" "agent")"
-  safe_id="${dispatch_id}.${repo}"
-  prompt_file="$PROMPT_DIR/${safe_id}.child.prompt.md"
-  log_file="$LOG_DIR/${safe_id}.child.log"
-  before_file="$LOG_DIR/${safe_id}.git.before"
-  after_file="$LOG_DIR/${safe_id}.git.after"
-  lock_file="$RUN_DIR/${safe_id}.running"
-
-  if [[ -f "$lock_file" ]]; then
-    return 0
-  fi
-  touch "$lock_file"
-
-  build_prompt "$repo" "$packet" "$prompt_file"
-  git_status_short "$repo_dir" > "$before_file"
-  append_event "packet_start" "$repo" "running" "$packet"
-
+run_agent_once() {
+  local agent="$1"
+  local repo_dir="$2"
+  local prompt_file="$3"
+  local log_file="$4"
   local rc=0
   if [[ "$agent" == "codex" ]]; then
     if ! command -v codex >/dev/null 2>&1; then
@@ -331,6 +348,86 @@ run_packet() {
     echo "unsupported packet agent: $agent" > "$log_file"
     rc=2
   fi
+  return "$rc"
+}
+
+append_attempt() {
+  local attempts_file="$1"
+  local agent="$2"
+  local rc="$3"
+  local category="$4"
+  local log_file="$5"
+  python3 - "$attempts_file" "$agent" "$rc" "$category" "$log_file" <<'PY'
+import json
+import sys
+
+attempts_file, agent, rc, category, log_file = sys.argv[1:]
+row = {
+    "agent": agent,
+    "exit_code": int(rc),
+    "status": "done" if int(rc) == 0 else "failed",
+    "failure_category": category,
+    "log_ref": log_file,
+}
+with open(attempts_file, "a", encoding="utf-8") as fh:
+    fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+PY
+}
+
+run_packet() {
+  local repo="$1"
+  local packet="$2"
+  local result_path
+  result_path="$(packet_result_path "$packet" "$repo")"
+  if [[ -f "$result_path" ]]; then
+    return 0
+  fi
+
+  local repo_dir
+  repo_dir="$(repo_path "$repo")"
+  if [[ ! -d "$repo_dir" ]]; then
+    echo "repo directory not found: $repo_dir" >&2
+    return 2
+  fi
+
+  local dispatch_id agent safe_id prompt_file log_file before_file after_file lock_file attempts_file
+  dispatch_id="$(json_get "$packet" "dispatch_id")"
+  agent="$(json_get "$packet" "agent")"
+  safe_id="${dispatch_id}.${repo}"
+  prompt_file="$PROMPT_DIR/${safe_id}.child.prompt.md"
+  log_file="$LOG_DIR/${safe_id}.child.log"
+  before_file="$LOG_DIR/${safe_id}.git.before"
+  after_file="$LOG_DIR/${safe_id}.git.after"
+  lock_file="$RUN_DIR/${safe_id}.running"
+  attempts_file="$LOG_DIR/${safe_id}.attempts.jsonl"
+
+  if [[ -f "$lock_file" ]]; then
+    return 0
+  fi
+  touch "$lock_file"
+
+  build_prompt "$repo" "$packet" "$prompt_file"
+  git_status_short "$repo_dir" > "$before_file"
+  append_event "packet_start" "$repo" "running" "$packet"
+  rm -f "$attempts_file"
+
+  local rc=0 category fallback_agent fallback_log_file
+  run_agent_once "$agent" "$repo_dir" "$prompt_file" "$log_file" || rc=$?
+  category="$(failure_category "$rc" "$log_file")"
+  append_attempt "$attempts_file" "$agent" "$rc" "$category" "$log_file"
+
+  if [[ "$rc" -ne 0 && "$AIOS_CHILD_AGENT_FALLBACKS" == "1" && "$category" == "provider_access_denied" ]]; then
+    fallback_agent="$(fallback_agent_for "$agent")"
+    if [[ -n "$fallback_agent" ]]; then
+      fallback_log_file="$LOG_DIR/${safe_id}.${fallback_agent}.fallback.child.log"
+      append_event "packet_fallback_start" "$repo" "$category" "$fallback_agent"
+      rc=0
+      run_agent_once "$fallback_agent" "$repo_dir" "$prompt_file" "$fallback_log_file" || rc=$?
+      category="$(failure_category "$rc" "$fallback_log_file")"
+      append_attempt "$attempts_file" "$fallback_agent" "$rc" "$category" "$fallback_log_file"
+      log_file="$fallback_log_file"
+    fi
+  fi
 
   git_status_short "$repo_dir" > "$after_file"
   local status
@@ -341,7 +438,7 @@ run_packet() {
   else
     status="failed"
   fi
-  write_result "$result_path" "$repo" "$packet" "$status" "$rc" "$prompt_file" "$log_file" "$before_file" "$after_file"
+  write_result "$result_path" "$repo" "$packet" "$status" "$rc" "$prompt_file" "$log_file" "$before_file" "$after_file" "$attempts_file"
   append_event "packet_done" "$repo" "$status" "$result_path"
   rm -f "$lock_file"
   return 0

@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T02:22:51+09:00`
+- generated_at: `2026-05-12T02:29:44+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:watcher_execution_reliability`
+- path: `goal:capability_routing_memory`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: remove provider access-denied fallbacks from child watcher implementation runs.
+- task: make CapabilityOS observations influence later routing decisions.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
