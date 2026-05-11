@@ -158,11 +158,22 @@ python scripts/aios_monitor.py status
 python scripts/aios_monitor.py stop
 ```
 
+Ask the observer for a triage assessment:
+
+```bash
+python scripts/aios_monitor.py assess --json
+```
+
 The sidecar only observes. It writes append-only snapshots to
 `.aios/state/monitor.jsonl`, the latest view to
-`.aios/state/monitor.latest.json`, and lifecycle events to
+`.aios/state/monitor.latest.json`, triage assessments to
+`.aios/state/monitor_assessments.jsonl`, the latest assessment to
+`.aios/state/monitor_assessment.latest.json`, and lifecycle events to
 `.aios/state/monitor_events.jsonl`. It does not dispatch work, execute child
-repo packets, mutate contracts, or stop at `.aios/NORTHSTAR_READY`.
+repo packets, mutate contracts, or stop at `.aios/NORTHSTAR_READY`. Its
+authority is to classify signals by health, severity, owner, and recommended
+next action so the control plane can decide whether to release, hold, retry,
+or escalate.
 
 `.aios/state/monitor.jsonl` is local runtime state and should not be committed.
 

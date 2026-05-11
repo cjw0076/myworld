@@ -665,6 +665,30 @@ For repo-local implementation details, also update that repo's own worklog.
   source, starting with Hive worklog/gap cleanup if still top-ranked.
 - status: done
 
+## 2026-05-11 23:59 KST — codex — ASC-0019 monitor assessment brain closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: convert monitor alerts into owner, severity, and next-action
+  assessments for the control-plane operator loop.
+- changed: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/AIOS_BUILD_METHOD.md`,
+  `docs/contracts/ASC-0019-monitor-assessment-brain.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_monitor.py` passed. `python -m
+  unittest tests/test_aios_monitor.py` passed 9/9. `python
+  scripts/aios_monitor.py assess --json` returned `health=clear` with
+  `continue_observing`. `python scripts/aios_monitor.py snapshot --json
+  --fail-on-alert` exited zero.
+- decision: monitor assessment is recommendation-only. It may tell operators
+  to collect results, run a watcher, hold, retry, or escalate; it does not
+  execute that action by itself.
+- risk: alert rules must remain conservative because they will steer future
+  dispatch decisions.
+- next: keep the sidecar running and use `assess` output before opening each
+  new contract.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld

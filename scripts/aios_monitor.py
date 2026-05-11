@@ -23,6 +23,8 @@ REPOS = ("hivemind", "memoryOS", "CapabilityOS")
 STATE_LOG = Path(".aios/state/dispatches.jsonl")
 MONITOR_LOG = Path(".aios/state/monitor.jsonl")
 MONITOR_LATEST = Path(".aios/state/monitor.latest.json")
+MONITOR_ASSESSMENT_LOG = Path(".aios/state/monitor_assessments.jsonl")
+MONITOR_ASSESSMENT_LATEST = Path(".aios/state/monitor_assessment.latest.json")
 MONITOR_EVENTS = Path(".aios/state/monitor_events.jsonl")
 MONITOR_PID = Path(".aios/run/aios_monitor.pid")
 MONITOR_STOP = Path(".aios/run/aios_monitor.stop")
@@ -33,6 +35,45 @@ STATUS_ORDER = {
     "active": 2,
     "closed": 3,
     "superseded": 3,
+}
+SEVERITY_ORDER = {
+    "info": 0,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "critical": 4,
+}
+ALERT_RULES = {
+    "dispatch_results_pending": {
+        "severity": "high",
+        "owner": "myworld",
+        "action": "collect_result_or_run_watcher",
+        "reason": "A sent dispatch has no collected result packet for at least one target repo.",
+    },
+    "dispatch_contract_path_missing": {
+        "severity": "high",
+        "owner": "myworld",
+        "action": "escalate_missing_contract_artifact",
+        "reason": "A dispatch references a missing contract path, so the control-plane audit trail is incomplete.",
+    },
+    "dispatch_contract_status_stale": {
+        "severity": "medium",
+        "owner": "myworld",
+        "action": "review_or_reconcile_exact_dispatch_drift",
+        "reason": "A dispatch recorded an older contract status than the current contract file.",
+    },
+    "repo_dirty": {
+        "severity": "medium",
+        "owner": "alert_repo",
+        "action": "hold_for_repo_owner_triage",
+        "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
+    },
+    "generated_cache_present": {
+        "severity": "low",
+        "owner": "alert_repo",
+        "action": "clean_generated_cache_or_ignore_with_contract",
+        "reason": "Generated cache artifacts are visible in repo status and may leak into durable records.",
+    },
 }
 
 
@@ -268,12 +309,113 @@ def snapshot(root: Path) -> dict[str, Any]:
     }
 
 
+def owner_for_alert(alert: dict[str, Any], rule: dict[str, str]) -> str:
+    owner = rule.get("owner", "myworld")
+    if owner == "alert_repo":
+        return str(alert.get("repo") or "myworld")
+    return owner
+
+
+def assess_alert(alert: dict[str, Any]) -> dict[str, Any]:
+    code = str(alert.get("code") or "unknown")
+    rule = ALERT_RULES.get(
+        code,
+        {
+            "severity": "medium",
+            "owner": "myworld",
+            "action": "operator_checkpoint",
+            "reason": "Monitor emitted an alert without a specific assessment rule.",
+        },
+    )
+    return {
+        "code": code,
+        "severity": rule["severity"],
+        "owner": owner_for_alert(alert, rule),
+        "action": rule["action"],
+        "reason": rule["reason"],
+        "alert": alert,
+    }
+
+
+def health_from_findings(findings: list[dict[str, Any]]) -> str:
+    if not findings:
+        return "clear"
+    worst = max(SEVERITY_ORDER.get(str(finding.get("severity")), 2) for finding in findings)
+    if worst >= SEVERITY_ORDER["high"]:
+        return "blocked"
+    if worst >= SEVERITY_ORDER["medium"]:
+        return "attention"
+    return "watch"
+
+
+def prioritized_actions(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not findings:
+        return [
+            {
+                "owner": "myworld",
+                "action": "continue_observing",
+                "severity": "info",
+                "reason": "No active monitor alerts.",
+            }
+        ]
+    seen: set[tuple[str, str]] = set()
+    rows: list[dict[str, Any]] = []
+    ordered = sorted(
+        findings,
+        key=lambda item: SEVERITY_ORDER.get(str(item.get("severity")), 2),
+        reverse=True,
+    )
+    for finding in ordered:
+        key = (str(finding.get("owner")), str(finding.get("action")))
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append(
+            {
+                "owner": finding.get("owner"),
+                "action": finding.get("action"),
+                "severity": finding.get("severity"),
+                "reason": finding.get("reason"),
+            }
+        )
+    return rows
+
+
+def assess_snapshot(data: dict[str, Any]) -> dict[str, Any]:
+    findings = [assess_alert(alert) for alert in data.get("alerts", [])]
+    return {
+        "schema_version": "aios.monitor.assessment.v1",
+        "generated_at": now_iso(),
+        "snapshot_generated_at": data.get("generated_at"),
+        "health": health_from_findings(findings),
+        "watched": {
+            "contracts": len(data.get("contracts", [])),
+            "dispatches": len(data.get("dispatches", [])),
+            "repos": len(data.get("repos", [])),
+            "alerts": len(data.get("alerts", [])),
+            "reconciliations_applied": len(data.get("reconciliations_applied", [])),
+        },
+        "findings": findings,
+        "next_actions": prioritized_actions(findings),
+    }
+
+
 def write_snapshot(root: Path, data: dict[str, Any]) -> None:
     path = root / MONITOR_LOG
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n")
     latest = root / MONITOR_LATEST
+    latest.parent.mkdir(parents=True, exist_ok=True)
+    latest.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def write_assessment(root: Path, data: dict[str, Any]) -> None:
+    path = root / MONITOR_ASSESSMENT_LOG
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n")
+    latest = root / MONITOR_ASSESSMENT_LATEST
     latest.parent.mkdir(parents=True, exist_ok=True)
     latest.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -334,11 +476,34 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_assess(args: argparse.Namespace) -> int:
+    root = Path.cwd().resolve()
+    data = snapshot(root)
+    assessment = assess_snapshot(data)
+    if args.write:
+        write_snapshot(root, data)
+        write_assessment(root, assessment)
+    if args.json:
+        print(json.dumps(assessment, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(
+            f"health={assessment['health']} alerts={assessment['watched']['alerts']} "
+            f"actions={len(assessment['next_actions'])}"
+        )
+        for action in assessment["next_actions"]:
+            print(f"- {action['severity']} {action['owner']}: {action['action']}")
+    if args.fail_on_blocked and assessment["health"] == "blocked":
+        return 1
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     root = Path.cwd().resolve()
     pid_path, stop_path = sidecar_paths(root)
     interval = max(1, int(args.interval))
     iterations = int(args.iterations)
+    if iterations > 0:
+        stop_path.unlink(missing_ok=True)
     if args.write_pid:
         pid_path.write_text(f"{os.getpid()}\n", encoding="utf-8")
     append_monitor_event(root, "sidecar_start", "running", f"interval={interval}")
@@ -349,12 +514,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                 append_monitor_event(root, "sidecar_stop", "stopped", stop_path.as_posix())
                 return 0
             data = snapshot(root)
+            assessment = assess_snapshot(data)
             write_snapshot(root, data)
+            write_assessment(root, assessment)
             completed += 1
             if not args.quiet:
                 print(
                     f"{data['generated_at']} contracts={len(data['contracts'])} "
-                    f"dispatches={len(data['dispatches'])} alerts={len(data['alerts'])}",
+                    f"dispatches={len(data['dispatches'])} alerts={len(data['alerts'])} "
+                    f"health={assessment['health']}",
                     flush=True,
                 )
             if iterations > 0 and completed >= iterations:
@@ -418,9 +586,13 @@ def cmd_status(args: argparse.Namespace) -> int:
     pid = read_pid(pid_path)
     running = bool(pid and is_pid_running(pid))
     latest_path = root / MONITOR_LATEST
+    assessment_path = root / MONITOR_ASSESSMENT_LATEST
     latest: dict[str, Any] = {}
+    assessment: dict[str, Any] = {}
     if latest_path.exists():
         latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    if assessment_path.exists():
+        assessment = json.loads(assessment_path.read_text(encoding="utf-8"))
     status = {
         "root": root.as_posix(),
         "pid_file": pid_path.relative_to(root).as_posix(),
@@ -428,9 +600,12 @@ def cmd_status(args: argparse.Namespace) -> int:
         "pid": pid if running else None,
         "stop_file": stop_path.exists(),
         "latest_snapshot": latest_path.relative_to(root).as_posix() if latest else None,
+        "latest_assessment": assessment_path.relative_to(root).as_posix() if assessment else None,
         "latest_generated_at": latest.get("generated_at"),
         "latest_alert_count": len(latest.get("alerts", [])) if latest else None,
         "latest_reconciliations_applied": len(latest.get("reconciliations_applied", [])) if latest else None,
+        "latest_health": assessment.get("health"),
+        "latest_next_action_count": len(assessment.get("next_actions", [])) if assessment else None,
         "log": ".aios/logs/aios_monitor.sidecar.log",
     }
     if args.json:
@@ -449,6 +624,11 @@ def build_parser() -> argparse.ArgumentParser:
     snap.add_argument("--write", action="store_true", help="append to .aios/state/monitor.jsonl")
     snap.add_argument("--fail-on-alert", action="store_true")
     snap.set_defaults(func=cmd_snapshot)
+    assess = sub.add_parser("assess", help="classify monitor alerts and propose owner/action triage")
+    assess.add_argument("--json", action="store_true")
+    assess.add_argument("--write", action="store_true", help="append snapshot and assessment to .aios/state")
+    assess.add_argument("--fail-on-blocked", action="store_true")
+    assess.set_defaults(func=cmd_assess)
     run = sub.add_parser("run", help="run the sidecar monitor loop in the foreground")
     run.add_argument("--interval", type=int, default=int(os.environ.get("AIOS_MONITOR_INTERVAL", "30")))
     run.add_argument("--iterations", type=int, default=0, help="0 means run until stopped")

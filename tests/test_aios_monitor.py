@@ -278,23 +278,58 @@ class AiosMonitorTest(unittest.TestCase):
             self.assertEqual("", result.stdout)
             monitor_log = root / ".aios" / "state" / "monitor.jsonl"
             latest = root / ".aios" / "state" / "monitor.latest.json"
+            assessment_log = root / ".aios" / "state" / "monitor_assessments.jsonl"
+            assessment_latest = root / ".aios" / "state" / "monitor_assessment.latest.json"
             events = root / ".aios" / "state" / "monitor_events.jsonl"
             self.assertTrue(monitor_log.exists())
             self.assertTrue(latest.exists())
+            self.assertTrue(assessment_log.exists())
+            self.assertTrue(assessment_latest.exists())
             self.assertTrue(events.exists())
             self.assertEqual(2, len(monitor_log.read_text(encoding="utf-8").splitlines()))
+            self.assertEqual(2, len(assessment_log.read_text(encoding="utf-8").splitlines()))
             latest_payload = json.loads(latest.read_text(encoding="utf-8"))
+            assessment_payload = json.loads(assessment_latest.read_text(encoding="utf-8"))
             self.assertEqual("aios.monitor.v1", latest_payload["schema_version"])
+            self.assertEqual("aios.monitor.assessment.v1", assessment_payload["schema_version"])
+            self.assertEqual("clear", assessment_payload["health"])
             event_text = events.read_text(encoding="utf-8")
             self.assertIn("sidecar_start", event_text)
             self.assertIn("sidecar_done", event_text)
 
+    def test_assess_classifies_pending_dispatch_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            events = [
+                {"event": "created", "dispatch_id": "asc-test", "contract_id": "ASC-TEST"},
+                {"event": "sent", "dispatch_id": "asc-test", "repo": "memoryOS"},
+            ]
+            (state / "dispatches.jsonl").write_text(
+                "\n".join(json.dumps(event) for event in events) + "\n",
+                encoding="utf-8",
+            )
+
+            result = subprocess.run(
+                [sys.executable, SCRIPT.as_posix(), "assess", "--json"],
+                cwd=root,
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+
+            payload = json.loads(result.stdout)
+            self.assertEqual("blocked", payload["health"])
+            self.assertEqual("dispatch_results_pending", payload["findings"][0]["code"])
+            self.assertEqual("myworld", payload["findings"][0]["owner"])
+            self.assertEqual("collect_result_or_run_watcher", payload["next_actions"][0]["action"])
+
     def test_status_reports_latest_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            self.run_snapshot(root)
             subprocess.run(
-                [sys.executable, SCRIPT.as_posix(), "snapshot", "--write"],
+                [sys.executable, SCRIPT.as_posix(), "assess", "--write"],
                 cwd=root,
                 text=True,
                 capture_output=True,
@@ -312,6 +347,8 @@ class AiosMonitorTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertFalse(payload["running"])
             self.assertEqual(".aios/state/monitor.latest.json", payload["latest_snapshot"])
+            self.assertEqual(".aios/state/monitor_assessment.latest.json", payload["latest_assessment"])
+            self.assertEqual("clear", payload["latest_health"])
             self.assertIsInstance(payload["latest_alert_count"], int)
 
 
