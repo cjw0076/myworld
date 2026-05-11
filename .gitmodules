@@ -1,0 +1,14 @@
+[submodule "hivemind"]
+	path = hivemind
+	url = https://github.com/cjw0076/hivemind.git
+	ignore = dirty
+
+[submodule "memoryOS"]
+	path = memoryOS
+	url = https://github.com/cjw0076/memoryOS.git
+	ignore = dirty
+
+[submodule "CapabilityOS"]
+	path = CapabilityOS
+	url = https://github.com/cjw0076/CapabilityOS.git
+	ignore = dirty
