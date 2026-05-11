@@ -564,6 +564,33 @@ For repo-local implementation details, also update that repo's own worklog.
   contract.
 - status: done
 
+## 2026-05-11 23:48 KST — codex — ASC-0015 child repo dirty triage closed
+
+- repo: myworld
+- role: acting operator + durability closeout
+- goal: resolve the remaining memoryOS and hivemind dirty files after ASC-0012
+  and ASC-0014.
+- changed: `docs/contracts/ASC-0015-child-repo-dirty-triage.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`, child gitlinks for
+  `memoryOS` and `hivemind`.
+- evidence: `memoryOS` committed `f227454` with only
+  `docs/AGENT_WORKLOG.md` and `data/README.md`; raw `data/*` exports remain
+  ignored. `hivemind` committed `101d769` with only
+  `.ai-runs/shared/comms_log.md` and `hivemind/harness.py`.
+  `cd memoryOS && git diff --check` passed.
+  `cd hivemind && python -m pytest tests/test_capability_bridge.py
+  tests/test_quickstart.py -v` passed 8/8. `python
+  scripts/aios_monitor.py snapshot --json` reports no child repo dirty alerts.
+- decision: commit the two repo-local documentation files in memoryOS, commit
+  the ASC-0005 residual harness integration and tracked shared comms log in
+  hivemind, and leave only the legacy ASC-0001 dispatch status drift as a
+  separate monitor-history issue.
+- risk: ASC-0001 `proposed -> closed` stale dispatch alert remains visible by
+  design; it should be handled by a future runtime-state reconciliation
+  contract if operator wants a zero-alert monitor.
+- next: rerun full myworld regression suite and commit ASC-0015 closeout.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld

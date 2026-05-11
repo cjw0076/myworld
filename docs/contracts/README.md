@@ -100,3 +100,4 @@ decision rather than draft churn.
 | ASC-0012 | child-repo-durability-closeout | closed | Turn ASC-0008, ASC-0009, and ASC-0010 child-repo working-tree implementations into repo-local durable commits or explicit holds. |
 | ASC-0013 | workspace-instruction-index | closed | Index AGENTS, CLAUDE, CODEX, CURRENT, and repo ownership rules into a control-plane instruction map. |
 | ASC-0014 | control-plane-monitor-hygiene | closed | Remove monitor false positives for normal contract closeout and repo-suffixed legacy result dispatch ids. |
+| ASC-0015 | child-repo-dirty-triage | closed | Resolve the remaining memoryOS and hivemind dirty files left after ASC-0012 and ASC-0014. |
