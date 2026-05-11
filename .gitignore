@@ -2,6 +2,7 @@
 .local/
 .runs/
 .ai-runs/
+.aios/
 .hivemind/
 .memoryos/
 .agent/

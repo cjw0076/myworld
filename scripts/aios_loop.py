@@ -24,6 +24,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from aios_dispatch import extract_must_produce, extract_verification_commands
+
 
 REPOS = ("myworld", "hivemind", "memoryOS", "CapabilityOS")
 STATE_DIR = Path(".aios/state")
@@ -171,8 +173,13 @@ def dispatch_state(events: list[dict[str, Any]], dispatch_id: str) -> dict[str, 
 
 
 def build_packet(root: Path, contract: Contract, repo: str, agent: str = "codex") -> dict[str, Any]:
+    verification_commands = [
+        {"cwd": command["cwd"], "command": command["line"]}
+        for command in extract_verification_commands(contract, repo, root)
+    ]
     return {
         "schema_version": "aios.dispatch.v1",
+        "result_schema_version": "aios.dispatch.result.v1",
         "dispatch_id": contract.dispatch_id,
         "contract_id": contract.contract_id,
         "contract_path": contract.path.relative_to(root).as_posix(),
@@ -200,6 +207,19 @@ def build_packet(root: Path, contract: Contract, repo: str, agent: str = "codex"
             "docs/AIOS_BUILD_METHOD.md",
             contract.path.relative_to(root).as_posix(),
         ],
+        "must_produce": extract_must_produce(contract, repo),
+        "verification_commands": verification_commands,
+        "result_contract": {
+            "schema_version": "aios.dispatch.result.v1",
+            "required_fields": [
+                "target_repo",
+                "dispatch_id",
+                "contract_id",
+                "status",
+                "evidence",
+                "stop_conditions_triggered",
+            ],
+        },
         "return_to": f".aios/outbox/{repo}/{contract.dispatch_id}.{repo}.result.json",
         "stop_conditions": [
             "scope_violation",

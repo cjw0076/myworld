@@ -4,6 +4,8 @@ MyWorld is a local-first AI operating system for turning a user goal into
 planned work, retrieved context, selected capabilities, verified execution, and
 durable memory.
 
+See `AIOS_DEFINITION.md` for the strict definition and anti-cheat invariants.
+
 The target user experience is:
 
 ```text
@@ -56,4 +58,26 @@ Operator checkpoints when the contract is uncertain.
 ```
 
 This is not a monolithic app. It is a contract-bound ecosystem where each OS has
-its own ledger and agent loop, but shares one user goal.
+its own ledger and agent loop, but shares one user goal. `myworld/` acts as the
+control tower: it does not do every task itself, but coordinates the systems
+that do.
+
+## Readiness Bar
+
+AIOS is not ready merely because the docs describe it. The north star is ready
+only when one cross-OS task is repeatable without chat context:
+
+```text
+goal
+  -> contract
+  -> dispatch to owning repo
+  -> MemoryOS context/provenance
+  -> CapabilityOS route/observation
+  -> Hive Mind or repo-local execution
+  -> verification evidence
+  -> durable closeout in the AIOS ledger
+```
+
+Until that loop is repeatable, agents should report a concrete level:
+`described`, `contractable`, `dispatchable`, `executable`, `verifiable`,
+`learnable`, or `repeatable`.

@@ -69,6 +69,46 @@ python -c "print('watch-ok')"
 """
 
 
+ENRICHED_CONTRACT = """---
+contract_id: ASC-0997
+status: accepted
+goal: Test enriched packet.
+accepted: now
+closed:
+---
+
+# ASC-0997 Test
+
+repos:
+
+- `memoryOS`
+
+allowed_files:
+
+- `memoryOS/memoryos/cli.py`
+
+forbidden_files:
+
+- `.env`
+
+## Responsibilities
+
+### MemoryOS
+
+must_produce:
+
+- `context_pack.md` output
+- RetrievalTrace with provenance
+
+## Verification Gate
+
+```bash
+cd {root}/memoryOS
+python -m pytest tests/test_import_run.py -v
+```
+"""
+
+
 class AiosDispatchTest(unittest.TestCase):
     def run_cli(self, root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         result = subprocess.run(
@@ -124,6 +164,27 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertIn("memoryOS/memoryos/cli.py", packet["scope"]["allowed_files"])
             self.assertEqual(packet["control_plane"]["root"], "myworld")
             self.assertIn("docs/AIOS_BUILD_METHOD.md", packet["required_reading"])
+            self.assertEqual(packet["result_schema_version"], "aios.dispatch.result.v1")
+            self.assertIn("must_produce", packet)
+            self.assertIn("verification_commands", packet)
+
+    def test_send_enriches_packet_with_repo_slice(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0997-test.md"
+            contract.write_text(ENRICHED_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "memoryOS", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "memoryOS" / "asc-0997.memoryOS.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["schema_version"], "aios.dispatch.v1")
+            self.assertEqual(packet["result_schema_version"], "aios.dispatch.result.v1")
+            self.assertIn("context_pack.md", " ".join(packet["must_produce"]))
+            self.assertEqual(packet["verification_commands"][0]["command"], "python -m pytest tests/test_import_run.py -v")
+            self.assertTrue(packet["verification_commands"][0]["cwd"].endswith("/memoryOS"))
+            self.assertEqual(packet["result_contract"]["schema_version"], "aios.dispatch.result.v1")
 
     def test_release_transition_is_first_class_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -165,7 +226,17 @@ class AiosDispatchTest(unittest.TestCase):
             result_dir = root / ".aios" / "outbox" / "myworld"
             result_dir.mkdir(parents=True)
             (result_dir / "asc-0998.myworld.result.json").write_text(
-                json.dumps({"dispatch_id": "asc-0998", "status": "passed"}),
+                json.dumps(
+                    {
+                        "schema_version": "aios.dispatch.result.v1",
+                        "target_repo": "myworld",
+                        "dispatch_id": "asc-0998",
+                        "contract_id": "ASC-0998",
+                        "status": "passed",
+                        "evidence": [],
+                        "stop_conditions_triggered": [],
+                    }
+                ),
                 encoding="utf-8",
             )
 
@@ -174,6 +245,21 @@ class AiosDispatchTest(unittest.TestCase):
 
             self.assertEqual(len(json.loads(first.stdout)["collected"]), 1)
             self.assertEqual(json.loads(second.stdout)["collected"], [])
+
+    def test_collect_rejects_malformed_v1_result_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result_dir = root / ".aios" / "outbox" / "myworld"
+            result_dir.mkdir(parents=True)
+            (result_dir / "bad.myworld.result.json").write_text(
+                json.dumps({"schema_version": "aios.dispatch.result.v1", "dispatch_id": "bad"}),
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(root, "collect", "--repo", "myworld", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("malformed result packet", result.stderr)
 
 
 if __name__ == "__main__":

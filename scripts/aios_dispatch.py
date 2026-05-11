@@ -180,6 +180,80 @@ def default_dispatch_id(contract: Contract) -> str:
     return safe or contract.path.stem
 
 
+def repo_aliases(repo: str) -> set[str]:
+    aliases = {
+        "hivemind": {"hivemind", "hive mind", "hive_mind", "hive"},
+        "memoryOS": {"memoryos", "memory os", "memory_os"},
+        "CapabilityOS": {"capabilityos", "capability os", "capability_os"},
+        "myworld": {"myworld", "my world", "control plane"},
+    }
+    return aliases.get(repo, {repo.lower()})
+
+
+def normalize_label(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
+def repo_matches_label(repo: str, label: str) -> bool:
+    normalized = normalize_label(label)
+    return normalized in repo_aliases(repo)
+
+
+def bullet_lines(text: str) -> list[str]:
+    values: list[str] = []
+    current: str | None = None
+    for raw in text.splitlines():
+        line = raw.rstrip()
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("- "):
+            if current:
+                values.append(current)
+            current = stripped[2:].strip().strip("`")
+        elif current and raw.startswith((" ", "\t")):
+            current = f"{current} {stripped}".strip()
+        elif current:
+            values.append(current)
+            current = None
+    if current:
+        values.append(current)
+    return values
+
+
+def section_after_any_heading(body: str, headings: list[str]) -> str:
+    for heading in headings:
+        section = section_after_heading(body, heading)
+        if section:
+            return section
+    return ""
+
+
+def extract_must_produce(contract: Contract, repo: str) -> list[str]:
+    section = section_after_any_heading(contract.body, ["Per-OS Responsibility", "Responsibilities"])
+    if not section:
+        return []
+
+    # Legacy shape: "### Hive Mind" followed by "must_produce:" bullets.
+    for match in re.finditer(r"^###\s+(.+?)\s*$", section, flags=re.MULTILINE):
+        label = match.group(1).strip()
+        start = match.end()
+        next_match = re.search(r"^###\s+", section[start:], flags=re.MULTILINE)
+        block = section[start : start + next_match.start()] if next_match else section[start:]
+        if not repo_matches_label(repo, label):
+            continue
+        marker = re.search(r"^must_produce:\s*$", block, flags=re.MULTILINE)
+        return bullet_lines(block[marker.end() :] if marker else block)
+
+    # Compact shape: "- **capabilityos.must_produce**: item, item, ..."
+    for raw in section.splitlines():
+        stripped = raw.strip()
+        match = re.match(r"-\s+\*\*(.+?)\.must_produce\*\*:\s*(.+)", stripped, flags=re.IGNORECASE)
+        if match and repo_matches_label(repo, match.group(1)):
+            return [match.group(2).strip()]
+    return []
+
+
 def cmd_create(args: argparse.Namespace) -> int:
     root = repo_root()
     contract = read_contract(Path(args.contract))
@@ -207,8 +281,13 @@ def cmd_create(args: argparse.Namespace) -> int:
 
 
 def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str) -> dict[str, Any]:
+    verification_commands = [
+        {"cwd": command["cwd"], "command": command["line"]}
+        for command in extract_verification_commands(contract, repo, repo_root())
+    ]
     return {
         "schema_version": "aios.dispatch.v1",
+        "result_schema_version": "aios.dispatch.result.v1",
         "dispatch_id": dispatch_id,
         "contract_id": contract.contract_id,
         "contract_path": contract.path.as_posix(),
@@ -236,6 +315,19 @@ def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str) ->
             "docs/AIOS_BUILD_METHOD.md",
             contract.path.as_posix(),
         ],
+        "must_produce": extract_must_produce(contract, repo),
+        "verification_commands": verification_commands,
+        "result_contract": {
+            "schema_version": "aios.dispatch.result.v1",
+            "required_fields": [
+                "target_repo",
+                "dispatch_id",
+                "contract_id",
+                "status",
+                "evidence",
+                "stop_conditions_triggered",
+            ],
+        },
         "return_to": f".aios/outbox/{repo}/{dispatch_id}.{repo}.result.json",
         "stop_conditions": [
             "scope_violation",
@@ -373,7 +465,10 @@ def cmd_collect(args: argparse.Namespace) -> int:
             try:
                 payload = json.loads(path.read_text(encoding="utf-8"))
             except json.JSONDecodeError as exc:
-                payload = {"status": "invalid_json", "error": str(exc)}
+                raise SystemExit(f"invalid result JSON: {rel}: {exc}") from exc
+            errors = validate_result_packet(payload, repo)
+            if errors:
+                raise SystemExit(f"malformed result packet: {rel}: {', '.join(errors)}")
             dispatch_id = str(payload.get("dispatch_id") or path.stem.split(".", 1)[0])
             append_event(
                 root,
@@ -390,6 +485,20 @@ def cmd_collect(args: argparse.Namespace) -> int:
             collected.append({"repo": repo, "path": rel, "status": payload.get("status")})
     print(json.dumps({"ok": True, "collected": collected}, ensure_ascii=False, indent=2, sort_keys=True))
     return 0
+
+
+def validate_result_packet(payload: dict[str, Any], repo: str) -> list[str]:
+    if payload.get("schema_version") != "aios.dispatch.result.v1":
+        return []
+    required = ["target_repo", "dispatch_id", "contract_id", "status", "evidence", "stop_conditions_triggered"]
+    errors = [f"missing {field}" for field in required if field not in payload]
+    if payload.get("target_repo") != repo:
+        errors.append(f"target_repo {payload.get('target_repo')} != {repo}")
+    if not isinstance(payload.get("evidence"), list):
+        errors.append("evidence must be a list")
+    if not isinstance(payload.get("stop_conditions_triggered"), list):
+        errors.append("stop_conditions_triggered must be a list")
+    return errors
 
 
 def append_transition(root: Path, dispatch_id: str, state: str, reason: str) -> None:

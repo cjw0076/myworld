@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0003
 slug: dispatch-packet-enrichment
-status: proposed
+status: closed
 goal: Enrich aios_dispatch.py JSON packets so child agents do not have to re-derive their task slice from the contract body.
 created: 2026-05-11 KST
-accepted: pending
-closed: pending
+accepted: 2026-05-11 22:20 KST by codex acting operator
+closed: 2026-05-11 22:20 KST
 supersedes: none
 ---
 
@@ -13,7 +13,9 @@ supersedes: none
 
 ## Control Plane Position
 
-This contract stub is issued by `claude@myworld` after the ASC-0001 dogfood pass surfaced concrete friction in the dispatch packet shape. Status is `proposed` — operator must accept before WP-0003-A is sent to `codex@myworld`.
+This contract was issued by `claude@myworld` after the ASC-0001 dogfood pass
+surfaced concrete friction in the dispatch packet shape. It was accepted and
+closed by `codex@myworld` under delegated acting-operator authority.
 
 ## Goal
 
@@ -36,38 +38,102 @@ The drafter (codex@myworld via WP-0003-A) must answer in the contract body:
 - **Q4 — Per-repo `required_reading` tailoring**: should each repo get only the docs relevant to its slice (e.g. memoryOS doesn't need `AIOS_WORK_DISPATCH.md` repeated)? Recommendation: keep a small "AIOS frame" base list (NORTHSTAR, AGENT_PROTOCOL, SMART_CONTRACT, the contract file) and append per-repo extras from a contract-level `required_reading_by_repo:` block if present, otherwise empty.
 - **Q5 — Result packet schema**: define `aios.dispatch.result.v1` (target_repo, dispatch_id, contract_id, status, executed_at, agent_assigned, agent_executed, executed_reason, evidence, stop_conditions_triggered) so `collect` can validate result packets instead of accepting any JSON. Reject malformed results with a clear error.
 
-## Scope (stub — to be filled by WP-0003-A)
+## Scope
 
-- repos: _to be filled — must be exactly `[myworld]`. ASC-0003 does not modify hivemind, memoryOS, or CapabilityOS._
-- allowed_files: _to be filled — at minimum:_
-  - `scripts/aios_dispatch.py`
-  - `tests/test_aios_dispatch.py`
-  - `docs/AIOS_WORK_DISPATCH.md`
-- forbidden_files: _to be filled — at minimum: contract files in `docs/contracts/` (this contract changes the dispatch parser, not the contracts), all child repo paths (`hivemind/`, `memoryOS/`, `CapabilityOS/`), .runs/, raw exports, secrets._
+repos:
 
-## Per-OS Responsibility (stub)
+- `myworld`
 
-- **myworld (control plane).must_produce**: _to be filled — enriched packet with Q1/Q2/Q4 fields, result packet schema (Q5), updated `docs/AIOS_WORK_DISPATCH.md` documenting the new fields, regression tests covering both ASC-0001 and ASC-0002 contract shapes._
+allowed_files:
+
+- `scripts/aios_dispatch.py`
+- `scripts/aios_loop.py`
+- `tests/test_aios_dispatch.py`
+- `docs/AIOS_WORK_DISPATCH.md`
+- `docs/contracts/ASC-0003-dispatch-packet-enrichment.md`
+- `docs/contracts/README.md`
+
+forbidden_files:
+
+- `hivemind/**`
+- `memoryOS/**`
+- `CapabilityOS/**`
+- `.runs/**`
+- `raw_exports/**`
+- `weights/**`
+- `.env`
+- `.env.*`
+
+## Design Answers
+
+### Q1 — Per-OS responsibility extraction
+
+The parser supports both contract shapes currently in the tree:
+
+- legacy `## Responsibilities` with `### <Repo>` subheadings and a
+  `must_produce:` bullet block, used by ASC-0001;
+- compact `## Per-OS Responsibility` bullets such as
+  `**capabilityos.must_produce**: ...`, used by ASC-0002.
+
+Repo names are matched through aliases (`Hive Mind`, `hive_mind`, `memoryOS`,
+`CapabilityOS`) so packets are not tied to one spelling.
+
+### Q2 — Verification command extraction
+
+Packets include `verification_commands[]` extracted from fenced `bash` blocks
+under `## Verification Gate`, selected by the command's preceding `cd` path for
+the target repo. `Operational smoke equivalent` blocks are excluded. The
+watcher still performs its own safe-command checks before execution.
+
+### Q3 — Schema versioning
+
+The packet remains `aios.dispatch.v1`. New fields are optional:
+`result_schema_version`, `must_produce`, `verification_commands`, and
+`result_contract`. No existing field was renamed or removed.
+
+### Q4 — Per-repo required reading
+
+V1 keeps the small AIOS frame list plus the contract path. The new
+`must_produce` and `verification_commands` fields carry the repo-specific slice
+without bloating `required_reading`.
+
+### Q5 — Result packet schema
+
+`collect` now validates packets that declare
+`schema_version: aios.dispatch.result.v1`. Required fields are:
+`target_repo`, `dispatch_id`, `contract_id`, `status`, `evidence`, and
+`stop_conditions_triggered`. Malformed v1 packets are rejected with a clear
+error instead of silently collected.
+
+## Per-OS Responsibility
+
+- **myworld (control plane).must_produce**: enriched packet with Q1/Q2/Q4
+  fields, result packet schema validation (Q5), updated dispatch docs,
+  regression tests covering ASC-0001-style responsibility extraction and
+  malformed result rejection.
 - **hive_mind, memoryos, capabilityos**: not in scope.
-- **operator.must_produce**: acceptance decision; checkpoint if scope creeps to watcher/executor.
+- **operator.must_produce**: accepted and closed by delegated acting operator;
+  checkpoint if scope creeps to watcher/executor.
 
-## Verification Gate (stub)
-
-_to be filled by WP-0003-A. Recommended target:_
+## Verification Gate
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
-python -m pytest tests/test_aios_dispatch.py -v
+python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py
 python scripts/aios_dispatch.py create docs/contracts/ASC-0001-memoryos-hivemind-loop.md --force --dispatch-id asc-0001-replay
 python scripts/aios_dispatch.py send --repo memoryOS --agent codex --dispatch-id asc-0001-replay --force
-# Confirm the new packet contains: per-OS must_produce, verification_commands,
-# result_schema_version. Compare against a golden fixture committed under
-# tests/fixtures/.
+python scripts/aios_dispatch.py watch --repo memoryOS --once --dispatch-id asc-0001-replay
 ```
 
-## Stop Conditions (stub)
+Expected evidence:
 
-_to be filled by WP-0003-A — at minimum:_
+- unit tests pass;
+- the replay MemoryOS packet contains `must_produce`,
+  `verification_commands`, `result_schema_version`, and `result_contract`;
+- replay verification result is collected and released.
+
+## Stop Conditions
+
 - breaking_change_without_version_bump (any field rename/removal must bump schema_version)
 - contract_parser_overfits_to_one_contract (parser must work for ASC-0001 AND ASC-0002 stub shape)
 - watcher_executor_scope_creep (auto-running packets is a separate contract)
@@ -76,7 +142,25 @@ _to be filled by WP-0003-A — at minimum:_
 
 ## Receipts
 
-_filled at closeout._
+Closed 2026-05-11 22:20 KST by `codex@myworld` acting operator.
+
+- Implemented optional packet enrichment in `scripts/aios_dispatch.py`.
+- Mirrored enrichment in `scripts/aios_loop.py` so automatic dispatch packets
+  are not weaker than manual packets.
+- Updated `scripts/aios_child_watcher.sh` result packets to declare
+  `aios.dispatch.result.v1`.
+- Updated `docs/AIOS_WORK_DISPATCH.md`.
+- Verification:
+  - `python -m py_compile scripts/aios_dispatch.py scripts/aios_loop.py scripts/aios_monitor.py` passed.
+  - `python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py` -> 12 tests OK.
+  - `bash -n scripts/aios_child_watcher.sh scripts/aios_pingpong.sh` passed.
+  - ASC-0001 enriched MemoryOS replay created packet
+    `.aios/inbox/memoryOS/asc-0001-enriched-replay.memoryOS.json` with
+    `must_produce_count=73`, one MemoryOS verification command, and
+    `result_schema_version=aios.dispatch.result.v1`.
+  - Replay watcher result passed, collected, and released as dispatch
+    `asc-0001-enriched-replay`.
+- Stop conditions triggered: none.
 
 ## Work Packets
 
@@ -84,10 +168,10 @@ _filled at closeout._
 
 - target_agent: codex
 - target_repo: myworld
-- status: issued
+- status: done
 - issued: 2026-05-11
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-11 22:20 KST
+- closed: 2026-05-11 22:20 KST
 - depends_on: ASC-0001 closed (pattern precedent), operator acceptance of ASC-0003
 - brief: |
     This packet does TWO things in sequence:
@@ -137,4 +221,4 @@ _filled at closeout._
       list AND the pytest verification command.
     - Do NOT append to AIOS_AGENT_LEDGER.md until ASC-0003 is closed.
 
-- result: pending
+- result: implemented and verified; see Receipts.

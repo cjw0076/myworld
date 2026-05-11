@@ -137,14 +137,47 @@ python scripts/aios_dispatch.py escalate --reason scope_conflict
 python scripts/aios_dispatch.py stop --reason operator_checkpoint
 ```
 
+Child repo agent watcher entry point:
+
+```bash
+# Run one pending packet inside a child repo.
+scripts/aios_child_watcher.sh once --repo memoryOS
+scripts/aios_child_watcher.sh once --repo hivemind
+scripts/aios_child_watcher.sh once --repo CapabilityOS
+
+# Start background watchers for all child repos.
+scripts/aios_child_watcher.sh start --repo all
+
+# Inspect and stop.
+scripts/aios_child_watcher.sh status
+scripts/aios_child_watcher.sh stop --repo all
+```
+
+The child watcher reads `.aios/inbox/<repo>/*.json`, builds a bounded prompt,
+runs the packet's assigned agent from inside the target repo, and writes
+`.aios/outbox/<repo>/*.result.json`. It is the execution bridge from the
+control tower to repo-local agents.
+
+To start the myworld Codex/Claude pingpong loop and child watchers together:
+
+```bash
+AIOS_START_CHILD_WATCHERS=1 scripts/aios_pingpong.sh start
+```
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless
   `--allow-proposed` is used for local CLI testing.
 - packets include `allowed_files`, `forbidden_files`, required reading, and
   stop conditions from the contract surface.
+- packets also include `must_produce`, `verification_commands`,
+  `result_schema_version`, and `result_contract` when the contract has enough
+  structure to extract them. These are optional additions to
+  `aios.dispatch.v1`, so older packet consumers remain compatible.
 - `collect` reads outbox result packets and updates `.aios/state/dispatches.jsonl`;
   it does not write the ecosystem ledger.
+- `collect` validates `aios.dispatch.result.v1` packets when that schema is
+  declared. Malformed v1 results are rejected instead of silently collected.
 - `watch --once` is V1 on-demand automation. It reads one inbox packet,
   extracts `bash` commands from that contract's `## Verification Gate`, runs
   only safe Python/pytest commands for the target repo, writes a bounded result
@@ -153,6 +186,13 @@ Guardrails:
 - `.aios/logs/` is local runtime state and must stay uncommitted.
 - repo-local watchers or agents remain responsible for implementation work.
   The V1 watcher verifies existing gates; it does not edit child repo source.
+- `aios_child_watcher.sh` can run implementation agents. Use `once` for
+  dogfood tests before `start --repo all`.
+- `aios_child_watcher.sh` writes full agent stdout/stderr only to local
+  `.aios/logs/` and stores a bounded result packet in outbox.
+- The child watcher prompt includes `AIOS_DEFINITION.md`; if a packet cannot
+  advance a valid completion level, the child agent should return a checkpoint
+  instead of claiming done.
 
 ## Dispatch State Machine
 

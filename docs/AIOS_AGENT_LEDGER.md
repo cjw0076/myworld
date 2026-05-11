@@ -252,3 +252,94 @@ For repo-local implementation details, also update that repo's own worklog.
   has landed and includes a minimal command extractor (Q4 of ASC-0004
   body); ASC-0003 may want to refactor rather than re-implement.
 - status: done
+
+## 2026-05-11 22:11 KST — codex — ASC-0005 released through control-plane dispatch
+
+- repo: myworld + hivemind
+- role: acting operator + supervisor
+- goal: wake `codex@hivemind` through the AIOS dispatch loop and close the
+  Hive CapabilityOS bridge contract.
+- changed: `docs/contracts/ASC-0005-hive-capability-bridge.md`,
+  `docs/contracts/README.md`, `.aios/inbox/hivemind/asc-0005.hivemind.json`,
+  `.aios/outbox/hivemind/asc-0005.hivemind.result.json`, and Hive-owned files
+  reported in the result packet.
+- evidence: `python scripts/aios_loop.py once --apply --json` created and sent
+  dispatch `asc-0005`; worker result packet returned `status: passed`;
+  operator re-ran `cd hivemind && python -m pytest tests/test_capability_bridge.py -v`
+  -> 4 passed and `python -m pytest tests/test_quickstart.py -v` -> 4 passed.
+- decision: release `asc-0005` after correcting contract scope to allow the
+  repo-required `hivemind/.ai-runs/shared/comms_log.md` worklog while keeping
+  other `.ai-runs/**` paths forbidden. CapabilityOS remains recommendation-only
+  and read-only from Hive.
+- risk: Hive has pre-existing dirty `hivemind/hive.py` changes unrelated to
+  ASC-0005. CapabilityOS V1 source is still uncommitted in its own repo.
+- next: accept or revise ASC-0003 so dispatch packets carry the same
+  verification and task-slice data the watcher currently extracts from
+  contracts.
+- status: done
+
+## 2026-05-11 22:20 KST — codex — ASC-0003 packet enrichment closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: remove packet ambiguity so child agents do not have to re-derive their
+  task slice from full contract prose.
+- changed: `scripts/aios_dispatch.py`, `scripts/aios_loop.py`,
+  `scripts/aios_child_watcher.sh`, `tests/test_aios_dispatch.py`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0003-dispatch-packet-enrichment.md`,
+  `docs/contracts/README.md`.
+- evidence: `python -m py_compile scripts/aios_dispatch.py scripts/aios_loop.py scripts/aios_monitor.py`
+  passed; `python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py`
+  -> 12 tests OK; `bash -n scripts/aios_child_watcher.sh scripts/aios_pingpong.sh`
+  passed; ASC-0001 enriched MemoryOS replay produced a packet with
+  `must_produce`, `verification_commands`, `result_schema_version`, and
+  `result_contract`, then watcher verification passed and dispatch was
+  released.
+- decision: keep `aios.dispatch.v1` and add optional enrichment fields rather
+  than creating a breaking v2. Validate `aios.dispatch.result.v1` on collect.
+- risk: parser is intentionally simple Markdown parsing, not a full Markdown
+  AST. Future contract shapes should preserve current heading/bullet patterns
+  or extend parser tests first.
+- next: move from L4/L5 pieces toward L6 repeatability by adding a readiness
+  gate that proves one goal can traverse contract -> context -> capability ->
+  execution -> verification -> memory/capability observation -> closeout
+  without chat context.
+- status: done
+
+## 2026-05-11 KST — codex — AIOS strict definition and child watcher prompt guard
+
+- repo: myworld
+- role: implementation
+- goal: define AIOS tightly enough that agents cannot claim progress through
+  shallow shortcuts, and apply that definition to myworld/child watcher prompts.
+- changed: `docs/AIOS_DEFINITION.md`, `docs/AIOS_NORTHSTAR.md`,
+  `docs/README.md`, `AGENTS.md`, `scripts/aios_pingpong.sh`,
+  `scripts/aios_child_watcher.sh`, `docs/AIOS_AGENT_LEDGER.md`
+- evidence: docs and prompt contract update.
+- decision: AIOS progress must be reported through explicit levels from L0
+  described to L6 repeatable; missing ownership, memory, capability,
+  verification, or durable record means checkpoint/gap, not completion.
+- risk: none known.
+- next: finish verifying the child watcher wiring and document how to start it.
+- status: done
+
+## 2026-05-11 KST — codex — Child repo watcher bridge
+
+- repo: myworld
+- role: implementation
+- goal: attach lower-repo watchers so myworld can wake repo-local agents from
+  inbox packets instead of only producing dispatch files.
+- changed: `scripts/aios_child_watcher.sh`, `scripts/aios_pingpong.sh`,
+  `docs/AIOS_WORK_DISPATCH.md`, `docs/AIOS_AGENT_LEDGER.md`
+- evidence: `bash -n scripts/aios_child_watcher.sh`; `bash -n
+  scripts/aios_pingpong.sh`; `scripts/aios_child_watcher.sh status`;
+  `scripts/aios_pingpong.sh status`.
+- decision: child watchers are opt-in. Run `scripts/aios_child_watcher.sh once
+  --repo <repo>` for a bounded packet, or start all watchers with
+  `AIOS_START_CHILD_WATCHERS=1 scripts/aios_pingpong.sh start`.
+- risk: child watchers invoke real Codex/Claude CLI inside lower repos; do not
+  start broad automation unless the active contracts and repo states are
+  acceptable.
+- next: dogfood one bounded packet before long-running `start --repo all`.
+- status: done
