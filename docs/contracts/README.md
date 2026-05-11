@@ -86,4 +86,4 @@ decision rather than draft churn.
 
 | ID | Slug | Status | Goal |
 | --- | --- | --- | --- |
-| ASC-0001 | memoryos-hivemind-loop | accepted | Codify the existing MemoryOS <-> Hive Mind memory loop as a gated cross-OS contract. |
+| ASC-0001 | memoryos-hivemind-loop | closed | Codify the existing MemoryOS <-> Hive Mind memory loop as a gated cross-OS contract. |

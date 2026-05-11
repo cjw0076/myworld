@@ -1,12 +1,12 @@
 ---
 contract_id: ASC-0001
 slug: memoryos-hivemind-loop
-status: accepted
+status: closed
 goal: Codify the existing MemoryOS <-> Hive Mind memory loop as a reviewable,
   gated, stop-conditioned cross-OS contract.
 created: 2026-05-11 21:32 KST
 accepted: 2026-05-11 KST
-closed:
+closed: 2026-05-11 KST
 supersedes:
 ---
 
@@ -367,13 +367,15 @@ MemoryOS work packet:
 
 ## Receipts
 
-No receipts yet. This contract is `proposed`.
+Closed 2026-05-11 KST. End-to-end loop dogfooded through `scripts/aios_dispatch.py`.
 
-When accepted and executed, link evidence here instead of pasting raw logs:
+- Accepted contract commit: `a85221b` (Accept ASC-0001 memoryOS<->hivemind loop contract)
+- Dispatch created event: `.aios/state/dispatches.jsonl` (event=created, dispatch_id=asc-0001, contract_status=proposed at create time, re-read as accepted at send time)
+- Hive Mind work packet (dispatched): `.aios/inbox/hivemind/asc-0001.hivemind.json`
+- Hive Mind verification result: `.aios/outbox/hivemind/asc-0001.hivemind.result.json` — status=passed, `1 passed in 1.56s`
+- MemoryOS work packet (dispatched): `.aios/inbox/memoryOS/asc-0001.memoryOS.json`
+- MemoryOS verification result: `.aios/outbox/memoryOS/asc-0001.memoryOS.result.json` — status=passed, `2 passed in 0.29s`
+- Collect event in dispatch state log marks both repos collected, no stop conditions triggered.
+- Ledger closeout entry: `docs/AIOS_AGENT_LEDGER.md` 2026-05-11 ASC-0001 lifecycle entry.
 
-- Hive Mind work packet:
-- Hive Mind verification result:
-- MemoryOS work packet:
-- MemoryOS verification result:
-- Accepted contract commit:
-- Ledger closeout entry:
+Honesty annotation: both verification packets were *self-executed by `claude@myworld`* in this session because the codex agent was not active. The verification gate is read-only test execution, so this did not violate the control-plane "do not edit child repo source" rule. Future contracts where a child-repo agent is active should route execution through that agent instead.
