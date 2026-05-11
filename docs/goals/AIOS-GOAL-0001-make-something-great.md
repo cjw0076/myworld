@@ -51,8 +51,6 @@ user relay.
 
 ## Preferred Next Improvements
 
-- capability_routing_memory: make CapabilityOS observations influence later
-  routing decisions.
 - memory_feedback_tightening: make MemoryOS accepted context shape more next
   Hive runs without manual relay.
 
@@ -62,3 +60,5 @@ user relay.
   reconciliation hints.
 - watcher_execution_reliability: ASC-0025 added bounded child watcher
   provider-access fallback and structured attempt evidence.
+- capability_routing_memory: ASC-0026 made CapabilityOS recommendations consume
+  prior AIOS observation outcomes in-memory.

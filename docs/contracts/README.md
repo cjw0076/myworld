@@ -111,3 +111,4 @@ decision rather than draft churn.
 | ASC-0023 | hive-source-read-registry | closed | Add a Hive source-read registry so runs can record which agents read which source artifacts and surface divergent interpretations. |
 | ASC-0024 | goal-planner-source-hygiene | closed | Keep the goal evolution planner from selecting broad history/index documents as direct implementation candidates and advance completed preferred-next items. |
 | ASC-0025 | child-watcher-provider-fallback | closed | Make child watcher implementation runs recover once from provider access-denied by trying an allowed alternate agent and recording structured fallback evidence. |
+| ASC-0026 | capability-observation-aware-routing | closed | Make CapabilityOS recommendations consume prior observation outcomes so later routing decisions reflect real AIOS result history. |

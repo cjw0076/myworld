@@ -895,3 +895,33 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: rerun goal evolution. The expected next preferred item is
   `capability_routing_memory`.
 - status: done
+
+## 2026-05-12 02:34 KST — codex — ASC-0026 capability observation-aware routing closed
+
+- repo: myworld + CapabilityOS
+- role: acting operator + CapabilityOS implementation
+- goal: make CapabilityOS observations influence later recommendation/routing
+  decisions instead of staying only in `observe-results` output.
+- changed: `docs/contracts/ASC-0026-capability-observation-aware-routing.md`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, `docs/AIOS_AGENT_LEDGER.md`, and
+  CapabilityOS commit `6182b8f` (`AGENTS.md`, `README.md`,
+  `capabilityos/catalog.py`, `capabilityos/cli.py`,
+  `capabilityos/observation.py`, `tests/test_cli.py`,
+  `tests/test_observation.py`).
+- evidence: CapabilityOS tests passed 11/11; live
+  `recommend --observations-inbox ../.aios/outbox` returned
+  `observations_count=17`, `observed_capabilities=3`, and confidence/observed
+  reason codes; audit preserved `execution_enabled=[]` and
+  `recommendation_only=true`; dispatch `asc-0026` passed, collected, and
+  released; monitor returned `health=clear`.
+- decision: failed and timeout mapped result packets now count as observations
+  and lower confidence through the bounded Beta rule. Skipped/unmapped packets
+  remain review gaps and do not auto-create capabilities.
+- risk: observations are still read in-memory from `.aios/outbox`; a future
+  MemoryOS contract should decide which capability observations become durable
+  accepted memory.
+- next: rerun goal evolution. The expected next preferred item is
+  `memory_feedback_tightening`.
+- status: done

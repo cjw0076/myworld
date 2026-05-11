@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T02:29:44+09:00`
+- generated_at: `2026-05-12T02:35:08+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:capability_routing_memory`
+- path: `goal:memory_feedback_tightening`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: make CapabilityOS observations influence later routing decisions.
+- task: make MemoryOS accepted context shape more next Hive runs without manual relay.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
