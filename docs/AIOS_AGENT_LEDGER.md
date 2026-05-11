@@ -757,3 +757,32 @@ For repo-local implementation details, also update that repo's own worklog.
   (4) when ASC-0008 lands, re-run scout; expect new candidates as the
   feedback loop closes.
 - status: done
+
+## 2026-05-12 00:21 KST — codex — ASC-0021 Hive arrival pack closed
+
+- repo: myworld + hivemind
+- role: acting operator + supervisor
+- goal: add a Hive-owned incoming-agent brief so child agents can wake with
+  objective, blocked items, accepted/contested claims, scope hints, latest
+  artifacts, and suggested commands without relying on chat context.
+- changed: `docs/contracts/ASC-0021-hive-arrival-pack.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`; child repo commit
+  `63ae099` changed `hivemind/arrival_pack.py`, `hivemind/hive.py`,
+  `tests/test_arrival_pack.py`, `docs/TODO.md`, `docs/AGENT_WORKLOG.md`, and
+  `.ai-runs/shared/comms_log.md`.
+- evidence: `python -m pytest tests/test_arrival_pack.py -v` passed 5/5;
+  `python -m pytest tests/test_arrival_pack.py tests/test_inspect.py -v`
+  passed 16/16; operational CLI smoke returned `kind=hive_arrival_pack` with
+  paths hidden and no raw provider body fields; dispatch `asc-0021` collected
+  and released.
+- decision: ASC-0021 is closed. Future child-agent wake packets should prefer
+  `hive arrival-pack --run <run_id> --json` over chat-relayed context when a
+  Hive run exists.
+- risk: initial child watcher implementation agents remain unreliable because
+  the prior watcher provider call hit access denial; manual repo-local
+  execution under dispatch scope remains the fallback until watcher execution
+  is repaired.
+- next: use the new arrival-pack surface in the next Hive child-agent packet,
+  then decide whether ASC-0022 should target source-read registry or watcher
+  execution reliability.
+- status: done

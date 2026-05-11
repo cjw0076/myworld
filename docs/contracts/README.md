@@ -106,3 +106,4 @@ decision rather than draft churn.
 | ASC-0018 | loop-policy-source-hygiene | closed | Prevent loop policy from accepting already-closed contract documents as new executable work. |
 | ASC-0019 | monitor-assessment-brain | closed | Give the control-plane monitor an assessment layer that maps alerts to owner, severity, and next action. |
 | ASC-0020 | hive-worklog-gap-cleanup | closed | Turn Hive worklog and gap-radar signals into one current executable Hive packet without re-opening closed work. |
+| ASC-0021 | hive-arrival-pack | closed | Add a Hive arrival-pack surface that gives incoming agents a compact, privacy-safe run brief from live run state. |
