@@ -1003,3 +1003,33 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: open `capability_observation_memory_import` so CapabilityOS result
   observations can become MemoryOS review candidates with provenance.
 - status: done
+
+## 2026-05-12 03:27 KST — codex — ASC-0030 CapabilityOS web research route closed
+
+- repo: myworld + CapabilityOS
+- role: acting operator + CapabilityOS implementation
+- goal: give CapabilityOS broad internet/web reach as a recommendation-only
+  route surface with source, privacy, and execution guardrails.
+- changed: `docs/contracts/ASC-0030-capabilityos-web-research-route.md`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and CapabilityOS commit `20ccbbc`.
+- evidence: CapabilityOS `python -m pytest tests/test_cli.py -v` passed
+  11/11; full CapabilityOS `python -m pytest` passed 16/16; `web-route`
+  returned `capabilityos.web_research_route.v1` with
+  `recommendation_only=true` and `capabilityos_executes_network=false`;
+  `recommend` ranked `cap_web_research_route` first for current internet/API
+  doc research; `audit` reported `execution_enabled=[]` and
+  `network_required=["cap_web_research_route"]`; ASC-0030 dispatch result was
+  collected and released; final monitor assessment returned `health=clear`.
+- decision: CapabilityOS now plans broad web research but still does not open
+  network connections. Actual web execution must happen in Hive/myworld tool
+  runner under contract and return cited evidence.
+- risk: web-derived facts are not yet imported into MemoryOS review lifecycle;
+  they remain execution evidence until a MemoryOS contract handles durable
+  memory import.
+- next: open `capability_observation_memory_import` or
+  `web_evidence_execution_loop`, depending on whether the next priority is
+  storing capability observations or dogfooding the new web route.
+- status: done

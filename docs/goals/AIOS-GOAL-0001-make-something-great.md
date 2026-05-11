@@ -53,6 +53,8 @@ user relay.
 
 - capability_observation_memory_import: decide which CapabilityOS observations
   should enter MemoryOS as reviewable durable memory.
+- web_evidence_execution_loop: wire CapabilityOS `web-route` plans into an
+  executing Hive/myworld research packet that returns cited source evidence.
 - contract_autodraft_from_goal_plan: turn an unblocked goal evolution
   recommendation into a proposed smart contract draft without relying on chat
   memory.
@@ -72,3 +74,6 @@ user relay.
 - persistent_control_loop: ASC-0029 added a provider-independent round
   controller that runs monitor, goal evolution, dispatch apply, child watcher
   status, and durable round receipts outside the chat turn.
+- capabilityos_web_research_route: ASC-0030 added a broad internet/web
+  research route with source policy, privacy policy, route limits, and no
+  CapabilityOS-side network execution.
