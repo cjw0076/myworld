@@ -689,6 +689,30 @@ For repo-local implementation details, also update that repo's own worklog.
   new contract.
 - status: done
 
+## 2026-05-12 00:10 KST — codex — ASC-0020 hive worklog gap cleanup closed
+
+- repo: myworld
+- role: acting operator + dispatch closeout
+- goal: turn Hive worklog and gap-radar signals into one current executable
+  Hive packet without re-opening closed work.
+- changed: `docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`, child gitlink for
+  `hivemind`.
+- evidence: `hivemind` committed `540ae37` (`Add radar gap triage`) with
+  `docs/RADAR_GAP_TRIAGE.md` and `.ai-runs/shared/comms_log.md`.
+  `cd hivemind && python -m pytest tests/test_radar_review.py -v` passed 2/2.
+  Operator spot-check confirmed `Selected Next Packet`, `Do Not Reopen`, and
+  `ASC-0021` are present in `docs/RADAR_GAP_TRIAGE.md`. Dispatch result
+  `.aios/outbox/hivemind/asc-0020.hivemind.result.json` collected as
+  `passed`, then released with reason `asc_0020_hive_gap_triage_verified`.
+- decision: closed worklog signals remain evidence only. The next Hive
+  implementation packet should be `ASC-0021 — Hive Arrival Pack`.
+- risk: child watcher provider execution failed with access denied, so Codex
+  completed the repo-local packet manually under contract scope and recorded
+  the fallback in the result packet.
+- next: open ASC-0021 for the Hive arrival-pack implementation.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld
