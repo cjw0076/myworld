@@ -9,8 +9,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import signal
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -19,6 +22,11 @@ from typing import Any
 REPOS = ("hivemind", "memoryOS", "CapabilityOS")
 STATE_LOG = Path(".aios/state/dispatches.jsonl")
 MONITOR_LOG = Path(".aios/state/monitor.jsonl")
+MONITOR_LATEST = Path(".aios/state/monitor.latest.json")
+MONITOR_EVENTS = Path(".aios/state/monitor_events.jsonl")
+MONITOR_PID = Path(".aios/run/aios_monitor.pid")
+MONITOR_STOP = Path(".aios/run/aios_monitor.stop")
+RECONCILIATIONS_PATH = Path("docs/AIOS_MONITOR_RECONCILIATIONS.json")
 STATUS_ORDER = {
     "proposed": 0,
     "accepted": 1,
@@ -65,6 +73,48 @@ def load_events(root: Path) -> list[dict[str, Any]]:
         if line.strip():
             events.append(json.loads(line))
     return events
+
+
+def load_reconciliations(root: Path) -> list[dict[str, Any]]:
+    path = root / RECONCILIATIONS_PATH
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    entries = payload.get("reconciliations", [])
+    if not isinstance(entries, list):
+        return []
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
+def reconciliation_matches(alert: dict[str, Any], entry: dict[str, Any]) -> bool:
+    match = entry.get("match")
+    if not isinstance(match, dict) or not match:
+        return False
+    for key, expected in match.items():
+        if str(alert.get(key)) != str(expected):
+            return False
+    return True
+
+
+def reconcile_alerts(alerts: list[dict[str, Any]], reconciliations: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    remaining: list[dict[str, Any]] = []
+    applied: list[dict[str, Any]] = []
+    for alert in alerts:
+        matched = next((entry for entry in reconciliations if reconciliation_matches(alert, entry)), None)
+        if matched:
+            applied.append(
+                {
+                    "id": matched.get("id"),
+                    "reason": matched.get("reason"),
+                    "match": matched.get("match"),
+                    "accepted_by": matched.get("accepted_by"),
+                    "accepted_at": matched.get("accepted_at"),
+                    "authorized_by_contract": matched.get("authorized_by_contract"),
+                }
+            )
+        else:
+            remaining.append(alert)
+    return remaining, applied
 
 
 def normalize_dispatch_id(dispatch_id: Any, repo: Any = None) -> str:
@@ -205,12 +255,15 @@ def snapshot(root: Path) -> dict[str, Any]:
                     "entries": repo["generated_cache_entries"],
                 }
             )
+    reconciliations = load_reconciliations(root)
+    alerts, reconciliations_applied = reconcile_alerts(alerts, reconciliations)
     return {
         "schema_version": "aios.monitor.v1",
         "generated_at": now_iso(),
         "contracts": contract_rows(root),
         "dispatches": dispatches,
         "repos": repos,
+        "reconciliations_applied": reconciliations_applied,
         "alerts": alerts,
     }
 
@@ -220,6 +273,49 @@ def write_snapshot(root: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(data, ensure_ascii=False, sort_keys=True) + "\n")
+    latest = root / MONITOR_LATEST
+    latest.parent.mkdir(parents=True, exist_ok=True)
+    latest.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def append_monitor_event(root: Path, event: str, status: str, detail: str = "") -> None:
+    path = root / MONITOR_EVENTS
+    path.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "timestamp": now_iso(),
+        "event": event,
+        "status": status,
+        "detail": detail,
+    }
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def is_pid_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def read_pid(path: Path) -> int | None:
+    if not path.exists():
+        return None
+    try:
+        return int(path.read_text(encoding="utf-8").strip())
+    except ValueError:
+        return None
+
+
+def sidecar_paths(root: Path) -> tuple[Path, Path]:
+    pid_path = root / MONITOR_PID
+    stop_path = root / MONITOR_STOP
+    pid_path.parent.mkdir(parents=True, exist_ok=True)
+    stop_path.parent.mkdir(parents=True, exist_ok=True)
+    return pid_path, stop_path
 
 
 def cmd_snapshot(args: argparse.Namespace) -> int:
@@ -238,6 +334,113 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run(args: argparse.Namespace) -> int:
+    root = Path.cwd().resolve()
+    pid_path, stop_path = sidecar_paths(root)
+    interval = max(1, int(args.interval))
+    iterations = int(args.iterations)
+    if args.write_pid:
+        pid_path.write_text(f"{os.getpid()}\n", encoding="utf-8")
+    append_monitor_event(root, "sidecar_start", "running", f"interval={interval}")
+    completed = 0
+    try:
+        while True:
+            if stop_path.exists():
+                append_monitor_event(root, "sidecar_stop", "stopped", stop_path.as_posix())
+                return 0
+            data = snapshot(root)
+            write_snapshot(root, data)
+            completed += 1
+            if not args.quiet:
+                print(
+                    f"{data['generated_at']} contracts={len(data['contracts'])} "
+                    f"dispatches={len(data['dispatches'])} alerts={len(data['alerts'])}",
+                    flush=True,
+                )
+            if iterations > 0 and completed >= iterations:
+                append_monitor_event(root, "sidecar_done", "ok", f"iterations={completed}")
+                return 0
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        append_monitor_event(root, "sidecar_interrupt", "stopped", "keyboard_interrupt")
+        return 130
+    finally:
+        if args.write_pid and read_pid(pid_path) == os.getpid():
+            pid_path.unlink(missing_ok=True)
+
+
+def cmd_start(args: argparse.Namespace) -> int:
+    root = Path.cwd().resolve()
+    pid_path, stop_path = sidecar_paths(root)
+    pid = read_pid(pid_path)
+    if pid and is_pid_running(pid):
+        print(f"AIOS monitor sidecar already running: pid {pid}")
+        return 0
+    stop_path.unlink(missing_ok=True)
+    log_dir = root / ".aios/logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "aios_monitor.sidecar.log"
+    cmd = [
+        sys.executable,
+        Path(__file__).resolve().as_posix(),
+        "run",
+        "--interval",
+        str(args.interval),
+        "--write-pid",
+    ]
+    with log_path.open("ab") as log:
+        proc = subprocess.Popen(cmd, cwd=root, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+    pid_path.write_text(f"{proc.pid}\n", encoding="utf-8")
+    append_monitor_event(root, "sidecar_spawn", "running", f"pid={proc.pid}")
+    print(f"started AIOS monitor sidecar pid {proc.pid}")
+    print(f"log={log_path.relative_to(root).as_posix()}")
+    return 0
+
+
+def cmd_stop(args: argparse.Namespace) -> int:
+    root = Path.cwd().resolve()
+    pid_path, stop_path = sidecar_paths(root)
+    stop_path.write_text(f"{now_iso()}\n", encoding="utf-8")
+    pid = read_pid(pid_path)
+    if pid and is_pid_running(pid):
+        os.kill(pid, signal.SIGTERM)
+        append_monitor_event(root, "sidecar_stop_requested", "stopping", f"pid={pid}")
+        print(f"stop requested for AIOS monitor sidecar pid {pid}")
+    else:
+        append_monitor_event(root, "sidecar_stop_requested", "not_running", "")
+        print("stop requested; no running AIOS monitor sidecar")
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    root = Path.cwd().resolve()
+    pid_path, stop_path = sidecar_paths(root)
+    pid = read_pid(pid_path)
+    running = bool(pid and is_pid_running(pid))
+    latest_path = root / MONITOR_LATEST
+    latest: dict[str, Any] = {}
+    if latest_path.exists():
+        latest = json.loads(latest_path.read_text(encoding="utf-8"))
+    status = {
+        "root": root.as_posix(),
+        "pid_file": pid_path.relative_to(root).as_posix(),
+        "running": running,
+        "pid": pid if running else None,
+        "stop_file": stop_path.exists(),
+        "latest_snapshot": latest_path.relative_to(root).as_posix() if latest else None,
+        "latest_generated_at": latest.get("generated_at"),
+        "latest_alert_count": len(latest.get("alerts", [])) if latest else None,
+        "latest_reconciliations_applied": len(latest.get("reconciliations_applied", [])) if latest else None,
+        "log": ".aios/logs/aios_monitor.sidecar.log",
+    }
+    if args.json:
+        print(json.dumps(status, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        for key, value in status.items():
+            print(f"{key}={value}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="AIOS control-plane monitor")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -246,6 +449,20 @@ def build_parser() -> argparse.ArgumentParser:
     snap.add_argument("--write", action="store_true", help="append to .aios/state/monitor.jsonl")
     snap.add_argument("--fail-on-alert", action="store_true")
     snap.set_defaults(func=cmd_snapshot)
+    run = sub.add_parser("run", help="run the sidecar monitor loop in the foreground")
+    run.add_argument("--interval", type=int, default=int(os.environ.get("AIOS_MONITOR_INTERVAL", "30")))
+    run.add_argument("--iterations", type=int, default=0, help="0 means run until stopped")
+    run.add_argument("--quiet", action="store_true")
+    run.add_argument("--write-pid", action="store_true")
+    run.set_defaults(func=cmd_run)
+    start = sub.add_parser("start", help="start the background sidecar monitor")
+    start.add_argument("--interval", type=int, default=int(os.environ.get("AIOS_MONITOR_INTERVAL", "30")))
+    start.set_defaults(func=cmd_start)
+    stop = sub.add_parser("stop", help="request sidecar monitor stop")
+    stop.set_defaults(func=cmd_stop)
+    status = sub.add_parser("status", help="show sidecar monitor status")
+    status.add_argument("--json", action="store_true")
+    status.set_defaults(func=cmd_status)
     return parser
 
 

@@ -150,6 +150,20 @@ python scripts/aios_monitor.py snapshot --json
 python scripts/aios_monitor.py snapshot --write
 ```
 
+Keep the control-plane observer running as a sidecar:
+
+```bash
+python scripts/aios_monitor.py start --interval 30
+python scripts/aios_monitor.py status
+python scripts/aios_monitor.py stop
+```
+
+The sidecar only observes. It writes append-only snapshots to
+`.aios/state/monitor.jsonl`, the latest view to
+`.aios/state/monitor.latest.json`, and lifecycle events to
+`.aios/state/monitor_events.jsonl`. It does not dispatch work, execute child
+repo packets, mutate contracts, or stop at `.aios/NORTHSTAR_READY`.
+
 `.aios/state/monitor.jsonl` is local runtime state and should not be committed.
 
 ## Autonomous Loop

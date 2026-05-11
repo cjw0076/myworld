@@ -591,6 +591,56 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: rerun full myworld regression suite and commit ASC-0015 closeout.
 - status: done
 
+## 2026-05-11 23:52 KST — codex — ASC-0016 monitor reconciliation registry closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: clear the final known monitor alert without mutating append-only
+  dispatch runtime history.
+- changed: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/AIOS_MONITOR_RECONCILIATIONS.json`,
+  `docs/contracts/ASC-0016-monitor-reconciliation-registry.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_monitor.py` passed. Reconciliation
+  regression coverage passed in `python -m unittest tests/test_aios_monitor.py`.
+  `python -m json.tool docs/AIOS_MONITOR_RECONCILIATIONS.json >/dev/null` passed. `python
+  scripts/aios_monitor.py snapshot --json --fail-on-alert` exited zero with
+  `alerts=[]` and one `reconciliations_applied` entry for the exact ASC-0001
+  bootstrap status drift.
+- decision: preserve `.aios/state/dispatches.jsonl` as append-only evidence and
+  reconcile only exact committed alert fingerprints.
+- risk: future stale drift must not be added casually; every reconciliation
+  needs a contract, exact match, and reason.
+- next: rerun full myworld regression suite, readiness, and loop policy; issue
+  the next accepted work packet from radar if monitor remains clean.
+- status: done
+
+## 2026-05-11 23:57 KST — codex — ASC-0017 control-plane monitor sidecar closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: make the MyWorld observer available as a long-running, local-only
+  monitor sidecar.
+- changed: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/AIOS_BUILD_METHOD.md`,
+  `docs/contracts/ASC-0017-control-plane-monitor-sidecar.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_monitor.py` passed. `python -m
+  unittest tests/test_aios_monitor.py` passed 8/8. `python
+  scripts/aios_monitor.py run --iterations 1 --interval 1 --quiet` exited zero.
+  `python scripts/aios_monitor.py status --json` exited zero and reported no
+  running sidecar after the bounded run. `python scripts/aios_monitor.py
+  snapshot --json --fail-on-alert` exited zero.
+- decision: sidecar is observer-only. It writes `.aios/state/monitor.jsonl`,
+  `.aios/state/monitor.latest.json`, `.aios/state/monitor_events.jsonl`, and
+  PID/stop files under `.aios/run/`; those runtime artifacts remain
+  uncommitted.
+- risk: long-running monitor must not dispatch work or mutate contracts; it is
+  a signal source for the next contract, not an executor.
+- next: start the sidecar when an ongoing autonomous session needs persistent
+  observation, then let loop policy choose the next accepted contract.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld

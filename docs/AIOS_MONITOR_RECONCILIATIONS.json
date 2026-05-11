@@ -1,0 +1,19 @@
+{
+  "schema_version": "aios.monitor_reconciliations.v1",
+  "reconciliations": [
+    {
+      "id": "reconcile-asc-0001-bootstrap-status-drift",
+      "match": {
+        "code": "dispatch_contract_status_stale",
+        "contract_path": "docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+        "current": "closed",
+        "dispatch_id": "asc-0001",
+        "recorded": "proposed"
+      },
+      "reason": "ASC-0001 was created during bootstrap while proposed, then accepted and closed with later evidence; preserve runtime history and reconcile the exact known drift.",
+      "accepted_by": "codex acting operator",
+      "accepted_at": "2026-05-11 23:51 KST",
+      "authorized_by_contract": "ASC-0016"
+    }
+  ]
+}
