@@ -51,11 +51,14 @@ user relay.
 
 ## Preferred Next Improvements
 
-- source_read_registry: record which source artifacts each agent read and flag
-  shared-source divergent interpretations.
 - watcher_execution_reliability: remove provider access-denied fallbacks from
   child watcher implementation runs.
 - capability_routing_memory: make CapabilityOS observations influence later
   routing decisions.
 - memory_feedback_tightening: make MemoryOS accepted context shape more next
   Hive runs without manual relay.
+
+## Completed Improvements
+
+- source_read_registry: ASC-0023 added Hive source-read records and arrival-pack
+  reconciliation hints.

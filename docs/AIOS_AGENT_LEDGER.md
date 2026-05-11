@@ -841,3 +841,31 @@ For repo-local implementation details, also update that repo's own worklog.
   reliability or MemoryOS import of source-read provenance, depending on
   whether the goal prioritizes repeatability or context reuse.
 - status: done
+
+## 2026-05-12 02:23 KST — codex — ASC-0024 goal planner source hygiene closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: prevent the goal evolution planner from selecting broad worklogs,
+  ledgers, comms logs, contract indexes, or reference docs as direct
+  implementation candidates.
+- changed: `scripts/aios_goal_evolution.py`,
+  `tests/test_aios_goal_evolution.py`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `docs/contracts/ASC-0024-goal-planner-source-hygiene.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: goal evolution tests passed 4/4; planner now blocks
+  `AGENT_WORKLOG.md`, `AIOS_AGENT_LEDGER.md`, and `AIOS_WORK_DISPATCH.md` with
+  explicit history/index/reference reasons; after collect/release, monitor
+  returned `health=clear` and the active recommendation became
+  `goal:watcher_execution_reliability`.
+- decision: history/reference documents are evidence surfaces, not direct
+  implementation targets. Completed preferred item `source_read_registry` moved
+  to goal completed progress.
+- risk: `goal:*` recommendations still require a follow-up smart contract
+  before implementation; they are not executable packets by themselves.
+- next: open ASC-0025 for watcher execution reliability so implementation
+  packets no longer require manual fallback after provider access-denied
+  watcher failures.
+- status: done

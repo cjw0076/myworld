@@ -39,6 +39,9 @@ RADAR = """# AIOS Task Radar
 
 | Score | Domain | Path | Signals | Candidate Task |
 | ---: | --- | --- | --- | --- |
+| 98 | myworld | `myworld/docs/AIOS_WORK_DISPATCH.md` | `aios:12,next:8,verify:5` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 95 | hivemind | `myworld/hivemind/docs/AGENT_WORKLOG.md` | `hivemind:12,next:12,verify:9` | source-read registry that can flag divergent interpretations |
+| 92 | myworld | `myworld/docs/AIOS_AGENT_LEDGER.md` | `aios:12,contract:12,next:9` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 90 | myworld | `myworld/docs/contracts/ASC-0001-closed.md` | `aios:12,contract:12,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 85 | _from_desktop | `_from_desktop/Uri/docs/TODO.md` | `p0:2,next:1` | triage as external workspace context before importing into AIOS |
 | 80 | hivemind | `myworld/hivemind/docs/RADAR_GAP_TRIAGE.md` | `hivemind:12,next:12,verify:3` | source-read registry that can flag divergent interpretations |
@@ -102,6 +105,9 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             by_path = {item["path"]: item for item in data["top_candidates"]}
             self.assertIn("closed_contract_source", by_path["myworld/docs/contracts/ASC-0001-closed.md"]["blocked_reasons"])
             self.assertIn("private_or_operator_gated_path", by_path["_from_desktop/Uri/docs/TODO.md"]["blocked_reasons"])
+            self.assertIn("history_source_requires_triage", by_path["myworld/hivemind/docs/AGENT_WORKLOG.md"]["blocked_reasons"])
+            self.assertIn("index_source_requires_triage", by_path["myworld/docs/AIOS_AGENT_LEDGER.md"]["blocked_reasons"])
+            self.assertIn("reference_source_requires_contract", by_path["myworld/docs/AIOS_WORK_DISPATCH.md"]["blocked_reasons"])
 
     def test_goal_plan_writes_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

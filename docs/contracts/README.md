@@ -109,3 +109,4 @@ decision rather than draft churn.
 | ASC-0021 | hive-arrival-pack | closed | Add a Hive arrival-pack surface that gives incoming agents a compact, privacy-safe run brief from live run state. |
 | ASC-0022 | aios-goal-evolution-loop | closed | Add a goal-level AIOS evolution loop that turns one active north-star goal into the next best contract candidate with evidence. |
 | ASC-0023 | hive-source-read-registry | closed | Add a Hive source-read registry so runs can record which agents read which source artifacts and surface divergent interpretations. |
+| ASC-0024 | goal-planner-source-hygiene | closed | Keep the goal evolution planner from selecting broad history/index documents as direct implementation candidates and advance completed preferred-next items. |

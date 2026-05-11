@@ -21,6 +21,16 @@ from typing import Any
 
 SCHEMA_VERSION = "aios.goal_evolution.v1"
 PRIVATE_PREFIXES = ("_from_desktop/", "dain/", "minyoung/")
+HISTORY_SOURCE_NAMES = {"AGENT_WORKLOG.md", "comms_log.md", "COMPACT_HANDOFF.md"}
+INDEX_SOURCE_PATHS = {"docs/AIOS_AGENT_LEDGER.md", "docs/contracts/README.md"}
+REFERENCE_SOURCE_PATHS = {
+    "docs/AIOS_BUILD_METHOD.md",
+    "docs/AIOS_DEFINITION.md",
+    "docs/AIOS_NORTHSTAR.md",
+    "docs/AIOS_SMART_CONTRACT.md",
+    "docs/AIOS_WORK_DISPATCH.md",
+    "docs/WORKSTREAMS.md",
+}
 GOAL_QUALITY_WEIGHTS = {
     "reduce_user_relay": 10,
     "increase_verified_execution": 8,
@@ -230,6 +240,21 @@ def is_closed_contract_source(root: Path, raw_path: str) -> bool:
     return "contracts" in path.parts and contract_status(path) in {"closed", "superseded"}
 
 
+def is_history_or_index_source(root: Path, raw_path: str) -> str | None:
+    path = resolve_path(root, raw_path)
+    if path.name in HISTORY_SOURCE_NAMES:
+        return "history_source_requires_triage"
+    try:
+        rel = path.relative_to(root).as_posix()
+    except ValueError:
+        rel = raw_path
+    if rel in INDEX_SOURCE_PATHS:
+        return "index_source_requires_triage"
+    if rel in REFERENCE_SOURCE_PATHS:
+        return "reference_source_requires_contract"
+    return None
+
+
 def normalize_phrase(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
@@ -240,7 +265,12 @@ def preferred_key(item: str) -> str:
 
 def doc_contains_preferred(root: Path, row: RadarRow, goal: Goal) -> bool:
     path = resolve_path(root, row.path)
-    if not path.exists() or is_closed_contract_source(root, row.path) or is_private_path(row.path):
+    if (
+        not path.exists()
+        or is_closed_contract_source(root, row.path)
+        or is_private_path(row.path)
+        or is_history_or_index_source(root, row.path)
+    ):
         return False
     try:
         text = normalize_phrase(path.read_text(encoding="utf-8", errors="replace"))
@@ -306,6 +336,9 @@ def build_candidates(root: Path, goal: Goal, radar_rows: list[RadarRow], policy:
             blocked_reasons.append("closed_contract_source")
         if is_private_path(row.path):
             blocked_reasons.append("private_or_operator_gated_path")
+        history_reason = is_history_or_index_source(root, row.path)
+        if history_reason:
+            blocked_reasons.append(history_reason)
         if policy_decision.startswith("hold_") or policy_decision.startswith("reject_"):
             blocked_reasons.append(policy_decision)
         aligned_score, reasons = goal_alignment(root, goal, row, policy_decision)
@@ -351,10 +384,30 @@ def fallback_preferred_candidate(goal: Goal) -> dict[str, Any] | None:
 
 
 def recommended_candidate(goal: Goal, candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+    preferred_reason_prefixes = (
+        "goal_preferred",
+        "reduce_",
+        "increase_",
+        "improve_",
+        "strengthen_",
+        "reduces_",
+        "increases_",
+        "improves_",
+        "strengthens_",
+    )
+    for candidate in candidates:
+        if not candidate["blocked"] and any(
+            str(reason).startswith(preferred_reason_prefixes)
+            for reason in candidate.get("alignment_reasons") or []
+        ):
+            return candidate
+    fallback = fallback_preferred_candidate(goal)
+    if fallback:
+        return fallback
     for candidate in candidates:
         if not candidate["blocked"]:
             return candidate
-    return fallback_preferred_candidate(goal)
+    return None
 
 
 def build_plan(root: Path, goal_path: Path, radar_path: Path) -> dict[str, Any]:
