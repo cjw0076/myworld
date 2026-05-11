@@ -19,6 +19,13 @@ from typing import Any
 REPOS = ("hivemind", "memoryOS", "CapabilityOS")
 STATE_LOG = Path(".aios/state/dispatches.jsonl")
 MONITOR_LOG = Path(".aios/state/monitor.jsonl")
+STATUS_ORDER = {
+    "proposed": 0,
+    "accepted": 1,
+    "active": 2,
+    "closed": 3,
+    "superseded": 3,
+}
 
 
 def now_iso() -> str:
@@ -60,12 +67,33 @@ def load_events(root: Path) -> list[dict[str, Any]]:
     return events
 
 
+def normalize_dispatch_id(dispatch_id: Any, repo: Any = None) -> str:
+    value = str(dispatch_id)
+    repo_value = str(repo or "")
+    suffixes = [f".{repo_value}"] if repo_value else []
+    suffixes.extend(f".{known_repo}" for known_repo in REPOS)
+    for suffix in suffixes:
+        if suffix != "." and value.endswith(suffix):
+            return value[: -len(suffix)]
+    return value
+
+
+def is_expected_status_progression(recorded: str | None, current: str | None) -> bool:
+    if not recorded or not current:
+        return False
+    if recorded == current:
+        return True
+    if recorded == "accepted" and current == "closed":
+        return True
+    return STATUS_ORDER.get(current, -1) <= STATUS_ORDER.get(recorded, -1)
+
+
 def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     events = load_events(root)
     rows: dict[str, dict[str, Any]] = {}
     alerts: list[dict[str, Any]] = []
     for event in events:
-        dispatch_id = event.get("dispatch_id")
+        dispatch_id = normalize_dispatch_id(event.get("dispatch_id"), event.get("repo"))
         if not dispatch_id:
             continue
         row = rows.setdefault(str(dispatch_id), {"dispatch_id": dispatch_id, "sent": [], "collected": []})
@@ -103,7 +131,11 @@ def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, A
             frontmatter = parse_frontmatter(contract_path)
         current_status = frontmatter.get("status")
         row["current_contract_status"] = current_status
-        if current_status and row.get("recorded_contract_status") and current_status != row.get("recorded_contract_status"):
+        if (
+            current_status
+            and row.get("recorded_contract_status")
+            and not is_expected_status_progression(str(row.get("recorded_contract_status")), current_status)
+        ):
             alerts.append(
                 {
                     "code": "dispatch_contract_status_stale",

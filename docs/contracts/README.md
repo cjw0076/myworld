@@ -99,3 +99,4 @@ decision rather than draft churn.
 | ASC-0011 | control-plane-loop-policy | closed | Decide which doc-radar candidates become accepted contracts and which remain held through a checkable policy. |
 | ASC-0012 | child-repo-durability-closeout | closed | Turn ASC-0008, ASC-0009, and ASC-0010 child-repo working-tree implementations into repo-local durable commits or explicit holds. |
 | ASC-0013 | workspace-instruction-index | closed | Index AGENTS, CLAUDE, CODEX, CURRENT, and repo ownership rules into a control-plane instruction map. |
+| ASC-0014 | control-plane-monitor-hygiene | closed | Remove monitor false positives for normal contract closeout and repo-suffixed legacy result dispatch ids. |

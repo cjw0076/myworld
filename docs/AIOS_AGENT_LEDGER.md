@@ -542,6 +542,28 @@ For repo-local implementation details, also update that repo's own worklog.
   cleanup or ASC-0015 capability-gap triage.
 - status: done
 
+## 2026-05-11 23:42 KST — codex — ASC-0014 monitor hygiene closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: remove monitor false positives from normal release/closeout state.
+- changed: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/contracts/ASC-0014-control-plane-monitor-hygiene.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_monitor.py` passed; `python -m
+  unittest tests/test_aios_monitor.py` passed 4/4; `python
+  scripts/aios_monitor.py snapshot --json` now reports 3 alerts instead of 12:
+  one legacy ASC-0001 proposed-to-closed drift plus the two real child repo
+  dirty alerts.
+- decision: monitor now treats `accepted -> closed` as expected progression and
+  normalizes repo-suffixed collected ids such as `asc-0012.CapabilityOS` to the
+  base dispatch id for summary/pending checks.
+- risk: proposed-to-closed drift remains visible by design; that is not hidden
+  as a normal release.
+- next: handle the remaining child repo dirty state through a separate hygiene
+  contract.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld

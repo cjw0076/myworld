@@ -52,6 +52,77 @@ class AiosMonitorTest(unittest.TestCase):
             codes = {alert["code"] for alert in payload["alerts"]}
             self.assertIn("dispatch_contract_status_stale", codes)
 
+    def test_snapshot_does_not_report_accepted_to_closed_as_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (contract_dir / "ASC-0002-test.md").write_text(
+                "---\ncontract_id: ASC-0002\nstatus: closed\naccepted: now\nclosed: now\n---\n",
+                encoding="utf-8",
+            )
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            (state / "dispatches.jsonl").write_text(
+                json.dumps(
+                    {
+                        "event": "created",
+                        "dispatch_id": "asc-0002",
+                        "contract_id": "ASC-0002",
+                        "contract_path": "docs/contracts/ASC-0002-test.md",
+                        "contract_status": "accepted",
+                        "status": "created",
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            codes = {alert["code"] for alert in payload["alerts"]}
+            self.assertNotIn("dispatch_contract_status_stale", codes)
+
+    def test_snapshot_normalizes_repo_suffixed_dispatch_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            events = [
+                {
+                    "event": "created",
+                    "dispatch_id": "asc-0012",
+                    "contract_id": "ASC-0012",
+                    "status": "created",
+                    "repos": ["CapabilityOS"],
+                },
+                {
+                    "event": "sent",
+                    "dispatch_id": "asc-0012",
+                    "repo": "CapabilityOS",
+                    "status": "sent",
+                },
+                {
+                    "event": "collected",
+                    "dispatch_id": "asc-0012.CapabilityOS",
+                    "repo": "CapabilityOS",
+                    "result": ".aios/outbox/CapabilityOS/asc-0012.CapabilityOS.result.json",
+                    "status": "collected",
+                },
+            ]
+            (state / "dispatches.jsonl").write_text(
+                "\n".join(json.dumps(event) for event in events) + "\n",
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            dispatches = {row["dispatch_id"]: row for row in payload["dispatches"]}
+            self.assertIn("asc-0012", dispatches)
+            self.assertNotIn("asc-0012.CapabilityOS", dispatches)
+            codes = {alert["code"] for alert in payload["alerts"]}
+            self.assertNotIn("dispatch_results_pending", codes)
+
     def test_snapshot_tolerates_created_event_without_contract_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
