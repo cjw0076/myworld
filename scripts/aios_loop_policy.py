@@ -137,6 +137,29 @@ def is_operator_only_path(path: str) -> bool:
     return path.startswith(OPERATOR_ONLY_PREFIXES) or any(f"/{part}/" in f"/{path}" for part in ("dain", "minyoung"))
 
 
+def resolve_candidate_path(root: Path, candidate_path: str) -> Path:
+    path = Path(candidate_path)
+    if path.is_absolute():
+        return path
+    parts = path.parts
+    if parts and parts[0] == root.name:
+        return root.parent / path
+    if parts and parts[0] == "myworld":
+        return root.joinpath(*parts[1:])
+    return root / path
+
+
+def closed_contract_source(root: Path, candidate: RadarCandidate) -> bool:
+    path = resolve_candidate_path(root, candidate.path)
+    if not path.name.startswith("ASC-") or path.suffix != ".md":
+        return False
+    if "contracts" not in path.parts:
+        return False
+    if not path.exists():
+        return False
+    return parse_frontmatter(path).get("status") in {"closed", "superseded"}
+
+
 def semantic_verdict(candidate: RadarCandidate) -> str:
     if is_operator_only_path(candidate.path):
         return "ambiguous"
@@ -149,7 +172,9 @@ def semantic_verdict(candidate: RadarCandidate) -> str:
     return "executable"
 
 
-def decide(candidate: RadarCandidate, open_count: int, capacity: int) -> tuple[str, str, str]:
+def decide(root: Path, candidate: RadarCandidate, open_count: int, capacity: int) -> tuple[str, str, str]:
+    if closed_contract_source(root, candidate):
+        return "reject_closed_contract_reference", "closed_contract_reference", "source is already a closed contract evidence document"
     verdict = semantic_verdict(candidate)
     if is_operator_only_path(candidate.path):
         return "hold_for_operator", verdict, "operator-gated privacy or founder archive path"
@@ -169,7 +194,7 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
     open_count = open_contract_count(root)
     decisions = []
     for candidate in candidates:
-        decision, verdict, reason = decide(candidate, open_count, capacity)
+        decision, verdict, reason = decide(root, candidate, open_count, capacity)
         decisions.append(
             {
                 "contract_candidate_id": candidate.candidate_id,

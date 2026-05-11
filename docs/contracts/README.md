@@ -103,3 +103,4 @@ decision rather than draft churn.
 | ASC-0015 | child-repo-dirty-triage | closed | Resolve the remaining memoryOS and hivemind dirty files left after ASC-0012 and ASC-0014. |
 | ASC-0016 | monitor-reconciliation-registry | closed | Add an audited monitor reconciliation registry for known legacy dispatch-history drift. |
 | ASC-0017 | control-plane-monitor-sidecar | closed | Keep the MyWorld control-plane observer available as a long-running sidecar. |
+| ASC-0018 | loop-policy-source-hygiene | closed | Prevent loop policy from accepting already-closed contract documents as new executable work. |

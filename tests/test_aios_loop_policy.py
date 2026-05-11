@@ -16,6 +16,7 @@ RADAR = """# AIOS Task Radar
 | Score | Domain | Path | Signals | Candidate Task |
 | ---: | --- | --- | --- | --- |
 | 90 | myworld | `myworld/docs/TODO.md` | `aios:2,verify:1` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 85 | myworld | `myworld/docs/contracts/ASC-0001-closed.md` | `aios:12,contract:12,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 80 | _from_desktop | `_from_desktop/Uri/docs/TODO.md` | `p0:2,next:1` | triage as external workspace context before importing into AIOS |
 | 70 | hivemind | `myworld/hivemind/docs/TODO.md` | `capabilityos:9,hivemind:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 """
@@ -36,7 +37,12 @@ class AiosLoopPolicyTest(unittest.TestCase):
     def test_policy_accepts_when_capacity_available_and_holds_private_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            (root / "docs" / "contracts").mkdir(parents=True)
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (contract_dir / "ASC-0001-closed.md").write_text(
+                "---\ncontract_id: ASC-0001\nstatus: closed\n---\n",
+                encoding="utf-8",
+            )
             (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
 
             data = self.run_policy(root, "--capacity", "4")
@@ -44,6 +50,10 @@ class AiosLoopPolicyTest(unittest.TestCase):
             self.assertEqual(data["schema_version"], "aios.loop_policy.v1")
             by_path = {row["sources"][0]["path"]: row for row in data["decisions"]}
             self.assertEqual(by_path["myworld/docs/TODO.md"]["decision"], "accept_now")
+            self.assertEqual(
+                by_path["myworld/docs/contracts/ASC-0001-closed.md"]["decision"],
+                "reject_closed_contract_reference",
+            )
             self.assertEqual(by_path["_from_desktop/Uri/docs/TODO.md"]["decision"], "hold_for_operator")
             self.assertEqual(by_path["myworld/hivemind/docs/TODO.md"]["decision"], "hold_for_capability")
 

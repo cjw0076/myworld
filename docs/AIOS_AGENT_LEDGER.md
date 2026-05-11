@@ -641,6 +641,30 @@ For repo-local implementation details, also update that repo's own worklog.
   observation, then let loop policy choose the next accepted contract.
 - status: done
 
+## 2026-05-11 23:58 KST — codex — ASC-0018 loop policy source hygiene closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: prevent the loop policy from accepting already-closed contract
+  documents as new executable work.
+- changed: `scripts/aios_loop_policy.py`, `tests/test_aios_loop_policy.py`,
+  `docs/AIOS_LOOP_POLICY.md`,
+  `docs/contracts/ASC-0018-loop-policy-source-hygiene.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m unittest tests/test_aios_loop_policy.py` passed 2/2.
+  `python scripts/aios_loop_policy.py --write docs/AIOS_LOOP_POLICY.md --json`
+  showed closed `docs/contracts/ASC-*.md` sources as
+  `reject_closed_contract_reference` while ordinary executable sources can
+  still be `accept_now`. `python scripts/aios_monitor.py snapshot --json
+  --fail-on-alert` exited zero.
+- decision: closed contracts remain searchable evidence, but not executable
+  work candidates.
+- risk: high-signal worklogs can still appear as executable; next policy
+  refinement should distinguish historical logs from explicit current TODOs.
+- next: issue the next child-repo work packet only from a non-closed-contract
+  source, starting with Hive worklog/gap cleanup if still top-ranked.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld
