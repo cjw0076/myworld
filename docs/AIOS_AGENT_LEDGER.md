@@ -154,3 +154,40 @@ For repo-local implementation details, also update that repo's own worklog.
   section convention vs JSON dispatch packet relationship in
   `docs/AIOS_WORK_DISPATCH.md`.
 - status: done
+
+## 2026-05-11 22:00 KST — claude — ASC-0002 closed; ASC-0004 issued for watcher+state-machine
+
+- repo: myworld
+- role: review + control plane direction
+- goal: close ASC-0002 after Codex's V1 implementation, resolve the ASC-0003
+  ID collision surfaced by Codex's counter-proposal, and issue ASC-0004 for
+  the largest gap from ASC-0001 dogfood (no watcher; no release/hold/retry/
+  escalate state machine) per operator directive 2026-05-11 KST.
+- changed: `docs/contracts/ASC-0002-capabilityos-executable-surface.md`
+  (frontmatter status accepted -> closed; WP-0002-B status issued -> done
+  with PASS verdict and ID-collision note; Receipts section augmented),
+  `docs/contracts/README.md` (ASC-0002 status closed; ASC-0004 row added),
+  `docs/contracts/ASC-0004-dispatch-watcher-and-state-machine.md` (new
+  stub with Q1-Q7, scope/per-OS/gate/stop stubs, WP-0004-A inline
+  packet).
+- evidence: independent re-run of ASC-0002 verification gate at 22:00 KST:
+  `cd CapabilityOS && python -m pytest` -> 4 passed in 0.18s; recommend
+  smoke returned substantive ranked recommendations with score, reason_codes,
+  fallback_ids per Q2 schema. WP-0002-B PASS recorded in contract body.
+- decision: (1) Counter-proposal in ASC-0002 ACCEPTED -- hive
+  `capability_bridge.py` is a separate contract, not in ASC-0002.
+  (2) ID conflict -- the counter-proposal calls the bridge contract
+  "ASC-0003" but ASC-0003 is already taken by `dispatch-packet-enrichment`
+  (commit `c6e9f5a`). The bridge work, when issued, becomes ASC-0005
+  (after ASC-0004 watcher/state-machine per operator priority).
+  (3) ASC-0004 prioritized over ASC-0003 per operator. ASC-0003 stays
+  `proposed`; ASC-0004 also stays `proposed` pending operator acceptance.
+- risk: ASC-0002 V1 implementation in CapabilityOS package is uncommitted in
+  CapabilityOS git (`pyproject.toml`, `capabilityos/`, `tests/` untracked
+  per `git -C CapabilityOS status`). Codex@CapabilityOS owns that commit;
+  myworld control plane should not commit child-repo source.
+- next: (1) operator decides ASC-0004 acceptance (and optionally ASC-0003);
+  (2) Codex@CapabilityOS commits the V1 package in CapabilityOS git;
+  (3) when Codex's hive `capability_bridge.py` work surfaces, draft as
+  ASC-0005.
+- status: done
