@@ -414,9 +414,37 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: the radar is heuristic and path/signal based. Each proposed follow-up
   contract must re-read its source docs under bounded scope before dispatching
   implementation work.
-- next: draft ASC-0008 `task-radar-to-contract-candidates`, then dispatch
-  ASC-0009/ASC-0010/ASC-0011 to CapabilityOS, MemoryOS, and Hive respectively
-  once their scopes are accepted.
+- next: dispatch ASC-0008 to MemoryOS, ASC-0009 to CapabilityOS, ASC-0010 to
+  Hive, and ASC-0011 to myworld once their scopes are accepted.
+- status: done
+
+## 2026-05-11 22:49 KST — codex — ASC-0011 loop policy closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: make the post-radar loop controllable by ranking candidate work as
+  accept, capacity hold, capability hold, operator hold, or out-of-scope reject.
+- changed: `scripts/aios_loop_policy.py`, `tests/test_aios_loop_policy.py`,
+  `docs/AIOS_LOOP_POLICY.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0011-control-plane-loop-policy.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_loop_policy.py
+  scripts/aios_doc_scout.py scripts/aios_dispatch.py` passed; `python -m
+  unittest tests/test_aios_loop_policy.py tests/test_aios_doc_scout.py
+  tests/test_aios_readiness.py tests/test_aios_dispatch.py tests/test_aios_loop.py
+  tests/test_aios_monitor.py` -> 18 tests OK; `python
+  scripts/aios_loop_policy.py --json --write docs/AIOS_LOOP_POLICY.md`
+  produced `schema_version=aios.loop_policy.v1`, `open_contract_count=3`,
+  `capacity=4`, and 40 decisions after ASC-0011 closeout; `aios_dispatch.py watch --repo myworld
+  --dispatch-id asc-0011 --once` passed, then collect/release succeeded.
+- decision: the loop may continue after L6, but it must not auto-accept work.
+  `_from_desktop/`, `dain/`, and `minyoung/` paths are always operator holds;
+  capacity defaults to 4 open contracts; policy output is advisory only.
+- risk: semantic verdicts are still heuristic until ASC-0010 Hive radar review
+  lands. ASC-0011 is a guardrail, not a full planner.
+- next: monitor ASC-0008 memoryOS, ASC-0009 CapabilityOS, and ASC-0010
+  hivemind worker results; when they return, collect and close or hold based on
+  evidence.
 - status: done
 
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued

@@ -185,6 +185,17 @@ The scout scans documentation surfaces, excludes runtime/dependency/raw-data
 paths, and writes `docs/AIOS_TASK_RADAR.md` so the next contracts can be chosen
 from durable evidence instead of chat memory.
 
+Loop selection policy:
+
+```bash
+python scripts/aios_loop_policy.py --json
+python scripts/aios_loop_policy.py --write docs/AIOS_LOOP_POLICY.md
+```
+
+The policy is advisory. It ranks radar candidates as `accept_now`,
+`hold_for_capacity`, `hold_for_capability`, `hold_for_operator`, or
+`reject_out_of_scope`; it never flips contract status or sends packets.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

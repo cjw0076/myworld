@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0011
 slug: control-plane-loop-policy
-status: accepted
+status: closed
 goal: Decide which doc-radar candidates become accepted contracts and which remain held; codify the operator selection policy in a checkable script.
 created: 2026-05-11 KST
 accepted: 2026-05-11 KST by claude acting operator
-closed: pending
+closed: 2026-05-11 22:49 KST
 supersedes: none
 acceptance_authority: claude@myworld (operator) per founder directive 2026-05-11 KST.
 origin: auto-proposed by `scripts/aios_doc_scout.py` as `ASC-0007-followup`; promoted to ASC-0011 ID for sequential numbering.
@@ -63,6 +63,7 @@ allowed_files:
 
 - `scripts/aios_loop_policy.py`
 - `tests/test_aios_loop_policy.py`
+- `docs/AIOS_LOOP_POLICY.md`
 - `docs/AIOS_WORK_DISPATCH.md`
 - `docs/contracts/ASC-0011-control-plane-loop-policy.md`
 - `docs/contracts/README.md`
@@ -99,12 +100,13 @@ forbidden_files:
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
-python -m pytest tests/test_aios_loop_policy.py -v
+python -m unittest tests/test_aios_loop_policy.py
 python scripts/aios_loop_policy.py --json
+python scripts/aios_loop_policy.py --write docs/AIOS_LOOP_POLICY.md
 ```
 
 Expected evidence:
-- pytest passes.
+- unittest passes.
 - output JSON has `schema_version: aios.loop_policy.v1`, `decisions[]` with each verdict and reason.
 - no `_from_desktop/`/`dain/`/`minyoung/` candidate ever marked `accept_now`.
 
@@ -119,7 +121,18 @@ Expected evidence:
 
 ## Receipts
 
-_filled at closeout._
+Closed 2026-05-11 22:49 KST by `codex@myworld` acting operator.
+
+- Implemented `scripts/aios_loop_policy.py`.
+- Added `tests/test_aios_loop_policy.py`.
+- Generated `docs/AIOS_LOOP_POLICY.md`.
+- Verification:
+  - `python -m py_compile scripts/aios_loop_policy.py scripts/aios_doc_scout.py scripts/aios_dispatch.py` passed.
+  - `python -m unittest tests/test_aios_loop_policy.py tests/test_aios_doc_scout.py tests/test_aios_readiness.py tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py` -> 18 tests OK.
+  - Final `python scripts/aios_loop_policy.py --json --write docs/AIOS_LOOP_POLICY.md` produced `schema_version=aios.loop_policy.v1`, `open_contract_count=3`, `capacity=4`, and 40 decisions after ASC-0011 closeout.
+  - `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id asc-0011 --once` passed and wrote `.aios/outbox/myworld/asc-0011.myworld.result.json`.
+  - `python scripts/aios_dispatch.py collect --repo myworld` collected the result, and `release --dispatch-id asc-0011 --reason asc_0011_loop_policy_verified` released the dispatch.
+- Stop conditions triggered: none.
 
 ## Work Packets
 
@@ -127,10 +140,10 @@ _filled at closeout._
 
 - target_agent: codex
 - target_repo: myworld
-- status: issued
+- status: done
 - issued: 2026-05-11
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-11 22:44 KST
+- closed: 2026-05-11 22:49 KST
 - depends_on: ASC-0007 closed (radar exists), ASC-0010 closed (verdicts exist) — soft dependencies; can implement skeleton now and refine when ASC-0010 lands.
 - brief: |
     Fill ASC-0011 stub sections and answer Q1–Q5. Implement
@@ -153,4 +166,4 @@ _filled at closeout._
     After drafting + implementing:
     - Update WP-0011-A status, fill `result` with commit SHA.
     - Issue WP-0011-B for claude review.
-- result: pending
+- result: implemented, verified, collected, and released; see Receipts.

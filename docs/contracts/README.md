@@ -96,4 +96,4 @@ decision rather than draft churn.
 | ASC-0008 | workspace-doc-ingest-memoryos | accepted | Turn ASC-0007 doc scout signals into reviewed MemoryOS context records with provenance, without raw export ingestion. |
 | ASC-0009 | capability-observation-feedback | accepted | Consume task-radar entries and dispatch result packets to record CapabilityOS observations and fallback plans. |
 | ASC-0010 | hive-semantic-quality-gate | accepted | Add a Hive verification packet that reviews top task-radar candidates for executable next steps before broad dispatch. |
-| ASC-0011 | control-plane-loop-policy | accepted | Decide which doc-radar candidates become accepted contracts and which remain held through a checkable policy. |
+| ASC-0011 | control-plane-loop-policy | closed | Decide which doc-radar candidates become accepted contracts and which remain held through a checkable policy. |
