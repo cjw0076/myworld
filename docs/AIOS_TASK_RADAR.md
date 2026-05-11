@@ -7,11 +7,11 @@ content, secrets, or full document bodies.
 
 ## Summary
 
-- generated_at: `2026-05-11T23:04:24+09:00`
+- generated_at: `2026-05-12T00:31:56+09:00`
 - root: `/home/user/workspaces/jaewon`
-- documents_scanned: `1686`
-- documents_with_signals: `1074`
-- by_domain: `{"CapabilityOS": 3, "_from_desktop": 786, "deepfake": 7, "fire": 10, "hivemind": 120, "memoryOS": 49, "myworld": 32, "universe": 67}`
+- documents_scanned: `1695`
+- documents_with_signals: `1083`
+- by_domain: `{"CapabilityOS": 3, "_from_desktop": 786, "deepfake": 7, "fire": 10, "hivemind": 121, "memoryOS": 49, "myworld": 40, "universe": 67}`
 
 ## Top Task Signals
 
@@ -26,12 +26,14 @@ content, secrets, or full document bodies.
 | 299 | myworld | `myworld/docs/contracts/ASC-0002-capabilityos-executable-surface.md` | `aios:10,blocker:4,capabilityos:12,contract:12,hivemind:12,memoryos:12,stop_condition:4,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 297 | myworld | `myworld/docs/AIOS_AGENT_LEDGER.md` | `aios:12,blocker:1,capabilityos:11,contract:12,gap:1,hivemind:12,memoryos:12,next:9,stop_condition:1,verify:9` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 275 | memoryOS | `myworld/memoryOS/docs/ALPHA_CHECKLIST.md` | `blocker:2,capabilityos:12,contract:12,gap:2,hivemind:12,memoryos:12,todo:12,verify:6` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
+| 271 | myworld | `myworld/docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md` | `aios:3,capabilityos:3,contract:12,gap:8,hivemind:12,memoryos:3,next:8,stop_condition:3,todo:5,verify:6` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 264 | myworld | `myworld/docs/contracts/ASC-0003-dispatch-packet-enrichment.md` | `aios:12,capabilityos:6,contract:12,gap:3,hivemind:6,memoryos:12,stop_condition:5,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 264 | myworld | `myworld/docs/contracts/ASC-0004-dispatch-watcher-and-state-machine.md` | `aios:12,capabilityos:4,contract:12,gap:3,hivemind:8,memoryos:10,stop_condition:6,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 257 | _from_desktop | `_from_desktop/Uri/docs/agents/collab_protocol/WORK_LOG.md` | `blocker:5,capabilityos:1,contract:2,gap:7,next:12,p0:8,verify:12` | triage as external workspace context before importing into AIOS |
 | 254 | myworld | `myworld/docs/contracts/ASC-0005-hive-capability-bridge.md` | `aios:3,blocker:2,capabilityos:12,contract:12,gap:2,hivemind:12,memoryos:6,next:1,stop_condition:4,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 253 | myworld | `myworld/docs/contracts/ASC-0001-memoryos-hivemind-loop.md` | `aios:6,capabilityos:12,contract:12,gap:1,hivemind:12,memoryos:12,next:1,stop_condition:3,verify:12` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 248 | myworld | `myworld/docs/AIOS_WORK_DISPATCH.md` | `aios:12,capabilityos:7,contract:12,gap:1,hivemind:10,memoryos:12,next:2,stop_condition:4,verify:5` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 244 | myworld | `myworld/docs/contracts/ASC-0021-hive-arrival-pack.md` | `aios:4,blocker:2,capabilityos:6,contract:12,gap:3,hivemind:12,memoryos:7,next:1,stop_condition:2,todo:3,verify:10` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 240 | memoryOS | `myworld/memoryOS/docs/CAPABILITYOS_DESIGN_SEEDS.md` | `aios:6,blocker:1,capabilityos:12,contract:12,gap:1,hivemind:12,memoryos:12,next:1,stop_condition:3,verify:5` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
 | 235 | memoryOS | `myworld/memoryOS/CHANGELOG.md` | `capabilityos:12,contract:12,gap:2,hivemind:8,memoryos:12,todo:12,verify:3` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
 | 233 | hivemind | `myworld/hivemind/docs/hive_mind.md` | `blocker:1,capabilityos:12,gap:3,hivemind:12,memoryos:12,next:12,todo:6,verify:1` | issue a Hive Mind packet for execution, harness, or verification follow-up |
@@ -42,8 +44,10 @@ content, secrets, or full document bodies.
 | 222 | hivemind | `myworld/hivemind/docs/mos_cli_design.md` | `capabilityos:10,gap:6,hivemind:12,memoryos:12,next:12,todo:2,verify:5` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 219 | _from_desktop | `_from_desktop/GoEN/ai_shared/AGENT_WORKLOG.md` | `blocker:2,contract:1,gap:2,hivemind:3,memoryos:5,next:12,todo:12,verify:11` | triage as external workspace context before importing into AIOS |
 | 219 | memoryOS | `myworld/memoryOS/docs/JSON_SCHEMAS.md` | `capabilityos:12,contract:12,gap:12,hivemind:12,memoryos:12` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
+| 214 | hivemind | `myworld/hivemind/docs/RADAR_GAP_TRIAGE.md` | `blocker:2,capabilityos:5,contract:2,gap:4,hivemind:12,memoryos:7,next:2,p0:1,stop_condition:1,todo:9,verify:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 212 | myworld | `myworld/docs/contracts/ASC-0009-capability-observation-feedback.md` | `aios:12,capabilityos:12,contract:12,gap:1,hivemind:3,memoryos:4,stop_condition:2,verify:11` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 211 | _from_desktop | `_from_desktop/Uri/docs/deploy_trace.md` | `contract:1,gap:12,memoryos:1,next:12,p0:1,todo:6,verify:12` | triage as external workspace context before importing into AIOS |
+| 207 | myworld | `myworld/docs/AIOS_BUILD_METHOD.md` | `aios:12,capabilityos:6,contract:11,hivemind:5,memoryos:6,next:4,stop_condition:3,todo:1,verify:3` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 204 | hivemind | `myworld/hivemind/docs/tui_shift.md` | `gap:12,hivemind:12,memoryos:12,next:12,verify:3` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 203 | hivemind | `myworld/hivemind/docs/final.md` | `capabilityos:12,contract:2,hivemind:12,memoryos:12,next:12,verify:8` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 203 | hivemind | `myworld/hivemind/docs/memoryOS.md` | `capabilityos:12,contract:3,gap:4,memoryos:12,next:12,verify:12` | issue a Hive Mind packet for execution, harness, or verification follow-up |
@@ -51,30 +55,39 @@ content, secrets, or full document bodies.
 | 200 | hivemind | `myworld/hivemind/docs/my_world.md` | `gap:4,memoryos:12,next:12,p0:5,verify:12` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 197 | universe | `universe/quantum/northstar/shift/my_world.md` | `gap:4,memoryos:12,next:12,p0:5,verify:12` | triage as external workspace context before importing into AIOS |
 | 196 | hivemind | `myworld/hivemind/docs/TUI_HARNESS.md` | `aios:1,blocker:4,capabilityos:2,contract:3,gap:3,hivemind:12,memoryos:12,next:8,verify:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
-| 194 | myworld | `myworld/docs/AIOS_BUILD_METHOD.md` | `aios:10,capabilityos:6,contract:11,hivemind:5,memoryos:6,next:3,stop_condition:3,todo:1,verify:3` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 194 | myworld | `myworld/docs/WORKSTREAMS.md` | `aios:6,capabilityos:9,contract:5,gap:1,hivemind:7,memoryos:10,next:4,stop_condition:3,verify:6` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 193 | myworld | `myworld/docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md` | `aios:2,capabilityos:7,contract:12,hivemind:6,memoryos:12,stop_condition:3,verify:11` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 190 | myworld | `myworld/docs/contracts/ASC-0015-child-repo-dirty-triage.md` | `aios:1,capabilityos:8,contract:12,hivemind:12,memoryos:12,stop_condition:2,verify:7` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 190 | memoryOS | `myworld/memoryOS/docs/STATUS.md` | `capabilityos:12,contract:8,gap:4,hivemind:12,memoryos:12,verify:9` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
+| 186 | myworld | `myworld/docs/contracts/README.md` | `aios:4,blocker:1,capabilityos:6,contract:12,gap:1,hivemind:9,memoryos:7,next:3,stop_condition:1,verify:5` | promote this control-plane signal into an AIOS contract or readiness gate |
 | 180 | hivemind | `myworld/hivemind/docs/hive_mind2.md` | `capabilityos:9,contract:1,gap:5,hivemind:12,memoryos:12,next:5,p0:1,verify:5` | issue a Hive Mind packet for execution, harness, or verification follow-up |
 | 179 | _from_desktop | `_from_desktop/Uri/docs/business/uri_사업/strategic_vision_2026_04_28_part4_collaboration_strategy.md` | `gap:1,memoryos:12,next:12,p0:7,verify:4` | triage as external workspace context before importing into AIOS |
+| 179 | hivemind | `myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md` | `blocker:6,contract:1,gap:1,hivemind:12,memoryos:5,next:9,p0:1,verify:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
+| 177 | myworld | `myworld/docs/contracts/ASC-0010-hive-semantic-quality-gate.md` | `aios:2,capabilityos:4,contract:12,hivemind:12,memoryos:4,next:2,stop_condition:2,verify:10` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 177 | hivemind | `myworld/hivemind/docs/CAPABILITYOS_FROM_HIVE_SPRINT.md` | `blocker:2,capabilityos:12,contract:1,gap:1,hivemind:12,memoryos:12,next:1,p0:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
+| 175 | memoryOS | `myworld/memoryOS/docs/memoryOS_0.md` | `capabilityos:5,hivemind:12,memoryos:12,next:5,p0:6,verify:2` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
+| 170 | myworld | `myworld/docs/discoveries/2026-05-11-jaewon-search.md` | `aios:7,capabilityos:6,contract:10,gap:2,hivemind:6,memoryos:9,next:3,todo:1,verify:1` | promote this control-plane signal into an AIOS contract or readiness gate |
+| 166 | _from_desktop | `_from_desktop/Uri/docs/reference/01_rls_and_audit_immutability.md` | `contract:1,gap:5,next:1,p0:11,verify:10` | triage as external workspace context before importing into AIOS |
+| 163 | memoryOS | `myworld/memoryOS/docs/NEURAL_MAP.md` | `aios:2,blocker:1,capabilityos:6,contract:11,gap:1,hivemind:12,memoryos:12,next:1` | issue a MemoryOS packet for context/provenance/review lifecycle follow-up |
+| 162 | _from_desktop | `_from_desktop/Uri/docs/business/uri_사업/strategic_vision_2026_04_28_part2_buildout.md` | `contract:2,gap:5,memoryos:7,next:12,p0:3,verify:6` | triage as external workspace context before importing into AIOS |
+| 162 | hivemind | `myworld/hivemind/docs/ADAPTIVE_ADVERSARIAL_CHAIR.md` | `blocker:1,capabilityos:2,contract:1,gap:1,hivemind:11,memoryos:8,next:8,p0:1,verify:10` | issue a Hive Mind packet for execution, harness, or verification follow-up |
+| 160 | _from_desktop | `_from_desktop/Uri/docs/roadmap/Uri_Roadmap_v1.md` | `contract:6,gap:1,next:4,p0:12` | triage as external workspace context before importing into AIOS |
+| 160 | hivemind | `myworld/hivemind/docs/capabilityOS.md` | `blocker:1,capabilityos:12,gap:10,memoryos:12,next:3,verify:4` | issue a Hive Mind packet for execution, harness, or verification follow-up |
+| 159 | _from_desktop | `_from_desktop/GoEN/TODO.md` | `gap:6,memoryos:10,next:3,todo:9,verify:10` | triage as external workspace context before importing into AIOS |
+| 159 | _from_desktop | `_from_desktop/conscious_runtime/souls/critic.md` | `contract:2,gap:11,next:12,verify:12` | triage as external workspace context before importing into AIOS |
+| 159 | hivemind | `myworld/hivemind/docs/LOCAL_MODEL_USAGE_GOEN.md` | `gap:9,hivemind:12,memoryos:1,todo:12` | issue a Hive Mind packet for execution, harness, or verification follow-up |
+| 157 | myworld | `myworld/docs/contracts/ASC-0007-workspace-doc-scout-task-radar.md` | `aios:5,capabilityos:3,contract:12,hivemind:2,memoryos:2,next:7,stop_condition:2,verify:4` | promote this control-plane signal into an AIOS contract or readiness gate |
 
 ## Proposed Next Contracts
 
-### ASC-0014 — hive-worklog-gap-cleanup
-
-- owner: `hivemind`
-- goal: turn Hive task-radar worklog and gap signals into a bounded cleanup packet with semantic review evidence
-- trigger: Hive worklog and gap docs remain top executable radar candidates
-- depends_on: `ASC-0007`
-
-### ASC-0015 — capability-gap-triage
+### ASC-0022 — capability-gap-triage
 
 - owner: `CapabilityOS`
 - goal: triage task-radar candidates marked hold_for_capability into explicit capability records or operator-review gaps
 - trigger: loop policy reports many high-score candidates blocked on capability evidence
 - depends_on: `ASC-0007`
 
-### ASC-0016 — memoryos-radar-review-queue
+### ASC-0023 — memoryos-radar-review-queue
 
 - owner: `memoryOS`
 - goal: convert MemoryOS radar holds into review-queue entries with provenance and no raw document bodies
