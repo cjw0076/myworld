@@ -261,6 +261,31 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("malformed result packet", result.stderr)
 
+    def test_collect_rejects_result_packet_with_wrong_dispatch_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result_dir = root / ".aios" / "outbox" / "CapabilityOS"
+            result_dir.mkdir(parents=True)
+            (result_dir / "asc-0012.CapabilityOS.result.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.dispatch.result.v1",
+                        "target_repo": "CapabilityOS",
+                        "dispatch_id": "asc-0012.CapabilityOS",
+                        "contract_id": "ASC-0012",
+                        "status": "passed",
+                        "evidence": [],
+                        "stop_conditions_triggered": [],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = self.run_cli(root, "collect", "--repo", "CapabilityOS", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("dispatch_id asc-0012.CapabilityOS != asc-0012", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

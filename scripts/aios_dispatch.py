@@ -466,7 +466,8 @@ def cmd_collect(args: argparse.Namespace) -> int:
                 payload = json.loads(path.read_text(encoding="utf-8"))
             except json.JSONDecodeError as exc:
                 raise SystemExit(f"invalid result JSON: {rel}: {exc}") from exc
-            errors = validate_result_packet(payload, repo)
+            expected_dispatch_id = path.name.removesuffix(f".{repo}.result.json")
+            errors = validate_result_packet(payload, repo, expected_dispatch_id)
             if errors:
                 raise SystemExit(f"malformed result packet: {rel}: {', '.join(errors)}")
             dispatch_id = str(payload.get("dispatch_id") or path.stem.split(".", 1)[0])
@@ -487,13 +488,15 @@ def cmd_collect(args: argparse.Namespace) -> int:
     return 0
 
 
-def validate_result_packet(payload: dict[str, Any], repo: str) -> list[str]:
+def validate_result_packet(payload: dict[str, Any], repo: str, expected_dispatch_id: str | None = None) -> list[str]:
     if payload.get("schema_version") != "aios.dispatch.result.v1":
         return []
     required = ["target_repo", "dispatch_id", "contract_id", "status", "evidence", "stop_conditions_triggered"]
     errors = [f"missing {field}" for field in required if field not in payload]
     if payload.get("target_repo") != repo:
         errors.append(f"target_repo {payload.get('target_repo')} != {repo}")
+    if expected_dispatch_id and payload.get("dispatch_id") != expected_dispatch_id:
+        errors.append(f"dispatch_id {payload.get('dispatch_id')} != {expected_dispatch_id}")
     if not isinstance(payload.get("evidence"), list):
         errors.append("evidence must be a list")
     if not isinstance(payload.get("stop_conditions_triggered"), list):
