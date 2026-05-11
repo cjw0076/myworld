@@ -87,3 +87,5 @@ decision rather than draft churn.
 | ID | Slug | Status | Goal |
 | --- | --- | --- | --- |
 | ASC-0001 | memoryos-hivemind-loop | closed | Codify the existing MemoryOS <-> Hive Mind memory loop as a gated cross-OS contract. |
+| ASC-0002 | capabilityos-executable-surface | accepted | Create the first recommendation-only CapabilityOS package and CLI surface. |
+| ASC-0003 | dispatch-packet-enrichment | proposed | Enrich aios_dispatch.py JSON packets so child agents do not have to re-derive their task slice from the contract body. |
