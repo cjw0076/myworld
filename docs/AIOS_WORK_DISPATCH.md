@@ -164,6 +164,27 @@ To start the myworld Codex/Claude pingpong loop and child watchers together:
 AIOS_START_CHILD_WATCHERS=1 scripts/aios_pingpong.sh start
 ```
 
+After the L6 readiness marker exists, the pingpong loop normally stops. To keep
+the control-plane loop producing follow-up contracts after readiness, opt in
+explicitly:
+
+```bash
+AIOS_CONTINUE_AFTER_READY=1 AIOS_START_CHILD_WATCHERS=1 scripts/aios_pingpong.sh start
+```
+
+The follow-up loop should generate contracts and dispatch packets. It should
+not treat `myworld` as a broad worker that edits child repo source directly.
+
+Workspace task radar:
+
+```bash
+python scripts/aios_doc_scout.py --root /home/user/workspaces/jaewon --write docs/AIOS_TASK_RADAR.md --json
+```
+
+The scout scans documentation surfaces, excludes runtime/dependency/raw-data
+paths, and writes `docs/AIOS_TASK_RADAR.md` so the next contracts can be chosen
+from durable evidence instead of chat memory.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

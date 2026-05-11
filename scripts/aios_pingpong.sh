@@ -9,8 +9,8 @@ set -euo pipefail
 #
 # Stop conditions:
 #   - .aios/STOP exists
-#   - .aios/NORTHSTAR_READY exists
-#   - docs/AIOS_NORTHSTAR_READY.md exists
+#   - .aios/NORTHSTAR_READY exists, unless AIOS_CONTINUE_AFTER_READY=1
+#   - docs/AIOS_NORTHSTAR_READY.md exists, unless AIOS_CONTINUE_AFTER_READY=1
 #   - AIOS_MAX_ROUNDS is set to a positive number and reached
 #
 # The agents should dispatch work to child repos instead of directly editing
@@ -33,6 +33,7 @@ CLAUDE_TIMEOUT="${CLAUDE_TIMEOUT:-1800}"
 CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 AIOS_MAX_ROUNDS="${AIOS_MAX_ROUNDS:-0}"
 AIOS_START_CHILD_WATCHERS="${AIOS_START_CHILD_WATCHERS:-0}"
+AIOS_CONTINUE_AFTER_READY="${AIOS_CONTINUE_AFTER_READY:-0}"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR" "$PROMPT_DIR" "$RUN_DIR"
 
@@ -52,6 +53,7 @@ Environment:
   CLAUDE_TIMEOUT=1800
   AIOS_MAX_ROUNDS=0       # 0 means no round cap
   AIOS_START_CHILD_WATCHERS=0
+  AIOS_CONTINUE_AFTER_READY=0
 
 Stop by creating:
   .aios/STOP
@@ -122,7 +124,13 @@ northstar_ready() {
 }
 
 should_stop() {
-  [[ -f "$STOP_FILE" ]] || northstar_ready
+  if [[ -f "$STOP_FILE" ]]; then
+    return 0
+  fi
+  if [[ "$AIOS_CONTINUE_AFTER_READY" != "1" ]] && northstar_ready; then
+    return 0
+  fi
+  return 1
 }
 
 other_agent() {
@@ -317,6 +325,7 @@ cmd_status() {
   fi
   [[ -f "$STOP_FILE" ]] && echo "stop_file=true" || echo "stop_file=false"
   northstar_ready && echo "northstar_ready=true" || echo "northstar_ready=false"
+  echo "continue_after_ready=$AIOS_CONTINUE_AFTER_READY"
   echo "logs=$LOG_DIR"
 }
 

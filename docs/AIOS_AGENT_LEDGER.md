@@ -386,3 +386,35 @@ For repo-local implementation details, also update that repo's own worklog.
   acceptable.
 - next: dogfood one bounded packet before long-running `start --repo all`.
 - status: done
+
+## 2026-05-11 22:34 KST — codex — ASC-0007 doc scout task radar closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: keep the post-L6 AIOS loop moving by searching workspace docs for
+  durable task signals and turning them into next contract candidates.
+- changed: `docs/contracts/ASC-0007-workspace-doc-scout-task-radar.md`,
+  `scripts/aios_doc_scout.py`, `tests/test_aios_doc_scout.py`,
+  `docs/AIOS_TASK_RADAR.md`, `scripts/aios_pingpong.sh`,
+  `docs/AIOS_WORK_DISPATCH.md`, `docs/contracts/README.md`,
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `bash -n scripts/aios_pingpong.sh`; `bash -n
+  scripts/aios_child_watcher.sh`; `python -m py_compile
+  scripts/aios_doc_scout.py scripts/aios_readiness.py scripts/aios_dispatch.py
+  scripts/aios_loop.py scripts/aios_monitor.py`; `python -m unittest
+  tests/test_aios_doc_scout.py tests/test_aios_readiness.py
+  tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py`
+  -> 16 tests OK; doc scout generated `docs/AIOS_TASK_RADAR.md` with
+  `schema_version=aios.doc_scout.v1`, 1679 docs scanned, 1067 docs with
+  signals, and ASC-0008..ASC-0012 follow-up candidates.
+- decision: L6 readiness no longer means the operator loop has to stop.
+  `AIOS_CONTINUE_AFTER_READY=1` makes continuation explicit; the doc scout is
+  the first post-ready task generator and excludes runtime, dependency,
+  raw-data, export, log, weight, secret, and credential paths.
+- risk: the radar is heuristic and path/signal based. Each proposed follow-up
+  contract must re-read its source docs under bounded scope before dispatching
+  implementation work.
+- next: draft ASC-0008 `task-radar-to-contract-candidates`, then dispatch
+  ASC-0009/ASC-0010/ASC-0011 to CapabilityOS, MemoryOS, and Hive respectively
+  once their scopes are accepted.
+- status: done
