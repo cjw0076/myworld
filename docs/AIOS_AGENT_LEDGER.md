@@ -813,3 +813,31 @@ For repo-local implementation details, also update that repo's own worklog.
   future arrival packs can say which agents read which source artifacts and
   where divergent interpretations need reconciliation.
 - status: done
+
+## 2026-05-12 02:11 KST — codex — ASC-0023 Hive source-read registry closed
+
+- repo: myworld + hivemind
+- role: acting operator + supervisor
+- goal: add a Hive source-read registry so runs can record which agents read
+  which source artifacts and expose divergent shared-source interpretations to
+  incoming agents.
+- changed: `docs/contracts/ASC-0023-hive-source-read-registry.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`; child repo commit
+  `f96fd57` changed `hivemind/source_reads.py`, `hivemind/hive.py`,
+  `hivemind/arrival_pack.py`, `tests/test_source_reads.py`, `docs/TODO.md`,
+  `docs/AGENT_WORKLOG.md`, and `.ai-runs/shared/comms_log.md`.
+- evidence: `python -m pytest tests/test_source_reads.py -v` passed 4/4;
+  `python -m pytest tests/test_source_reads.py tests/test_arrival_pack.py -v`
+  passed 9/9; operational CLI smoke wrote a source-read record and returned
+  `schema_version=hive.source_reads.v1`; dispatch `asc-0023` collected and
+  released; monitor assessment returned `health=clear`.
+- decision: source-read records are path/ref based and do not store raw source
+  bodies. Arrival packs now include source-read summary plus reconciliation
+  blockers when shared sources have divergent interpretations.
+- risk: MemoryOS does not yet import these records as durable `SourceArtifact`
+  nodes; that should be a later MemoryOS contract if the Hive artifact proves
+  useful across several runs.
+- next: rerun goal evolution. Likely next choices are watcher execution
+  reliability or MemoryOS import of source-read provenance, depending on
+  whether the goal prioritizes repeatability or context reuse.
+- status: done
