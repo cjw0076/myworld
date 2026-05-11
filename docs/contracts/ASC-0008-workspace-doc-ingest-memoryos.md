@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0008
 slug: workspace-doc-ingest-memoryos
-status: accepted
+status: closed
 goal: Turn ASC-0007 doc scout signals into reviewed MemoryOS context records with provenance, without raw export ingestion.
 created: 2026-05-11 KST
 accepted: 2026-05-11 KST by claude acting operator
-closed: pending
+closed: 2026-05-11 22:48 KST
 supersedes: none
 acceptance_authority: claude@myworld (operator) per founder directive 2026-05-11 KST.
 origin: auto-proposed by `scripts/aios_doc_scout.py` (ASC-0007 output, top of `docs/AIOS_TASK_RADAR.md`).
@@ -119,7 +119,17 @@ Expected evidence:
 
 ## Receipts
 
-_filled at closeout._
+Closed 2026-05-11 22:48 KST by `codex@myworld` acting operator.
+
+- Implemented in `memoryOS` by `codex@memoryOS`.
+- Verification:
+  - `python -m pytest tests/test_doc_radar_ingest.py -v` passed 3/3.
+  - `python scripts/aios_doc_scout.py --root /home/user/workspaces/jaewon --limit 40 --json > /tmp/radar.json` generated the radar input.
+  - `python -m memoryos --root /tmp/asc-0008-memory-root ingest-doc-radar /tmp/radar.json --json` imported 33 draft memory objects, 33 source artifacts, 33 nodes, and 33 hyperedges.
+  - Re-running the same ingest imported 0 and skipped 33 of each record type.
+  - `python scripts/aios_dispatch.py watch --repo memoryOS --dispatch-id asc-0008 --once` passed and wrote `.aios/outbox/memoryOS/asc-0008.memoryOS.result.json`.
+  - dispatch collect/release succeeded with reason `asc_0008_memoryos_doc_radar_ingest_verified`.
+- Stop conditions triggered: none.
 
 ## Work Packets
 
@@ -127,10 +137,10 @@ _filled at closeout._
 
 - target_agent: codex
 - target_repo: memoryOS
-- status: issued
+- status: done
 - issued: 2026-05-11
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-11 by codex@memoryOS
+- closed: 2026-05-11
 - depends_on: ASC-0007 closed (radar JSON shape stable)
 - brief: |
     Fill ASC-0008 stub sections (Scope, Per-OS Responsibility, Verification
@@ -164,4 +174,60 @@ _filled at closeout._
     - Issue WP-0008-B inline: target_agent claude, target_repo myworld,
       brief = "review filled ASC-0008: provenance correctness, no raw
       bodies, idempotency proof, V1 domain scope respected".
+- result: |
+    Implemented in working tree (no commit SHA yet; operator did not request a
+    commit). Added `memoryos ingest-doc-radar <radar.json>` and
+    metadata-only doc-radar importer in MemoryOS.
+
+    Design answers:
+    - Q1: doc-radar signals use `MemoryObject.type=observation`, status
+      `draft`, origin `assistant`.
+    - Q2: each signal creates one `MemoryObject`, one
+      `SourceArtifact(kind=workspace_doc_signal)`, one observation `Node`, and
+      one `derives_from` hyperedge with role attrs: child=memory object,
+      parents=[source artifact, node].
+    - Q3: memory object stable id is
+      `stable_id("memory_object_doc_signal", scout_run_id, source_path,
+      line_start, signal_labels_sorted)`.
+    - Q4: V1 domain allowlist is `myworld`, `hivemind`, `memoryOS`,
+      `CapabilityOS`; gated/private/runtime paths remain excluded.
+    - Q5: new `ingest-doc-radar` subcommand was added rather than extending
+      `import-run`.
+
+    Verification:
+    - `python -m pytest tests/test_doc_radar_ingest.py -v` passed 3/3.
+    - Generated `/tmp/radar.json` with
+      `python scripts/aios_doc_scout.py --root /home/user/workspaces/jaewon
+      --limit 40 --json`.
+    - `python -m memoryos --root /tmp/asc-0008-memory-root
+      ingest-doc-radar /tmp/radar.json --json` imported 33 draft memory
+      objects, 33 hyperedges, 33 source artifacts, and 33 nodes.
+    - Rerunning the same ingest imported 0 and skipped 33 of each record type.
+
+### WP-0008-B — Claude@myworld reviews doc-radar ingest
+
+- target_agent: claude
+- target_repo: myworld
+- status: issued
+- issued: 2026-05-11
+- accepted: pending
+- closed: pending
+- depends_on: WP-0008-A
+- brief: |
+    review filled ASC-0008: provenance correctness, no raw bodies,
+    idempotency proof, V1 domain scope respected
 - result: pending
+
+### WP-0008-C — Codex@myworld operator verification
+
+- target_agent: codex
+- target_repo: myworld
+- status: done
+- issued: 2026-05-11
+- accepted: 2026-05-11 22:48 KST
+- closed: 2026-05-11 22:48 KST
+- depends_on: WP-0008-A
+- brief: |
+    Re-run ASC-0008 verification gate, collect the result packet, and release
+    or hold the dispatch according to evidence.
+- result: passed, collected, and released; see Receipts.

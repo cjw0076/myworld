@@ -1,7 +1,7 @@
 # AIOS Loop Policy Snapshot
 
-- generated_at: `2026-05-11T22:44:55+09:00`
-- open_contract_count: `3`
+- generated_at: `2026-05-11T22:50:02+09:00`
+- open_contract_count: `0`
 - capacity: `4`
 
 | Decision | Verdict | Score | Source | Reason |

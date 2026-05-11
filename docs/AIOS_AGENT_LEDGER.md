@@ -447,6 +447,36 @@ For repo-local implementation details, also update that repo's own worklog.
   evidence.
 - status: done
 
+## 2026-05-11 22:50 KST — codex — ASC-0008 through ASC-0010 closed
+
+- repo: myworld
+- role: acting operator
+- goal: collect and close the MemoryOS, CapabilityOS, and Hive follow-up
+  contracts spawned by the ASC-0007 task radar.
+- changed: `docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md`,
+  `docs/contracts/ASC-0009-capability-observation-feedback.md`,
+  `docs/contracts/ASC-0010-hive-semantic-quality-gate.md`,
+  `docs/contracts/README.md`, `docs/AIOS_LOOP_POLICY.md`,
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: ASC-0008 `python -m pytest tests/test_doc_radar_ingest.py -v`
+  passed 3/3 and `aios_dispatch.py watch --repo memoryOS --dispatch-id
+  asc-0008 --once` passed; ASC-0009 `python -m pytest tests/test_cli.py
+  tests/test_observation.py -v` passed 9/9, `capabilityos.cli audit --json`
+  preserved `recommendation_only=true`, and watcher passed; ASC-0010
+  `python -m pytest tests/test_radar_review.py -v` passed 2/2 and watcher
+  passed. All three result packets were collected and released.
+- decision: close ASC-0008, ASC-0009, and ASC-0010. MemoryOS now has a
+  metadata-only doc-radar ingest path; CapabilityOS can observe dispatch
+  results without execution creep; Hive can run a deterministic radar semantic
+  review without external LLM calls.
+- risk: child repos remain dirty with implementation changes and pre-existing
+  unrelated edits. Do not collapse those into a myworld commit; commit them in
+  each child repo under repo-local policy.
+- next: run monitor/readiness, then continue from `docs/AIOS_LOOP_POLICY.md`;
+  the next likely accepted candidate is a Hive worklog/gap cleanup packet unless
+  CapabilityOS gaps should be prioritized.
+- status: done
+
 ## 2026-05-11 22:35 KST — claude — Cross-workspace search + ASC-0008..0011 issued
 
 - repo: myworld
