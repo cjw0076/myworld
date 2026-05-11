@@ -196,6 +196,30 @@ The policy is advisory. It ranks radar candidates as `accept_now`,
 `hold_for_capacity`, `hold_for_capability`, `hold_for_operator`, or
 `reject_out_of_scope`; it never flips contract status or sends packets.
 
+Persistent control-plane rounds:
+
+```bash
+python scripts/aios_round_controller.py once --json
+python scripts/aios_round_controller.py start --interval 30
+python scripts/aios_round_controller.py status
+python scripts/aios_round_controller.py stop
+```
+
+This is the provider-independent way to keep the control tower awake after a
+chat turn ends. Each round assesses monitor health, refreshes the active goal
+plan, applies the dispatch loop, checks child watcher status, and writes a
+receipt to `.aios/state/round_controller.jsonl`. It recommends the next action
+instead of silently accepting, closing, or drafting contracts.
+
+Child execution remains opt-in:
+
+```bash
+python scripts/aios_round_controller.py once --execute-children --json
+```
+
+Use that only when pending child packets are already scoped by an accepted
+contract.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

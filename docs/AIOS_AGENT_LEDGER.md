@@ -975,3 +975,31 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: open `persistent_control_loop` to make continuation explicit and
   durable instead of depending on conversational turn lifetime.
 - status: done
+
+## 2026-05-12 03:13 KST — codex — ASC-0029 persistent control loop closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: remove the chat-turn lifetime as the implicit control-plane loop by
+  adding a provider-independent round controller.
+- changed: `scripts/aios_round_controller.py`,
+  `tests/test_aios_round_controller.py`,
+  `docs/contracts/ASC-0029-persistent-control-loop.md`,
+  `docs/contracts/README.md`, `docs/AIOS_BUILD_METHOD.md`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, and
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `tests/test_aios_round_controller.py` passed 5/5; full myworld
+  suite passed 42/42; `python scripts/aios_round_controller.py once --json`
+  wrote a durable `aios.round_controller.v1` receipt; ASC-0029 dispatch result
+  packet passed, was collected, and was released; final monitor assessment
+  returned `health=clear`.
+- decision: the default persistent round is provider-independent and does not
+  run child agents. Child execution requires explicit `--execute-children`.
+- risk: the controller recommends the next contract but does not yet draft it
+  automatically. That should be a follow-up contract if the goal continues to
+  prioritize reduced relay.
+- next: open `capability_observation_memory_import` so CapabilityOS result
+  observations can become MemoryOS review candidates with provenance.
+- status: done

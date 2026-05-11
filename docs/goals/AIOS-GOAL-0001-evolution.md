@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T03:04:56+09:00`
+- generated_at: `2026-05-12T03:13:59+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:persistent_control_loop`
+- path: `goal:capability_observation_memory_import`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: keep AIOS progression running through an explicit daemon/round controller instead of relying on a chat turn staying open.
+- task: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 

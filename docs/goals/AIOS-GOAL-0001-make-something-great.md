@@ -51,10 +51,11 @@ user relay.
 
 ## Preferred Next Improvements
 
-- persistent_control_loop: keep AIOS progression running through an explicit
-  daemon/round controller instead of relying on a chat turn staying open.
 - capability_observation_memory_import: decide which CapabilityOS observations
   should enter MemoryOS as reviewable durable memory.
+- contract_autodraft_from_goal_plan: turn an unblocked goal evolution
+  recommendation into a proposed smart contract draft without relying on chat
+  memory.
 
 ## Completed Improvements
 
@@ -68,3 +69,6 @@ user relay.
   Hive context-pack rendering for next-run shaping.
 - capability_route_binding: ASC-0028 bound child watcher access-denied fallback
   selection to CapabilityOS provider-route recommendations.
+- persistent_control_loop: ASC-0029 added a provider-independent round
+  controller that runs monitor, goal evolution, dispatch apply, child watcher
+  status, and durable round receipts outside the chat turn.

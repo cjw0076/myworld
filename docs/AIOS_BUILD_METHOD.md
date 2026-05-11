@@ -231,3 +231,33 @@ Use this loop when the operator gives a broad objective such as "make
 something great." The output should name the next best contract candidate or a
 hold reason, with evidence that another agent can inspect without chat
 context.
+
+## Persistent Round Controller
+
+The chat turn is not the durable loop. Use the round controller when AIOS needs
+to keep sensing and advancing control-plane state after an agent response ends:
+
+```bash
+python scripts/aios_round_controller.py once --json
+python scripts/aios_round_controller.py status
+python scripts/aios_round_controller.py start --interval 30
+python scripts/aios_round_controller.py stop
+```
+
+The default round is provider-independent. It runs monitor assessment, goal
+evolution, `aios_loop.py once --apply --json`, and child watcher status, then
+writes `.aios/state/round_controller.jsonl` plus
+`.aios/state/round_controller.latest.json`.
+
+It does not execute child agents by default. To let it run one pending child
+watcher packet per repo, opt in explicitly:
+
+```bash
+python scripts/aios_round_controller.py once --execute-children --json
+python scripts/aios_round_controller.py start --execute-children --interval 30
+```
+
+The controller may recommend `open_next_contract`, `run_dispatch_watcher`,
+`run_child_watchers`, `hold_for_monitor`, or `continue_observing`. Contract
+drafting, acceptance, release, and child repo source edits remain governed by
+AIOS smart contracts and repo ownership.
