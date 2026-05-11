@@ -89,4 +89,5 @@ decision rather than draft churn.
 | ASC-0001 | memoryos-hivemind-loop | closed | Codify the existing MemoryOS <-> Hive Mind memory loop as a gated cross-OS contract. |
 | ASC-0002 | capabilityos-executable-surface | closed | Create the first recommendation-only CapabilityOS package and CLI surface. |
 | ASC-0003 | dispatch-packet-enrichment | proposed | Enrich aios_dispatch.py JSON packets so child agents do not have to re-derive their task slice from the contract body. |
-| ASC-0004 | dispatch-watcher-and-state-machine | proposed | Add release/hold/retry/escalate state machine to aios_dispatch and a V1 watcher that auto-runs verification gates from inbox packets. |
+| ASC-0004 | dispatch-watcher-and-state-machine | closed | Add release/hold/retry/escalate state machine to aios_dispatch and a V1 watcher that auto-runs verification gates from inbox packets. |
+| ASC-0005 | hive-capability-bridge | accepted | Add hivemind/hivemind/capability_bridge.py mirroring memory_bridge.py — calls CapabilityOS recommend during route phase, optional and non-blocking. |

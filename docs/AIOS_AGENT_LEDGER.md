@@ -56,6 +56,24 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: use this metaphor in future contracts and agent onboarding.
 - status: done
 
+## 2026-05-11 KST — codex — AIOS pingpong shell entrypoint
+
+- repo: myworld
+- role: implementation
+- goal: provide one shell entrypoint that can run Codex and Claude as
+  alternating myworld control-tower agents until the AIOS north star is marked
+  ready.
+- changed: `scripts/aios_pingpong.sh`, `docs/AIOS_AGENT_LEDGER.md`
+- evidence: `bash -n scripts/aios_pingpong.sh`; status command available via
+  `scripts/aios_pingpong.sh status`.
+- decision: loop stops only on `.aios/STOP`, `.aios/NORTHSTAR_READY`,
+  `docs/AIOS_NORTHSTAR_READY.md`, or optional `AIOS_MAX_ROUNDS`.
+- risk: this can run real Codex/Claude CLI commands; use `once` or
+  `AIOS_MAX_ROUNDS` for bounded trials before long-running automation.
+- next: run `scripts/aios_pingpong.sh once` for a single smoke turn, then
+  `scripts/aios_pingpong.sh start` only if the operator accepts the behavior.
+- status: done
+
 ## 2026-05-11 20:55 KST — codex — Shared docs usage adopted
 
 - repo: myworld
@@ -190,4 +208,47 @@ For repo-local implementation details, also update that repo's own worklog.
   (2) Codex@CapabilityOS commits the V1 package in CapabilityOS git;
   (3) when Codex's hive `capability_bridge.py` work surfaces, draft as
   ASC-0005.
+- status: done
+
+## 2026-05-11 22:30 KST — claude — Operator role consolidated; ASC-0004 closed; ASC-0005 issued
+
+- repo: myworld
+- role: operator (per founder directive 2026-05-11 KST delegating routine
+  acting-operator authority to the claude+codex pair)
+- goal: consolidate the operator-role redefinition into durable docs, close
+  ASC-0004 after Codex's parallel implementation, and pre-issue ASC-0005 for
+  the hive capability_bridge work that ASC-0002's counter-proposal called
+  out.
+- changed: `docs/WORKSTREAMS.md` (operator row split into operator pair +
+  founder; escalation rules added), `CLAUDE.md` (control plane workflow
+  updated to reflect operator-pair authority), `docs/contracts/ASC-0004-*.md`
+  (frontmatter accepted+closed; receipts populated; WP-0004-A status done),
+  `docs/contracts/ASC-0005-*.md` (new stub, accepted),
+  `docs/contracts/README.md` (ASC-0004 status closed; ASC-0005 row added).
+- evidence: `python -m unittest tests.test_aios_dispatch tests.test_aios_loop
+  tests.test_aios_monitor` -> 8 OK in 0.806s. Watcher dogfood replay of
+  ASC-0001 (dispatch_id `asc-0001-watcher-replay`) -> both repos collected
+  status `passed` with NO manual pytest invocation. First session in which
+  AIOS auto-closed a verification gate.
+- decision: (1) Operator role expanded -- claude+codex jointly hold routine
+  acceptance/release/hold/retry/escalate authority; founder reserves vision,
+  privacy, scope-policy, and override. Escalation rules listed in
+  WORKSTREAMS.md.
+  (2) ASC-0004 accepted and closed in the same session (acceptance
+  authority: claude@myworld; closure verification: independent watcher
+  replay).
+  (3) ASC-0005 (hive capability_bridge) created and accepted; resolves the
+  ID-collision note in ASC-0002's counter-proposal (which incorrectly named
+  the bridge work "ASC-0003"; ASC-0003 was already taken).
+- risk: Codex implementation in `scripts/aios_loop.py`, `scripts/
+  aios_monitor.py`, and `tests/test_aios_loop.py`, `tests/test_aios_monitor.py`
+  is in working tree; the closing operator commit by claude@myworld will
+  also stage these because they are myworld-scope (not child-repo source).
+  CapabilityOS V1 source remains uncommitted in CapabilityOS git --
+  codex@CapabilityOS still owns that commit.
+- next: (1) commit Codex's ASC-0004 implementation + this closure;
+  (2) wake codex@hivemind to pick up WP-0005-A (capability_bridge);
+  (3) decide ASC-0003 (packet enrichment) acceptance now that ASC-0004
+  has landed and includes a minimal command extractor (Q4 of ASC-0004
+  body); ASC-0003 may want to refactor rather than re-implement.
 - status: done

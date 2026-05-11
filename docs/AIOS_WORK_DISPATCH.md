@@ -1,0 +1,182 @@
+# AIOS Work Dispatch
+
+`myworld/` is the control tower and control plane. It should not become the
+fourth implementation repo. It assigns work to the repo that owns the behavior.
+
+In airport terms:
+
+```text
+myworld        = control tower
+hivemind       = aircraft operations / execution fleet
+memoryOS       = flight history, maps, black boxes, and reviewed knowledge
+CapabilityOS   = runway/tool availability, routing options, and fallback plans
+operator       = air traffic controller with release/hold authority
+```
+
+The tower does not fly every aircraft. It decides which runway is clear, which
+route is allowed, what information is needed, and when to hold.
+
+## Dispatch Model
+
+```text
+myworld/
+  -> defines goal, contract, scope, stop conditions, and handoff
+
+hivemind/
+  -> executes work, schedules agents, wraps provider CLIs, verifies outputs
+
+memoryOS/
+  -> retrieves context, records provenance, imports run artifacts, manages
+     memory drafts/review
+
+CapabilityOS/
+  -> recommends tools, MCPs, APIs, skills, provider routes, and fallbacks
+```
+
+## Correct Flow
+
+1. The operator writes or approves a goal in `myworld`.
+2. `myworld` creates an AIOS smart contract for the task.
+3. The contract names the owner repo for each responsibility.
+4. Agents are started inside the owning repo, not from `myworld` as a generic
+   worker.
+5. Each repo writes local implementation logs and returns a summary to
+   `myworld/docs/AIOS_AGENT_LEDGER.md`.
+6. Codex and Claude can act as delegated operators when the human operator
+   assigns them that role. They may release, hold, retry, escalate, or revise
+   work, but every decision must be visible in contract/status/result
+   artifacts.
+
+## What MyWorld Should Produce
+
+For each meaningful task, `myworld` should produce:
+
+- contract id
+- user goal
+- owning repo per work slice
+- allowed and forbidden paths
+- required outputs
+- test or verification gates
+- privacy constraints
+- stop conditions
+- next repo/agent handoff
+
+## What MyWorld Should Not Do
+
+- Do not directly edit implementation files across repos as the default mode.
+- Do not bypass repo-local `AGENTS.md`, tests, worklogs, or ownership rules.
+- Do not let one repo silently decide another repo's lifecycle policy.
+- Do not execute external tools directly; route execution through Hive Mind.
+- Do not store private raw data in shared control-plane docs.
+
+## Dispatch Packet Template
+
+```md
+# ASC-0000 <short goal>
+
+- goal:
+- owner repo:
+- primary agent:
+- supporting repos:
+- required MemoryOS context:
+- required CapabilityOS recommendation:
+- allowed files:
+- forbidden files:
+- required outputs:
+- verification gate:
+- stop conditions:
+- return summary to:
+```
+
+## Repo Ownership Defaults
+
+| Work Type | Owner Repo |
+| --- | --- |
+| Provider CLI wrapping, scheduler, verifier, receipts | `hivemind/` |
+| Memory import, context build, review lifecycle, provenance | `memoryOS/` |
+| Tool/MCP/API/skill discovery, scoring, binding plans | `CapabilityOS/` |
+| Cross-repo contract, north star, ecosystem ledger | `myworld/` |
+
+If ownership is unclear, stop and create an operator checkpoint.
+
+## Automation Skeleton
+
+The first automation layer is file-based. `myworld` writes packets and state;
+repo-local agents or watchers consume packets and execute inside their own
+repos.
+
+```text
+myworld/
+  .aios/inbox/myworld/*.json
+  .aios/inbox/hivemind/*.json
+  .aios/inbox/memoryOS/*.json
+  .aios/inbox/CapabilityOS/*.json
+  .aios/outbox/myworld/*.json
+  .aios/outbox/hivemind/*.json
+  .aios/outbox/memoryOS/*.json
+  .aios/outbox/CapabilityOS/*.json
+  .aios/state/dispatches.jsonl
+```
+
+The runtime `.aios/` directory is local state and should not be committed.
+
+CLI entry point:
+
+```bash
+python scripts/aios_dispatch.py create docs/contracts/ASC-0001-memoryos-hivemind-loop.md
+python scripts/aios_dispatch.py send --repo memoryOS --agent codex
+python scripts/aios_dispatch.py send --repo hivemind --agent codex
+python scripts/aios_dispatch.py watch --repo memoryOS --once
+python scripts/aios_dispatch.py watch --repo hivemind --once
+python scripts/aios_dispatch.py status
+python scripts/aios_dispatch.py collect
+python scripts/aios_dispatch.py release --reason verified
+python scripts/aios_dispatch.py hold --reason needs_review
+python scripts/aios_dispatch.py retry --reason transient_failure
+python scripts/aios_dispatch.py escalate --reason scope_conflict
+python scripts/aios_dispatch.py stop --reason operator_checkpoint
+```
+
+Guardrails:
+
+- `send` refuses contracts that are not `accepted` or `closed` unless
+  `--allow-proposed` is used for local CLI testing.
+- packets include `allowed_files`, `forbidden_files`, required reading, and
+  stop conditions from the contract surface.
+- `collect` reads outbox result packets and updates `.aios/state/dispatches.jsonl`;
+  it does not write the ecosystem ledger.
+- `watch --once` is V1 on-demand automation. It reads one inbox packet,
+  extracts `bash` commands from that contract's `## Verification Gate`, runs
+  only safe Python/pytest commands for the target repo, writes a bounded result
+  packet to `.aios/outbox/<repo>/`, and stores full stdout/stderr under
+  `.aios/logs/`.
+- `.aios/logs/` is local runtime state and must stay uncommitted.
+- repo-local watchers or agents remain responsible for implementation work.
+  The V1 watcher verifies existing gates; it does not edit child repo source.
+
+## Dispatch State Machine
+
+Dispatch events are append-only in `.aios/state/dispatches.jsonl`.
+
+```text
+created -> sent -> running -> watched -> collected -> released
+                                      \-> held
+                                      \-> retried
+                                      \-> escalated
+                                      \-> stopped
+```
+
+State authority:
+
+- `created`, `sent`, `running`, `watched`, and `collected` are automatic
+  control-plane states.
+- `released` is an acting-operator decision after verification evidence is
+  present.
+- `held` pauses the loop for missing evidence, ambiguous scope, privacy risk,
+  or review needs.
+- `retried` records a repeat attempt after transient or corrected failure.
+- `escalated` records a conflict that Codex/Claude cannot safely settle alone.
+- `stopped` is a terminal checkpoint or cancellation.
+
+Revision is not an in-place terminal state. A revision changes the contract or
+creates a new dispatch, leaving the old dispatch auditable.

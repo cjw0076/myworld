@@ -1,19 +1,21 @@
 ---
 contract_id: ASC-0004
 slug: dispatch-watcher-and-state-machine
-status: proposed
+status: closed
 goal: Add release/hold/retry/escalate state machine to aios_dispatch and a V1 watcher that auto-runs verification gates from inbox packets.
 created: 2026-05-11 KST
-accepted: pending
-closed: pending
+accepted: 2026-05-11 KST
+closed: 2026-05-11 KST
 supersedes: none
+acceptance_authority: claude@myworld (operator) per founder directive 2026-05-11 KST delegating routine acceptance to claude+codex pair.
+closure_authority: claude@myworld (operator) after independent watcher-replay verification.
 ---
 
 # ASC-0004 Dispatch Watcher And State Machine
 
 ## Control Plane Position
 
-This stub is issued by `claude@myworld` per operator directive 2026-05-11 KST ("watcher / state machine부터 contract로"). Status `proposed`. Body deferred to WP-0004-A (codex@myworld). The control plane scope is myworld only — no child-repo source edits in this contract.
+This contract was issued by `claude@myworld` per operator directive 2026-05-11 KST ("watcher / state machine부터 contract로") and accepted after the founder delegated routine acting-operator authority to the Codex/Claude pair. The control plane scope is myworld only — no child-repo source edits in this contract.
 
 ## Goal
 
@@ -42,31 +44,143 @@ The drafter (codex@myworld via WP-0004-A) must answer in the contract body:
 - **Q6 — Logging boundaries**: Watcher captures stdout/stderr from verification commands. Where does it go? Recommendation: short summary (first 20 lines + last 20 lines) into result packet; full log into `.aios/logs/<dispatch_id>.<repo>.log` (gitignored). Privacy stop condition: full logs MUST NOT be committed.
 - **Q7 — Coordination with ASC-0003**: ASC-0003 (packet enrichment) overlaps on verification command extraction. If ASC-0003 lands first, ASC-0004 watcher consumes the enriched packet. If ASC-0004 lands first, ASC-0003 should refactor to share the extractor. Pick a coordination policy.
 
-## Scope (stub — to be filled by WP-0004-A)
+## Scope
 
-- repos: _to be filled — must be exactly `[myworld]`. ASC-0004 does not modify hivemind, memoryOS, or CapabilityOS source. (Watcher shells out to existing test entry points; that is invocation, not modification.)_
-- allowed_files: _to be filled — at minimum:_
-  - `scripts/aios_dispatch.py` (state machine commands + state field)
-  - `scripts/aios_watcher.py` or `scripts/aios_dispatch.py` extension (watcher V1)
-  - `tests/test_aios_dispatch.py` (state machine tests)
-  - `tests/test_aios_watcher.py` (watcher tests)
-  - `docs/AIOS_WORK_DISPATCH.md` (document state set, watcher behavior, log paths)
-  - `.gitignore` (add `.aios/logs/`)
-- forbidden_files: _to be filled — at minimum: contract files in `docs/contracts/` (ASC-0004 changes the dispatch surface, not the contracts), all child repo source paths, `.runs/`, raw exports, secrets, weights._
+repos:
 
-## Per-OS Responsibility (stub)
+- `myworld`
 
-- **myworld (control plane).must_produce**: state machine commands + state-log field, watcher V1, regression tests, updated AIOS_WORK_DISPATCH.md, log path policy.
-- **hive_mind, memoryos, capabilityos**: not in scope. (ASC-0001 verification gate commands still run inside their repos when watcher invokes them, but no source change.)
-- **operator.must_produce**: acceptance decision; explicit policy for which transitions require operator approval (Q2).
+allowed_files:
 
-## Verification Gate (stub)
+- `scripts/aios_dispatch.py`
+- `scripts/aios_loop.py`
+- `scripts/aios_monitor.py`
+- `tests/test_aios_dispatch.py`
+- `tests/test_aios_loop.py`
+- `tests/test_aios_monitor.py`
+- `docs/AIOS_WORK_DISPATCH.md`
+- `docs/AIOS_BUILD_METHOD.md`
+- `docs/contracts/ASC-0004-dispatch-watcher-and-state-machine.md`
+- `docs/contracts/README.md`
 
-_to be filled by WP-0004-A. Recommended target:_
+forbidden_files:
+
+- `hivemind/**`
+- `memoryOS/**`
+- `CapabilityOS/**`
+- `.runs/**`
+- `raw_exports/**`
+- `weights/**`
+- `.env`
+- `.env.*`
+- `.aios/logs/**` committed or copied into docs
+- arbitrary command strings outside contract `## Verification Gate`
+
+ASC-0004 may invoke existing child-repo verification commands through the
+watcher, but invocation is not ownership. No child repo source file is in
+scope.
+
+## Design Answers
+
+### Q1 — State set and transition graph
+
+The state set is append-only events:
+
+`created -> sent -> running -> watched -> collected -> released`
+
+The error and checkpoint branches are:
+
+- `watched -> held` for missing evidence, missing verification commands, or
+  review needs.
+- `watched -> retried` when a failure is transient or a corrected packet should
+  be attempted again.
+- `watched -> escalated` when scope, privacy, ownership, or contract ambiguity
+  exceeds acting-operator authority.
+- `* -> stopped` for explicit cancellation/checkpoint.
+
+`revised` is not an in-place state. A revision edits the contract or creates a
+new dispatch, preserving the old dispatch as evidence.
+
+### Q2 — Transition authority
+
+- `created`, `sent`, `running`, `watched`, and `collected` are automatic
+  control-plane transitions.
+- `released` requires acting-operator judgment after result evidence exists.
+  Human operator authority is delegated to Codex/Claude for routine releases by
+  the 2026-05-11 instruction, but high-risk releases can still be escalated.
+- `held` and `escalated` may be set by Codex, Claude, or the human operator.
+- `retried` may be set by Codex/Claude after a bounded failure diagnosis.
+- `stopped` is a terminal checkpoint/cancellation.
+
+### Q3 — Watcher invocation model
+
+V1 is on-demand only:
+
+```bash
+python scripts/aios_dispatch.py watch --repo <repo> --dispatch-id <id> --once
+```
+
+A daemon is out of scope because AIOS first needs auditable state semantics
+before long-running process management. Daemon mode can be a later contract
+after V1 packets and result schemas prove stable.
+
+### Q4 — Per-packet command resolution
+
+The watcher reads the packet's `contract_path`, extracts fenced `bash` blocks
+under `## Verification Gate`, ignores the `Operational smoke equivalent`
+subsection, and selects commands whose preceding `cd` path matches the target
+repo. It only runs direct Python/pytest argv forms and rejects shell
+metacharacter commands as `arbitrary_command_execution`.
+
+ASC-0003 overlaps on richer packet enrichment. Since ASC-0004 landed first, it
+contains a minimal extractor in `scripts/aios_dispatch.py`; ASC-0003 should
+refactor to share or enrich this extractor instead of creating a second parser.
+
+### Q5 — Failure semantics
+
+- `passed`: every selected command returns exit code 0 and no stop condition is
+  triggered.
+- `failed`: a selected command returns nonzero; result includes
+  `test_gate_failed`.
+- `held`: no verification command is available or a command is unsafe.
+- `retry`: not inferred automatically in V1; acting operators mark it with
+  `python scripts/aios_dispatch.py retry --reason ...` after diagnosis.
+
+### Q6 — Logging boundaries
+
+The result packet contains bounded stdout/stderr summaries only. Full logs go to
+`.aios/logs/<dispatch_id>.<repo>.log`, which is covered by `.gitignore` through
+the `.aios/` runtime-state rule. Full logs must not be committed or pasted into
+contract receipts if they may contain private data.
+
+### Q7 — Coordination with ASC-0003
+
+ASC-0004 owns execution of existing verification gates. ASC-0003 owns enriched
+packet shape. When ASC-0003 is accepted, it should consume the watcher extractor
+or move the shared parsing logic into a common helper without changing
+`aios.dispatch.v1` required fields.
+
+## Per-OS Responsibility
+
+- **myworld (control plane).must_produce**: state machine commands, watcher V1,
+  result packet writer, bounded log policy, regression tests, updated dispatch
+  docs.
+- **hive_mind.must_produce**: no source change. It may be invoked by watcher
+  replay through existing ASC-0001 verification commands.
+- **memoryos.must_produce**: no source change. It may be invoked by watcher
+  replay through existing ASC-0001 verification commands.
+- **capabilityos.must_produce**: no role in this contract.
+- **operator.must_produce**: delegated acting-operator policy. Codex/Claude can
+  release/hold/retry/escalate routine control-plane work; privacy, ownership,
+  or scope conflicts escalate.
+
+## Verification Gate
+
+Unit gate:
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
-python -m pytest tests/test_aios_dispatch.py tests/test_aios_watcher.py -v
+python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py
 
 # Watcher V1 dogfood: re-run ASC-0001 closed-loop proof end-to-end through watcher
 python scripts/aios_dispatch.py create docs/contracts/ASC-0001-memoryos-hivemind-loop.md --force --dispatch-id asc-0001-watcher-replay
@@ -81,12 +195,11 @@ Expected evidence:
 - pytest passes for state machine + watcher tests
 - Watcher writes result packets to `.aios/outbox/<repo>/` automatically
 - Both repos collect status `passed` without manual pytest invocation
-- State log shows transitions: `created → sent → running → collected → released` (or whatever Q1 graph defines)
+- State log shows transitions: `created -> sent -> running -> watched -> collected -> released`
 - `.aios/logs/asc-0001-watcher-replay.<repo>.log` exists, is NOT staged for commit, contains stdout/stderr
 
-## Stop Conditions (stub)
+## Stop Conditions
 
-_to be filled by WP-0004-A — at minimum:_
 - `arbitrary_command_execution`: watcher runs a command not extracted from contract verification gate.
 - `daemon_creep`: V1 demands a background daemon, autostart, or persistent process.
 - `child_repo_source_edit`: ASC-0004 modifies any file under `hivemind/`, `memoryOS/`, `CapabilityOS/`.
@@ -97,7 +210,23 @@ _to be filled by WP-0004-A — at minimum:_
 
 ## Receipts
 
-_filled at closeout._
+Closed 2026-05-11 KST. Watcher V1 + state machine implemented by `codex@myworld` per WP-0004-A; independently re-verified by `claude@myworld` (operator).
+
+- Acceptance commit (status proposed → accepted): part of the same closure commit (`a8c0164`+ successors).
+- Implementation: `scripts/aios_dispatch.py` (state machine, watcher subcommand), `scripts/aios_loop.py`, `scripts/aios_monitor.py`, `tests/test_aios_dispatch.py`, `tests/test_aios_loop.py`, `tests/test_aios_monitor.py`.
+- Unit verification: `python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py` -> 10 tests OK in 0.984s.
+- **Watcher dogfood replay**: re-ran ASC-0001 closed-loop proof end-to-end through the new watcher (dispatch_id `asc-0001-watcher-replay`):
+  - `aios_dispatch.py create … --force --dispatch-id asc-0001-watcher-replay` → ok
+  - `aios_dispatch.py send --repo memoryOS …` → packet at `.aios/inbox/memoryOS/asc-0001-watcher-replay.memoryOS.json`
+  - `aios_dispatch.py send --repo hivemind …` → packet at `.aios/inbox/hivemind/asc-0001-watcher-replay.hivemind.json`
+  - `aios_dispatch.py watch --repo memoryOS --once` → status `passed`, result at `.aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json`
+  - `aios_dispatch.py watch --repo hivemind --once` → status `passed`, result at `.aios/outbox/hivemind/asc-0001-watcher-replay.hivemind.result.json`
+- **Significance**: this is the first session in which AIOS closed a verification gate **without manual pytest invocation by claude@myworld**. The watcher consumed the contract's `## Verification Gate` section, executed the extracted commands, and wrote result packets — exactly the gap surfaced by ASC-0001 dogfood.
+- Stop conditions triggered: none.
+- WP-0004-A status: done. WP-0004-B (claude review) is inlined as this
+  Receipts entry because acting-operator authority covers read-only
+  verification closeout.
+- Ledger closeout entry: `docs/AIOS_AGENT_LEDGER.md` 2026-05-11 KST ASC-0004 closeout.
 
 ## Work Packets
 
@@ -105,10 +234,10 @@ _filled at closeout._
 
 - target_agent: codex
 - target_repo: myworld
-- status: issued
+- status: done
 - issued: 2026-05-11
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-11 KST
+- closed: 2026-05-11 KST
 - depends_on: ASC-0001 closed (dogfood precedent), operator acceptance of ASC-0004
 - brief: |
     This packet does TWO things in sequence:
@@ -163,4 +292,6 @@ _filled at closeout._
       goal is met.
     - Do NOT append to AIOS_AGENT_LEDGER.md until ASC-0004 is closed.
 
-- result: pending
+- result: implemented in `scripts/aios_dispatch.py` (state machine + watch
+  subcommand), `scripts/aios_loop.py`, `scripts/aios_monitor.py`, and tests;
+  unit + watcher-replay verification both pass; see Receipts section above.

@@ -17,15 +17,21 @@ Cross-OS work requires either:
 
 ## Lead Split
 
+`claude@myworld` and `codex@myworld` together act as the AIOS **operator**. They realize the founder's ideas, wake child-repo agents (`codex@hivemind`, `codex@memoryOS`, `codex@CapabilityOS`), receive their work summaries, handle problems, and propose the next task. The founder's role is the idea source and the ultimate override; routine acceptance, dispatch, release/hold/escalate decisions belong to the operator pair.
+
 | Lead | Primary responsibility | Must produce |
 | --- | --- | --- |
-| Codex | implementation, tests, CLI behavior, fixtures, execution receipts, verification | narrow patches, test reports, run receipts, capability observations |
-| Claude | architecture review, policy semantics, lifecycle critique, privacy wording, coherence review | review notes, design objections, boundary checks, operator questions |
-| Operator | release/revise/cancel decisions and scope escalation | checkpoint decisions |
+| Codex (`codex@myworld`) | implementation, tests, CLI behavior, fixtures, execution receipts, verification, dispatch payload authoring | narrow patches, test reports, run receipts, capability observations |
+| Claude (`claude@myworld`) | architecture review, policy semantics, lifecycle critique, privacy wording, coherence review, contract authoring, ledger writing | review notes, design objections, boundary checks, contracts, ledger entries |
+| Operator (claude+codex jointly) | acceptance flips, dispatch via `aios_dispatch.py`, release/hold/retry/escalate, problem handling, next-task selection | accepted contracts, dispatched packets, collected results, escalation requests when scope, privacy, or vision is in doubt |
+| Founder (재원) | ideas, north star, vision corrections, ultimate override, privacy authority | direction statements, vision/scope corrections, escalation resolutions |
 
-Codex should not silently settle memory policy or review lifecycle decisions
-that belong to MemoryOS/Claude review. Claude should not bypass Hive Mind
-execution authority for concrete implementation.
+Codex should not silently settle memory policy or review lifecycle decisions that belong to MemoryOS/Claude review. Claude should not bypass Hive Mind execution authority for concrete implementation. Both operators must escalate to the founder when:
+
+- a contract changes scope policy, privacy boundaries, or OS ownership rules
+- a stop condition triggers without an obvious in-policy resolution
+- the next-task selection requires a vision call (which OS to grow, what to defer)
+- a child-repo agent returns a result that contradicts the founder's stated direction
 
 ## OS Ownership
 

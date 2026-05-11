@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Workspace Is
 
-`myworld/` is **not a single project**. It is a meta-workspace containing three sibling repositories that together form the MyWorld AIOS (a local-first AI operating system):
+`myworld/` is the **AIOS control plane**. It does not host implementation code — it issues goals, contracts, and cross-repo handoffs that the three sibling OS repos execute against:
 
 - `hivemind/` — execution layer: scheduler, provider CLI harness, verification gates, run receipts. (Own git repo, own `CLAUDE.md`.)
 - `memoryOS/` — memory substrate: append-only graph, draft/review lifecycle, provenance, retrieval traces. (Own git repo, own `CLAUDE.md`.)
@@ -23,7 +23,9 @@ When a task crosses repo boundaries (or you are unsure which repo owns it), read
 3. `docs/AIOS_AGENT_PROTOCOL.md` — the durable-record format for cross-repo entries
 4. `docs/AIOS_SMART_CONTRACT.md` — the contract shape for multi-OS tasks
 5. `docs/AIOS_AGENT_LEDGER.md` — append-only cross-repo decision log
-6. The role file for the repo you are touching:
+6. `docs/WORKSTREAMS.md` — Codex/Claude lead split, OS ownership, default task flow
+7. `docs/contracts/README.md` — contract directory index, file shape, lifecycle
+8. The role file for the repo you are touching:
    - `docs/agents/HIVEMIND_AGENT.md`
    - `docs/agents/MEMORYOS_AGENT.md`
    - `docs/agents/CAPABILITYOS_AGENT.md`
@@ -39,6 +41,23 @@ These boundaries are contractual. Do not silently move responsibility across the
 - **CapabilityOS** owns recommendations and binding plans. In early versions it does **not** directly execute or install external tools, and does **not** override Hive Mind's execution authority.
 
 If a task is ambiguous about ownership, stop at an operator checkpoint rather than guessing.
+
+## Control Plane Workflow
+
+`claude@myworld` + `codex@myworld` jointly act as the AIOS **operator**. The founder (재원) provides ideas and the ultimate override; routine acceptance, dispatch, release/hold/escalate decisions belong to the operator pair. See `docs/WORKSTREAMS.md` for the full role split and escalation rules.
+
+A non-trivial cross-OS task flows through this workspace as:
+
+1. Founder states an idea at the workspace root, OR an operator surfaces a next task from the prior contract's results.
+2. Operator drafts an AIOS smart contract under `docs/contracts/ASC-NNNN-<slug>.md` (shape per `docs/AIOS_SMART_CONTRACT.md`). Status starts `proposed`.
+3. Operator accepts → status `accepted`. (No founder approval needed unless an escalation rule from `WORKSTREAMS.md` triggers.)
+4. Operator dispatches via `python scripts/aios_dispatch.py create … && send …` — packets land in `.aios/inbox/<repo>/`.
+5. Child-repo agent (codex@hivemind, codex@memoryOS, codex@CapabilityOS, or codex@myworld for myworld-scoped work) wakes, picks up the inline `## Work Packets` from the contract or the JSON inbox packet, and implements **inside the target sibling repo**.
+6. Child agent writes a result packet to `.aios/outbox/<repo>/`. Operator runs `aios_dispatch.py collect`.
+7. Operator runs the verification gate (or watcher V1 once ASC-0004 lands), confirms pass, fills receipts, flips status to `closed`, and appends a single ledger entry in `docs/AIOS_AGENT_LEDGER.md`.
+8. Operator proposes the next contract.
+
+The control plane never edits sibling-repo source code directly. It edits contracts, agent docs, the ledger, dispatch state under `.aios/`, and operator-owned scripts under `scripts/`.
 
 ## Cross-Repo Logging
 
