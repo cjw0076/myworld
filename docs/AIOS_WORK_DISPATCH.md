@@ -224,8 +224,10 @@ Guardrails:
   `.aios/logs/` and stores a bounded result packet in outbox.
 - `aios_child_watcher.sh` classifies provider invocation failures. When the
   assigned agent fails with an access/auth/permission-denied class error, it may
-  try one alternate provider agent and record `agent_attempts`,
-  `fallback_used`, `final_agent`, and failure categories in the result packet.
+  ask CapabilityOS for a recommendation-only `provider-route` plan, try one
+  alternate provider agent, and record `agent_attempts`, `fallback_used`,
+  `final_agent`, and failure categories in the result packet. If CapabilityOS
+  route planning is unavailable, it falls back to the static ASC-0025 alternate.
   It does not fallback on timeouts, missing commands, unsupported agents, or
   ordinary child-agent failures.
 - The child watcher prompt includes `AIOS_DEFINITION.md`; if a packet cannot

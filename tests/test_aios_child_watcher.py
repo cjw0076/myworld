@@ -24,6 +24,7 @@ class AiosChildWatcherTest(unittest.TestCase):
         shutil.copy2(SOURCE_SCRIPT, script)
         script.chmod(script.stat().st_mode | stat.S_IXUSR)
         (root / "memoryOS").mkdir()
+        (root / "CapabilityOS" / "capabilityos").mkdir(parents=True)
         (root / ".aios" / "inbox" / "memoryOS").mkdir(parents=True)
         (root / ".aios" / "outbox" / "memoryOS").mkdir(parents=True)
         return root
@@ -59,9 +60,33 @@ class AiosChildWatcherTest(unittest.TestCase):
             check=False,
         )
 
+    def write_capabilityos_route_cli(self, root: Path, fallback_agent: str) -> Path:
+        package = root / "CapabilityOS" / "capabilityos"
+        (package / "__init__.py").write_text("", encoding="utf-8")
+        marker = root / "capability-route-called"
+        (package / "cli.py").write_text(
+            "\n".join(
+                [
+                    "from __future__ import annotations",
+                    "import json",
+                    "from pathlib import Path",
+                    f"Path({marker.as_posix()!r}).write_text('called', encoding='utf-8')",
+                    "print(json.dumps({",
+                    "  'contract': 'capabilityos.provider_route.v1',",
+                    "  'recommendation_only': True,",
+                    f"  'fallback_agents': [{fallback_agent!r}],",
+                    "  'routes': [],",
+                    "}))",
+                ]
+            ),
+            encoding="utf-8",
+        )
+        return marker
+
     def test_provider_access_denied_falls_back_once(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = self.make_root(tmp)
+            marker = self.write_capabilityos_route_cli(root, "claude")
             bin_dir = root / "bin"
             bin_dir.mkdir()
             write_executable(
@@ -91,6 +116,8 @@ class AiosChildWatcherTest(unittest.TestCase):
             self.assertEqual(data["agent_attempts"][0]["failure_category"], "provider_access_denied")
             self.assertEqual(data["agent_attempts"][1]["failure_category"], "none")
             self.assertFalse(data["stop_conditions_triggered"])
+            self.assertTrue(marker.exists())
+            self.assertTrue((root / ".aios" / "logs" / "asc-0996.memoryOS.provider_route.json").exists())
 
     def test_unknown_child_failure_does_not_fallback(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

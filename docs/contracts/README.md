@@ -113,3 +113,4 @@ decision rather than draft churn.
 | ASC-0025 | child-watcher-provider-fallback | closed | Make child watcher implementation runs recover once from provider access-denied by trying an allowed alternate agent and recording structured fallback evidence. |
 | ASC-0026 | capability-observation-aware-routing | closed | Make CapabilityOS recommendations consume prior observation outcomes so later routing decisions reflect real AIOS result history. |
 | ASC-0027 | memory-feedback-directives | closed | Make accepted MemoryOS context produce explicit next-run feedback directives and have Hive render them into context_pack.md. |
+| ASC-0028 | capability-route-binding | closed | Bind child watcher provider fallback selection to CapabilityOS observation-aware provider route recommendations. |

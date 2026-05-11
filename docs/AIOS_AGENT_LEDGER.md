@@ -948,3 +948,30 @@ For repo-local implementation details, also update that repo's own worklog.
   watcher/provider route choice.
 - next: open `capability_route_binding` as the next goal-selected contract.
 - status: done
+
+## 2026-05-12 03:04 KST — codex — ASC-0028 capability route binding closed
+
+- repo: myworld + CapabilityOS
+- role: acting operator + implementation
+- goal: replace static child watcher provider fallback selection with a
+  CapabilityOS recommendation-only route plan.
+- changed: `docs/contracts/ASC-0028-capability-route-binding.md`,
+  `docs/contracts/README.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, `docs/AIOS_AGENT_LEDGER.md`,
+  `scripts/aios_child_watcher.sh`, `tests/test_aios_child_watcher.py`, and
+  CapabilityOS commit `80ab22a`.
+- evidence: CapabilityOS provider-route tests passed 8/8; live provider-route
+  smoke returned `capabilityos.provider_route.v1` with relative evidence refs;
+  audit preserved `execution_enabled=[]`; myworld child watcher tests passed
+  2/2; both ASC-0028 result packets were collected and released; monitor
+  returned `health=clear`.
+- decision: child watcher now asks CapabilityOS for a provider fallback route
+  after access/auth-denied failures. If the route command is unavailable or
+  invalid, it preserves ASC-0025 static fallback behavior.
+- risk: there is still no persistent autonomous controller that opens the next
+  contract after a chat turn ends; that is why the loop appears to stop after a
+  final response.
+- next: open `persistent_control_loop` to make continuation explicit and
+  durable instead of depending on conversational turn lifetime.
+- status: done

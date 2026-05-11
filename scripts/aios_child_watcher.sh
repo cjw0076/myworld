@@ -322,6 +322,53 @@ fallback_agent_for() {
   esac
 }
 
+capability_route_fallback_agent() {
+  local assigned_agent="$1"
+  local repo="$2"
+  local category="$3"
+  local route_file="$4"
+  local capabilityos_dir="$ROOT/CapabilityOS"
+  if [[ ! -f "$capabilityos_dir/capabilityos/cli.py" ]]; then
+    fallback_agent_for "$assigned_agent"
+    return 0
+  fi
+  if (
+    cd "$capabilityos_dir" && \
+      python3 -m capabilityos.cli provider-route \
+        --task "child watcher provider fallback for ${repo} after ${category}" \
+        --assigned-agent "$assigned_agent" \
+        --observations-inbox "$OUTBOX_DIR" \
+        --json
+  ) >"$route_file" 2>"$route_file.stderr"; then
+    local routed
+    routed="$(python3 - "$route_file" "$assigned_agent" <<'PY'
+import json
+import sys
+
+path, assigned = sys.argv[1:]
+try:
+    data = json.load(open(path, encoding="utf-8"))
+except (OSError, json.JSONDecodeError):
+    print("")
+    raise SystemExit(0)
+if data.get("contract") != "capabilityos.provider_route.v1":
+    print("")
+    raise SystemExit(0)
+for agent in data.get("fallback_agents") or []:
+    agent = str(agent)
+    if agent in {"codex", "claude"} and agent != assigned:
+        print(agent)
+        break
+PY
+)"
+    if [[ -n "$routed" ]]; then
+      echo "$routed"
+      return 0
+    fi
+  fi
+  fallback_agent_for "$assigned_agent"
+}
+
 run_agent_once() {
   local agent="$1"
   local repo_dir="$2"
@@ -411,13 +458,14 @@ run_packet() {
   append_event "packet_start" "$repo" "running" "$packet"
   rm -f "$attempts_file"
 
-  local rc=0 category fallback_agent fallback_log_file
+  local rc=0 category fallback_agent fallback_log_file route_file
   run_agent_once "$agent" "$repo_dir" "$prompt_file" "$log_file" || rc=$?
   category="$(failure_category "$rc" "$log_file")"
   append_attempt "$attempts_file" "$agent" "$rc" "$category" "$log_file"
 
   if [[ "$rc" -ne 0 && "$AIOS_CHILD_AGENT_FALLBACKS" == "1" && "$category" == "provider_access_denied" ]]; then
-    fallback_agent="$(fallback_agent_for "$agent")"
+    route_file="$LOG_DIR/${safe_id}.provider_route.json"
+    fallback_agent="$(capability_route_fallback_agent "$agent" "$repo" "$category" "$route_file")"
     if [[ -n "$fallback_agent" ]]; then
       fallback_log_file="$LOG_DIR/${safe_id}.${fallback_agent}.fallback.child.log"
       append_event "packet_fallback_start" "$repo" "$category" "$fallback_agent"

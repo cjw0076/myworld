@@ -51,8 +51,8 @@ user relay.
 
 ## Preferred Next Improvements
 
-- capability_route_binding: use CapabilityOS observation-aware recommendations
-  to choose child watcher/provider routes instead of static fallback order.
+- persistent_control_loop: keep AIOS progression running through an explicit
+  daemon/round controller instead of relying on a chat turn staying open.
 - capability_observation_memory_import: decide which CapabilityOS observations
   should enter MemoryOS as reviewable durable memory.
 
@@ -66,3 +66,5 @@ user relay.
   prior AIOS observation outcomes in-memory.
 - memory_feedback_tightening: ASC-0027 added MemoryOS feedback directives and
   Hive context-pack rendering for next-run shaping.
+- capability_route_binding: ASC-0028 bound child watcher access-denied fallback
+  selection to CapabilityOS provider-route recommendations.

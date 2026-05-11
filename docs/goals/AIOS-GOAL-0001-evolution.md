@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T02:40:39+09:00`
+- generated_at: `2026-05-12T03:04:56+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:capability_route_binding`
+- path: `goal:persistent_control_loop`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: use CapabilityOS observation-aware recommendations to choose child watcher/provider routes instead of static fallback order.
+- task: keep AIOS progression running through an explicit daemon/round controller instead of relying on a chat turn staying open.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
