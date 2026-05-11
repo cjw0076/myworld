@@ -307,6 +307,49 @@ For repo-local implementation details, also update that repo's own worklog.
   without chat context.
 - status: done
 
+## 2026-05-11 22:20 KST — codex — ASC-0006 L6 readiness gate closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: prevent overclaiming AIOS completion by turning
+  `docs/AIOS_DEFINITION.md` L0-L6 into a local readiness command.
+- changed: `docs/contracts/ASC-0006-aios-l6-repeatable-proof.md`,
+  `docs/contracts/README.md`, `scripts/aios_readiness.py`,
+  `tests/test_aios_readiness.py`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_readiness.py scripts/aios_dispatch.py scripts/aios_loop.py scripts/aios_monitor.py`
+  passed; `python -m unittest tests/test_aios_readiness.py tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_monitor.py`
+  -> 14 tests OK; readiness first stopped at L5 until ASC-0006 closeout,
+  proving the gate does not self-certify early.
+- decision: L6 must be machine-checked by `python scripts/aios_readiness.py --json`.
+  The gate requires closed core contracts, no pending packets, watcher scripts,
+  dispatch/result evidence, and MemoryOS/CapabilityOS/Hive participation.
+- risk: readiness is evidence-structural, not semantic proof of product
+  usefulness. Future contracts should add deeper semantic quality gates.
+- next: rerun readiness after this closeout. If it returns `ready=true`, write
+  `docs/AIOS_NORTHSTAR_READY.md`; otherwise continue from its next action.
+- status: done
+
+## 2026-05-11 22:21 KST — codex — AIOS L6 readiness marked
+
+- repo: myworld
+- role: acting operator
+- goal: mark the point where the loop may stop because AIOS reached the
+  strict L6 repeatable gate.
+- changed: `docs/AIOS_NORTHSTAR_READY.md`, `.aios/NORTHSTAR_READY` runtime
+  marker.
+- evidence: `python scripts/aios_readiness.py --json` returned
+  `ready=true`, `level=6`, `level_name=L6 repeatable`, `gaps=[]`;
+  `scripts/aios_pingpong.sh status` reports `northstar_ready=true`;
+  child watchers report `pending=0` for hivemind, memoryOS, and CapabilityOS.
+- decision: the current AIOS is operationally repeatable, not product-complete.
+  Future work should improve semantic quality gates, child repo cleanup, and
+  long-running watcher supervision.
+- risk: L6 is a structural readiness claim. It does not mean the product is
+  polished, committed, or semantically robust.
+- next: commit control-plane changes, then clean/commit child repo work under
+  each repo's own policy.
+- status: done
+
 ## 2026-05-11 KST — codex — AIOS strict definition and child watcher prompt guard
 
 - repo: myworld
