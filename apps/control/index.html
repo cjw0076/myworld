@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIOS Control</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="topbar" aria-label="Control status">
+        <div>
+          <p class="eyebrow">AIOS Control</p>
+          <h1 id="goal-title">Loading control plane</h1>
+        </div>
+        <div class="status-strip" id="status-strip"></div>
+      </section>
+
+      <section class="map-band" aria-label="AIOS operating map">
+        <div class="loop-map" id="loop-map"></div>
+      </section>
+
+      <section class="workgrid" aria-label="Control details">
+        <div class="panel span-2">
+          <div class="panel-head">
+            <h2>Contract Flow</h2>
+            <span id="contract-total"></span>
+          </div>
+          <div class="flow-list" id="contract-flow"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Dispatch State</h2>
+            <span id="dispatch-total"></span>
+          </div>
+          <div class="meter-list" id="dispatch-meters"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Repo Loops</h2>
+            <span id="repo-count"></span>
+          </div>
+          <div class="repo-list" id="repo-list"></div>
+        </div>
+
+        <div class="panel span-2">
+          <div class="panel-head">
+            <h2>Evidence Routes</h2>
+            <span id="input-count"></span>
+          </div>
+          <div class="route-lanes" id="route-lanes"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Stops</h2>
+            <span id="stop-count"></span>
+          </div>
+          <div class="stop-list" id="stop-list"></div>
+        </div>
+
+        <div class="panel span-3">
+          <div class="panel-head">
+            <h2>Latest Dispatches</h2>
+            <span id="snapshot-time"></span>
+          </div>
+          <div class="dispatch-table" id="dispatch-table"></div>
+        </div>
+      </section>
+    </main>
+    <script src="./aios-control-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

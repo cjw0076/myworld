@@ -76,9 +76,6 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- visual_control_application: turn the always-on control plane into a
-  visualization-first app showing goals, contracts, repo loops, memory context,
-  capability routes, hive execution, stop conditions, and learning feedback.
 - on_prem_evolving_application: package AIOS as a local application whose
   control plane, memory store, capability router, and execution harness keep
   improving through verified repo feedback.
@@ -128,3 +125,7 @@ and reversible governance.
 - self_resonant_repo_loop: ASC-0038 added a repo-goal intake and route protocol
   so lower repos can submit goals/friction to myworld and receive
   MemoryOS/CapabilityOS/Hive route packets.
+- visual_control_application: ASC-0039 added the first dependency-free local
+  control surface and snapshot generator for goals, contracts, dispatches, repo
+  loops, MemoryOS traces, CapabilityOS routes, Hive runs, stops, and next
+  actions.

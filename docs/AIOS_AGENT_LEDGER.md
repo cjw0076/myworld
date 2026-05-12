@@ -1302,6 +1302,35 @@ For repo-local implementation details, also update that repo's own worklog.
   with `on_prem_evolving_application` as the packaging track behind it.
 - status: done
 
+## 2026-05-12 18:24 KST — codex — ASC-0039 visual control application closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: create the first local visualization-first AIOS control surface from
+  generated myworld state snapshots.
+- changed: `apps/control/index.html`, `apps/control/styles.css`,
+  `apps/control/app.js`, `apps/control/aios-control-data.js`,
+  `apps/control/aios-control-snapshot.json`,
+  `scripts/aios_control_snapshot.py`, `tests/test_aios_control_snapshot.py`,
+  `docs/AIOS_CONTROL_APP.md`,
+  `docs/contracts/ASC-0039-visual-control-application.md`,
+  `docs/contracts/README.md`, goal evolution docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_c0619c4194e7535b`; CapabilityOS routes
+  `cap_capabilityos_recommendation`, `cap_memoryos_context_build`,
+  `cap_hivemind_execution_harness`, and `cap_memoryos_import_run`; Hive dry-run
+  `run_20260512_181228_aef902`; `asc-0039` result packet
+  `.aios/outbox/myworld/asc-0039.myworld.result.json`; snapshot reports 39
+  contracts, 33 dispatches, and monitor `clear`; full tests passed 72/72.
+- decision: the control app starts as a dependency-free local static surface
+  backed by `aios.control_snapshot.v1`. It visualizes the loop without
+  becoming a child-repo worker or adding a packaging framework yet.
+- risk: this is a static snapshot app, not yet a packaged on-prem daemon or
+  live updating application.
+- next: open `on_prem_evolving_application` to package the control plane,
+  snapshot refresh, round controller, and local app launch into one repeatable
+  command.
+- status: done
+
 ## 2026-05-12 KST — claude — Uri personal agent loop pivot reviewed + AIOS routing surfaced
 
 - repo: uri + myworld

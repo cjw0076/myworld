@@ -124,3 +124,4 @@ decision rather than draft churn.
 | ASC-0036 | cross-repo-semantic-alignment | closed | Teach every lower-repo agent the AIOS shared language and require semantic handshakes before cross-repo work. |
 | ASC-0037 | child-watcher-locale-aware-fallback | closed | Make child-watcher provider-fallback recognize Korean codex CLI access-denied messages so localized provider failures trigger fallback. |
 | ASC-0038 | self-resonant-repo-loop | closed | Let lower repos submit goals or friction to myworld, receive MemoryOS/CapabilityOS/Hive route packets, and turn returned friction into AIOS improvement candidates. |
+| ASC-0039 | visual-control-application | closed | Create the first local visualization-first AIOS control surface from generated myworld state snapshots. |

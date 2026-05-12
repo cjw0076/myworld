@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T17:38:33+09:00`
+- generated_at: `2026-05-12T18:25:42+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:visual_control_application`
+- path: `goal:on_prem_evolving_application`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: turn the always-on control plane into a visualization-first app showing goals, contracts, repo loops, memory context, capability routes, hive execution, stop conditions, and learning feedback.
+- task: package AIOS as a local application whose control plane, memory store, capability router, and execution harness keep improving through verified repo feedback.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
