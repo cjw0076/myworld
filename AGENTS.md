@@ -9,7 +9,8 @@ Before working from the `myworld/` workspace root, read these files:
 5. `docs/AIOS_WORK_DISPATCH.md`
 6. `docs/AIOS_BUILD_METHOD.md`
 7. `docs/AIOS_AGENT_LEDGER.md`
-8. The role file for the repo you are touching:
+8. `docs/AIOS_AGENT_SELF_LOOP.md` — how to keep your work going without operator re-prompt
+9. The role file for the repo you are touching:
    - `docs/agents/HIVEMIND_AGENT.md`
    - `docs/agents/MEMORYOS_AGENT.md`
    - `docs/agents/CAPABILITYOS_AGENT.md`
