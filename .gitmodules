@@ -12,3 +12,8 @@
 	path = CapabilityOS
 	url = https://github.com/cjw0076/CapabilityOS.git
 	ignore = dirty
+
+[submodule "uri"]
+	path = uri
+	url = https://github.com/cjw0076/uri-v3.git
+	ignore = dirty

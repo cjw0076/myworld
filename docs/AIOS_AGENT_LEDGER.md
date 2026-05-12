@@ -5,6 +5,27 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-05-12 14:33 KST — codex — Uri child repo isolated
+
+- repo: myworld + uri
+- role: implementation
+- goal: set up Uri as a lower repo so student digital campus product work does
+  not mix into the MyWorld control-plane root.
+- changed: `uri/` standalone git repo, `uri` private remote
+  `cjw0076/uri-v3`, `.gitmodules`, `docs/contracts/ASC-0032-uri-repo-isolation-setup.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`
+- evidence: Uri commits `8f1621f` and `f0edcbb` pushed to
+  `https://github.com/cjw0076/uri-v3`; MyWorld tracks `uri` as a gitlink and
+  keeps product docs inside the child repo.
+- decision: Uri workflow assetization is allowed only from public/open-source
+  sources and clean-room inferred patterns; nonpublic company tools or code are
+  stop conditions, not targets to bypass.
+- risk: first Uri AIOS execution loop still needs a follow-up contract to route
+  research through MemoryOS, CapabilityOS, and Hive Mind.
+- next: draft the first Uri research/prototype contract and dispatch it through
+  the AIOS control plane.
+- status: done
+
 ## 2026-05-11 KST — codex — MyWorld AIOS shared docs bootstrap
 
 - repo: myworld
