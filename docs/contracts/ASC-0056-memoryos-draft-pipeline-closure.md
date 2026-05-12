@@ -52,8 +52,12 @@ forbidden_files:
 - `hivemind/**`
 - `CapabilityOS/**`
 - `uri/**`
-- `_from_desktop/**`, `dain/**`, `minyoung/**`
-- `.aios/logs/**`, `.env`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
+- `.aios/logs/**`
+- `.env`
+- `.env.*`
 
 ## Per-OS Responsibility
 
@@ -84,7 +88,7 @@ forbidden_files:
 
 ```bash
 cd /home/user/workspaces/jaewon/myworld
-bash scripts/aios_coevolution/memory_pulse.sh   # imported>0 expected
+bash scripts/aios_coevolution/memory_pulse.sh
 python -m unittest tests/test_aios_memory_review_proposer.py tests/test_aios_accepted_memory_surfaces.py
 cd memoryOS && python -m pytest tests/test_doc_radar_ingest.py -v
 cd /home/user/workspaces/jaewon/myworld
@@ -111,6 +115,19 @@ Pass criteria:
 
 Pending until verification.
 
+## Execution Order
+
+1. `codex@memoryOS` closes the importer compatibility gap first.
+2. `codex@myworld` closes the pulse/proposer/context-surface gap after the
+   MemoryOS importer can consume current scout JSON.
+3. Operator collects both result packets and runs the full verification gate.
+4. Contract closes only when at least one accepted memory is proven to surface
+   in a subsequent context build.
+
+CapabilityOS has no source role in ASC-0056. It may be observed later if
+MemoryOS review outcomes generate capability-routing feedback, but this
+contract must not edit CapabilityOS or move memory review authority into it.
+
 ## Work Packets
 
 ### WP-0056-A — codex@myworld fixes import format + adds proposer
@@ -124,6 +141,18 @@ Pending until verification.
     aios_memory_review_proposer.py + tests. Add E2E surface test.
     Local-LLM call falls back to deterministic heuristic if Ollama
     unreachable.
+- must_produce:
+  - `scripts/aios_coevolution/memory_pulse.sh` imports current
+    `aios_doc_scout.py` JSON without format warnings.
+  - `scripts/aios_memory_review_proposer.py` writes recommendation-only review
+    proposal batches under `.aios/memory_review_proposals/`.
+  - `tests/test_aios_memory_review_proposer.py` proves the proposer never
+    auto-approves drafts and keeps rationales bounded.
+  - `tests/test_aios_accepted_memory_surfaces.py` proves draft -> approve ->
+    context build returns accepted memory.
+  - `docs/AIOS_MEMORY_REVIEW.md` documents operator approval flow and stop
+    conditions.
+- return_to: `.aios/outbox/myworld/asc-0056.myworld.result.json`
 - result: pending
 
 ### WP-0056-B — codex@memoryOS adapts ingest schema
@@ -135,4 +164,13 @@ Pending until verification.
 - brief: |
     Make memoryos ingest-doc-radar accept current scout `top_tasks`
     shape without warnings. Extend regression test.
+- must_produce:
+  - `memoryOS/memoryos/importers.py` accepts both legacy radar shape and
+    current `top_tasks` scout JSON.
+  - `memoryOS/memoryos/cli.py` keeps `ingest-doc-radar` JSON output stable and
+    reports imported/skipped/warnings counts.
+  - `memoryOS/tests/test_doc_radar_ingest.py` covers current scout JSON shape,
+    idempotency, provenance, and no raw body storage.
+  - repo-local worklog records the semantic handshake and verification.
+- return_to: `.aios/outbox/memoryOS/asc-0056.memoryOS.result.json`
 - result: pending
