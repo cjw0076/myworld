@@ -140,3 +140,7 @@ goal. -->
 - hive_handoff_compat_import: ASC-0045 added `hive handoff import` so old
   MemoryOS-style `HANDOFF.json` shared-folder loops can be replayed into
   inspectable Hive run artifacts without copying raw provider/private bodies.
+- goal_evolution_concrete_hive_todo: ASC-0046 made goal evolution refine the
+  recurring Hive radar-gap document into the concrete unchecked
+  `hive evaluate` / `hive subagents review` TODO so the loop does not repeat
+  closed subitems.

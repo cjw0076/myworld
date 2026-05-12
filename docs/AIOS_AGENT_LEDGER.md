@@ -1575,3 +1575,27 @@ For repo-local implementation details, also update that repo's own worklog.
   `hive evaluate` / `hive subagents review`, unless goal evolution selects a
   higher-value unblocked candidate.
 - status: done
+
+## 2026-05-12 20:40 KST — codex — ASC-0046 concrete Hive TODO refinement closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: prevent goal evolution from repeatedly recommending the broad Hive
+  radar-gap document after its earlier subitems are closed.
+- changed: `scripts/aios_goal_evolution.py`,
+  `tests/test_aios_goal_evolution.py`,
+  `docs/contracts/ASC-0046-goal-evolution-concrete-hive-todo.md`,
+  `docs/contracts/README.md`, `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`, and this ledger.
+- evidence: focused goal-evolution tests passed 4/4; generated plan now
+  recommends `myworld/hivemind/docs/TODO.md#hive-evaluate` with task
+  `Add first-class hive evaluate or hive subagents review...`; full myworld
+  `test_aios_*.py` suite passed 91/91; `git diff --check` passed.
+- decision: the control plane may keep using `RADAR_GAP_TRIAGE.md` as evidence,
+  but actionable recommendations should resolve to concrete unchecked child
+  TODO anchors when a known refinement exists.
+- risk: this is a targeted refinement for the Hive radar-gap source, not a
+  general markdown TODO parser for every repo.
+- next: open the concrete Hive `hive evaluate` / `hive subagents review`
+  contract.
+- status: done

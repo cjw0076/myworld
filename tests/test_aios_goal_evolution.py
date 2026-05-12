@@ -60,6 +60,22 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             encoding="utf-8",
         )
         (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
+        todo_path = root / "hivemind" / "docs" / "TODO.md"
+        todo_path.parent.mkdir(parents=True)
+        todo_path.write_text(
+            "\n".join(
+                [
+                    "# Hive TODO",
+                    "",
+                    "- [x] Add arrival packs generated from live run state.",
+                    "- [x] Add source-read registry that can flag shared source input with divergent agent interpretations.",
+                    "- [x] Add `HANDOFF.json`/shared-folder compatibility import so old MemoryOS pingpong loops can be replayed into Hive run artifacts.",
+                    "- [ ] Add first-class `hive evaluate` or `hive subagents review` command that runs verifier, product evaluator, and actual-user persona checks into durable artifacts.",
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         return goal_path
 
     def run_plan(self, root: Path, goal_path: Path, *args: str) -> subprocess.CompletedProcess[str]:
@@ -90,9 +106,12 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             data = json.loads(result.stdout)
             self.assertEqual(data["schema_version"], "aios.goal_evolution.v1")
             self.assertEqual(data["goal"]["goal_id"], "AIOS-GOAL-TEST")
-            self.assertEqual(data["recommendation"]["path"], "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md")
+            self.assertEqual(data["recommendation"]["path"], "myworld/hivemind/docs/TODO.md#hive-evaluate")
+            self.assertEqual(data["recommendation"]["source_path"], "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md")
+            self.assertIn("hive evaluate", data["recommendation"]["candidate_task"])
             self.assertFalse(data["recommendation"]["blocked"])
             self.assertIn("reduces_user_context_relay", data["recommendation"]["alignment_reasons"])
+            self.assertIn("concrete_hive_todo", data["recommendation"]["alignment_reasons"])
 
     def test_goal_plan_blocks_closed_contract_and_private_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -121,7 +140,7 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             text = out.read_text(encoding="utf-8")
             self.assertIn("# AIOS Goal Evolution Plan", text)
             self.assertIn("## Recommendation", text)
-            self.assertIn("myworld/hivemind/docs/RADAR_GAP_TRIAGE.md", text)
+            self.assertIn("myworld/hivemind/docs/TODO.md#hive-evaluate", text)
 
     def test_goal_without_quality_function_fails(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -31,6 +31,12 @@ REFERENCE_SOURCE_PATHS = {
     "docs/AIOS_WORK_DISPATCH.md",
     "docs/WORKSTREAMS.md",
 }
+HIVE_RADAR_GAP_PATH = "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md"
+HIVE_TODO_PATH = "myworld/hivemind/docs/TODO.md"
+HIVE_RADAR_TODO_PATTERNS = (
+    ("hive-evaluate", ("hive evaluate", "hive subagents review")),
+    ("semantic-verifier", ("semantic verifier", "high-risk runs")),
+)
 GOAL_QUALITY_WEIGHTS = {
     "reduce_user_relay": 10,
     "increase_verified_execution": 8,
@@ -259,6 +265,10 @@ def normalize_phrase(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
 
 
+def normalize_words(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", value.lower()).strip()
+
+
 def preferred_key(item: str) -> str:
     return normalize_phrase(item.partition(":")[0])
 
@@ -277,6 +287,39 @@ def doc_contains_preferred(root: Path, row: RadarRow, goal: Goal) -> bool:
     except OSError:
         return False
     return any(key and key in text for key in (preferred_key(item) for item in goal.preferred_next))
+
+
+def unchecked_todo_items(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    items: list[str] = []
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        stripped = raw.strip()
+        if not stripped.startswith("- [ ] "):
+            continue
+        item = stripped.removeprefix("- [ ] ").strip()
+        if item:
+            items.append(item)
+    return items
+
+
+def concrete_hive_radar_candidate(root: Path, base: dict[str, Any]) -> dict[str, Any] | None:
+    if base.get("path") != HIVE_RADAR_GAP_PATH:
+        return None
+    todo_path = resolve_path(root, HIVE_TODO_PATH)
+    for item in unchecked_todo_items(todo_path):
+        words = normalize_words(item)
+        for slug, phrases in HIVE_RADAR_TODO_PATTERNS:
+            if all(phrase in words for phrase in phrases):
+                refined = dict(base)
+                refined["path"] = f"{HIVE_TODO_PATH}#{slug}"
+                refined["candidate_task"] = item.rstrip(".")
+                refined["goal_score"] = int(base.get("goal_score") or 0) + 50
+                refined["policy_reason"] = "refined from Hive radar-gap source to concrete unchecked Hive TODO"
+                refined["alignment_reasons"] = list(base.get("alignment_reasons") or []) + ["concrete_hive_todo"]
+                refined["source_path"] = base.get("path")
+                return refined
+    return None
 
 
 def goal_alignment(root: Path, goal: Goal, row: RadarRow, policy_decision: str) -> tuple[int, list[str]]:
@@ -383,7 +426,7 @@ def fallback_preferred_candidate(goal: Goal) -> dict[str, Any] | None:
     return None
 
 
-def recommended_candidate(goal: Goal, candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
+def recommended_candidate(root: Path, goal: Goal, candidates: list[dict[str, Any]]) -> dict[str, Any] | None:
     preferred_reason_prefixes = (
         "goal_preferred",
         "reduce_",
@@ -400,13 +443,13 @@ def recommended_candidate(goal: Goal, candidates: list[dict[str, Any]]) -> dict[
             str(reason).startswith(preferred_reason_prefixes)
             for reason in candidate.get("alignment_reasons") or []
         ):
-            return candidate
+            return concrete_hive_radar_candidate(root, candidate) or candidate
     fallback = fallback_preferred_candidate(goal)
     if fallback:
         return fallback
     for candidate in candidates:
         if not candidate["blocked"]:
-            return candidate
+            return concrete_hive_radar_candidate(root, candidate) or candidate
     return None
 
 
@@ -417,7 +460,7 @@ def build_plan(root: Path, goal_path: Path, radar_path: Path) -> dict[str, Any]:
     readiness = load_readiness(root)
     monitor = load_monitor(root)
     candidates = build_candidates(root, goal, radar_rows, policy)
-    recommendation = recommended_candidate(goal, candidates)
+    recommendation = recommended_candidate(root, goal, candidates)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now_iso(),
