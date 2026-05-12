@@ -82,6 +82,18 @@ def tkinter_status() -> dict[str, Any]:
     return {"available": True, "display_available": True}
 
 
+def display_unavailable_message(error: Exception) -> str:
+    return "\n".join(
+        [
+            "AIOS desktop launch failed: graphical display is not available.",
+            f"detail: {error}",
+            "Run launch from a graphical desktop session, or inspect headless state with:",
+            "  python scripts/aios_desktop_app.py status --json",
+            "  python scripts/aios_desktop_app.py snapshot --json",
+        ]
+    )
+
+
 def view_model(snapshot: dict[str, Any]) -> dict[str, Any]:
     contracts = snapshot.get("contracts") or {}
     dispatches = snapshot.get("dispatches") or {}
@@ -129,7 +141,11 @@ def launch(root: Path, *, refresh: bool) -> int:
 
     snapshot = load_or_build_snapshot(root, refresh=refresh)
     model = view_model(snapshot)
-    app = tk.Tk()
+    try:
+        app = tk.Tk()
+    except tk.TclError as exc:
+        print(display_unavailable_message(exc), file=sys.stderr)
+        return 2
     app.title("AIOS Control")
     app.geometry("1180x760")
     app.minsize(920, 620)

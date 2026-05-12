@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.aios_desktop_app import desktop_status, load_or_build_snapshot, view_model
+from scripts.aios_desktop_app import desktop_status, display_unavailable_message, load_or_build_snapshot, view_model
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,6 +41,13 @@ class AiosDesktopAppTest(unittest.TestCase):
         self.assertEqual(status["mode"], "native_desktop")
         self.assertFalse(status["uses_http_server"])
         self.assertFalse(status["uses_browser"])
+
+    def test_display_unavailable_message_points_to_headless_checks(self) -> None:
+        message = display_unavailable_message(Exception("no display name and no $DISPLAY environment variable"))
+
+        self.assertIn("graphical display", message)
+        self.assertIn("status --json", message)
+        self.assertIn("snapshot --json", message)
 
     def test_snapshot_refresh_writes_snapshot_without_gui(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
