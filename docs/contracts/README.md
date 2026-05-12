@@ -138,3 +138,4 @@ decision rather than draft churn.
 | ASC-0050 | aios-primitive-surface | closed | Reverse-engineer Claude CLI operator primitives into a substrate-independent AIOS primitive surface for Codex and local LLM workers. |
 | ASC-0051 | aios-coevolution-heartbeat | closed | Arm MemoryOS, CapabilityOS, and Hive co-evolution pulse loops through the AIOS primitive monitor surface. |
 | ASC-0052 | aios-native-runtime-entrypoint | closed | Provide one AIOS-native runtime entrypoint so Claude/Codex CLIs become replaceable substrates behind the AIOS loop. |
+| ASC-0053 | hive-provider-loop-runner | closed | Add a Hive-owned provider loop runner for Claude CLI, Codex CLI, and local LLM workers with shared tick/status/stop receipts. |

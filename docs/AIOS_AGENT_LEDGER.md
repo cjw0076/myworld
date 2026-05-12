@@ -1770,3 +1770,24 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: use `python scripts/aios_runtime.py status|step|run` as the default
   operator surface, then evolve a richer chair/visual runtime on top of it.
 - status: done
+
+## 2026-05-13 KST — codex — ASC-0053 Hive provider-loop runner closed
+
+- repo: myworld + hivemind
+- role: acting AIOS operator and Hive implementation provider
+- goal: absorb Claude monitor-style plans, Codex one-shot ticks, and local LLM
+  worker ticks into a Hive-owned provider-loop artifact surface.
+- changed: `hivemind/hivemind/provider_loop.py`, `hivemind/hivemind/hive.py`,
+  `hivemind/tests/test_provider_loop.py`, Hive TODO/worklogs, and
+  `docs/contracts/ASC-0053-hive-provider-loop-runner.md`.
+- evidence: Hive commit `89458d7`; result packet
+  `.aios/outbox/hivemind/asc-0053.hivemind.result.json`; focused
+  provider-loop tests passed 7/7; provider-loop + passthrough + supervisor
+  suite passed 23/23; CLI smoke wrote one Codex worker with
+  `loop_mode=one_shot_tick`; full Hive suite passed 329/329.
+- decision: AIOS should expose providers through Hive loop receipts, not rely
+  on direct Claude/Codex chat prompting as the operating interface.
+- next: create a thin global `aios` launcher that resolves the current
+  workspace control plane, then calls `scripts/aios_runtime.py` and Hive
+  `provider-loop` surfaces.
+- status: done
