@@ -1,0 +1,29 @@
+{
+  "schema_version": "aios.web_research_receipt.v1",
+  "capability_route": "capabilityos.web_research_route.v1",
+  "receipt_id": "w-6eebb2055ff3",
+  "kind": "fetch",
+  "research_question": null,
+  "sources": [
+    {
+      "url": "https://ollama.com/library/qwen2.5",
+      "publisher": "Ollama",
+      "accessed_at": "2026-05-13",
+      "source_date": null,
+      "source_type": "documentation",
+      "claims": [
+        "Qwen2.5 7B parameters available via Ollama pull qwen2.5:7b",
+        "supports tool/function calling via the Ollama HTTP API",
+        "Apache 2.0 license, locally hostable on consumer GPU (8GB VRAM minimum for 7B q4)",
+        "no API key required, runs against localhost:11434 by default"
+      ]
+    }
+  ],
+  "summary_claims": [
+    "Qwen2.5 7B parameters available via Ollama pull qwen2.5:7b",
+    "supports tool/function calling via the Ollama HTTP API",
+    "Apache 2.0 license, locally hostable on consumer GPU (8GB VRAM minimum for 7B q4)",
+    "no API key required, runs against localhost:11434 by default"
+  ],
+  "created_at": "2026-05-13T00:11:28+09:00"
+}
