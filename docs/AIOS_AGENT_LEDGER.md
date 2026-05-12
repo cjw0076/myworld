@@ -1630,3 +1630,30 @@ For repo-local implementation details, also update that repo's own worklog.
   recommendation into another concrete TODO or move to the highest-value
   MemoryOS/CapabilityOS held candidate.
 - status: done
+
+## 2026-05-12 21:09 KST — codex — ASC-0048 semantic-verifier recommendation refinement closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: keep the autonomous loop from falling back to broad
+  `RADAR_GAP_TRIAGE.md` after ASC-0047 by selecting the concrete
+  `semantic-verifier` Hive TODO.
+- changed: `scripts/aios_goal_evolution.py`,
+  `tests/test_aios_goal_evolution.py`,
+  `docs/contracts/ASC-0048-goal-evolution-semantic-verifier-refinement.md`,
+  `docs/contracts/README.md`, `docs/goals/AIOS-GOAL-0001-evolution.md`, and
+  this ledger.
+- evidence: MemoryOS trace `rtrace_5ccc398180c7cebb`; CapabilityOS top route
+  `cap_hivemind_execution_harness`; Hive dry-run
+  `run_20260512_210606_fda8f5`; focused goal-evolution tests passed 5/5;
+  generated plan now recommends
+  `myworld/hivemind/docs/TODO.md#semantic-verifier`; full myworld
+  `test_aios_*.py` suite passed 92/92; `git diff --check` passed.
+- decision: Hive radar TODO refinement now normalizes pattern phrases and TODO
+  text the same way, so hyphenated wording such as `high-risk` does not cause
+  a broad-source repeat.
+- risk: this still uses a small explicit Hive radar refinement table; a more
+  general TODO extractor may be needed once other repos need the same behavior.
+- next: issue the concrete Hive semantic-verifier contract if the monitor
+  remains clear.
+- status: done

@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T21:04:17+09:00`
+- generated_at: `2026-05-12T21:09:59+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,12 +8,12 @@
 
 ## Recommendation
 
-- path: `myworld/hivemind/docs/RADAR_GAP_TRIAGE.md`
+- path: `myworld/hivemind/docs/TODO.md#semantic-verifier`
 - domain: `hivemind`
-- goal_score: `228`
+- goal_score: `278`
 - policy_decision: `accept_now`
-- task: issue a Hive Mind packet for execution, harness, or verification follow-up
-- alignment_reasons: `verification_signal, policy_accept_now`
+- task: Add semantic verifier LLM review for high-risk runs
+- alignment_reasons: `verification_signal, policy_accept_now, concrete_hive_todo`
 - blocked_reasons: ``
 
 ## Top Candidates

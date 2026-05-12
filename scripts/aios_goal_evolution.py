@@ -310,7 +310,7 @@ def concrete_hive_radar_candidate(root: Path, base: dict[str, Any]) -> dict[str,
     for item in unchecked_todo_items(todo_path):
         words = normalize_words(item)
         for slug, phrases in HIVE_RADAR_TODO_PATTERNS:
-            if all(phrase in words for phrase in phrases):
+            if all(normalize_words(phrase) in words for phrase in phrases):
                 refined = dict(base)
                 refined["path"] = f"{HIVE_TODO_PATH}#{slug}"
                 refined["candidate_task"] = item.rstrip(".")

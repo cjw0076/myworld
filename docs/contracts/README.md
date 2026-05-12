@@ -133,3 +133,4 @@ decision rather than draft churn.
 | ASC-0045 | hive-handoff-compat-import | closed | Add a Hive HANDOFF.json/shared-folder compatibility import so old MemoryOS pingpong loops can replay into Hive run artifacts. |
 | ASC-0046 | goal-evolution-concrete-hive-todo | closed | Make goal evolution refine the recurring Hive radar-gap recommendation into a concrete unchecked Hive TODO so the loop does not repeat closed subitems. |
 | ASC-0047 | hive-evaluate-subagents-review | closed | Add a first-class Hive evaluation command that runs verifier, product evaluator, and actual-user persona checks into durable run artifacts. |
+| ASC-0048 | goal-evolution-semantic-verifier-refinement | closed | Refine the recurring Hive radar-gap recommendation to the concrete semantic-verifier TODO instead of returning a broad RADAR_GAP_TRIAGE source. |

@@ -71,6 +71,7 @@ class AiosGoalEvolutionTest(unittest.TestCase):
                     "- [x] Add source-read registry that can flag shared source input with divergent agent interpretations.",
                     "- [x] Add `HANDOFF.json`/shared-folder compatibility import so old MemoryOS pingpong loops can be replayed into Hive run artifacts.",
                     "- [ ] Add first-class `hive evaluate` or `hive subagents review` command that runs verifier, product evaluator, and actual-user persona checks into durable artifacts.",
+                    "- [ ] Add semantic verifier LLM review for high-risk runs.",
                 ]
             )
             + "\n",
@@ -111,6 +112,28 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             self.assertIn("hive evaluate", data["recommendation"]["candidate_task"])
             self.assertFalse(data["recommendation"]["blocked"])
             self.assertIn("reduces_user_context_relay", data["recommendation"]["alignment_reasons"])
+            self.assertIn("concrete_hive_todo", data["recommendation"]["alignment_reasons"])
+
+    def test_goal_plan_selects_semantic_verifier_after_evaluate_closes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            goal_path = self.write_fixture(root)
+            todo_path = root / "hivemind" / "docs" / "TODO.md"
+            todo_path.write_text(
+                todo_path.read_text(encoding="utf-8").replace(
+                    "- [ ] Add first-class `hive evaluate` or `hive subagents review` command",
+                    "- [x] Add first-class `hive evaluate` or `hive subagents review` command",
+                ),
+                encoding="utf-8",
+            )
+
+            result = self.run_plan(root, goal_path, "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["recommendation"]["path"], "myworld/hivemind/docs/TODO.md#semantic-verifier")
+            self.assertEqual(data["recommendation"]["source_path"], "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md")
+            self.assertIn("semantic verifier", data["recommendation"]["candidate_task"])
             self.assertIn("concrete_hive_todo", data["recommendation"]["alignment_reasons"])
 
     def test_goal_plan_blocks_closed_contract_and_private_paths(self) -> None:
