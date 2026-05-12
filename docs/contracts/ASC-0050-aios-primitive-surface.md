@@ -235,9 +235,23 @@ Closed 2026-05-12 23:10 KST by `claude@myworld` (operator, founder directive
     → list shows alive=True, events=2 captured → stop killed=True
   - `python scripts/aios_primitives.py task create ...` → emit task.created
     event → `events --event-kind task.created` returns the record
+- Codex compatibility hardening:
+  - CLI accepts `--json` globally and at subcommand tail positions.
+  - `schedule once/repeat` can auto-name schedules when a contract omits
+    `--name`.
+  - generic `stop --name <id>` attempts both monitor and schedule stops.
+  - event writes honor `--root` instead of always writing to the current
+    working tree.
+  - `web fetch --url <u> --record <path>` records a URL-only cited receipt
+    when no claim is supplied by the caller.
 - Verification:
-  - `python -m unittest tests.test_aios_primitives` → 19/19 OK
-  - `python -m unittest discover -s tests -p 'test_aios_*.py'` → 111/111 OK
+  - `python -m py_compile scripts/aios_primitives.py scripts/aios_primitives/*.py` → OK
+  - `python -m unittest tests.test_aios_primitives` → 24/24 OK
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` → 116/116 OK
+  - `python scripts/aios_primitives.py tools discover --query "web research" --json` → OK
+  - `python scripts/aios_primitives.py web fetch --url https://example.com --record /tmp/asc-0050-web.json --json` → OK
+  - `python scripts/aios_primitives.py monitor start/list/stop --name verify-watch --json` → OK
+  - `python scripts/aios_primitives.py task create/list --json` → OK
   - No child repo source touched; all writes under `scripts/aios_primitives/`,
     `tests/`, `docs/AIOS_PRIMITIVES.md`, `docs/contracts/`, `docs/AIOS_AGENT_LEDGER.md`,
     `docs/discoveries/`

@@ -51,7 +51,7 @@ def emit(kind: str, name: str, payload: dict[str, Any], root: Path | None = None
         "ts_monotonic_ns": now_monotonic_ns(),
         "payload": payload,
     }
-    path = events_path()
+    path = events_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record, ensure_ascii=False) + "\n"
     # Use os-level O_APPEND for concurrent-safe append on POSIX.

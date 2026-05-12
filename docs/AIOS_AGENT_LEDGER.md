@@ -1657,3 +1657,64 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: issue the concrete Hive semantic-verifier contract if the monitor
   remains clear.
 - status: done
+## 2026-05-12 22:59 KST — codex — ASC-0049 Hive semantic verifier review closed
+
+- repo: myworld + hivemind
+- role: acting operator + child-repo implementation
+- goal: add a Hive semantic verifier review surface for high-risk runs without
+  automatic provider execution.
+- changed: `docs/contracts/ASC-0049-hive-semantic-verifier-review.md`,
+  `docs/contracts/README.md`, `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `hivemind/hivemind/semantic_verifier.py`,
+  `hivemind/hivemind/evaluation.py`, `hivemind/hivemind/hive.py`,
+  `hivemind/hivemind/run_validation.py`,
+  `hivemind/tests/test_semantic_verifier.py`, `hivemind/docs/TODO.md`,
+  `hivemind/docs/AGENT_WORKLOG.md`, and
+  `hivemind/.ai-runs/shared/comms_log.md`.
+- evidence: MemoryOS trace `rtrace_ee519c13d4b1b75a`; CapabilityOS top route
+  `cap_hivemind_execution_harness`; Hive dry-run
+  `run_20260512_224741_56e342`; hivemind commit `a0df4ca`; result packet
+  `.aios/outbox/hivemind/asc-0049.hivemind.result.json`; focused tests passed
+  6/6 and 12/12; CLI smoke returned `kind=hive_semantic_verification`,
+  `status=review_required`, `risk_level=high`, and
+  `provider_executed=false`; full Hive pytest passed 322/322.
+- decision: `hive semantic-review` prepares semantic verifier review evidence
+  and a redacted LLM prompt, but it does not auto-run provider CLIs or local
+  LLMs. `hive evaluate` now blocks high-risk runs that lack semantic review and
+  cites the review once present.
+- risk: this is prepared verifier evidence, not an independent executed LLM
+  judgment. Provider execution should be a separate policy-gated contract.
+- next: resolve the remaining broad Hive radar recommendation or move to the
+  next concrete non-Hive candidate.
+- status: done
+
+## 2026-05-12 23:18 KST — claude+codex — ASC-0050 AIOS primitive surface closed
+
+- repo: myworld
+- role: operator primitive formalization + compatibility hardening
+- goal: reverse-engineer the Claude CLI operator primitive set into an
+  AIOS-owned surface that Codex and local LLM workers can call without
+  depending on Claude or Codex chat runtimes.
+- changed: `scripts/aios_primitives.py`, `scripts/aios_primitives/`,
+  `tests/test_aios_primitives.py`, `docs/AIOS_PRIMITIVES.md`,
+  `docs/contracts/ASC-0050-aios-primitive-surface.md`,
+  `docs/contracts/README.md`, and result packet
+  `.aios/outbox/myworld/asc-0050.myworld.result.json`.
+- evidence: myworld commit `dcfae42`; `python -m py_compile
+  scripts/aios_primitives.py scripts/aios_primitives/*.py` passed; focused
+  primitive tests passed 24/24; tools discovery smoke found the
+  CapabilityOS web route; web receipt smoke wrote
+  `aios.web_research_receipt.v1`; monitor start/list/stop smoke passed; task
+  create/list smoke passed; full myworld `test_aios_*.py` suite passed
+  116/116.
+- decision: AIOS primitives are coordination primitives, not unrestricted
+  execution powers. Agent sync execution and skill binding remain explicit
+  future contracts so the system absorbs CLI semantics without bypassing Hive,
+  MemoryOS, CapabilityOS, or operator policy.
+- risk: `web fetch` currently stores cited receipt metadata rather than
+  fetching raw page bodies, and child repos still need adapters to call this
+  surface from their local working directories.
+- next: release `asc-0050`, assess the monitor, then draft the next
+  AIOS-native runtime contract so the lasting interface is AIOS itself rather
+  than Claude CLI or Codex CLI.
+- status: done

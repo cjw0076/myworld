@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -39,6 +40,18 @@ class EventLogTests(_RootCase):
         self.assertEqual(recs[0]["kind"], "task.created")
         self.assertEqual(recs[1]["kind"], "monitor.started")
         self.assertTrue(all("ts_iso" in r and "ts_monotonic_ns" in r for r in recs))
+
+    def test_emit_honors_root_without_chdir(self):
+        other = Path(tempfile.mkdtemp())
+        try:
+            events.emit("task.created", "t-root", {"subject": "x"}, root=other)
+            self.assertTrue(events.events_path(other).exists())
+            recs = events.read_events(root=other)
+            self.assertEqual(recs[0]["name"], "t-root")
+        finally:
+            import shutil
+
+            shutil.rmtree(other, ignore_errors=True)
 
     def test_read_filters(self):
         events.emit("task.created", "t-1", {}, root=self.root)
@@ -213,9 +226,124 @@ class CliShimTests(_RootCase):
         p = build_parser()
         # monitor start subcommand should exist.
         args = p.parse_args(["monitor", "start", "--name", "x", "--command", "echo y"])
-        self.assertEqual(args.kind, "monitor")
+        self.assertEqual(args.cmd, "monitor")
         self.assertEqual(args.op, "start")
         self.assertEqual(args.name, "x")
+
+    def test_cli_accepts_json_and_root(self):
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "aios_primitives.py"),
+                "--root",
+                self.root.as_posix(),
+                "--json",
+                "task",
+                "create",
+                "--subject",
+                "cli task",
+                "--description",
+                "smoke",
+            ],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["subject"], "cli task")
+        self.assertTrue(events.events_path(self.root).exists())
+
+    def test_events_cli_filter_uses_event_kind(self):
+        events.emit("task.created", "t-cli", {"subject": "x"}, root=self.root)
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "aios_primitives.py"),
+                "--root",
+                self.root.as_posix(),
+                "events",
+                "--event-kind",
+                "task.created",
+            ],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        payload = json.loads(result.stdout)
+        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload[0]["kind"], "task.created")
+
+    def test_contract_style_schedule_and_web_commands(self):
+        dispatch = self.root / "packet.json"
+        dispatch.write_text("{}", encoding="utf-8")
+        scheduled = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "aios_primitives.py"),
+                "--root",
+                self.root.as_posix(),
+                "schedule",
+                "once",
+                "--delay-seconds",
+                "1",
+                "--dispatch",
+                dispatch.as_posix(),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        schedule_payload = json.loads(scheduled.stdout)
+        self.assertEqual(schedule_payload["kind"], "once")
+        schedule.stop(schedule_payload["name"], root=self.root)
+
+        record = self.root / "receipt.json"
+        fetched = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts" / "aios_primitives.py"),
+                "--root",
+                self.root.as_posix(),
+                "web",
+                "fetch",
+                "--url",
+                "https://example.com",
+                "--record",
+                record.as_posix(),
+                "--json",
+            ],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        web_payload = json.loads(fetched.stdout)
+        self.assertEqual(web_payload["schema_version"], "aios.web_research_receipt.v1")
+        self.assertTrue(record.exists())
+
+    def test_generic_stop_without_kind(self):
+        m = monitor.start("generic-stop", "sleep 30", root=self.root)
+        try:
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "scripts" / "aios_primitives.py"),
+                    "--root",
+                    self.root.as_posix(),
+                    "stop",
+                    "--name",
+                    "generic-stop",
+                    "--json",
+                ],
+                text=True,
+                capture_output=True,
+                check=True,
+            )
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["monitor"]["stopped"])
+        finally:
+            if monitor.get("generic-stop", root=self.root).get("alive"):
+                monitor.stop("generic-stop", root=self.root)
 
 
 if __name__ == "__main__":

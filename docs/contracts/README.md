@@ -134,3 +134,5 @@ decision rather than draft churn.
 | ASC-0046 | goal-evolution-concrete-hive-todo | closed | Make goal evolution refine the recurring Hive radar-gap recommendation into a concrete unchecked Hive TODO so the loop does not repeat closed subitems. |
 | ASC-0047 | hive-evaluate-subagents-review | closed | Add a first-class Hive evaluation command that runs verifier, product evaluator, and actual-user persona checks into durable run artifacts. |
 | ASC-0048 | goal-evolution-semantic-verifier-refinement | closed | Refine the recurring Hive radar-gap recommendation to the concrete semantic-verifier TODO instead of returning a broad RADAR_GAP_TRIAGE source. |
+| ASC-0049 | hive-semantic-verifier-review | closed | Add a Hive semantic verifier review surface for high-risk runs without automatic provider execution. |
+| ASC-0050 | aios-primitive-surface | closed | Reverse-engineer Claude CLI operator primitives into a substrate-independent AIOS primitive surface for Codex and local LLM workers. |

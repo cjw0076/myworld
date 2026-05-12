@@ -39,13 +39,13 @@ python scripts/aios_primitives.py monitor stop --name my-watch
 
 # Task — create/update/list
 python scripts/aios_primitives.py task create \
-  --subject "verify ASC-0050" --description "..." --owner claude
+  --subject "verify ASC-0050" --description "..." --owner claude --json
 python scripts/aios_primitives.py task update --id t-xxxx --status completed
 python scripts/aios_primitives.py task list --status pending
 
 # Schedule — one-shot or repeat
 python scripts/aios_primitives.py schedule once \
-  --name remind-1 --delay-seconds 60 --dispatch /path/to/packet.json
+  --delay-seconds 60 --dispatch /path/to/packet.json --json
 python scripts/aios_primitives.py schedule repeat \
   --name heartbeat --interval-seconds 300 --dispatch /path/to/heartbeat.json
 python scripts/aios_primitives.py schedule list
@@ -74,13 +74,12 @@ python scripts/aios_primitives.py web fetch \
 # Events — read the shared log
 python scripts/aios_primitives.py events --event-kind monitor.event --limit 20
 python scripts/aios_primitives.py events --name my-watch --limit 5
+python scripts/aios_primitives.py stop --name my-watch --json
 ```
 
 ### From Python (local LLM workers)
 
 ```python
-import sys
-sys.path.insert(0, "/home/user/workspaces/jaewon/myworld/scripts")
 from aios_primitives import monitor, task, schedule, ask, tools, web, events
 
 # Same semantics:
@@ -91,6 +90,11 @@ q = ask.create("Approve schema change?", options=["yes", "no"], to="operator")
 state = ask.wait(q["id"], timeout_seconds=300)
 recs = events.read_events(name="my-watch", kind="monitor.event")
 ```
+
+When running from the source tree without installation, `scripts/aios_primitives.py`
+adds `scripts/` to `sys.path` for the shim. Long-lived workers should run from
+the myworld root or install this package path in their environment instead of
+patching `sys.path` at each callsite.
 
 ### Schema (every event)
 
@@ -132,6 +136,39 @@ binding lives in CapabilityOS contracts.
 - **Tasks / questions / tools**: pure file state. Multiple writers safe via
   `O_APPEND` for events; per-file writes are last-writer-wins (acceptable
   for low-contention metadata).
+
+## ASC-0050 Design Answers
+
+- **Q1 subprocess survival**: use Python `subprocess.Popen(...,
+  start_new_session=True)`, which calls `setsid()` in the child and preserves
+  the watcher after the operator process exits. `monitor list` re-checks PID
+  liveness instead of trusting stale state.
+- **Q2 event ordering**: every event records both `ts_iso` for humans and
+  `ts_monotonic_ns` for ordering ties.
+- **Q3 schema**: every event uses `schema_version=aios.primitive_event.v1`,
+  `kind`, `name`, `ts_iso`, `ts_monotonic_ns`, and `payload`.
+- **Q4 concurrency**: event writes use POSIX `O_APPEND`; readers ignore a
+  partial trailing line.
+- **Q5 Python import**: source-tree callers import `aios_primitives` from the
+  `scripts/` package path. The shim supports CLI use without callsite hacks;
+  a later packaging contract can make it installable across child repos.
+- **Q6 ask blocking**: `ask wait` polls every 2 seconds by default, up to 600
+  seconds, marks timeout state, emits `ask.timeout`, and exits with code 124.
+
+## Gap Translation Table
+
+| Claude primitive | AIOS primitive | Notes |
+|---|---|---|
+| Monitor | `monitor start/list/stop` | Named persistent watcher with shared event log. |
+| ScheduleWakeup | `schedule once/repeat/stop` | Emits scheduled fire events for dispatch packets. |
+| TaskCreate/Update/List/Get | `task create/update/list/get` | File-backed task records. |
+| Agent(subagent_type, prompt) | existing `aios_dispatch.py` + future sync wrapper | Async dispatch already exists; sync blocking agent run is deferred to a follow-up contract. |
+| Skill(name, args) | `tools discover/register` | Discovery parity exists; skill execution remains policy-gated future work. |
+| AskUserQuestion | `ask create/wait/answer/list/get` | Structured question channel with timeout semantics. |
+| Bash background | `monitor start` | Background process plus event emission. |
+| ToolSearch | `tools discover` | CapabilityOS recommendation plus local registry fallback. |
+| WebFetch/WebSearch | `web fetch/search` | Cited receipt artifacts, no raw page body storage. |
+| TaskStop | `stop --name`, plus kind-specific stops | Generic stop attempts monitor and schedule stop. |
 
 ## Comparison to existing AIOS infrastructure
 
