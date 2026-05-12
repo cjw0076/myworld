@@ -140,3 +140,4 @@ decision rather than draft churn.
 | ASC-0052 | aios-native-runtime-entrypoint | closed | Provide one AIOS-native runtime entrypoint so Claude/Codex CLIs become replaceable substrates behind the AIOS loop. |
 | ASC-0053 | hive-provider-loop-runner | closed | Add a Hive-owned provider loop runner for Claude CLI, Codex CLI, and local LLM workers with shared tick/status/stop receipts. |
 | ASC-0054 | global-aios-launcher | closed | Add a thin global `aios` launcher candidate that resolves the active MyWorld control plane while keeping AIOS state workspace-local. |
+| ASC-0055 | absorb-ollama-qwen25-7b | closed | Demonstrate provider absorption by adding recommendation-only CapabilityOS and Hive declarations for Ollama Qwen 2.5 7B. |

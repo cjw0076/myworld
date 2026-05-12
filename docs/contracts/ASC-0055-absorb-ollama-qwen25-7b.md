@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0055
 slug: absorb-ollama-qwen25-7b
-status: accepted
+status: closed
 goal: Demonstrate the AIOS provider-absorption pipeline end-to-end by adding a recommendation-only CapabilityOS card and a Hive worker spec for the Ollama-served Qwen 2.5 7B local LLM, without binding or executing it.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder role delegated)
-closed:
+closed: 2026-05-13 00:22 KST
 acceptance_authority: claude@myworld (operator) — founder asked to see how AIOS absorbs a new provider / local LLM ("새로운 provider 모델이 들어왔을 때, local llm이 생겼을 때 AIOS가 어떻게 흡수하는지 보자").
 origin: founder demonstration request 2026-05-13 KST. Subject chosen: Ollama-served Qwen 2.5 7B as a realistic local-LLM example.
 ---
@@ -56,7 +56,9 @@ repos:
 allowed_files:
 
 - `CapabilityOS/tests/fixtures/capabilities.json`
+- `CapabilityOS/capabilityos/catalog.py`
 - `CapabilityOS/capabilityos/schema.py` (if vocabulary extension needed)
+- `CapabilityOS/tests/test_cli.py`
 - `CapabilityOS/tests/test_observation.py` (if observation shape needs new test)
 - `hivemind/hivemind/local_workers.py`
 - `hivemind/tests/test_local_worker_routing.py`
@@ -158,42 +160,42 @@ Pending until verification.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - issued: 2026-05-13 KST
 - accepted: 2026-05-13 KST
-- closed: pending
+- closed: 2026-05-13 00:22 KST
 - depends_on: none
 - brief: |
     Author `docs/AIOS_PROVIDER_ABSORPTION.md` describing the 6-stage
     absorption recipe based on this contract's actual execution. Cite
     every artifact (receipt id, registry entry, card id, worker spec
     name) so the next absorption can fill the same template.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0055.myworld.result.json`
 
 ### WP-0055-B — Codex@CapabilityOS adds the new card
 
 - target_agent: codex
 - target_repo: CapabilityOS
-- status: issued
+- status: done
 - issued: 2026-05-13 KST
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-13 00:17 KST
+- closed: 2026-05-13 00:21 KST
 - depends_on: none
 - brief: |
     Add `cap_ollama_qwen25_7b_local` to `tests/fixtures/capabilities.json`
     with the fields listed in this contract's "CapabilityOS.must_produce"
     section. Ensure audit + recommend tests still pass. Reference the
     evidence receipt path in `evidence_refs`.
-- result: pending
+- result: `.aios/outbox/CapabilityOS/asc-0055.CapabilityOS.result.json`
 
 ### WP-0055-C — Codex@hivemind adds the WorkerSpec
 
 - target_agent: codex
 - target_repo: hivemind
-- status: issued
+- status: done
 - issued: 2026-05-13 KST
-- accepted: pending
-- closed: pending
+- accepted: 2026-05-13 00:17 KST
+- closed: 2026-05-13 00:21 KST
 - depends_on: WP-0055-B
 - brief: |
     Add a `WorkerSpec` for `ollama_qwen25_7b` in
@@ -201,4 +203,23 @@ Pending until verification.
     call. Update `tests/test_local_worker_routing.py` to assert that
     intent_router returns the new worker for `"private local LLM"`
     style intents.
-- result: pending
+- result: `.aios/outbox/hivemind/asc-0055.hivemind.result.json`
+
+## Closeout
+
+- CapabilityOS commit: `653e2ef`
+- Hive commit: `56ae4e7`
+- MyWorld recipe: `docs/AIOS_PROVIDER_ABSORPTION.md`
+- CapabilityOS card: `cap_ollama_qwen25_7b_local`
+- Hive worker spec: `ollama_qwen25_7b`
+- Evidence receipt: `docs/evidence/2026-05-13-absorption-ollama-qwen25-7b.json`
+- CapabilityOS focused tests passed 16/16.
+- Hive local worker routing tests passed 5/5.
+- MyWorld AIOS tests passed 131/131.
+- Capability pulse completed with `recommendation_only=true` and
+  `audit_status=ok`.
+
+Dispatch send was action-policy escalated because provider absorption is an
+external-effect checkpoint class. Acting operator proceeded only because the
+implementation is recommendation-only: CapabilityOS does not execute the
+provider, and Hive records a declared worker spec without invoking Ollama.

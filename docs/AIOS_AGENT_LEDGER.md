@@ -1813,3 +1813,30 @@ For repo-local implementation details, also update that repo's own worklog.
   goal into MemoryOS context, CapabilityOS route, Hive provider-loop plan,
   verification, and learning receipt.
 - status: done
+
+## 2026-05-13 KST — codex — ASC-0055 Ollama Qwen provider absorption closed
+
+- repo: myworld + CapabilityOS + hivemind
+- role: acting AIOS operator, capability implementer, and Hive worker-spec
+  implementer
+- goal: demonstrate how AIOS absorbs a new local LLM/provider without binding
+  execution.
+- changed: `docs/AIOS_PROVIDER_ABSORPTION.md`,
+  `CapabilityOS/capabilityos/catalog.py`,
+  `CapabilityOS/tests/fixtures/capabilities.json`,
+  `CapabilityOS/tests/test_cli.py`, `hivemind/hivemind/local_workers.py`,
+  `hivemind/tests/test_local_worker_routing.py`, and
+  `docs/contracts/ASC-0055-absorb-ollama-qwen25-7b.md`.
+- evidence: CapabilityOS commit `653e2ef`; Hive commit `56ae4e7`;
+  `cap_ollama_qwen25_7b_local` ranked #1 for "private local LLM with tool
+  use"; audit stayed `recommendation_only=true` with `execution_enabled=[]`;
+  Hive declared `ollama_qwen25_7b` without invoking Ollama; CapabilityOS tests
+  passed 16/16; Hive local worker tests passed 5/5; MyWorld AIOS tests passed
+  131/131; capability pulse completed with `audit_status=ok`.
+- decision: provider absorption is a six-stage recipe: evidence, local
+  registry, CapabilityOS card, Hive worker spec, observation collection, then
+  MemoryOS draft review. Execution binding remains a separate contract.
+- policy note: action policy escalated dispatch send for external-effect
+  checkpoint. Acting operator proceeded because this slice is declaration-only
+  and recommendation-only.
+- status: done
