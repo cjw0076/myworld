@@ -1,0 +1,37 @@
+{
+  "memory_drafts": [
+    {
+      "confidence": 0.62,
+      "content": "AIOS should model web research as a routeable capability because current agent platforms expose web search as an explicit tool rather than an implicit language-model behavior.",
+      "origin": "assistant",
+      "project": "AIOS",
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "status": "draft",
+      "type": "idea"
+    },
+    {
+      "confidence": 0.62,
+      "content": "CapabilityOS should separate planning from execution: official tool ecosystems support tool routing and deferred tool surfaces, while execution should still return auditable evidence.",
+      "origin": "assistant",
+      "project": "AIOS",
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "status": "draft",
+      "type": "idea"
+    },
+    {
+      "confidence": 0.62,
+      "content": "The ASC-0030 policy choice is justified: web route plans should require citations, freshness checks for current topics, privacy filtering, and bounded source opening.",
+      "origin": "assistant",
+      "project": "AIOS",
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "status": "draft",
+      "type": "idea"
+    }
+  ]
+}

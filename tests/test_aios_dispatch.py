@@ -168,6 +168,37 @@ python -m unittest tests/test_aios_web_research_receipt.py
 """
 
 
+LOCAL_EVIDENCE_CONTRACT = """---
+contract_id: ASC-0994
+status: accepted
+goal: Turn validated web evidence into local review candidates.
+accepted: now
+closed:
+---
+
+# ASC-0994 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_web_evidence_memory_review.py`
+
+forbidden_files:
+
+- `.env`
+- raw private exports
+
+## Scope
+
+This reads an existing public source receipt from disk and writes local draft
+review candidates. It uses the local filesystem only and performs no outbound
+publication.
+"""
+
+
 class AiosDispatchTest(unittest.TestCase):
     def run_cli(self, root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         result = subprocess.run(
@@ -281,6 +312,20 @@ class AiosDispatchTest(unittest.TestCase):
             packet = json.loads(packet_path.read_text(encoding="utf-8"))
             self.assertEqual(packet["action_policy"]["decision"], "allow")
             self.assertEqual(packet["verification_commands"][0]["command"], "python -m unittest tests/test_aios_web_research_receipt.py")
+
+    def test_policy_gate_allows_local_web_evidence_review(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0994-test.md"
+            contract.write_text(LOCAL_EVIDENCE_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0994.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["action_policy"]["decision"], "allow")
+            self.assertTrue(packet["action_policy"]["allowed_to_execute"])
 
     def test_release_transition_is_first_class_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

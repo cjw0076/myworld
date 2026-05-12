@@ -1,0 +1,8 @@
+{
+  "created_at": "2026-05-12T18:46:27+09:00",
+  "phase": "memory_review_candidate",
+  "project": "AIOS",
+  "run_id": "ASC-0031-web-evidence-memory-review",
+  "status": "complete",
+  "user_request": "Convert validated AIOS web evidence receipt into MemoryOS draft review candidates without accepting web-derived facts."
+}

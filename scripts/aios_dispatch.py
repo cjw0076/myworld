@@ -199,8 +199,31 @@ def action_policy_input(contract: Contract, dispatch_id: str, repo: str, agent: 
     paid_or_costly = contains_any_term(text, ("paid api", "paid", "spend", "billing", "purchase"))
     irreversible = contains_any_term(text, ("irreversible", "delete production", "destructive"))
     real_world_authority = contains_any_term(text, ("real-world authority", "legal authority", "public authority"))
-    sends_private_data = contains_any_term(text, ("raw private", "raw export", "private data", "personal data"))
-    external_effect = contains_any_term(text, ("external system", "public", "web", "internet", "deploy", "paid", "credential"))
+    sends_private_data = contains_any_term(
+        text,
+        (
+            "send private data",
+            "sends private data",
+            "upload private data",
+            "publish private data",
+            "send personal data",
+            "upload personal data",
+            "raw private export publish",
+        ),
+    )
+    external_effect = contains_any_term(
+        text,
+        (
+            "external system",
+            "internet search",
+            "browse internet",
+            "network call",
+            "remote api",
+            "deploy",
+            "paid",
+            "credential",
+        ),
+    )
     return {
         "action_type": "dispatch_packet",
         "target_repo": repo,

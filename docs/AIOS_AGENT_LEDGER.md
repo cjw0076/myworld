@@ -1422,3 +1422,36 @@ For repo-local implementation details, also update that repo's own worklog.
 - decision: real map APIs are infrastructure; Uri's owned value is the
   campus memory graph, cells, traces, experiences, and agent state overlays.
 - status: open
+
+## 2026-05-12 18:55 KST — codex — ASC-0041 web evidence memory review closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: turn validated web evidence receipts into MemoryOS draft review
+  candidates without auto-accepting web-derived facts.
+- changed: `scripts/aios_web_evidence_memory_review.py`,
+  `tests/test_aios_web_evidence_memory_review.py`, ASC-0041 evidence files,
+  `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0041-web-evidence-memory-review.md`,
+  `docs/contracts/README.md`, goal evolution docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_51c40c8d3d1eabdd`; CapabilityOS routes
+  `cap_web_research_route`, `cap_memoryos_import_run`,
+  `cap_hivemind_execution_harness`, `cap_memoryos_context_build`, and
+  `cap_capabilityos_recommendation`; Hive dry-run
+  `run_20260512_184108_174c71`; result packet
+  `.aios/outbox/myworld/asc-0041.myworld.result.json`; candidate validator
+  passed; MemoryOS `import-run --dry-run --json` planned three draft memory
+  objects with raw refs suppressed; full myworld suite passed 79/79; final
+  monitor assessment returned `health=clear`.
+- decision: web-derived public evidence now enters AIOS as review candidates
+  only: `auto_accept=false`, `status=draft`,
+  `evidence_state=unreviewed`, and source provenance must resolve back to the
+  validated receipt. Dispatch policy was tightened so local evidence-review
+  contracts are not escalated merely because their docs contain `web`,
+  `public`, or forbidden private-data guardrail text.
+- risk: candidates are not accepted MemoryOS objects yet; the next contract
+  should decide which CapabilityOS observations become reviewable MemoryOS
+  memory and keep the same no-auto-accept rule.
+- next: open `capability_observation_memory_import`.
+- status: done

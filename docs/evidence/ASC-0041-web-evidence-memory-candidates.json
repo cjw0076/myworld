@@ -1,0 +1,183 @@
+{
+  "auto_accept": false,
+  "candidate_count": 3,
+  "candidates": [
+    {
+      "auto_accept": false,
+      "candidate_id": "ASC-0031-web-evidence_f4c72b5b0db8c376",
+      "confidence": 0.62,
+      "content": "AIOS should model web research as a routeable capability because current agent platforms expose web search as an explicit tool rather than an implicit language-model behavior.",
+      "evidence_state": "unreviewed",
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "capability_id": "cap_web_research_route",
+        "receipt_id": "ASC-0031-web-evidence",
+        "receipt_path": "docs/evidence/ASC-0031-web-evidence.json",
+        "route_contract": "capabilityos.web_research_route.v1",
+        "sources": [
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "OpenAI",
+            "source_id": "S1",
+            "source_type": "official_docs",
+            "title": "OpenAI API web search guide",
+            "url": "https://developers.openai.com/api/docs/guides/tools-web-search"
+          },
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "OpenAI",
+            "source_id": "S2",
+            "source_type": "official_docs",
+            "title": "OpenAI Agents SDK tools guide",
+            "url": "https://openai.github.io/openai-agents-python/tools/"
+          }
+        ]
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "review_notes": [
+        "web_derived_fact",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_ids": [
+        "S1",
+        "S2"
+      ],
+      "status": "draft",
+      "type": "idea"
+    },
+    {
+      "auto_accept": false,
+      "candidate_id": "ASC-0031-web-evidence_6940f45451c85f87",
+      "confidence": 0.62,
+      "content": "CapabilityOS should separate planning from execution: official tool ecosystems support tool routing and deferred tool surfaces, while execution should still return auditable evidence.",
+      "evidence_state": "unreviewed",
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "capability_id": "cap_web_research_route",
+        "receipt_id": "ASC-0031-web-evidence",
+        "receipt_path": "docs/evidence/ASC-0031-web-evidence.json",
+        "route_contract": "capabilityos.web_research_route.v1",
+        "sources": [
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "OpenAI",
+            "source_id": "S2",
+            "source_type": "official_docs",
+            "title": "OpenAI Agents SDK tools guide",
+            "url": "https://openai.github.io/openai-agents-python/tools/"
+          },
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "Model Context Protocol",
+            "source_id": "S3",
+            "source_type": "official_docs",
+            "title": "Model Context Protocol introduction",
+            "url": "https://modelcontextprotocol.io/docs/getting-started/intro"
+          },
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "GitHub / Model Context Protocol project",
+            "source_id": "S4",
+            "source_type": "primary_repository",
+            "title": "modelcontextprotocol/modelcontextprotocol repository",
+            "url": "https://github.com/modelcontextprotocol/modelcontextprotocol"
+          }
+        ]
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "review_notes": [
+        "web_derived_fact",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_ids": [
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "status": "draft",
+      "type": "idea"
+    },
+    {
+      "auto_accept": false,
+      "candidate_id": "ASC-0031-web-evidence_4230dacf8ef027c2",
+      "confidence": 0.62,
+      "content": "The ASC-0030 policy choice is justified: web route plans should require citations, freshness checks for current topics, privacy filtering, and bounded source opening.",
+      "evidence_state": "unreviewed",
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "capability_id": "cap_web_research_route",
+        "receipt_id": "ASC-0031-web-evidence",
+        "receipt_path": "docs/evidence/ASC-0031-web-evidence.json",
+        "route_contract": "capabilityos.web_research_route.v1",
+        "sources": [
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "OpenAI",
+            "source_id": "S1",
+            "source_type": "official_docs",
+            "title": "OpenAI API web search guide",
+            "url": "https://developers.openai.com/api/docs/guides/tools-web-search"
+          },
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "OpenAI",
+            "source_id": "S2",
+            "source_type": "official_docs",
+            "title": "OpenAI Agents SDK tools guide",
+            "url": "https://openai.github.io/openai-agents-python/tools/"
+          },
+          {
+            "accessed_at": "2026-05-12",
+            "publisher": "Model Context Protocol",
+            "source_id": "S3",
+            "source_type": "official_docs",
+            "title": "Model Context Protocol introduction",
+            "url": "https://modelcontextprotocol.io/docs/getting-started/intro"
+          }
+        ]
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0031-web-evidence.json"
+      ],
+      "review_notes": [
+        "web_derived_fact",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "status": "draft",
+      "type": "idea"
+    }
+  ],
+  "capability_id": "cap_web_research_route",
+  "generated_at": "2026-05-12T18:46:27+09:00",
+  "memoryos_import_hint": {
+    "command": "memoryos import-run <run_bundle_dir> --dry-run --json",
+    "expected_status": "dry_run_ok",
+    "must_not_write_review_acceptance": true
+  },
+  "memoryos_target_status": "draft",
+  "receipt_id": "ASC-0031-web-evidence",
+  "review_required": true,
+  "route_contract": "capabilityos.web_research_route.v1",
+  "schema_version": "aios.web_evidence_memory_review.v1",
+  "source_receipt": "docs/evidence/ASC-0031-web-evidence.json",
+  "source_schema_version": "aios.web_research_receipt.v1",
+  "status": "review_candidates"
+}

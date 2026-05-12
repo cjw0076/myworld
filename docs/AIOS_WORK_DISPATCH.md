@@ -249,6 +249,25 @@ python scripts/aios_local_app.py stop --json
 `apps/control/` on localhost. It is a local operator surface, not a child-repo
 implementation worker.
 
+Web evidence memory review:
+
+```bash
+python scripts/aios_web_evidence_memory_review.py --root . build \
+  docs/evidence/ASC-0031-web-evidence.json \
+  --output docs/evidence/ASC-0041-web-evidence-memory-candidates.json \
+  --run-bundle docs/evidence/ASC-0041-web-evidence-review-run \
+  --json
+
+python scripts/aios_web_evidence_memory_review.py --root . validate \
+  docs/evidence/ASC-0041-web-evidence-memory-candidates.json \
+  --json
+```
+
+This adapter turns a validated web evidence receipt into draft-only MemoryOS
+review candidates and a Hive-run-compatible `memory_drafts.json` bundle.
+MemoryOS review remains explicit: web-derived facts are never accepted by this
+control-plane adapter.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

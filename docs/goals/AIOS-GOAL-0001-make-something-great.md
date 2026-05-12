@@ -76,8 +76,6 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- web_evidence_memory_review: turn validated web evidence receipts into
-  MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations
   should enter MemoryOS as reviewable durable memory.
 - contract_autodraft_from_goal_plan: turn an unblocked goal evolution
@@ -129,3 +127,6 @@ and reversible governance.
 - on_prem_evolving_application: ASC-0040 packaged the local control app,
   snapshot refresh, monitor write, server lifecycle, and round-controller
   status into one repeatable command.
+- web_evidence_memory_review: ASC-0041 turned a validated web evidence receipt
+  into draft-only MemoryOS review candidates and a MemoryOS import-run dry-run
+  bundle without auto-accepting web-derived facts.

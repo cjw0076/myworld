@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T18:35:49+09:00`
+- generated_at: `2026-05-12T18:55:54+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:web_evidence_memory_review`
+- path: `goal:capability_observation_memory_import`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: turn validated web evidence receipts into MemoryOS review candidates without auto-accepting web-derived facts.
+- task: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 

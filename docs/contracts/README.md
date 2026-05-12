@@ -126,3 +126,4 @@ decision rather than draft churn.
 | ASC-0038 | self-resonant-repo-loop | closed | Let lower repos submit goals or friction to myworld, receive MemoryOS/CapabilityOS/Hive route packets, and turn returned friction into AIOS improvement candidates. |
 | ASC-0039 | visual-control-application | closed | Create the first local visualization-first AIOS control surface from generated myworld state snapshots. |
 | ASC-0040 | on-prem-evolving-application | closed | Package the local AIOS control app, snapshot refresh, monitor write, static server, and round-controller status into one repeatable local command. |
+| ASC-0041 | web-evidence-memory-review | closed | Turn validated web evidence receipts into MemoryOS draft review candidates without auto-accepting web-derived facts. |
