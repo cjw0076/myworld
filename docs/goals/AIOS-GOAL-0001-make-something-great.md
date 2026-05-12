@@ -71,8 +71,13 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- policy_gated_dispatch: wire the action policy into dispatch creation/sending
-  so higher-risk packets are held or escalated before inbox delivery.
+- cross_repo_semantic_alignment: teach every lower-repo agent the AIOS common
+  language, add handshake checks for term meaning, then use that shared
+  language as the base for the self-resonant repo loop.
+- self_resonant_repo_loop: let working repos submit goals to always-on
+  myworld; myworld keeps talking with those repos, returns memory/capability/
+  hive routes, dispatches packets, collects friction, and turns the friction
+  into AIOS improvements.
 - web_evidence_memory_review: turn validated web evidence receipts into
   MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations
@@ -108,3 +113,5 @@ and reversible governance.
 - governance_action_policy_engine: ASC-0034 added a policy engine that returns
   allow, hold, deny, or escalate for proposed AIOS actions by authority, risk,
   privacy, resource use, and checkpoint requirements.
+- policy_gated_dispatch: ASC-0035 wired the action policy into manual dispatch
+  send and the autonomous control-plane loop before inbox delivery.

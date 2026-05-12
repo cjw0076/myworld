@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from aios_dispatch import extract_must_produce, extract_verification_commands
+from aios_dispatch import evaluate_dispatch_policy, extract_must_produce, extract_verification_commands
 
 
 REPOS = ("myworld", "hivemind", "memoryOS", "CapabilityOS")
@@ -157,7 +157,7 @@ def append_loop_event(root: Path, event: dict[str, Any]) -> None:
 
 
 def dispatch_state(events: list[dict[str, Any]], dispatch_id: str) -> dict[str, Any]:
-    state = {"created": False, "sent": set(), "collected": set(), "stopped": False}
+    state = {"created": False, "sent": set(), "collected": set(), "terminal": False, "terminal_status": ""}
     for event in events:
         if event.get("dispatch_id") != dispatch_id:
             continue
@@ -167,8 +167,9 @@ def dispatch_state(events: list[dict[str, Any]], dispatch_id: str) -> dict[str, 
             state["sent"].add(str(event.get("repo")))
         elif event.get("event") == "collected":
             state["collected"].add(str(event.get("repo")))
-        elif event.get("event") == "stopped":
-            state["stopped"] = True
+        elif event.get("event") in {"stopped", "held", "escalated"}:
+            state["terminal"] = True
+            state["terminal_status"] = event.get("event")
     return state
 
 
@@ -189,6 +190,7 @@ def build_packet(root: Path, contract: Contract, repo: str, agent: str = "codex"
         "goal": contract.goal,
         "created_at": now_iso(),
         "status": "sent",
+        "action_policy": evaluate_dispatch_policy(contract, contract.dispatch_id, repo, agent),
         "control_plane": {
             "root": "myworld",
             "rule": "myworld issues packets; child repo agent executes in the owning repo",
@@ -252,6 +254,29 @@ def create_dispatch(root: Path, contract: Contract) -> dict[str, Any]:
 
 
 def send_packet(root: Path, contract: Contract, repo: str) -> dict[str, Any]:
+    policy = evaluate_dispatch_policy(contract, contract.dispatch_id, repo, "codex")
+    if policy["decision"] != "allow":
+        status = "escalated" if policy["decision"] == "escalate" else "held" if policy["decision"] == "hold" else "stopped"
+        append_dispatch_event(
+            root,
+            {
+                "event": status,
+                "dispatch_id": contract.dispatch_id,
+                "contract_id": contract.contract_id,
+                "repo": repo,
+                "agent": "codex",
+                "reason": f"action_policy_{policy['decision']}",
+                "policy": policy,
+                "status": status,
+            },
+        )
+        return {
+            "action": f"policy_{policy['decision']}_dispatch",
+            "dispatch_id": contract.dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "policy": policy,
+        }
     packet = build_packet(root, contract, repo)
     path = root / INBOX_DIR / repo / f"{contract.dispatch_id}.{repo}.json"
     path.write_text(json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -370,6 +395,17 @@ def plan_once(root: Path, *, apply: bool) -> dict[str, Any]:
         if invalid_repos:
             observations.append({"contract_id": contract.contract_id, "next": "checkpoint_invalid_repos", "repos": invalid_repos})
             continue
+        if state["terminal"]:
+            observations.append(
+                {
+                    "contract_id": contract.contract_id,
+                    "status": contract.status,
+                    "dispatch_id": contract.dispatch_id,
+                    "pending_results": sorted(set(target_repos) - set(state["collected"])),
+                    "next": f"policy_{state['terminal_status']}_checkpoint",
+                }
+            )
+            continue
         for repo in target_repos:
             if repo in state["sent"]:
                 continue
@@ -384,6 +420,18 @@ def plan_once(root: Path, *, apply: bool) -> dict[str, Any]:
                 events = load_events(root)
                 state = dispatch_state(events, contract.dispatch_id)
             actions.append(action)
+
+        if state["terminal"]:
+            observations.append(
+                {
+                    "contract_id": contract.contract_id,
+                    "status": contract.status,
+                    "dispatch_id": contract.dispatch_id,
+                    "pending_results": sorted(set(target_repos) - set(state["collected"])),
+                    "next": f"policy_{state['terminal_status']}_checkpoint",
+                }
+            )
+            continue
 
         pending = sorted(set(target_repos) - set(state["collected"]))
         next_action = "await_results" if pending else "ready_for_closeout"

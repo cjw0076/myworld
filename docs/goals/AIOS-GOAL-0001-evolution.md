@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T14:43:15+09:00`
+- generated_at: `2026-05-12T15:28:14+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:policy_gated_dispatch`
+- path: `goal:cross_repo_semantic_alignment`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: wire the action policy into dispatch creation/sending so higher-risk packets are held or escalated before inbox delivery.
+- task: teach every lower-repo agent the AIOS common language, add handshake checks for term meaning, then use that shared language as the base for the self-resonant repo loop.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 

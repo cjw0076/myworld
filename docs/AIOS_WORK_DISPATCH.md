@@ -224,6 +224,11 @@ Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless
   `--allow-proposed` is used for local CLI testing.
+- `send` evaluates `docs/AIOS_ACTION_POLICY.md` before writing an inbox packet.
+  A non-`allow` decision records `held`, `escalated`, or `stopped` in
+  `.aios/state/dispatches.jsonl` and leaves the inbox unchanged.
+- `aios_loop.py once --apply` uses the same action-policy gate, so autonomous
+  control-plane rounds cannot bypass manual `send` policy checks.
 - packets include `allowed_files`, `forbidden_files`, required reading, and
   stop conditions from the contract surface.
 - packets also include `must_produce`, `verification_commands`,

@@ -109,6 +109,65 @@ python -m pytest tests/test_import_run.py -v
 """
 
 
+CHECKPOINT_CONTRACT = """---
+contract_id: ASC-0996
+status: accepted
+goal: Test checkpoint packet.
+accepted: now
+closed:
+---
+
+# ASC-0996 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_dispatch.py`
+
+forbidden_files:
+
+- `.env`
+
+## Trigger
+
+This asks for a public statement on behalf of the system.
+"""
+
+
+PATH_TERM_CONTRACT = """---
+contract_id: ASC-0995
+status: accepted
+goal: Test path term packet.
+accepted: now
+closed:
+---
+
+# ASC-0995 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `tests/test_aios_dispatch.py`
+
+forbidden_files:
+
+- `.env`
+
+## Verification Gate
+
+```bash
+cd {root}
+python -m unittest tests/test_aios_web_research_receipt.py
+```
+"""
+
+
 class AiosDispatchTest(unittest.TestCase):
     def run_cli(self, root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
         result = subprocess.run(
@@ -167,6 +226,8 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(packet["result_schema_version"], "aios.dispatch.result.v1")
             self.assertIn("must_produce", packet)
             self.assertIn("verification_commands", packet)
+            self.assertEqual(packet["action_policy"]["decision"], "allow")
+            self.assertIn("allow_proposed_test_bypass", packet["action_policy"]["reason_codes"])
 
     def test_send_enriches_packet_with_repo_slice(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -185,6 +246,41 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(packet["verification_commands"][0]["command"], "python -m pytest tests/test_import_run.py -v")
             self.assertTrue(packet["verification_commands"][0]["cwd"].endswith("/memoryOS"))
             self.assertEqual(packet["result_contract"]["schema_version"], "aios.dispatch.result.v1")
+            self.assertEqual(packet["action_policy"]["decision"], "allow")
+            self.assertTrue(packet["action_policy"]["allowed_to_execute"])
+
+    def test_send_blocks_checkpoint_required_packet_before_inbox_write(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0996-test.md"
+            contract.write_text(CHECKPOINT_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["status"], "escalated")
+            self.assertEqual(payload["policy"]["decision"], "escalate")
+            self.assertFalse((root / ".aios" / "inbox" / "myworld" / "asc-0996.myworld.json").exists())
+            status = json.loads(self.run_cli(root, "status", "--json").stdout)
+            self.assertEqual(status["dispatches"][0]["status"], "escalated")
+            self.assertEqual(status["dispatches"][0]["reason"], "action_policy_escalate")
+
+    def test_policy_gate_does_not_escalate_path_tokens(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0995-test.md"
+            contract.write_text(PATH_TERM_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0995.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["action_policy"]["decision"], "allow")
+            self.assertEqual(packet["verification_commands"][0]["command"], "python -m unittest tests/test_aios_web_research_receipt.py")
 
     def test_release_transition_is_first_class_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

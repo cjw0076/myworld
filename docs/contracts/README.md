@@ -120,3 +120,4 @@ decision rather than draft churn.
 | ASC-0032 | uri-repo-isolation-setup | closed | Create an isolated Uri child repository and private `uri-v3` remote without mixing product artifacts into the MyWorld control plane. |
 | ASC-0033 | sovereign-ai-governance-readiness | closed | Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance. |
 | ASC-0034 | governance-action-policy-engine | closed | Add a machine-checkable AIOS action policy engine that gates proposed actions by authority, risk, privacy, resource use, and checkpoint requirements. |
+| ASC-0035 | policy-gated-dispatch | closed | Wire the action policy into dispatch creation and sending so checkpoint-required packets are blocked before inbox delivery. |

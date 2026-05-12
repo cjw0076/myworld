@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from aios_action_policy import evaluate_action
+
 
 REPOS = ("myworld", "hivemind", "memoryOS", "CapabilityOS")
 STATE_DIR = Path(".aios/state")
@@ -180,6 +182,85 @@ def default_dispatch_id(contract: Contract) -> str:
     return safe or contract.path.stem
 
 
+def contains_term(text: str, term: str) -> bool:
+    escaped = re.escape(term.lower()).replace(r"\ ", r"\s+")
+    return bool(re.search(rf"(?<![a-z0-9_-]){escaped}(?![a-z0-9_-])", text))
+
+
+def contains_any_term(text: str, terms: tuple[str, ...]) -> bool:
+    return any(contains_term(text, term) for term in terms)
+
+
+def action_policy_input(contract: Contract, dispatch_id: str, repo: str, agent: str) -> dict[str, Any]:
+    text = f"{contract.goal}\n{contract.body}".lower()
+    public_communication = contains_any_term(text, ("public communication", "public statement", "on behalf"))
+    legal_or_safety_impact = contains_any_term(text, ("legal", "medical", "financial", "employment", "safety"))
+    uses_credentials = contains_any_term(text, ("credential", "token", "secret", "login"))
+    paid_or_costly = contains_any_term(text, ("paid api", "paid", "spend", "billing", "purchase"))
+    irreversible = contains_any_term(text, ("irreversible", "delete production", "destructive"))
+    real_world_authority = contains_any_term(text, ("real-world authority", "legal authority", "public authority"))
+    sends_private_data = contains_any_term(text, ("raw private", "raw export", "private data", "personal data"))
+    external_effect = contains_any_term(text, ("external system", "public", "web", "internet", "deploy", "paid", "credential"))
+    return {
+        "action_type": "dispatch_packet",
+        "target_repo": repo,
+        "authority": "accepted_contract" if contract.status in {"accepted", "closed"} else "unaccepted_contract",
+        "risk": "high" if any((public_communication, legal_or_safety_impact, paid_or_costly, irreversible, real_world_authority)) else "low",
+        "privacy": "remote" if external_effect or sends_private_data else "local",
+        "cost": "paid" if paid_or_costly else "free",
+        "has_contract": contract.status in {"accepted", "closed"},
+        "evidence_refs": [contract.path.as_posix()],
+        "human_approved": contract.frontmatter.get("human_approved", "").lower() == "true",
+        "irreversible": irreversible,
+        "external_effect": external_effect,
+        "uses_credentials": uses_credentials,
+        "public_communication": public_communication,
+        "legal_or_safety_impact": legal_or_safety_impact,
+        "real_world_authority": real_world_authority,
+        "sends_private_data": sends_private_data,
+        "dispatch_id": dispatch_id,
+        "agent": agent,
+    }
+
+
+def evaluate_dispatch_policy(contract: Contract, dispatch_id: str, repo: str, agent: str) -> dict[str, Any]:
+    action = action_policy_input(contract, dispatch_id, repo, agent)
+    result = evaluate_action(action).to_json(action)
+    return {
+        "schema_version": result["schema_version"],
+        "decision": result["decision"],
+        "allowed_to_execute": result["allowed_to_execute"],
+        "required_checkpoint": result["required_checkpoint"],
+        "reason_codes": result["reason_codes"],
+    }
+
+
+def append_policy_block(root: Path, contract: Contract, dispatch_id: str, repo: str, agent: str, policy: dict[str, Any]) -> dict[str, Any]:
+    decision = str(policy.get("decision"))
+    event = "escalated" if decision == "escalate" else "held" if decision == "hold" else "stopped"
+    status = event
+    append_event(
+        root,
+        {
+            "event": event,
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": agent,
+            "reason": f"action_policy_{decision}",
+            "policy": policy,
+            "status": status,
+        },
+    )
+    return {
+        "ok": False,
+        "dispatch_id": dispatch_id,
+        "repo": repo,
+        "status": status,
+        "policy": policy,
+    }
+
+
 def repo_aliases(repo: str) -> set[str]:
     aliases = {
         "hivemind": {"hivemind", "hive mind", "hive_mind", "hive"},
@@ -280,7 +361,7 @@ def cmd_create(args: argparse.Namespace) -> int:
     return 0
 
 
-def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str) -> dict[str, Any]:
+def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str, policy: dict[str, Any] | None = None) -> dict[str, Any]:
     verification_commands = [
         {"cwd": command["cwd"], "command": command["line"]}
         for command in extract_verification_commands(contract, repo, repo_root())
@@ -297,6 +378,7 @@ def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str) ->
         "goal": contract.goal,
         "created_at": now_iso(),
         "status": "sent",
+        "action_policy": policy or evaluate_dispatch_policy(contract, dispatch_id, repo, agent),
         "control_plane": {
             "root": "myworld",
             "rule": "myworld issues packets; child repo agent executes in the owning repo",
@@ -359,7 +441,22 @@ def cmd_send(args: argparse.Namespace) -> int:
             f"contract {contract.contract_id} is {contract.status}; operator acceptance required before send"
         )
     ensure_layout(root)
-    packet = build_packet(contract, dispatch_id, repo, args.agent)
+    policy = (
+        {
+            "schema_version": "aios.action_policy.v1",
+            "decision": "allow",
+            "allowed_to_execute": True,
+            "required_checkpoint": False,
+            "reason_codes": ["allow_proposed_test_bypass"],
+        }
+        if args.allow_proposed
+        else evaluate_dispatch_policy(contract, dispatch_id, repo, args.agent)
+    )
+    if policy["decision"] != "allow":
+        blocked = append_policy_block(root, contract, dispatch_id, repo, args.agent, policy)
+        print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+        return 1
+    packet = build_packet(contract, dispatch_id, repo, args.agent, policy=policy)
     packet_path = root / INBOX_DIR / repo / f"{dispatch_id}.{repo}.json"
     if packet_path.exists() and not args.force:
         raise SystemExit(f"packet already exists: {packet_path} (use --force to overwrite)")

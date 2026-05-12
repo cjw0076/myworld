@@ -1139,3 +1139,36 @@ For repo-local implementation details, also update that repo's own worklog.
   contract should wire policy evaluation into dispatch creation/sending.
 - next: open `policy_gated_dispatch`.
 - status: done
+
+## 2026-05-12 15:24 KST — codex — ASC-0035 policy-gated dispatch closed
+
+- repo: myworld
+- role: acting operator + implementation
+- goal: enforce the ASC-0034 action policy before manual or autonomous
+  dispatch writes inbox packets.
+- changed: `scripts/aios_dispatch.py`, `scripts/aios_loop.py`,
+  `tests/test_aios_dispatch.py`, `tests/test_aios_loop.py`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0035-policy-gated-dispatch.md`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, and
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_dispatch.py scripts/aios_loop.py scripts/aios_action_policy.py`
+  passed; `python -m unittest tests/test_aios_dispatch.py tests/test_aios_loop.py tests/test_aios_action_policy.py`
+  passed 21/21; dogfood dispatch `asc-0035-policy-gate-dogfood`
+  produced `action_policy.decision=allow`, watcher result passed, collect and
+  release completed; full myworld suite passed 59/59 in the watcher result;
+  final monitor assessment returned `health=clear`.
+- decision: dispatch policy evaluation now runs before inbox delivery in both
+  `aios_dispatch.py send` and `aios_loop.py once --apply`; blocked packets
+  append `held`, `escalated`, or `stopped` evidence without writing an inbox
+  packet.
+- risk: the first dogfood dispatch `asc-0035` exposed a false positive where a
+  verification file path containing `web` was read as an action signal. The
+  matcher now uses phrase boundaries, and regression coverage prevents that
+  path-token drift.
+- next: open `cross_repo_semantic_alignment` so every lower-repo agent knows
+  AIOS vocabulary, performs a meaning handshake before cross-repo work, and
+  reduces semantic drift before the self-resonant repo loop is expanded.
+- status: done
