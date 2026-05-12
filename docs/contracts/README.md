@@ -130,3 +130,4 @@ decision rather than draft churn.
 | ASC-0042 | capability-observation-memory-import | closed | Convert CapabilityOS observations into MemoryOS draft review candidates without auto-accepting capability claims. |
 | ASC-0043 | contract-autodraft-from-goal-plan | closed | Turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory. |
 | ASC-0044 | desktop-control-application | closed | Provide a non-web native desktop AIOS control app for local monitor, contract, dispatch, repo, and route state. |
+| ASC-0045 | hive-handoff-compat-import | closed | Add a Hive HANDOFF.json/shared-folder compatibility import so old MemoryOS pingpong loops can replay into Hive run artifacts. |

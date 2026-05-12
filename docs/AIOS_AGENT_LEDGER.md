@@ -1543,3 +1543,35 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: package or harden the desktop app only after the native surface proves
   useful; otherwise continue with the Hive radar-gap triage candidate.
 - status: done
+
+## 2026-05-12 20:31 KST — codex — ASC-0045 Hive HANDOFF compat import closed
+
+- repo: myworld + hivemind
+- role: acting operator + child-repo implementation
+- goal: add a Hive compatibility import so old MemoryOS-style `HANDOFF.json`
+  shared-folder pingpong loops can replay into Hive run artifacts.
+- changed: `docs/contracts/ASC-0045-hive-handoff-compat-import.md`,
+  `docs/contracts/README.md`, `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `hivemind/hivemind/handoff_import.py`, `hivemind/hivemind/hive.py`,
+  `hivemind/hivemind/run_validation.py`, `hivemind/tests/test_handoff_import.py`,
+  `hivemind/docs/TODO.md`, `hivemind/docs/AGENT_WORKLOG.md`, and
+  `hivemind/.ai-runs/shared/comms_log.md`.
+- evidence: MemoryOS trace `rtrace_574a26fbfc3f431c`; CapabilityOS routes
+  `cap_memoryos_import_run`, `cap_hivemind_execution_harness`,
+  `cap_memoryos_context_build`, `cap_capabilityos_recommendation`, and
+  `cap_web_research_route`; Hive dry-run `run_20260512_201717_8efb3e`;
+  hivemind commit `26a2209`; result packet
+  `.aios/outbox/hivemind/asc-0045.hivemind.result.json`; focused tests passed
+  4/4 and 15/15; full Hive pytest passed 310/310; smoke import of
+  `docs/HANDOFF.json` produced `run_20260512_202643_5921bf` and inspect
+  returned `status=imported`, `validation_verdict=pass`, `verdict=clean`.
+- decision: legacy shared-folder handoff state can now enter Hive as a standard
+  run artifact through `hive handoff import`, while preserving the no raw-body
+  and no MemoryOS acceptance boundary.
+- risk: imported runs are replay/inspection artifacts, not execution decisions;
+  ledger/protocol authority remains separate and may still report missing
+  execution ledger on legacy imports.
+- next: open the next Hive verification packet, likely first-class
+  `hive evaluate` / `hive subagents review`, unless goal evolution selects a
+  higher-value unblocked candidate.
+- status: done

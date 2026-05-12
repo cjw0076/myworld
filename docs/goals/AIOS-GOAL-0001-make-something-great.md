@@ -137,3 +137,6 @@ goal. -->
   ASC-0043 contract before manual acceptance and closeout.
 - desktop_control_application: ASC-0044 added a native non-web desktop control
   app entry point using Python tkinter and the existing AIOS control snapshot.
+- hive_handoff_compat_import: ASC-0045 added `hive handoff import` so old
+  MemoryOS-style `HANDOFF.json` shared-folder loops can be replayed into
+  inspectable Hive run artifacts without copying raw provider/private bodies.
