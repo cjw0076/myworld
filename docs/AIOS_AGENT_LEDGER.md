@@ -1599,3 +1599,34 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: open the concrete Hive `hive evaluate` / `hive subagents review`
   contract.
 - status: done
+
+## 2026-05-12 21:03 KST — codex — ASC-0047 Hive evaluate review command closed
+
+- repo: myworld + hivemind
+- role: acting operator + child-repo implementation
+- goal: add a first-class Hive command that turns verifier, product evaluator,
+  and actual-user persona checks into a durable run artifact.
+- changed: `docs/contracts/ASC-0047-hive-evaluate-subagents-review.md`,
+  `docs/contracts/README.md`, `docs/goals/AIOS-GOAL-0001-evolution.md`,
+  `hivemind/hivemind/evaluation.py`, `hivemind/hivemind/hive.py`,
+  `hivemind/hivemind/run_validation.py`, `hivemind/tests/test_evaluation.py`,
+  `hivemind/docs/TODO.md`, `hivemind/docs/AGENT_WORKLOG.md`, and
+  `hivemind/.ai-runs/shared/comms_log.md`.
+- evidence: MemoryOS trace `rtrace_4fe9704b72d1a1c1`; accepted memory
+  `mem_90b5cfe6570e6ee2`; CapabilityOS top route
+  `cap_hivemind_execution_harness`; Hive planning dry-run
+  `run_20260512_204728_7ad911`; hivemind commit `85abfbe`; result packet
+  `.aios/outbox/hivemind/asc-0047.hivemind.result.json`; focused evaluation
+  tests passed 6/6; CLI smoke produced `kind=hive_evaluation_report`,
+  `overall_status=passed`, and `paths_hidden=true`; full Hive pytest passed
+  316/316.
+- decision: Hive now has a deterministic, provider-free evaluation surface:
+  `hive evaluate --run <run_id>` and `hive subagents review --run <run_id>`.
+  It writes `artifacts/evaluation_report.json`, updates run state, and keeps
+  raw provider/private bodies out of the report.
+- risk: this is a structured review over existing inspect/validation signals,
+  not yet true independent LLM subagent execution.
+- next: the next loop should either refine the remaining generic Hive radar
+  recommendation into another concrete TODO or move to the highest-value
+  MemoryOS/CapabilityOS held candidate.
+- status: done
