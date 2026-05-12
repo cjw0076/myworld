@@ -119,3 +119,4 @@ decision rather than draft churn.
 | ASC-0031 | web-evidence-execution-loop | closed | Dogfood CapabilityOS web-route by producing and validating a cited web evidence receipt for AIOS capability routing. |
 | ASC-0032 | uri-repo-isolation-setup | closed | Create an isolated Uri child repository and private `uri-v3` remote without mixing product artifacts into the MyWorld control plane. |
 | ASC-0033 | sovereign-ai-governance-readiness | closed | Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance. |
+| ASC-0034 | governance-action-policy-engine | closed | Add a machine-checkable AIOS action policy engine that gates proposed actions by authority, risk, privacy, resource use, and checkpoint requirements. |

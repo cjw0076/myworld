@@ -71,9 +71,8 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- governance_action_policy_engine: convert governance readiness into a
-  machine-checkable action policy that can allow, hold, deny, or escalate
-  proposed AIOS actions by authority and risk class.
+- policy_gated_dispatch: wire the action policy into dispatch creation/sending
+  so higher-risk packets are held or escalated before inbox delivery.
 - web_evidence_memory_review: turn validated web evidence receipts into
   MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations
@@ -106,3 +105,6 @@ and reversible governance.
 - sovereign_ai_governance_readiness: ASC-0033 added post-L6 governance
   readiness levels L7-L10 and a validator that blocks real-world authority
   claims while measuring accountable institutional capacity.
+- governance_action_policy_engine: ASC-0034 added a policy engine that returns
+  allow, hold, deny, or escalate for proposed AIOS actions by authority, risk,
+  privacy, resource use, and checkpoint requirements.

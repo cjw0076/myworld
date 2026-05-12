@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T14:38:28+09:00`
+- generated_at: `2026-05-12T14:43:15+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:governance_action_policy_engine`
+- path: `goal:policy_gated_dispatch`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: convert governance readiness into a machine-checkable action policy that can allow, hold, deny, or escalate proposed AIOS actions by authority and risk class.
+- task: wire the action policy into dispatch creation/sending so higher-risk packets are held or escalated before inbox delivery.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
