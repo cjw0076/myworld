@@ -135,3 +135,5 @@ goal. -->
 - contract_autodraft_from_goal_plan: ASC-0043 added a proposed-only contract
   autodraft CLI from goal evolution output and dogfooded it to draft the
   ASC-0043 contract before manual acceptance and closeout.
+- desktop_control_application: ASC-0044 added a native non-web desktop control
+  app entry point using Python tkinter and the existing AIOS control snapshot.

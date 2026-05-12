@@ -129,3 +129,4 @@ decision rather than draft churn.
 | ASC-0041 | web-evidence-memory-review | closed | Turn validated web evidence receipts into MemoryOS draft review candidates without auto-accepting web-derived facts. |
 | ASC-0042 | capability-observation-memory-import | closed | Convert CapabilityOS observations into MemoryOS draft review candidates without auto-accepting capability claims. |
 | ASC-0043 | contract-autodraft-from-goal-plan | closed | Turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory. |
+| ASC-0044 | desktop-control-application | closed | Provide a non-web native desktop AIOS control app for local monitor, contract, dispatch, repo, and route state. |

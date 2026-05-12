@@ -2,36 +2,55 @@
   "aios_inputs": {
     "capability_routes": [
       "cap_capabilityos_recommendation",
-      "cap_memoryos_import_run",
+      "cap_web_research_route",
       "cap_hivemind_execution_harness",
+      "cap_memoryos_import_run",
       "cap_memoryos_context_build",
-      "cap_web_research_route",
-      "cap_web_research_route",
+      "cap_capabilityos_recommendation",
       "cap_memoryos_import_run",
       "cap_hivemind_execution_harness"
     ],
     "hive_runs": [
+      "run_20260512_192045_2b20d1",
       "run_20260512_185731_652abf",
       "run_state",
       "run_failed",
       "run_ok",
-      "run_20260512_184108_174c71",
-      "run_state"
+      "run_20260512_184108_174c71"
     ],
     "memory_traces": [
+      "rtrace_47a2a93628dec7f2",
       "rtrace_0b0ca4ff4d1e0653",
       "rtrace_51c40c8d3d1eabdd",
       "rtrace_02e5c1e5e56a02d5",
       "rtrace_c0619c4194e7535b",
-      "rtrace_7f8eb07cf6b0137e",
-      "rtrace_ff2208eaa6d9895b"
+      "rtrace_7f8eb07cf6b0137e"
     ]
   },
   "contracts": {
     "counts": {
-      "closed": 43
+      "closed": 44
     },
     "latest": [
+      {
+        "accepted": "2026-05-12 19:20 KST by codex acting operator",
+        "closed": "2026-05-12 19:31 KST",
+        "created": "2026-05-12 19:20 KST",
+        "goal": "Provide a non-web native desktop AIOS control app for local monitor, contract, dispatch, repo, and route state.",
+        "id": "ASC-0044",
+        "path": "docs/contracts/ASC-0044-desktop-control-application.md",
+        "slug": "desktop-control-application",
+        "status": "closed",
+        "stop_conditions": [
+          "`web_view_used`",
+          "`http_server_required`",
+          "`browser_required`",
+          "`display_required_for_tests`",
+          "`child_repo_source_edit`",
+          "`verification_gate_failed`",
+          "`monitor_not_clear`"
+        ]
+      },
       {
         "accepted": "2026-05-12 19:12 KST by codex acting operator",
         "closed": "2026-05-12 19:17 KST",
@@ -195,35 +214,32 @@
           "`child_repo_scope_leak`",
           "`missing_dispatch_event_for_blocked_packet`"
         ]
-      },
-      {
-        "accepted": "2026-05-12 14:40 KST",
-        "closed": "2026-05-12 14:42 KST",
-        "created": "2026-05-12 14:40 KST",
-        "goal": "Add a machine-checkable AIOS action policy engine that gates proposed actions by authority, risk, privacy, resource use, and checkpoint requirements.",
-        "id": "ASC-0034",
-        "path": "docs/contracts/ASC-0034-governance-action-policy-engine.md",
-        "slug": "governance-action-policy-engine",
-        "status": "closed",
-        "stop_conditions": [
-          "`policy_allows_forbidden_action`",
-          "`policy_skips_human_checkpoint`",
-          "`policy_blocks_all_low_risk_work`",
-          "`policy_executes_action`",
-          "`child_repo_scope_leak`"
-        ]
       }
     ],
-    "total": 43
+    "total": 44
   },
   "dispatches": {
     "counts": {
       "collected": 4,
       "escalated": 1,
       "passed": 2,
-      "released": 30
+      "released": 31
     },
     "latest": [
+      {
+        "collected": [
+          "myworld"
+        ],
+        "contract_id": "ASC-0044",
+        "dispatch_id": "asc-0044",
+        "goal": "Provide a non-web native desktop AIOS control app for local monitor, contract, dispatch, repo, and route state.",
+        "reason": "asc_0044_desktop_control_application_verified",
+        "sent": [
+          "myworld"
+        ],
+        "status": "released",
+        "timestamp": "2026-05-12T19:28:03+09:00"
+      },
       {
         "collected": [
           "myworld"
@@ -383,65 +399,9 @@
         ],
         "status": "released",
         "timestamp": "2026-05-12T14:42:08+09:00"
-      },
-      {
-        "collected": [
-          "myworld"
-        ],
-        "contract_id": "ASC-0033",
-        "dispatch_id": "asc-0033",
-        "goal": "Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance.",
-        "reason": "asc_0033_sovereign_ai_governance_readiness_verified",
-        "sent": [
-          "myworld"
-        ],
-        "status": "released",
-        "timestamp": "2026-05-12T14:37:27+09:00"
       }
     ],
     "timeline": [
-      {
-        "dispatch_id": "asc-0039",
-        "event": "released",
-        "repo": null,
-        "status": "released",
-        "timestamp": "2026-05-12T18:23:51+09:00"
-      },
-      {
-        "dispatch_id": "asc-0040",
-        "event": "created",
-        "repo": null,
-        "status": "created",
-        "timestamp": "2026-05-12T18:30:26+09:00"
-      },
-      {
-        "dispatch_id": "asc-0040",
-        "event": "sent",
-        "repo": "myworld",
-        "status": "sent",
-        "timestamp": "2026-05-12T18:30:26+09:00"
-      },
-      {
-        "dispatch_id": "asc-0040",
-        "event": "running",
-        "repo": "myworld",
-        "status": "running",
-        "timestamp": "2026-05-12T18:34:00+09:00"
-      },
-      {
-        "dispatch_id": "asc-0040",
-        "event": "watched",
-        "repo": "myworld",
-        "status": "passed",
-        "timestamp": "2026-05-12T18:34:11+09:00"
-      },
-      {
-        "dispatch_id": "asc-0040",
-        "event": "collected",
-        "repo": "myworld",
-        "status": "collected",
-        "timestamp": "2026-05-12T18:34:23+09:00"
-      },
       {
         "dispatch_id": "asc-0040",
         "event": "released",
@@ -609,11 +569,53 @@
         "repo": null,
         "status": "released",
         "timestamp": "2026-05-12T19:16:07+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "created",
+        "repo": null,
+        "status": "created",
+        "timestamp": "2026-05-12T19:27:52+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "sent",
+        "repo": "myworld",
+        "status": "sent",
+        "timestamp": "2026-05-12T19:27:52+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "running",
+        "repo": "myworld",
+        "status": "running",
+        "timestamp": "2026-05-12T19:27:52+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "watched",
+        "repo": "myworld",
+        "status": "passed",
+        "timestamp": "2026-05-12T19:28:03+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "collected",
+        "repo": "myworld",
+        "status": "collected",
+        "timestamp": "2026-05-12T19:28:03+09:00"
+      },
+      {
+        "dispatch_id": "asc-0044",
+        "event": "released",
+        "repo": null,
+        "status": "released",
+        "timestamp": "2026-05-12T19:28:03+09:00"
       }
     ],
-    "total": 37
+    "total": 38
   },
-  "generated_at": "2026-05-12T19:17:15+09:00",
+  "generated_at": "2026-05-12T19:28:22+09:00",
   "goals": {
     "active": {
       "completed": [
@@ -672,7 +674,7 @@
   },
   "monitor": {
     "findings": [],
-    "generated_at": "2026-05-12T19:17:15+09:00",
+    "generated_at": "2026-05-12T19:28:22+09:00",
     "health": "clear",
     "next_actions": [
       {
@@ -683,11 +685,11 @@
       }
     ],
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-05-12T19:17:15+09:00",
+    "snapshot_generated_at": "2026-05-12T19:28:22+09:00",
     "watched": {
       "alerts": 0,
-      "contracts": 43,
-      "dispatches": 36,
+      "contracts": 44,
+      "dispatches": 37,
       "reconciliations_applied": 1,
       "repos": 3
     }
@@ -768,7 +770,7 @@
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-05-12T19:17:11+09:00",
+    "generated_at": "2026-05-12T19:27:53+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "open_next_contract",
@@ -784,7 +786,7 @@
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-05-12T19:17:09+09:00",
+          "generated_at": "2026-05-12T19:27:52+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -1001,6 +1003,11 @@
               "contract_id": "ASC-0043",
               "next": "archive_or_next_contract",
               "status": "closed"
+            },
+            {
+              "contract_id": "ASC-0044",
+              "next": "archive_or_next_contract",
+              "status": "closed"
             }
           ],
           "schema_version": "aios.loop.v1"
@@ -1018,12 +1025,12 @@
             "monitor_findings": 0,
             "monitor_health": "clear",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-05-12T19:17:09+09:00",
+            "policy_generated_at": "2026-05-12T19:27:51+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-05-12T19:17:09+09:00",
+          "generated_at": "2026-05-12T19:27:51+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -1378,7 +1385,7 @@
         "name": "monitor",
         "parsed": {
           "findings": [],
-          "generated_at": "2026-05-12T19:17:09+09:00",
+          "generated_at": "2026-05-12T19:27:51+09:00",
           "health": "clear",
           "next_actions": [
             {
@@ -1389,10 +1396,10 @@
             }
           ],
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-05-12T19:17:09+09:00",
+          "snapshot_generated_at": "2026-05-12T19:27:51+09:00",
           "watched": {
             "alerts": 0,
-            "contracts": 43,
+            "contracts": 44,
             "dispatches": 36,
             "reconciliations_applied": 1,
             "repos": 3
@@ -1429,6 +1436,12 @@
       },
       {
         "contracts": [
+          "ASC-0044"
+        ],
+        "name": "`browser_required`"
+      },
+      {
+        "contracts": [
           "ASC-0042"
         ],
         "name": "`candidate_without_contract_or_evidence`"
@@ -1448,13 +1461,13 @@
       {
         "contracts": [
           "ASC-0036",
-          "ASC-0035",
-          "ASC-0034"
+          "ASC-0035"
         ],
         "name": "`child_repo_scope_leak`"
       },
       {
         "contracts": [
+          "ASC-0044",
           "ASC-0043",
           "ASC-0042",
           "ASC-0041",
@@ -1479,12 +1492,6 @@
           "ASC-0039"
         ],
         "name": "`dependency_sprawl`: contract adds a framework or package manager before the static surface proves useful."
-      },
-      {
-        "contracts": [
-          "ASC-0038"
-        ],
-        "name": "`direct_child_repo_edit`: myworld patches child implementation files instead of issuing a packet."
       }
     ]
   }

@@ -1516,3 +1516,30 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: use autodraft output to open the next radar/policy candidate, currently
   a Hive Mind radar-gap triage packet.
 - status: done
+
+## 2026-05-12 19:31 KST — codex — ASC-0044 desktop control application closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: provide a non-web native desktop AIOS control app for monitor,
+  contracts, dispatches, repos, routes, and stop lanes.
+- changed: `scripts/aios_desktop_app.py`, `tests/test_aios_desktop_app.py`,
+  `docs/AIOS_CONTROL_APP.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0044-desktop-control-application.md`,
+  `docs/contracts/README.md`, goal docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_47a2a93628dec7f2`; CapabilityOS routes
+  `cap_capabilityos_recommendation`, `cap_web_research_route`,
+  `cap_hivemind_execution_harness`, `cap_memoryos_import_run`, and
+  `cap_memoryos_context_build`; Hive dry-run `run_20260512_192045_2b20d1`;
+  result packet `.aios/outbox/myworld/asc-0044.myworld.result.json`; focused
+  tests passed 4/4; desktop status reported `mode=native_desktop`,
+  `uses_http_server=false`, and `uses_browser=false`; full myworld suite passed
+  90/90; final monitor assessment returned `health=clear`.
+- decision: AIOS now has a native desktop path:
+  `python scripts/aios_desktop_app.py launch`. Headless verification uses
+  `status` and `snapshot` because `$DISPLAY` is not available in this shell.
+- risk: this is a lightweight tkinter desktop shell, not yet a packaged
+  installer or signed desktop app.
+- next: package or harden the desktop app only after the native surface proves
+  useful; otherwise continue with the Hive radar-gap triage candidate.
+- status: done

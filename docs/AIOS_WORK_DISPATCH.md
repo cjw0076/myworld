@@ -249,6 +249,19 @@ python scripts/aios_local_app.py stop --json
 `apps/control/` on localhost. It is a local operator surface, not a child-repo
 implementation worker.
 
+Native desktop control application:
+
+```bash
+python scripts/aios_desktop_app.py status --json
+python scripts/aios_desktop_app.py snapshot --json
+python scripts/aios_desktop_app.py launch
+```
+
+This is the non-web desktop entry point. It reads or refreshes the same control
+snapshot, renders native `tkinter` tables, and does not start an HTTP server or
+browser. `status --json` is safe in headless sessions; `launch` requires a
+graphical display.
+
 Web evidence memory review:
 
 ```bash

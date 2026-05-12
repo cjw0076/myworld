@@ -33,6 +33,19 @@ Default URL:
 http://127.0.0.1:8765/
 ```
 
+Run as a native desktop app:
+
+```bash
+python scripts/aios_desktop_app.py status --json
+python scripts/aios_desktop_app.py snapshot --json
+python scripts/aios_desktop_app.py launch
+```
+
+The desktop app uses Python `tkinter` and the same generated control snapshot.
+It does not start an HTTP server or require a browser. In a headless shell,
+`status --json` may report `display_available=false`; run `launch` from a
+graphical desktop session.
+
 The app renders:
 
 - active goal and goal-evolution recommendation
