@@ -76,9 +76,9 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- contract_autodraft_from_goal_plan: turn an unblocked goal evolution
-  recommendation into a proposed smart contract draft without relying on chat
-  memory.
+<!-- Preferred next list is intentionally empty after ASC-0043; the next
+candidate should come from radar/policy evidence or a newly submitted repo
+goal. -->
 
 ## Completed Improvements
 
@@ -132,3 +132,6 @@ and reversible governance.
   observation output into capability-level MemoryOS draft review candidates and
   a MemoryOS import-run dry-run bundle without auto-accepting capability
   claims.
+- contract_autodraft_from_goal_plan: ASC-0043 added a proposed-only contract
+  autodraft CLI from goal evolution output and dogfooded it to draft the
+  ASC-0043 contract before manual acceptance and closeout.

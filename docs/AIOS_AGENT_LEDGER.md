@@ -1486,3 +1486,33 @@ For repo-local implementation details, also update that repo's own worklog.
   a contract manually.
 - next: open `contract_autodraft_from_goal_plan`.
 - status: done
+
+## 2026-05-12 19:17 KST — codex — ASC-0043 contract autodraft from goal plan closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: turn an unblocked goal evolution recommendation into a proposed smart
+  contract draft without relying on chat memory.
+- changed: `scripts/aios_contract_autodraft.py`,
+  `tests/test_aios_contract_autodraft.py`,
+  `docs/contracts/ASC-0043-contract-autodraft-from-goal-plan.md`,
+  `docs/contracts/README.md`, `docs/AIOS_WORK_DISPATCH.md`, goal evolution
+  docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_933ce66e1fe79aa8`; CapabilityOS routes
+  `cap_hivemind_execution_harness`, `cap_memoryos_import_run`,
+  `cap_capabilityos_recommendation`, `cap_memoryos_context_build`, and
+  `cap_web_research_route`; Hive dry-run `run_20260512_190848_7a86e2`;
+  autodraft command wrote the initial ASC-0043 proposed contract; result packet
+  `.aios/outbox/myworld/asc-0043.myworld.result.json`; focused tests passed
+  3/3; full myworld suite passed 86/86; final monitor assessment returned
+  `health=clear`.
+- decision: goal evolution can now produce proposed contracts directly, but
+  cannot accept, dispatch, or close them. Blocked recommendations or plans with
+  stop conditions are refused.
+- risk: the first watcher attempt exposed a test dependency on live monitor
+  state during active dispatch. The test now uses a precomputed plan JSON so
+  verification does not fail merely because the contract being verified is in
+  progress.
+- next: use autodraft output to open the next radar/policy candidate, currently
+  a Hive Mind radar-gap triage packet.
+- status: done

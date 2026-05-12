@@ -29,9 +29,27 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "contracts": {
     "counts": {
-      "closed": 42
+      "closed": 43
     },
     "latest": [
+      {
+        "accepted": "2026-05-12 19:12 KST by codex acting operator",
+        "closed": "2026-05-12 19:17 KST",
+        "created": "2026-05-12 19:11 KST",
+        "goal": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
+        "id": "ASC-0043",
+        "path": "docs/contracts/ASC-0043-contract-autodraft-from-goal-plan.md",
+        "slug": "contract-autodraft-from-goal-plan",
+        "status": "closed",
+        "stop_conditions": [
+          "`operator_acceptance_missing`",
+          "`scope_ambiguous`",
+          "`allowed_files_too_broad`",
+          "`child_repo_source_edit`",
+          "`verification_gate_failed`",
+          "`monitor_not_clear`"
+        ]
+      },
       {
         "accepted": "2026-05-12 18:57 KST by codex acting operator",
         "closed": "2026-05-12 19:08 KST",
@@ -194,35 +212,32 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "`policy_executes_action`",
           "`child_repo_scope_leak`"
         ]
-      },
-      {
-        "accepted": "2026-05-12 14:35 KST",
-        "closed": "2026-05-12 14:37 KST",
-        "created": "2026-05-12 14:35 KST",
-        "goal": "Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance.",
-        "id": "ASC-0033",
-        "path": "docs/contracts/ASC-0033-sovereign-ai-governance-readiness.md",
-        "slug": "sovereign-ai-governance-readiness",
-        "status": "closed",
-        "stop_conditions": [
-          "`sovereignty_overclaim`: output claims real-world legal authority or political sovereignty.",
-          "`governance_without_checkpoint`: high-authority actions can proceed without human checkpoint rules.",
-          "`audit_gap`: readiness can pass without ledger/evidence artifacts.",
-          "`resource_authority_gap`: capability/resource use has no bounded policy.",
-          "`child_repo_scope_leak`: this contract edits child repo source."
-        ]
       }
     ],
-    "total": 42
+    "total": 43
   },
   "dispatches": {
     "counts": {
       "collected": 4,
       "escalated": 1,
       "passed": 2,
-      "released": 29
+      "released": 30
     },
     "latest": [
+      {
+        "collected": [
+          "myworld"
+        ],
+        "contract_id": "ASC-0043",
+        "dispatch_id": "asc-0043",
+        "goal": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
+        "reason": "asc_0043_contract_autodraft_verified",
+        "sent": [
+          "myworld"
+        ],
+        "status": "released",
+        "timestamp": "2026-05-12T19:16:07+09:00"
+      },
       {
         "collected": [
           "myworld"
@@ -382,86 +397,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "status": "released",
         "timestamp": "2026-05-12T14:37:27+09:00"
-      },
-      {
-        "collected": [
-          "myworld"
-        ],
-        "contract_id": "ASC-0031",
-        "dispatch_id": "asc-0031",
-        "goal": "Dogfood CapabilityOS web-route by producing and validating a cited web evidence receipt for AIOS capability routing.",
-        "reason": "asc_0031_web_evidence_execution_loop_verified",
-        "sent": [
-          "myworld"
-        ],
-        "status": "released",
-        "timestamp": "2026-05-12T14:15:45+09:00"
       }
     ],
     "timeline": [
-      {
-        "dispatch_id": "asc-0038",
-        "event": "running",
-        "repo": "myworld",
-        "status": "running",
-        "timestamp": "2026-05-12T17:36:02+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "watched",
-        "repo": "myworld",
-        "status": "passed",
-        "timestamp": "2026-05-12T17:36:12+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "released",
-        "repo": null,
-        "status": "released",
-        "timestamp": "2026-05-12T17:36:21+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "created",
-        "repo": null,
-        "status": "created",
-        "timestamp": "2026-05-12T18:14:52+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "sent",
-        "repo": "myworld",
-        "status": "sent",
-        "timestamp": "2026-05-12T18:23:28+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "sent",
-        "repo": "myworld",
-        "status": "sent",
-        "timestamp": "2026-05-12T18:23:31+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "running",
-        "repo": "myworld",
-        "status": "running",
-        "timestamp": "2026-05-12T18:23:32+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "watched",
-        "repo": "myworld",
-        "status": "passed",
-        "timestamp": "2026-05-12T18:23:41+09:00"
-      },
-      {
-        "dispatch_id": "asc-0039",
-        "event": "collected",
-        "repo": "myworld",
-        "status": "collected",
-        "timestamp": "2026-05-12T18:23:51+09:00"
-      },
       {
         "dispatch_id": "asc-0039",
         "event": "released",
@@ -608,11 +546,74 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "released",
         "timestamp": "2026-05-12T19:06:47+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "created",
+        "repo": null,
+        "status": "created",
+        "timestamp": "2026-05-12T19:14:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "sent",
+        "repo": "myworld",
+        "status": "sent",
+        "timestamp": "2026-05-12T19:14:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "running",
+        "repo": "myworld",
+        "status": "running",
+        "timestamp": "2026-05-12T19:14:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "watched",
+        "repo": "myworld",
+        "status": "failed",
+        "timestamp": "2026-05-12T19:14:19+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "collected",
+        "repo": "myworld",
+        "status": "collected",
+        "timestamp": "2026-05-12T19:14:28+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "retried",
+        "repo": null,
+        "status": "retried",
+        "timestamp": "2026-05-12T19:15:57+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "running",
+        "repo": "myworld",
+        "status": "running",
+        "timestamp": "2026-05-12T19:15:57+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "watched",
+        "repo": "myworld",
+        "status": "passed",
+        "timestamp": "2026-05-12T19:16:07+09:00"
+      },
+      {
+        "dispatch_id": "asc-0043",
+        "event": "released",
+        "repo": null,
+        "status": "released",
+        "timestamp": "2026-05-12T19:16:07+09:00"
       }
     ],
-    "total": 36
+    "total": 37
   },
-  "generated_at": "2026-05-12T19:07:28+09:00",
+  "generated_at": "2026-05-12T19:17:15+09:00",
   "goals": {
     "active": {
       "completed": [
@@ -633,9 +634,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "audit, resource routing, and operator checkpoints."
       ],
       "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
-      "preferred_next": [
-        "contract_autodraft_from_goal_plan: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory."
-      ],
+      "preferred_next": [],
       "slug": "make-something-great",
       "status": "active"
     },
@@ -643,7 +642,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "monitor_health": "clear",
       "path": "docs/goals/AIOS-GOAL-0001-evolution.md",
       "readiness": "L6 repeatable",
-      "recommendation": "goal:contract_autodraft_from_goal_plan"
+      "recommendation": "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md"
     },
     "items": [
       {
@@ -665,9 +664,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "audit, resource routing, and operator checkpoints."
         ],
         "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
-        "preferred_next": [
-          "contract_autodraft_from_goal_plan: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory."
-        ],
+        "preferred_next": [],
         "slug": "make-something-great",
         "status": "active"
       }
@@ -675,7 +672,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "monitor": {
     "findings": [],
-    "generated_at": "2026-05-12T19:07:28+09:00",
+    "generated_at": "2026-05-12T19:17:15+09:00",
     "health": "clear",
     "next_actions": [
       {
@@ -686,11 +683,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
       }
     ],
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-05-12T19:07:28+09:00",
+    "snapshot_generated_at": "2026-05-12T19:17:15+09:00",
     "watched": {
       "alerts": 0,
-      "contracts": 42,
-      "dispatches": 35,
+      "contracts": 43,
+      "dispatches": 36,
       "reconciliations_applied": 1,
       "repos": 3
     }
@@ -771,12 +768,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-05-12T19:06:59+09:00",
+    "generated_at": "2026-05-12T19:17:11+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "open_next_contract",
-      "candidate_task": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
-      "path": "goal:contract_autodraft_from_goal_plan"
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "path": "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md"
     },
     "root": "/home/user/workspaces/jaewon/myworld",
     "schema_version": "aios.round_controller.v1",
@@ -787,7 +784,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-05-12T19:06:57+09:00",
+          "generated_at": "2026-05-12T19:17:09+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -999,6 +996,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "contract_id": "ASC-0042",
               "next": "archive_or_next_contract",
               "status": "closed"
+            },
+            {
+              "contract_id": "ASC-0043",
+              "next": "archive_or_next_contract",
+              "status": "closed"
             }
           ],
           "schema_version": "aios.loop.v1"
@@ -1016,12 +1018,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "monitor_findings": 0,
             "monitor_health": "clear",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-05-12T19:06:57+09:00",
+            "policy_generated_at": "2026-05-12T19:17:09+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-05-12T19:06:57+09:00",
+          "generated_at": "2026-05-12T19:17:09+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -1050,18 +1052,31 @@ window.AIOS_CONTROL_SNAPSHOT = {
           },
           "recommendation": {
             "alignment_reasons": [
-              "goal_preferred_next"
+              "verification_signal",
+              "policy_accept_now"
             ],
             "blocked": false,
             "blocked_reasons": [],
-            "candidate_task": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
-            "domain": "myworld",
-            "goal_score": 100,
-            "path": "goal:contract_autodraft_from_goal_plan",
-            "policy_decision": "goal_preferred",
-            "policy_reason": "listed in active goal Preferred Next Improvements",
-            "radar_score": 0,
-            "signals": {}
+            "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+            "domain": "hivemind",
+            "goal_score": 228,
+            "path": "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md",
+            "policy_decision": "accept_now",
+            "policy_reason": "executable candidate and loop capacity is available",
+            "radar_score": 214,
+            "signals": {
+              "blocker": 2,
+              "capabilityos": 5,
+              "contract": 2,
+              "gap": 4,
+              "hivemind": 12,
+              "memoryos": 7,
+              "next": 2,
+              "p0": 1,
+              "stop_condition": 1,
+              "todo": 9,
+              "verify": 4
+            }
           },
           "schema_version": "aios.goal_evolution.v1",
           "stop_conditions": [],
@@ -1363,7 +1378,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "monitor",
         "parsed": {
           "findings": [],
-          "generated_at": "2026-05-12T19:06:57+09:00",
+          "generated_at": "2026-05-12T19:17:09+09:00",
           "health": "clear",
           "next_actions": [
             {
@@ -1374,11 +1389,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
             }
           ],
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-05-12T19:06:57+09:00",
+          "snapshot_generated_at": "2026-05-12T19:17:09+09:00",
           "watched": {
             "alerts": 0,
-            "contracts": 42,
-            "dispatches": 35,
+            "contracts": 43,
+            "dispatches": 36,
             "reconciliations_applied": 1,
             "repos": 3
           }
@@ -1401,9 +1416,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
-          "ASC-0033"
+          "ASC-0043"
         ],
-        "name": "`audit_gap`: readiness can pass without ledger/evidence artifacts."
+        "name": "`allowed_files_too_broad`"
       },
       {
         "contracts": [
@@ -1440,12 +1455,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
-          "ASC-0033"
-        ],
-        "name": "`child_repo_scope_leak`: this contract edits child repo source."
-      },
-      {
-        "contracts": [
+          "ASC-0043",
           "ASC-0042",
           "ASC-0041",
           "ASC-0040"
@@ -1469,6 +1479,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "ASC-0039"
         ],
         "name": "`dependency_sprawl`: contract adds a framework or package manager before the static surface proves useful."
+      },
+      {
+        "contracts": [
+          "ASC-0038"
+        ],
+        "name": "`direct_child_repo_edit`: myworld patches child implementation files instead of issuing a packet."
       }
     ]
   }

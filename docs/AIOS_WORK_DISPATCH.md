@@ -288,6 +288,21 @@ This adapter reads CapabilityOS `observe-results`, rolls passed observations up
 by capability id, and emits draft-only MemoryOS review candidates. It does not
 change CapabilityOS recommendations or accept capability claims as memory.
 
+Contract autodraft from goal evolution:
+
+```bash
+python scripts/aios_contract_autodraft.py --root . draft \
+  --goal docs/goals/AIOS-GOAL-0001-make-something-great.md \
+  --output-dir docs/contracts \
+  --write \
+  --json
+```
+
+This creates a `status: proposed` contract draft from the current unblocked
+goal-evolution recommendation. It does not accept, dispatch, or close the
+contract; operator acceptance and the normal dispatch state machine remain
+separate.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

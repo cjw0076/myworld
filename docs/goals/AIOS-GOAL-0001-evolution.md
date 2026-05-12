@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T19:07:22+09:00`
+- generated_at: `2026-05-12T19:17:04+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,12 +8,12 @@
 
 ## Recommendation
 
-- path: `goal:contract_autodraft_from_goal_plan`
-- domain: `myworld`
-- goal_score: `100`
-- policy_decision: `goal_preferred`
-- task: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.
-- alignment_reasons: `goal_preferred_next`
+- path: `myworld/hivemind/docs/RADAR_GAP_TRIAGE.md`
+- domain: `hivemind`
+- goal_score: `228`
+- policy_decision: `accept_now`
+- task: issue a Hive Mind packet for execution, harness, or verification follow-up
+- alignment_reasons: `verification_signal, policy_accept_now`
 - blocked_reasons: ``
 
 ## Top Candidates
