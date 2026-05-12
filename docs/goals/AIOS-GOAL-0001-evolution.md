@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T18:55:54+09:00`
+- generated_at: `2026-05-12T19:07:22+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:capability_observation_memory_import`
+- path: `goal:contract_autodraft_from_goal_plan`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.
+- task: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 

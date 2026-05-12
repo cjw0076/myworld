@@ -1455,3 +1455,34 @@ For repo-local implementation details, also update that repo's own worklog.
   memory and keep the same no-auto-accept rule.
 - next: open `capability_observation_memory_import`.
 - status: done
+
+## 2026-05-12 19:08 KST — codex — ASC-0042 capability observation memory import closed
+
+- repo: myworld
+- role: acting operator + control-plane implementation
+- goal: convert CapabilityOS observations into MemoryOS draft review candidates
+  without auto-accepting capability claims.
+- changed: `scripts/aios_capability_observation_memory_review.py`,
+  `tests/test_aios_capability_observation_memory_review.py`,
+  `docs/evidence/ASC-0042-capability-observations.json`,
+  `docs/evidence/ASC-0042-capability-memory-candidates.json`,
+  `docs/evidence/ASC-0042-capability-review-run/`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0042-capability-observation-memory-import.md`,
+  `docs/contracts/README.md`, goal evolution docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_0b0ca4ff4d1e0653`; CapabilityOS routes
+  `cap_capabilityos_recommendation`, `cap_memoryos_import_run`,
+  `cap_hivemind_execution_harness`, `cap_memoryos_context_build`, and
+  `cap_web_research_route`; Hive dry-run `run_20260512_185731_652abf`;
+  result packet `.aios/outbox/myworld/asc-0042.myworld.result.json`;
+  candidate validator passed; MemoryOS `import-run --dry-run --json` planned
+  three draft memory objects; full myworld suite passed 83/83; final monitor
+  assessment returned `health=clear`.
+- decision: capability observations enter MemoryOS as capability-level rollup
+  review candidates, not per-event memory spam and not accepted routing truth.
+  Gaps such as unmapped `myworld` results remain `operator_review_only`.
+- risk: the next missing layer is automatic contract drafting from goal
+  evolution. Until that exists, Codex still translates the recommendation into
+  a contract manually.
+- next: open `contract_autodraft_from_goal_plan`.
+- status: done

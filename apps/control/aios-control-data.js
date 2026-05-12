@@ -1,24 +1,25 @@
 window.AIOS_CONTROL_SNAPSHOT = {
   "aios_inputs": {
     "capability_routes": [
-      "cap_web_research_route",
+      "cap_capabilityos_recommendation",
       "cap_memoryos_import_run",
       "cap_hivemind_execution_harness",
       "cap_memoryos_context_build",
-      "cap_capabilityos_recommendation",
-      "cap_capabilityos_recommendation",
-      "cap_hivemind_execution_harness",
-      "cap_memoryos_import_run"
+      "cap_web_research_route",
+      "cap_web_research_route",
+      "cap_memoryos_import_run",
+      "cap_hivemind_execution_harness"
     ],
     "hive_runs": [
-      "run_20260512_184108_174c71",
+      "run_20260512_185731_652abf",
       "run_state",
-      "run_ok",
       "run_failed",
-      "run_20260512_182859_370b96",
-      "run_20260512_181228_aef902"
+      "run_ok",
+      "run_20260512_184108_174c71",
+      "run_state"
     ],
     "memory_traces": [
+      "rtrace_0b0ca4ff4d1e0653",
       "rtrace_51c40c8d3d1eabdd",
       "rtrace_02e5c1e5e56a02d5",
       "rtrace_c0619c4194e7535b",
@@ -28,9 +29,29 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "contracts": {
     "counts": {
-      "closed": 41
+      "closed": 42
     },
     "latest": [
+      {
+        "accepted": "2026-05-12 18:57 KST by codex acting operator",
+        "closed": "2026-05-12 19:08 KST",
+        "created": "2026-05-12 18:57 KST",
+        "goal": "Convert CapabilityOS observations into MemoryOS draft review candidates without auto-accepting capability claims.",
+        "id": "ASC-0042",
+        "path": "docs/contracts/ASC-0042-capability-observation-memory-import.md",
+        "slug": "capability-observation-memory-import",
+        "status": "closed",
+        "stop_conditions": [
+          "`observation_payload_invalid`",
+          "`unknown_capability_selected`",
+          "`non_passed_observation_selected`",
+          "`candidate_without_contract_or_evidence`",
+          "`auto_accept_requested`",
+          "`memoryos_import_dry_run_failed`",
+          "`child_repo_source_edit`",
+          "`verification_gate_failed`"
+        ]
+      },
       {
         "accepted": "2026-05-12 18:41 KST by codex acting operator",
         "closed": "2026-05-12 18:55 KST",
@@ -190,37 +211,32 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "`resource_authority_gap`: capability/resource use has no bounded policy.",
           "`child_repo_scope_leak`: this contract edits child repo source."
         ]
-      },
-      {
-        "accepted": "2026-05-12",
-        "closed": "2026-05-12",
-        "created": "2026-05-12",
-        "goal": "Create an isolated Uri child repository for the student digital campus business workspace without mixing product artifacts into the MyWorld control plane.",
-        "id": "ASC-0032",
-        "path": "docs/contracts/ASC-0032-uri-repo-isolation-setup.md",
-        "slug": "uri-repo-isolation-setup",
-        "status": "closed",
-        "stop_conditions": [
-          "privacy_violation",
-          "scope_violation",
-          "missing_required_artifact",
-          "ownership_conflict",
-          "contract_ambiguous",
-          "nonpublic code or tool access required",
-          "proprietary workflow copied without public evidence or license"
-        ]
       }
     ],
-    "total": 41
+    "total": 42
   },
   "dispatches": {
     "counts": {
       "collected": 4,
       "escalated": 1,
       "passed": 2,
-      "released": 28
+      "released": 29
     },
     "latest": [
+      {
+        "collected": [
+          "myworld"
+        ],
+        "contract_id": "ASC-0042",
+        "dispatch_id": "asc-0042",
+        "goal": "Convert CapabilityOS observations into MemoryOS draft review candidates without auto-accepting capability claims.",
+        "reason": "asc_0042_capability_observation_memory_import_verified",
+        "sent": [
+          "myworld"
+        ],
+        "status": "released",
+        "timestamp": "2026-05-12T19:06:47+09:00"
+      },
       {
         "collected": [
           "myworld"
@@ -380,65 +396,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "status": "released",
         "timestamp": "2026-05-12T14:15:45+09:00"
-      },
-      {
-        "collected": [
-          "CapabilityOS"
-        ],
-        "contract_id": "ASC-0030",
-        "dispatch_id": "asc-0030",
-        "goal": "Add a recommendation-only CapabilityOS web research route so AIOS can deliberately use broad internet search with source and privacy guardrails.",
-        "reason": "asc_0030_capabilityos_web_research_route_verified",
-        "sent": [
-          "CapabilityOS"
-        ],
-        "status": "released",
-        "timestamp": "2026-05-12T03:27:45+09:00"
       }
     ],
     "timeline": [
-      {
-        "dispatch_id": "asc-0038",
-        "event": "running",
-        "repo": "myworld",
-        "status": "running",
-        "timestamp": "2026-05-12T17:30:29+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "watched",
-        "repo": "myworld",
-        "status": "passed",
-        "timestamp": "2026-05-12T17:30:38+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "collected",
-        "repo": "myworld",
-        "status": "collected",
-        "timestamp": "2026-05-12T17:31:01+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "collected",
-        "repo": "hivemind",
-        "status": "collected",
-        "timestamp": "2026-05-12T17:32:38+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "collected",
-        "repo": "CapabilityOS",
-        "status": "collected",
-        "timestamp": "2026-05-12T17:32:38+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "collected",
-        "repo": "memoryOS",
-        "status": "collected",
-        "timestamp": "2026-05-12T17:33:10+09:00"
-      },
       {
         "dispatch_id": "asc-0038",
         "event": "running",
@@ -606,11 +566,53 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "released",
         "timestamp": "2026-05-12T18:54:45+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "created",
+        "repo": null,
+        "status": "created",
+        "timestamp": "2026-05-12T19:06:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "sent",
+        "repo": "myworld",
+        "status": "sent",
+        "timestamp": "2026-05-12T19:06:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "running",
+        "repo": "myworld",
+        "status": "running",
+        "timestamp": "2026-05-12T19:06:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "watched",
+        "repo": "myworld",
+        "status": "passed",
+        "timestamp": "2026-05-12T19:06:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "collected",
+        "repo": "myworld",
+        "status": "collected",
+        "timestamp": "2026-05-12T19:06:47+09:00"
+      },
+      {
+        "dispatch_id": "asc-0042",
+        "event": "released",
+        "repo": null,
+        "status": "released",
+        "timestamp": "2026-05-12T19:06:47+09:00"
       }
     ],
-    "total": 35
+    "total": 36
   },
-  "generated_at": "2026-05-12T18:55:53+09:00",
+  "generated_at": "2026-05-12T19:07:28+09:00",
   "goals": {
     "active": {
       "completed": [
@@ -632,7 +634,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
       ],
       "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
       "preferred_next": [
-        "capability_observation_memory_import: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
         "contract_autodraft_from_goal_plan: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory."
       ],
       "slug": "make-something-great",
@@ -642,7 +643,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "monitor_health": "clear",
       "path": "docs/goals/AIOS-GOAL-0001-evolution.md",
       "readiness": "L6 repeatable",
-      "recommendation": "goal:capability_observation_memory_import"
+      "recommendation": "goal:contract_autodraft_from_goal_plan"
     },
     "items": [
       {
@@ -665,7 +666,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
         "preferred_next": [
-          "capability_observation_memory_import: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
           "contract_autodraft_from_goal_plan: turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory."
         ],
         "slug": "make-something-great",
@@ -675,7 +675,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "monitor": {
     "findings": [],
-    "generated_at": "2026-05-12T18:55:53+09:00",
+    "generated_at": "2026-05-12T19:07:28+09:00",
     "health": "clear",
     "next_actions": [
       {
@@ -686,11 +686,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
       }
     ],
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-05-12T18:55:53+09:00",
+    "snapshot_generated_at": "2026-05-12T19:07:28+09:00",
     "watched": {
       "alerts": 0,
-      "contracts": 41,
-      "dispatches": 34,
+      "contracts": 42,
+      "dispatches": 35,
       "reconciliations_applied": 1,
       "repos": 3
     }
@@ -771,12 +771,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-05-12T18:55:43+09:00",
+    "generated_at": "2026-05-12T19:06:59+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "open_next_contract",
-      "candidate_task": "decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
-      "path": "goal:capability_observation_memory_import"
+      "candidate_task": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
+      "path": "goal:contract_autodraft_from_goal_plan"
     },
     "root": "/home/user/workspaces/jaewon/myworld",
     "schema_version": "aios.round_controller.v1",
@@ -787,7 +787,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-05-12T18:55:41+09:00",
+          "generated_at": "2026-05-12T19:06:57+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -994,6 +994,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "contract_id": "ASC-0041",
               "next": "archive_or_next_contract",
               "status": "closed"
+            },
+            {
+              "contract_id": "ASC-0042",
+              "next": "archive_or_next_contract",
+              "status": "closed"
             }
           ],
           "schema_version": "aios.loop.v1"
@@ -1011,12 +1016,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "monitor_findings": 0,
             "monitor_health": "clear",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-05-12T18:55:41+09:00",
+            "policy_generated_at": "2026-05-12T19:06:57+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-05-12T18:55:41+09:00",
+          "generated_at": "2026-05-12T19:06:57+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -1049,10 +1054,10 @@ window.AIOS_CONTROL_SNAPSHOT = {
             ],
             "blocked": false,
             "blocked_reasons": [],
-            "candidate_task": "decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
+            "candidate_task": "turn an unblocked goal evolution recommendation into a proposed smart contract draft without relying on chat memory.",
             "domain": "myworld",
             "goal_score": 100,
-            "path": "goal:capability_observation_memory_import",
+            "path": "goal:contract_autodraft_from_goal_plan",
             "policy_decision": "goal_preferred",
             "policy_reason": "listed in active goal Preferred Next Improvements",
             "radar_score": 0,
@@ -1358,7 +1363,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "monitor",
         "parsed": {
           "findings": [],
-          "generated_at": "2026-05-12T18:55:41+09:00",
+          "generated_at": "2026-05-12T19:06:57+09:00",
           "health": "clear",
           "next_actions": [
             {
@@ -1369,11 +1374,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
             }
           ],
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-05-12T18:55:41+09:00",
+          "snapshot_generated_at": "2026-05-12T19:06:57+09:00",
           "watched": {
             "alerts": 0,
-            "contracts": 41,
-            "dispatches": 34,
+            "contracts": 42,
+            "dispatches": 35,
             "reconciliations_applied": 1,
             "repos": 3
           }
@@ -1402,9 +1407,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
+          "ASC-0042",
           "ASC-0041"
         ],
         "name": "`auto_accept_requested`"
+      },
+      {
+        "contracts": [
+          "ASC-0042"
+        ],
+        "name": "`candidate_without_contract_or_evidence`"
       },
       {
         "contracts": [
@@ -1434,6 +1446,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
+          "ASC-0042",
           "ASC-0041",
           "ASC-0040"
         ],
@@ -1456,12 +1469,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "ASC-0039"
         ],
         "name": "`dependency_sprawl`: contract adds a framework or package manager before the static surface proves useful."
-      },
-      {
-        "contracts": [
-          "ASC-0038"
-        ],
-        "name": "`direct_child_repo_edit`: myworld patches child implementation files instead of issuing a packet."
       }
     ]
   }

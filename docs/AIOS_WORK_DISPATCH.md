@@ -268,6 +268,26 @@ review candidates and a Hive-run-compatible `memory_drafts.json` bundle.
 MemoryOS review remains explicit: web-derived facts are never accepted by this
 control-plane adapter.
 
+Capability observation memory review:
+
+```bash
+python scripts/aios_capability_observation_memory_review.py --root . build \
+  --outbox .aios/outbox \
+  --radar docs/AIOS_TASK_RADAR.md \
+  --observation-output docs/evidence/ASC-0042-capability-observations.json \
+  --output docs/evidence/ASC-0042-capability-memory-candidates.json \
+  --run-bundle docs/evidence/ASC-0042-capability-review-run \
+  --json
+
+python scripts/aios_capability_observation_memory_review.py --root . validate \
+  docs/evidence/ASC-0042-capability-memory-candidates.json \
+  --json
+```
+
+This adapter reads CapabilityOS `observe-results`, rolls passed observations up
+by capability id, and emits draft-only MemoryOS review candidates. It does not
+change CapabilityOS recommendations or accept capability claims as memory.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

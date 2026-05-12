@@ -1,0 +1,1559 @@
+{
+  "contract": "capabilityos.observe_results.v1",
+  "gaps": [
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0011.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0013.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0022.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0024.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0025.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0028.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0029.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0031.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0033.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0034.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0035-policy-gate-dogfood.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0036.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0037.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0038.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0039.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0040.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    },
+    {
+      "detail": "no existing capability for repo myworld",
+      "evidence_refs": [
+        "../.aios/outbox/myworld/asc-0041.myworld.result.json"
+      ],
+      "reason": "unmapped_repo",
+      "status": "operator_review"
+    }
+  ],
+  "observations": [
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "codex",
+      "contract_id": "ASC-0002",
+      "dispatch_id": "asc-0002",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0002.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0002-capabilityos-executable-surface.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T21:43:02.385297+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0009",
+      "dispatch_id": "asc-0009",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0009.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0009-capability-observation-feedback.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:48:02+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "codex@CapabilityOS",
+      "contract_id": "ASC-0012",
+      "dispatch_id": "asc-0012.CapabilityOS",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0012.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:54:56+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0026",
+      "dispatch_id": "asc-0026",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0026.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0026-capability-observation-aware-routing.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T02:34:07+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0028",
+      "dispatch_id": "asc-0028",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0028.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0028-capability-route-binding.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T03:03:47+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0030",
+      "dispatch_id": "asc-0030",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0030.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0030-capabilityos-web-research-route.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T03:27:42+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0036",
+      "dispatch_id": "asc-0036",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0036.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T15:46:59+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_capabilityos_recommendation",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0038",
+      "dispatch_id": "asc-0038",
+      "evidence_refs": [
+        "../.aios/outbox/CapabilityOS/asc-0038.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T17:32:12+09:00",
+      "outcome": "passed",
+      "repo": "CapabilityOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001-watcher-replay",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0001-watcher-replay.hivemind.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T21:59:25+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "claude@myworld",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0001.hivemind.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T21:34:00+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "unknown",
+      "contract_id": "ASC-0005",
+      "dispatch_id": "asc-0005",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0005.hivemind.result.json",
+        "../docs/contracts/ASC-0005-hive-capability-bridge.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:09:07+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0010",
+      "dispatch_id": "asc-0010",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0010.hivemind.result.json",
+        "../docs/contracts/ASC-0010-hive-semantic-quality-gate.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:47:31+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "unknown",
+      "contract_id": "ASC-0012",
+      "dispatch_id": "asc-0012",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0012.hivemind.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:53:50+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "codex",
+      "contract_id": "ASC-0020",
+      "dispatch_id": "asc-0020",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0020.hivemind.result.json",
+        "../docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T00:10:00+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "codex",
+      "contract_id": "ASC-0021",
+      "dispatch_id": "asc-0021",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0021.hivemind.result.json",
+        "../docs/contracts/ASC-0021-hive-arrival-pack.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T00:20:00+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "codex",
+      "contract_id": "ASC-0023",
+      "dispatch_id": "asc-0023",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0023.hivemind.result.json",
+        "../docs/contracts/ASC-0023-hive-source-read-registry.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T02:10:00+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0027",
+      "dispatch_id": "asc-0027",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0027.hivemind.result.json",
+        "../docs/contracts/ASC-0027-memory-feedback-directives.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T02:39:40+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0036",
+      "dispatch_id": "asc-0036",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0036.hivemind.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T15:46:34+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_hivemind_execution_harness",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0038",
+      "dispatch_id": "asc-0038",
+      "evidence_refs": [
+        "../.aios/outbox/hivemind/asc-0038.hivemind.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T17:32:09+09:00",
+      "outcome": "passed",
+      "repo": "hivemind",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001-childwatch-dogfood",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0001-childwatch-dogfood.memoryOS.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:17:38+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001-enriched-replay",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0001-enriched-replay.memoryOS.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:16:35+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001-watcher-replay",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T21:59:23+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "claude@myworld",
+      "contract_id": "ASC-0001",
+      "dispatch_id": "asc-0001",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0001.memoryOS.result.json",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T21:34:30+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0008",
+      "dispatch_id": "asc-0008",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0008.memoryOS.result.json",
+        "../docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:47:43+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "unknown",
+      "contract_id": "ASC-0012",
+      "dispatch_id": "asc-0012",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0012.memoryOS.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-11T22:54:09+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_dispatch.watch",
+      "contract_id": "ASC-0027",
+      "dispatch_id": "asc-0027",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0027.memoryOS.result.json",
+        "../docs/contracts/ASC-0027-memory-feedback-directives.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T02:39:40+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0036",
+      "dispatch_id": "asc-0036",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0036.memoryOS.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T15:51:41+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    },
+    {
+      "capability_id": "cap_memoryos_import_run",
+      "child_agent": "aios_child_watcher",
+      "contract_id": "ASC-0038",
+      "dispatch_id": "asc-0038",
+      "evidence_refs": [
+        "../.aios/outbox/memoryOS/asc-0038.memoryOS.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "latency_seconds": null,
+      "observed_at": "2026-05-12T17:32:44+09:00",
+      "outcome": "passed",
+      "repo": "memoryOS",
+      "schema_version": "aios.capability_observation.v1"
+    }
+  ],
+  "observations_count": 28,
+  "radar_signals": [
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/AGENT_WORKLOG.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 359,
+      "signals": "aios:4,blocker:4,capabilityos:1,contract:8,gap:3,hivemind:12,memoryos:12,next:12,p0:3,todo:12,verify:9",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/HIVE_MIND_GAPS.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 337,
+      "signals": "blocker:9,capabilityos:9,contract:3,gap:11,hivemind:12,memoryos:12,next:12,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/TODO.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 332,
+      "signals": "aios:1,blocker:8,capabilityos:12,contract:4,gap:4,hivemind:12,memoryos:12,next:12,p0:1,todo:3,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/TODO.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 315,
+      "signals": "capabilityos:12,contract:12,gap:8,hivemind:12,memoryos:12,next:4,todo:12,verify:8",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/AGENT_WORKLOG.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 304,
+      "signals": "aios:6,blocker:1,capabilityos:8,contract:12,gap:8,hivemind:12,memoryos:12,next:5,todo:4,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/dipeen_v2/openclaw/CHANGELOG.md",
+      "recommended_capability_id": null,
+      "score": 303,
+      "signals": "blocker:12,capabilityos:5,gap:12,memoryos:12,next:12,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0002-capabilityos-executable-surface.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 299,
+      "signals": "aios:10,blocker:4,capabilityos:12,contract:12,hivemind:12,memoryos:12,stop_condition:4,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/AIOS_AGENT_LEDGER.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 297,
+      "signals": "aios:12,blocker:1,capabilityos:11,contract:12,gap:1,hivemind:12,memoryos:12,next:9,stop_condition:1,verify:9",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/ALPHA_CHECKLIST.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 275,
+      "signals": "blocker:2,capabilityos:12,contract:12,gap:2,hivemind:12,memoryos:12,todo:12,verify:6",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 271,
+      "signals": "aios:3,capabilityos:3,contract:12,gap:8,hivemind:12,memoryos:3,next:8,stop_condition:3,todo:5,verify:6",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0003-dispatch-packet-enrichment.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 264,
+      "signals": "aios:12,capabilityos:6,contract:12,gap:3,hivemind:6,memoryos:12,stop_condition:5,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0004-dispatch-watcher-and-state-machine.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 264,
+      "signals": "aios:12,capabilityos:4,contract:12,gap:3,hivemind:8,memoryos:10,stop_condition:6,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/agents/collab_protocol/WORK_LOG.md",
+      "recommended_capability_id": null,
+      "score": 257,
+      "signals": "blocker:5,capabilityos:1,contract:2,gap:7,next:12,p0:8,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0005-hive-capability-bridge.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 254,
+      "signals": "aios:3,blocker:2,capabilityos:12,contract:12,gap:2,hivemind:12,memoryos:6,next:1,stop_condition:4,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 253,
+      "signals": "aios:6,capabilityos:12,contract:12,gap:1,hivemind:12,memoryos:12,next:1,stop_condition:3,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/AIOS_WORK_DISPATCH.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 248,
+      "signals": "aios:12,capabilityos:7,contract:12,gap:1,hivemind:10,memoryos:12,next:2,stop_condition:4,verify:5",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0021-hive-arrival-pack.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 244,
+      "signals": "aios:4,blocker:2,capabilityos:6,contract:12,gap:3,hivemind:12,memoryos:7,next:1,stop_condition:2,todo:3,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/CAPABILITYOS_DESIGN_SEEDS.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 240,
+      "signals": "aios:6,blocker:1,capabilityos:12,contract:12,gap:1,hivemind:12,memoryos:12,next:1,stop_condition:3,verify:5",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/CHANGELOG.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 235,
+      "signals": "capabilityos:12,contract:12,gap:2,hivemind:8,memoryos:12,todo:12,verify:3",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/hive_mind.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 233,
+      "signals": "blocker:1,capabilityos:12,gap:3,hivemind:12,memoryos:12,next:12,todo:6,verify:1",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 229,
+      "signals": "aios:4,capabilityos:12,contract:12,hivemind:12,memoryos:12,stop_condition:2,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/infra/Uri_Infra_Security_Reassessment_v1.md",
+      "recommended_capability_id": null,
+      "score": 228,
+      "signals": "contract:6,gap:12,next:12,p0:5,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/HIVE_INTEGRATION.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 227,
+      "signals": "aios:2,capabilityos:5,contract:12,gap:8,hivemind:12,memoryos:12,next:4,todo:2,verify:3",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/AIOS_LOOP_POLICY.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 222,
+      "signals": "aios:2,capabilityos:12,contract:8,gap:12,hivemind:12,memoryos:11,todo:2",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/mos_cli_design.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 222,
+      "signals": "capabilityos:10,gap:6,hivemind:12,memoryos:12,next:12,todo:2,verify:5",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/GoEN/ai_shared/AGENT_WORKLOG.md",
+      "recommended_capability_id": null,
+      "score": 219,
+      "signals": "blocker:2,contract:1,gap:2,hivemind:3,memoryos:5,next:12,todo:12,verify:11",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/JSON_SCHEMAS.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 219,
+      "signals": "capabilityos:12,contract:12,gap:12,hivemind:12,memoryos:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 214,
+      "signals": "blocker:2,capabilityos:5,contract:2,gap:4,hivemind:12,memoryos:7,next:2,p0:1,stop_condition:1,todo:9,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0009-capability-observation-feedback.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 212,
+      "signals": "aios:12,capabilityos:12,contract:12,gap:1,hivemind:3,memoryos:4,stop_condition:2,verify:11",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/deploy_trace.md",
+      "recommended_capability_id": null,
+      "score": 211,
+      "signals": "contract:1,gap:12,memoryos:1,next:12,p0:1,todo:6,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/AIOS_BUILD_METHOD.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 207,
+      "signals": "aios:12,capabilityos:6,contract:11,hivemind:5,memoryos:6,next:4,stop_condition:3,todo:1,verify:3",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/tui_shift.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 204,
+      "signals": "gap:12,hivemind:12,memoryos:12,next:12,verify:3",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/final.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 203,
+      "signals": "capabilityos:12,contract:2,hivemind:12,memoryos:12,next:12,verify:8",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/memoryOS.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 203,
+      "signals": "capabilityos:12,contract:3,gap:4,memoryos:12,next:12,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/VISION_GRAPH.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 201,
+      "signals": "aios:2,blocker:1,capabilityos:5,gap:2,hivemind:10,memoryos:12,next:1,todo:12,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/my_world.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 200,
+      "signals": "gap:4,memoryos:12,next:12,p0:5,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "universe",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "universe/quantum/northstar/shift/my_world.md",
+      "recommended_capability_id": null,
+      "score": 197,
+      "signals": "gap:4,memoryos:12,next:12,p0:5,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/TUI_HARNESS.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 196,
+      "signals": "aios:1,blocker:4,capabilityos:2,contract:3,gap:3,hivemind:12,memoryos:12,next:8,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/WORKSTREAMS.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 194,
+      "signals": "aios:6,capabilityos:9,contract:5,gap:1,hivemind:7,memoryos:10,next:4,stop_condition:3,verify:6",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 193,
+      "signals": "aios:2,capabilityos:7,contract:12,hivemind:6,memoryos:12,stop_condition:3,verify:11",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0015-child-repo-dirty-triage.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 190,
+      "signals": "aios:1,capabilityos:8,contract:12,hivemind:12,memoryos:12,stop_condition:2,verify:7",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/STATUS.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 190,
+      "signals": "capabilityos:12,contract:8,gap:4,hivemind:12,memoryos:12,verify:9",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/README.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 186,
+      "signals": "aios:4,blocker:1,capabilityos:6,contract:12,gap:1,hivemind:9,memoryos:7,next:3,stop_condition:1,verify:5",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/hive_mind2.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 180,
+      "signals": "capabilityos:9,contract:1,gap:5,hivemind:12,memoryos:12,next:5,p0:1,verify:5",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/business/uri_사업/strategic_vision_2026_04_28_part4_collaboration_strategy.md",
+      "recommended_capability_id": null,
+      "score": 179,
+      "signals": "gap:1,memoryos:12,next:12,p0:7,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 179,
+      "signals": "blocker:6,contract:1,gap:1,hivemind:12,memoryos:5,next:9,p0:1,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0010-hive-semantic-quality-gate.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 177,
+      "signals": "aios:2,capabilityos:4,contract:12,hivemind:12,memoryos:4,next:2,stop_condition:2,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/CAPABILITYOS_FROM_HIVE_SPRINT.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 177,
+      "signals": "blocker:2,capabilityos:12,contract:1,gap:1,hivemind:12,memoryos:12,next:1,p0:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/memoryOS_0.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 175,
+      "signals": "capabilityos:5,hivemind:12,memoryos:12,next:5,p0:6,verify:2",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/discoveries/2026-05-11-jaewon-search.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 170,
+      "signals": "aios:7,capabilityos:6,contract:10,gap:2,hivemind:6,memoryos:9,next:3,todo:1,verify:1",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/reference/01_rls_and_audit_immutability.md",
+      "recommended_capability_id": null,
+      "score": 166,
+      "signals": "contract:1,gap:5,next:1,p0:11,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a MemoryOS packet for context/provenance/review lifecycle follow-up",
+      "domain": "memoryOS",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/memoryOS/docs/NEURAL_MAP.md",
+      "recommended_capability_id": "cap_memoryos_context_build",
+      "score": 163,
+      "signals": "aios:2,blocker:1,capabilityos:6,contract:11,gap:1,hivemind:12,memoryos:12,next:1",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/business/uri_사업/strategic_vision_2026_04_28_part2_buildout.md",
+      "recommended_capability_id": null,
+      "score": 162,
+      "signals": "contract:2,gap:5,memoryos:7,next:12,p0:3,verify:6",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/ADAPTIVE_ADVERSARIAL_CHAIR.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 162,
+      "signals": "blocker:1,capabilityos:2,contract:1,gap:1,hivemind:11,memoryos:8,next:8,p0:1,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/Uri/docs/roadmap/Uri_Roadmap_v1.md",
+      "recommended_capability_id": null,
+      "score": 160,
+      "signals": "contract:6,gap:1,next:4,p0:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/capabilityOS.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 160,
+      "signals": "blocker:1,capabilityos:12,gap:10,memoryos:12,next:3,verify:4",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/GoEN/TODO.md",
+      "recommended_capability_id": null,
+      "score": 159,
+      "signals": "gap:6,memoryos:10,next:3,todo:9,verify:10",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "triage as external workspace context before importing into AIOS",
+      "domain": "_from_desktop",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "_from_desktop/conscious_runtime/souls/critic.md",
+      "recommended_capability_id": null,
+      "score": 159,
+      "signals": "contract:2,gap:11,next:12,verify:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+      "domain": "hivemind",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/hivemind/docs/LOCAL_MODEL_USAGE_GOEN.md",
+      "recommended_capability_id": "cap_hivemind_execution_harness",
+      "score": 159,
+      "signals": "gap:9,hivemind:12,memoryos:1,todo:12",
+      "status": "review_only"
+    },
+    {
+      "candidate_task": "promote this control-plane signal into an AIOS contract or readiness gate",
+      "domain": "myworld",
+      "evidence_refs": [
+        "../docs/AIOS_TASK_RADAR.md"
+      ],
+      "path": "myworld/docs/contracts/ASC-0007-workspace-doc-scout-task-radar.md",
+      "recommended_capability_id": "cap_capabilityos_recommendation",
+      "score": 157,
+      "signals": "aios:5,capabilityos:3,contract:12,hivemind:2,memoryos:2,next:7,stop_condition:2,verify:4",
+      "status": "review_only"
+    }
+  ],
+  "recommendation_only": true,
+  "result_files": 45,
+  "source_inbox": "../.aios/outbox",
+  "source_radar": "../docs/AIOS_TASK_RADAR.md",
+  "updated_capabilities": [
+    {
+      "actions": [
+        "run",
+        "inspect",
+        "verify",
+        "demo",
+        "memory-loop"
+      ],
+      "confidence": 0.923077,
+      "cost": "free",
+      "description": "Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.",
+      "domains": [
+        "aios",
+        "hivemind",
+        "execution",
+        "verification",
+        "run"
+      ],
+      "evidence_refs": [
+        "../hivemind/README.md",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+        "../.aios/outbox/hivemind/asc-0001.hivemind.result.json",
+        "../.aios/outbox/hivemind/asc-0001-watcher-replay.hivemind.result.json",
+        "../.aios/outbox/hivemind/asc-0005.hivemind.result.json",
+        "../docs/contracts/ASC-0005-hive-capability-bridge.md",
+        "../.aios/outbox/hivemind/asc-0010.hivemind.result.json",
+        "../docs/contracts/ASC-0010-hive-semantic-quality-gate.md",
+        "../.aios/outbox/hivemind/asc-0012.hivemind.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        "../.aios/outbox/hivemind/asc-0020.hivemind.result.json",
+        "../docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md",
+        "../.aios/outbox/hivemind/asc-0021.hivemind.result.json",
+        "../docs/contracts/ASC-0021-hive-arrival-pack.md",
+        "../.aios/outbox/hivemind/asc-0023.hivemind.result.json",
+        "../docs/contracts/ASC-0023-hive-source-read-registry.md",
+        "../.aios/outbox/hivemind/asc-0027.hivemind.result.json",
+        "../docs/contracts/ASC-0027-memory-feedback-directives.md",
+        "../.aios/outbox/hivemind/asc-0036.hivemind.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+        "../.aios/outbox/hivemind/asc-0038.hivemind.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "executes_tools": false,
+      "id": "cap_hivemind_execution_harness",
+      "inputs": [
+        "operator_goal",
+        "contract",
+        "context_pack",
+        "capability_plan"
+      ],
+      "kind": "harness",
+      "latency": "fast",
+      "name": "Hive Mind Execution Harness",
+      "outputs": [
+        "run_state",
+        "receipt",
+        "verification_report",
+        "memory_drafts"
+      ],
+      "privacy": "local",
+      "requires_network": false,
+      "risk": "low",
+      "status": "active"
+    },
+    {
+      "actions": [
+        "context",
+        "build",
+        "trace",
+        "explain"
+      ],
+      "confidence": 0.8,
+      "cost": "free",
+      "description": "Builds role-specific context packs from accepted memory with RetrievalTrace provenance.",
+      "domains": [
+        "aios",
+        "memoryos",
+        "context",
+        "retrieval",
+        "hive"
+      ],
+      "evidence_refs": [
+        "../memoryOS/docs/HIVE_INTEGRATION.md",
+        "../memoryOS/docs/JSON_SCHEMAS.md",
+        "../.aios/outbox/memoryOS/asc-0001.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0001-enriched-replay.memoryOS.result.json"
+      ],
+      "executes_tools": false,
+      "id": "cap_memoryos_context_build",
+      "inputs": [
+        "task",
+        "role",
+        "project",
+        "accepted_memory"
+      ],
+      "kind": "memory",
+      "latency": "fast",
+      "name": "MemoryOS Context Build",
+      "outputs": [
+        "context_pack",
+        "retrieval_trace",
+        "accepted_memory_ids"
+      ],
+      "privacy": "local",
+      "requires_network": false,
+      "risk": "low",
+      "status": "active"
+    },
+    {
+      "actions": [
+        "import-run",
+        "draft",
+        "review",
+        "provenance"
+      ],
+      "confidence": 0.909091,
+      "cost": "free",
+      "description": "Imports Hive run memory_drafts.json into draft MemoryObjects with source provenance.",
+      "domains": [
+        "aios",
+        "memoryos",
+        "hivemind",
+        "import",
+        "review"
+      ],
+      "evidence_refs": [
+        "../memoryOS/docs/HIVE_INTEGRATION.md",
+        "../docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+        "../.aios/outbox/memoryOS/asc-0001.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0001-childwatch-dogfood.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0001-enriched-replay.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json",
+        "../.aios/outbox/memoryOS/asc-0008.memoryOS.result.json",
+        "../docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md",
+        "../.aios/outbox/memoryOS/asc-0012.memoryOS.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        "../.aios/outbox/memoryOS/asc-0027.memoryOS.result.json",
+        "../docs/contracts/ASC-0027-memory-feedback-directives.md",
+        "../.aios/outbox/memoryOS/asc-0036.memoryOS.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+        "../.aios/outbox/memoryOS/asc-0038.memoryOS.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "executes_tools": false,
+      "id": "cap_memoryos_import_run",
+      "inputs": [
+        "run_state",
+        "memory_drafts",
+        "transcript"
+      ],
+      "kind": "memory",
+      "latency": "fast",
+      "name": "MemoryOS Import Run",
+      "outputs": [
+        "memory_objects",
+        "source_artifact",
+        "derives_from_hyperedges"
+      ],
+      "privacy": "local",
+      "requires_network": false,
+      "risk": "low",
+      "status": "active"
+    },
+    {
+      "actions": [
+        "list",
+        "show",
+        "recommend",
+        "audit"
+      ],
+      "confidence": 0.9,
+      "cost": "free",
+      "description": "Ranks local capability cards for task routing and fallback planning without executing adapters.",
+      "domains": [
+        "aios",
+        "capabilityos",
+        "capability",
+        "routing",
+        "fallback"
+      ],
+      "evidence_refs": [
+        "../CapabilityOS/README.md",
+        "../docs/contracts/ASC-0002-capabilityos-executable-surface.md",
+        "../.aios/outbox/CapabilityOS/asc-0002.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0009-capability-observation-feedback.md",
+        "../.aios/outbox/CapabilityOS/asc-0009.CapabilityOS.result.json",
+        "../.aios/outbox/CapabilityOS/asc-0012.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        "../.aios/outbox/CapabilityOS/asc-0026.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0026-capability-observation-aware-routing.md",
+        "../.aios/outbox/CapabilityOS/asc-0028.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0028-capability-route-binding.md",
+        "../.aios/outbox/CapabilityOS/asc-0030.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0030-capabilityos-web-research-route.md",
+        "../.aios/outbox/CapabilityOS/asc-0036.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+        "../.aios/outbox/CapabilityOS/asc-0038.CapabilityOS.result.json",
+        "../docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "executes_tools": false,
+      "id": "cap_capabilityos_recommendation",
+      "inputs": [
+        "task",
+        "capability_catalog"
+      ],
+      "kind": "catalog",
+      "latency": "fast",
+      "name": "CapabilityOS Recommendation",
+      "outputs": [
+        "recommendations",
+        "fallback_ids",
+        "risk_notes"
+      ],
+      "privacy": "local",
+      "requires_network": false,
+      "risk": "low",
+      "status": "active"
+    },
+    {
+      "actions": [
+        "search",
+        "open",
+        "find",
+        "cite",
+        "verify",
+        "triage"
+      ],
+      "confidence": 0.7,
+      "cost": "free",
+      "description": "Plans broad internet search, source opening, and citation policy for current or external evidence without browsing directly.",
+      "domains": [
+        "web",
+        "internet",
+        "search",
+        "research",
+        "current",
+        "external",
+        "docs",
+        "sources"
+      ],
+      "evidence_refs": [
+        "../docs/contracts/ASC-0030-capabilityos-web-research-route.md",
+        "../docs/AIOS_BUILD_METHOD.md",
+        "../docs/AIOS_WORK_DISPATCH.md"
+      ],
+      "executes_tools": false,
+      "id": "cap_web_research_route",
+      "inputs": [
+        "research_task",
+        "source_policy",
+        "privacy_constraints"
+      ],
+      "kind": "tool",
+      "latency": "medium",
+      "name": "Broad Web Research Route",
+      "outputs": [
+        "search_plan",
+        "source_policy",
+        "evidence_requirements",
+        "risk_notes"
+      ],
+      "privacy": "remote",
+      "requires_network": true,
+      "risk": "medium",
+      "status": "active"
+    }
+  ]
+}

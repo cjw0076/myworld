@@ -76,8 +76,6 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- capability_observation_memory_import: decide which CapabilityOS observations
-  should enter MemoryOS as reviewable durable memory.
 - contract_autodraft_from_goal_plan: turn an unblocked goal evolution
   recommendation into a proposed smart contract draft without relying on chat
   memory.
@@ -130,3 +128,7 @@ and reversible governance.
 - web_evidence_memory_review: ASC-0041 turned a validated web evidence receipt
   into draft-only MemoryOS review candidates and a MemoryOS import-run dry-run
   bundle without auto-accepting web-derived facts.
+- capability_observation_memory_import: ASC-0042 converted CapabilityOS
+  observation output into capability-level MemoryOS draft review candidates and
+  a MemoryOS import-run dry-run bundle without auto-accepting capability
+  claims.

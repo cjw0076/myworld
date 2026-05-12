@@ -1,0 +1,283 @@
+{
+  "auto_accept": false,
+  "candidate_count": 3,
+  "candidates": [
+    {
+      "auto_accept": false,
+      "candidate_id": "capmem_a1f14bc80f33348f",
+      "capability_id": "cap_capabilityos_recommendation",
+      "confidence": 0.78,
+      "content": "Capability observation rollup: cap_capabilityos_recommendation has 8 passed dispatch observation(s) across repos CapabilityOS and contracts ASC-0002, ASC-0009, ASC-0012, ASC-0026, ASC-0028, ASC-0030, ASC-0036, ASC-0038. Treat this as reviewable routing evidence, not an accepted guarantee of future capability performance.",
+      "evidence_state": "unreviewed",
+      "observation_count": 8,
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "dispatch_ids": [
+          "asc-0002",
+          "asc-0009",
+          "asc-0012.CapabilityOS",
+          "asc-0026",
+          "asc-0028",
+          "asc-0030",
+          "asc-0036",
+          "asc-0038"
+        ],
+        "evidence_refs": [
+          "docs/evidence/ASC-0042-capability-observations.json",
+          ".aios/outbox/CapabilityOS/asc-0002.CapabilityOS.result.json",
+          "docs/contracts/ASC-0002-capabilityos-executable-surface.md",
+          ".aios/outbox/CapabilityOS/asc-0009.CapabilityOS.result.json",
+          "docs/contracts/ASC-0009-capability-observation-feedback.md",
+          ".aios/outbox/CapabilityOS/asc-0012.CapabilityOS.result.json",
+          "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+          ".aios/outbox/CapabilityOS/asc-0026.CapabilityOS.result.json",
+          "docs/contracts/ASC-0026-capability-observation-aware-routing.md",
+          ".aios/outbox/CapabilityOS/asc-0028.CapabilityOS.result.json",
+          "docs/contracts/ASC-0028-capability-route-binding.md",
+          ".aios/outbox/CapabilityOS/asc-0030.CapabilityOS.result.json",
+          "docs/contracts/ASC-0030-capabilityos-web-research-route.md",
+          ".aios/outbox/CapabilityOS/asc-0036.CapabilityOS.result.json",
+          "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+          ".aios/outbox/CapabilityOS/asc-0038.CapabilityOS.result.json",
+          "docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+        ],
+        "observation_schema": "capabilityos.observe_results.v1",
+        "observation_snapshot": "docs/evidence/ASC-0042-capability-observations.json"
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0042-capability-observations.json",
+        ".aios/outbox/CapabilityOS/asc-0002.CapabilityOS.result.json",
+        "docs/contracts/ASC-0002-capabilityos-executable-surface.md",
+        ".aios/outbox/CapabilityOS/asc-0009.CapabilityOS.result.json",
+        "docs/contracts/ASC-0009-capability-observation-feedback.md",
+        ".aios/outbox/CapabilityOS/asc-0012.CapabilityOS.result.json",
+        "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        ".aios/outbox/CapabilityOS/asc-0026.CapabilityOS.result.json",
+        "docs/contracts/ASC-0026-capability-observation-aware-routing.md",
+        ".aios/outbox/CapabilityOS/asc-0028.CapabilityOS.result.json",
+        "docs/contracts/ASC-0028-capability-route-binding.md",
+        ".aios/outbox/CapabilityOS/asc-0030.CapabilityOS.result.json",
+        "docs/contracts/ASC-0030-capabilityos-web-research-route.md",
+        ".aios/outbox/CapabilityOS/asc-0036.CapabilityOS.result.json",
+        "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+        ".aios/outbox/CapabilityOS/asc-0038.CapabilityOS.result.json",
+        "docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "review_notes": [
+        "capability_observation_rollup",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_contract_ids": [
+        "ASC-0002",
+        "ASC-0009",
+        "ASC-0012",
+        "ASC-0026",
+        "ASC-0028",
+        "ASC-0030",
+        "ASC-0036",
+        "ASC-0038"
+      ],
+      "source_repos": [
+        "CapabilityOS"
+      ],
+      "status": "draft",
+      "type": "artifact"
+    },
+    {
+      "auto_accept": false,
+      "candidate_id": "capmem_daa55b5e0f655fc2",
+      "capability_id": "cap_hivemind_execution_harness",
+      "confidence": 0.78,
+      "content": "Capability observation rollup: cap_hivemind_execution_harness has 11 passed dispatch observation(s) across repos hivemind and contracts ASC-0001, ASC-0005, ASC-0010, ASC-0012, ASC-0020, ASC-0021, ASC-0023, ASC-0027. Treat this as reviewable routing evidence, not an accepted guarantee of future capability performance.",
+      "evidence_state": "unreviewed",
+      "observation_count": 11,
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "dispatch_ids": [
+          "asc-0001-watcher-replay",
+          "asc-0001",
+          "asc-0005",
+          "asc-0010",
+          "asc-0012",
+          "asc-0020",
+          "asc-0021",
+          "asc-0023",
+          "asc-0027",
+          "asc-0036",
+          "asc-0038"
+        ],
+        "evidence_refs": [
+          "docs/evidence/ASC-0042-capability-observations.json",
+          ".aios/outbox/hivemind/asc-0001-watcher-replay.hivemind.result.json",
+          "docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+          ".aios/outbox/hivemind/asc-0001.hivemind.result.json",
+          ".aios/outbox/hivemind/asc-0005.hivemind.result.json",
+          "docs/contracts/ASC-0005-hive-capability-bridge.md",
+          ".aios/outbox/hivemind/asc-0010.hivemind.result.json",
+          "docs/contracts/ASC-0010-hive-semantic-quality-gate.md",
+          ".aios/outbox/hivemind/asc-0012.hivemind.result.json",
+          "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+          ".aios/outbox/hivemind/asc-0020.hivemind.result.json",
+          "docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md",
+          ".aios/outbox/hivemind/asc-0021.hivemind.result.json",
+          "docs/contracts/ASC-0021-hive-arrival-pack.md",
+          ".aios/outbox/hivemind/asc-0023.hivemind.result.json",
+          "docs/contracts/ASC-0023-hive-source-read-registry.md",
+          ".aios/outbox/hivemind/asc-0027.hivemind.result.json",
+          "docs/contracts/ASC-0027-memory-feedback-directives.md",
+          ".aios/outbox/hivemind/asc-0036.hivemind.result.json",
+          "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"
+        ],
+        "observation_schema": "capabilityos.observe_results.v1",
+        "observation_snapshot": "docs/evidence/ASC-0042-capability-observations.json"
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0042-capability-observations.json",
+        ".aios/outbox/hivemind/asc-0001-watcher-replay.hivemind.result.json",
+        "docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+        ".aios/outbox/hivemind/asc-0001.hivemind.result.json",
+        ".aios/outbox/hivemind/asc-0005.hivemind.result.json",
+        "docs/contracts/ASC-0005-hive-capability-bridge.md",
+        ".aios/outbox/hivemind/asc-0010.hivemind.result.json",
+        "docs/contracts/ASC-0010-hive-semantic-quality-gate.md",
+        ".aios/outbox/hivemind/asc-0012.hivemind.result.json",
+        "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        ".aios/outbox/hivemind/asc-0020.hivemind.result.json",
+        "docs/contracts/ASC-0020-hive-worklog-gap-cleanup.md",
+        ".aios/outbox/hivemind/asc-0021.hivemind.result.json",
+        "docs/contracts/ASC-0021-hive-arrival-pack.md",
+        ".aios/outbox/hivemind/asc-0023.hivemind.result.json",
+        "docs/contracts/ASC-0023-hive-source-read-registry.md",
+        ".aios/outbox/hivemind/asc-0027.hivemind.result.json",
+        "docs/contracts/ASC-0027-memory-feedback-directives.md",
+        ".aios/outbox/hivemind/asc-0036.hivemind.result.json",
+        "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"
+      ],
+      "review_notes": [
+        "capability_observation_rollup",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_contract_ids": [
+        "ASC-0001",
+        "ASC-0005",
+        "ASC-0010",
+        "ASC-0012",
+        "ASC-0020",
+        "ASC-0021",
+        "ASC-0023",
+        "ASC-0027",
+        "ASC-0036",
+        "ASC-0038"
+      ],
+      "source_repos": [
+        "hivemind"
+      ],
+      "status": "draft",
+      "type": "artifact"
+    },
+    {
+      "auto_accept": false,
+      "candidate_id": "capmem_e67670394ff4c517",
+      "capability_id": "cap_memoryos_import_run",
+      "confidence": 0.78,
+      "content": "Capability observation rollup: cap_memoryos_import_run has 9 passed dispatch observation(s) across repos memoryOS and contracts ASC-0001, ASC-0008, ASC-0012, ASC-0027, ASC-0036, ASC-0038. Treat this as reviewable routing evidence, not an accepted guarantee of future capability performance.",
+      "evidence_state": "unreviewed",
+      "observation_count": 9,
+      "origin": "assistant",
+      "project": "AIOS",
+      "provenance": {
+        "dispatch_ids": [
+          "asc-0001-childwatch-dogfood",
+          "asc-0001-enriched-replay",
+          "asc-0001-watcher-replay",
+          "asc-0001",
+          "asc-0008",
+          "asc-0012",
+          "asc-0027",
+          "asc-0036",
+          "asc-0038"
+        ],
+        "evidence_refs": [
+          "docs/evidence/ASC-0042-capability-observations.json",
+          ".aios/outbox/memoryOS/asc-0001-childwatch-dogfood.memoryOS.result.json",
+          "docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+          ".aios/outbox/memoryOS/asc-0001-enriched-replay.memoryOS.result.json",
+          ".aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json",
+          ".aios/outbox/memoryOS/asc-0001.memoryOS.result.json",
+          ".aios/outbox/memoryOS/asc-0008.memoryOS.result.json",
+          "docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md",
+          ".aios/outbox/memoryOS/asc-0012.memoryOS.result.json",
+          "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+          ".aios/outbox/memoryOS/asc-0027.memoryOS.result.json",
+          "docs/contracts/ASC-0027-memory-feedback-directives.md",
+          ".aios/outbox/memoryOS/asc-0036.memoryOS.result.json",
+          "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+          ".aios/outbox/memoryOS/asc-0038.memoryOS.result.json",
+          "docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+        ],
+        "observation_schema": "capabilityos.observe_results.v1",
+        "observation_snapshot": "docs/evidence/ASC-0042-capability-observations.json"
+      },
+      "raw_refs": [
+        "docs/evidence/ASC-0042-capability-observations.json",
+        ".aios/outbox/memoryOS/asc-0001-childwatch-dogfood.memoryOS.result.json",
+        "docs/contracts/ASC-0001-memoryos-hivemind-loop.md",
+        ".aios/outbox/memoryOS/asc-0001-enriched-replay.memoryOS.result.json",
+        ".aios/outbox/memoryOS/asc-0001-watcher-replay.memoryOS.result.json",
+        ".aios/outbox/memoryOS/asc-0001.memoryOS.result.json",
+        ".aios/outbox/memoryOS/asc-0008.memoryOS.result.json",
+        "docs/contracts/ASC-0008-workspace-doc-ingest-memoryos.md",
+        ".aios/outbox/memoryOS/asc-0012.memoryOS.result.json",
+        "docs/contracts/ASC-0012-child-repo-durability-closeout.md",
+        ".aios/outbox/memoryOS/asc-0027.memoryOS.result.json",
+        "docs/contracts/ASC-0027-memory-feedback-directives.md",
+        ".aios/outbox/memoryOS/asc-0036.memoryOS.result.json",
+        "docs/contracts/ASC-0036-cross-repo-semantic-alignment.md",
+        ".aios/outbox/memoryOS/asc-0038.memoryOS.result.json",
+        "docs/contracts/ASC-0038-self-resonant-repo-loop.md"
+      ],
+      "review_notes": [
+        "capability_observation_rollup",
+        "requires_operator_or_memoryos_review",
+        "do_not_auto_accept"
+      ],
+      "review_required": true,
+      "source_contract_ids": [
+        "ASC-0001",
+        "ASC-0008",
+        "ASC-0012",
+        "ASC-0027",
+        "ASC-0036",
+        "ASC-0038"
+      ],
+      "source_repos": [
+        "memoryOS"
+      ],
+      "status": "draft",
+      "type": "artifact"
+    }
+  ],
+  "excluded_count": 0,
+  "excluded_observations": [],
+  "gaps_count": 17,
+  "gaps_policy": "operator_review_only",
+  "generated_at": "2026-05-12T19:03:44+09:00",
+  "memoryos_import_hint": {
+    "command": "memoryos import-run <run_bundle_dir> --dry-run --json",
+    "expected_status": "dry_run_ok",
+    "must_not_write_review_acceptance": true
+  },
+  "memoryos_target_status": "draft",
+  "observation_count": 28,
+  "review_required": true,
+  "schema_version": "aios.capability_observation_memory_review.v1",
+  "source_contract": "capabilityos.observe_results.v1",
+  "source_observations": "docs/evidence/ASC-0042-capability-observations.json",
+  "status": "review_candidates"
+}
