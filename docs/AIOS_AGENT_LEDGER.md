@@ -1084,3 +1084,32 @@ For repo-local implementation details, also update that repo's own worklog.
   AIOS as an accountable enterprise-scale and sovereign-AI operating system
   with authority, audit, resource, and rollback semantics.
 - status: done
+
+## 2026-05-12 14:37 KST — codex — ASC-0033 sovereign AI governance readiness closed
+
+- repo: myworld
+- role: acting operator + governance implementation
+- goal: add a post-L6 readiness layer for AIOS as an accountable
+  enterprise-scale and sovereign-AI governance stack without claiming
+  real-world authority.
+- changed: `docs/AIOS_GOVERNANCE_MODEL.md`,
+  `scripts/aios_institution_readiness.py`,
+  `tests/test_aios_institution_readiness.py`,
+  `docs/contracts/ASC-0033-sovereign-ai-governance-readiness.md`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, and
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `tests/test_aios_institution_readiness.py` passed 3/3; full
+  myworld suite passed 50/50; `aios_institution_readiness.py --json` reports
+  `schema_version=aios.institution_readiness.v1`, L10 sovereign-scale
+  simulation readiness after ASC-0033 closeout, `sovereignty_claimed=false`,
+  and `ready_for_real_world_authority=false`; ASC-0033 dispatch result was
+  collected and released; final monitor assessment returned `health=clear`.
+- decision: AIOS can now measure institutional governance readiness above L6,
+  but the model explicitly treats sovereignty as simulation/readiness, not
+  real-world legal authority.
+- risk: readiness is still descriptive/evaluative. The next step is an action
+  policy engine that gates proposed AIOS actions by authority and risk class.
+- next: open `governance_action_policy_engine`.
+- status: done

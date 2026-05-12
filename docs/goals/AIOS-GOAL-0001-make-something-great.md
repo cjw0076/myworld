@@ -71,9 +71,9 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- sovereign_ai_governance_readiness: define the next readiness layer for AIOS
-  as an accountable enterprise-scale and sovereign-AI operating system with
-  authority, audit, resource, rollback, and human checkpoint semantics.
+- governance_action_policy_engine: convert governance readiness into a
+  machine-checkable action policy that can allow, hold, deny, or escalate
+  proposed AIOS actions by authority and risk class.
 - web_evidence_memory_review: turn validated web evidence receipts into
   MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations
@@ -103,3 +103,6 @@ and reversible governance.
 - web_evidence_execution_loop: ASC-0031 dogfooded CapabilityOS `web-route` by
   producing a cited web evidence receipt and a validator for source, privacy,
   and citation guardrails.
+- sovereign_ai_governance_readiness: ASC-0033 added post-L6 governance
+  readiness levels L7-L10 and a validator that blocks real-world authority
+  claims while measuring accountable institutional capacity.

@@ -118,3 +118,4 @@ decision rather than draft churn.
 | ASC-0030 | capabilityos-web-research-route | closed | Add a recommendation-only CapabilityOS web research route so AIOS can deliberately use broad internet search with source and privacy guardrails. |
 | ASC-0031 | web-evidence-execution-loop | closed | Dogfood CapabilityOS web-route by producing and validating a cited web evidence receipt for AIOS capability routing. |
 | ASC-0032 | uri-repo-isolation-setup | closed | Create an isolated Uri child repository and private `uri-v3` remote without mixing product artifacts into the MyWorld control plane. |
+| ASC-0033 | sovereign-ai-governance-readiness | closed | Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance. |

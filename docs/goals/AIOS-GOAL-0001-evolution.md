@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T14:17:35+09:00`
+- generated_at: `2026-05-12T14:38:28+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:sovereign_ai_governance_readiness`
+- path: `goal:governance_action_policy_engine`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: define the next readiness layer for AIOS as an accountable enterprise-scale and sovereign-AI operating system with authority, audit, resource, rollback, and human checkpoint semantics.
+- task: convert governance readiness into a machine-checkable action policy that can allow, hold, deny, or escalate proposed AIOS actions by authority and risk class.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
