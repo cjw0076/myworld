@@ -258,6 +258,22 @@ python scripts/aios_desktop_app.py launch
 ```
 
 This is the non-web desktop entry point. It reads or refreshes the same control
+snapshot as the local web control app.
+
+AIOS-native runtime entry point:
+
+```bash
+python scripts/aios_runtime.py status --json
+python scripts/aios_runtime.py step --json
+python scripts/aios_runtime.py run --max-rounds 1 --interval-seconds 0 --json
+python scripts/aios_runtime.py submit-goal --repo hivemind --kind goal --goal "..."
+```
+
+This is the default operator-facing control command after ASC-0052. Claude CLI,
+Codex CLI, provider CLIs, and repo-local scripts are substrates behind this
+surface. The runtime reports monitor/readiness/dispatch state, runs bounded
+control-plane steps, emits primitive runtime events, and delegates repo-goal
+submissions without directly editing child repo source.
 snapshot, renders native `tkinter` tables, and does not start an HTTP server or
 browser. `status --json` is safe in headless sessions; `launch` requires a
 graphical display.

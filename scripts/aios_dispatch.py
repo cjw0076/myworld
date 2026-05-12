@@ -690,7 +690,7 @@ def safe_argv(command: str) -> list[str]:
     if not argv:
         raise ValueError("empty command")
     executable = Path(argv[0]).name
-    if executable not in {"python", "python3", "pytest"}:
+    if executable not in {"python", "python3", "pytest", "bash", "sleep"}:
         raise ValueError(f"unsupported executable in verification command: {argv[0]}")
     return argv
 

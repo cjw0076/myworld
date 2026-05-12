@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0051
 slug: aios-coevolution-heartbeat
-status: accepted
+status: closed
 goal: Use the new aios_primitives surface (ASC-0050) to arm three persistent co-evolution loops — memory pulse, capability pulse, hive pulse — so AIOS continuously grows MemoryOS knowledge, CapabilityOS catalog, and Hive routing recommendations without operator chat input.
 created: 2026-05-12 23:25 KST
 accepted: 2026-05-12 23:25 KST by claude acting operator (founder role delegated)
-closed:
+closed: 2026-05-12 23:35 KST
 acceptance_authority: claude@myworld (operator) — founder explicitly delegated their role ("네가 내 역할을 위임받는거야") and asked AIOS to be used rather than direct script-writing ("AIOS를 사용해").
 origin: founder directive 2026-05-12 evening "AIOS완성까지 AIOS 사용해서 계속 공진화해. 지식을 끌어와서 memoryOS에 저장해. 도구를 찾아보고, 인터넷을 흡수해서 capabilityOS를 키우고, hive mind를 사용할 수 있도록 계속 개선해."
 ---
@@ -157,7 +157,32 @@ Pass criteria:
 
 ## Receipts
 
-Pending until verification + arm dogfood.
+Closed 2026-05-12 23:35 KST by `codex@myworld`.
+
+- Implemented:
+  - `scripts/aios_coevolution/memory_pulse.sh`
+  - `scripts/aios_coevolution/capability_pulse.sh`
+  - `scripts/aios_coevolution/hive_pulse.sh`
+  - `scripts/aios_coevolution/arm.sh`
+  - `scripts/aios_coevolution/stop.sh`
+  - `scripts/aios_coevolution/status.py`
+  - `tests/test_aios_coevolution.py`
+  - `docs/AIOS_COEVOLUTION.md`
+- Dogfood pulse outputs:
+  - `memory_pulse stage=done scout_signals=30 imported=0 skipped=0 warnings=4`
+  - `capability_pulse stage=done result_files=57 observations=31 gaps=26 recommendation_only=true audit_status=ok`
+  - `hive_pulse stage=done dispatch_in_flight=6 radar_hive_lines=50 top_route=cap_hivemind_execution_harness`
+- Arm/status/stop dogfood:
+  - `bash scripts/aios_coevolution/arm.sh` started all three pulse monitors.
+  - `python scripts/aios_coevolution/status.py --json` reported one event for
+    each of `aios-memory-pulse`, `aios-capability-pulse`, and
+    `aios-hive-pulse`.
+  - `bash scripts/aios_coevolution/stop.sh` stopped all three monitors; later
+    `aios_primitives monitor list` showed `alive=false` for each.
+- Verification:
+  - `python -m unittest tests/test_aios_coevolution.py` passed 3/3.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 120/120.
+- Stop conditions triggered: none.
 
 ## Work Packets
 
@@ -165,10 +190,10 @@ Pending until verification + arm dogfood.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - issued: 2026-05-12 23:25 KST
 - accepted: 2026-05-12 23:25 KST
-- closed: pending
+- closed: 2026-05-12 23:35 KST
 - depends_on: ASC-0050 (primitive surface), ASC-0007 (doc scout),
   ASC-0008 (memoryos ingest), ASC-0009 (capability observe).
 - brief: |
@@ -199,4 +224,4 @@ Pending until verification + arm dogfood.
     After closeout, suggest follow-up ASC-0052 — adapter that lets child
     repo agents (codex@hivemind etc.) call aios_primitives from their
     cwd without sys.path hacks.
-- result: pending
+- result: implemented, verified, and ready for dispatch release.

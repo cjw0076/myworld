@@ -1718,3 +1718,55 @@ For repo-local implementation details, also update that repo's own worklog.
   AIOS-native runtime contract so the lasting interface is AIOS itself rather
   than Claude CLI or Codex CLI.
 - status: done
+## 2026-05-12 23:35 KST — codex — ASC-0051 co-evolution heartbeat closed
+
+- repo: myworld
+- role: control-plane implementation + verification
+- goal: use the ASC-0050 primitive monitor surface to arm MemoryOS,
+  CapabilityOS, and Hive co-evolution pulse loops without relying on chat
+  continuation.
+- changed: `scripts/aios_coevolution/`, `tests/test_aios_coevolution.py`,
+  `docs/AIOS_COEVOLUTION.md`,
+  `docs/contracts/ASC-0051-aios-coevolution-heartbeat.md`, and
+  `docs/contracts/README.md`.
+- evidence: `python -m unittest tests/test_aios_coevolution.py` passed 3/3;
+  standalone `memory_pulse.sh`, `capability_pulse.sh`, and `hive_pulse.sh`
+  each exited 0; dogfood `arm.sh -> status.py --json -> stop.sh` produced one
+  event for each pulse and left all three monitors `alive=false`; full myworld
+  `test_aios_*.py` suite passed 120/120.
+- decision: pulse scripts are one-pass sensors/recommenders; the primitive
+  monitor owns persistence. Memory ingest writes only under
+  `.aios/primitives/coevolution/memory_root`, CapabilityOS remains
+  recommendation-only, and Hive pulse does not dispatch.
+- risk: the live pulse currently writes local runtime state under `.aios/` and
+  should not be committed; memory pulse reported four importer warnings during
+  dogfood and those should be reviewed before long unattended runs.
+- next: close or implement ASC-0052 so the user-facing control surface becomes
+  `aios_runtime` rather than Claude/Codex CLI orchestration.
+- status: done
+
+## 2026-05-12 23:44 KST — codex — ASC-0052 AIOS native runtime entrypoint closed
+
+- repo: myworld
+- role: control-plane implementation
+- goal: make AIOS itself the user-facing command surface instead of Claude CLI
+  or Codex CLI orchestration.
+- changed: `scripts/aios_runtime.py`, `tests/test_aios_runtime.py`,
+  `docs/AIOS_RUNTIME.md`,
+  `docs/contracts/ASC-0052-aios-native-runtime-entrypoint.md`,
+  `docs/contracts/README.md`, and result packet
+  `.aios/outbox/myworld/asc-0052.myworld.result.json`.
+- evidence: `python -m py_compile scripts/aios_runtime.py` passed; focused
+  runtime tests passed 5/5; `status --json`, `step --json`, and bounded
+  `run --max-rounds 1 --interval-seconds 0 --json` returned stable runtime
+  schemas; `step` emitted `aios.runtime.step`; full myworld `test_aios_*.py`
+  suite passed 125/125.
+- decision: `aios_runtime.py` is the first AIOS-native interface. Claude,
+  Codex, and provider CLIs remain execution substrates behind status, step,
+  run, and submit-goal.
+- risk: this is an entrypoint, not the final visual control application or a
+  full natural-language chair. It still delegates to existing scripts and
+  reports monitor blocks instead of hiding them.
+- next: use `python scripts/aios_runtime.py status|step|run` as the default
+  operator surface, then evolve a richer chair/visual runtime on top of it.
+- status: done

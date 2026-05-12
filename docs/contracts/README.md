@@ -136,3 +136,5 @@ decision rather than draft churn.
 | ASC-0048 | goal-evolution-semantic-verifier-refinement | closed | Refine the recurring Hive radar-gap recommendation to the concrete semantic-verifier TODO instead of returning a broad RADAR_GAP_TRIAGE source. |
 | ASC-0049 | hive-semantic-verifier-review | closed | Add a Hive semantic verifier review surface for high-risk runs without automatic provider execution. |
 | ASC-0050 | aios-primitive-surface | closed | Reverse-engineer Claude CLI operator primitives into a substrate-independent AIOS primitive surface for Codex and local LLM workers. |
+| ASC-0051 | aios-coevolution-heartbeat | closed | Arm MemoryOS, CapabilityOS, and Hive co-evolution pulse loops through the AIOS primitive monitor surface. |
+| ASC-0052 | aios-native-runtime-entrypoint | closed | Provide one AIOS-native runtime entrypoint so Claude/Codex CLIs become replaceable substrates behind the AIOS loop. |

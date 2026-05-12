@@ -1,14 +1,15 @@
 ---
 contract_id: ASC-0052
 slug: aios-native-runtime-entrypoint
-status: accepted
+status: closed
 goal: Provide one AIOS-native runtime entrypoint that wraps monitor, readiness, round control, primitive events, and repo-goal intake so Claude/Codex CLIs become replaceable substrates rather than the user-facing loop.
 created: 2026-05-12 23:24 KST
 accepted: 2026-05-12 23:24 KST by codex acting operator (founder directive)
 acceptance_authority: codex@myworld acting operator per founder directive "마지막에 남는 것은 Claude Cli도, Codex Cli도 아닌 ... AIOS만 남는거야"
+closed: 2026-05-12 23:44 KST
 ---
 
-# ASC-0051 AIOS Native Runtime Entrypoint
+# ASC-0052 AIOS Native Runtime Entrypoint
 
 ## Why Now
 
@@ -43,7 +44,7 @@ allowed_files:
 - `tests/test_aios_runtime.py`
 - `docs/AIOS_RUNTIME.md`
 - `docs/AIOS_WORK_DISPATCH.md`
-- `docs/contracts/ASC-0051-aios-native-runtime-entrypoint.md`
+- `docs/contracts/ASC-0052-aios-native-runtime-entrypoint.md`
 - `docs/contracts/README.md`
 - `docs/goals/AIOS-GOAL-0001-make-something-great.md`
 - `docs/goals/AIOS-GOAL-0001-evolution.md`
@@ -115,16 +116,46 @@ Pass criteria:
   `aios.runtime.step` primitive event.
 - `verification_gate_failed`
 
+## Receipts
+
+Closed 2026-05-12 23:44 KST by `codex@myworld`.
+
+- Implemented:
+  - `scripts/aios_runtime.py`
+  - `tests/test_aios_runtime.py`
+  - `docs/AIOS_RUNTIME.md`
+- Runtime surface:
+  - `status --json` aggregates monitor, readiness, dispatch summary,
+    round-controller status, and primitive event summary.
+  - `step --json` runs one bounded round and emits `aios.runtime.step`.
+  - `run --max-rounds N --interval-seconds N --json` runs a bounded foreground
+    loop.
+  - `submit-goal --repo <repo> --kind <kind> --goal <text> --json` delegates
+    to repo-goal intake.
+- Verification:
+  - `python -m py_compile scripts/aios_runtime.py` passed.
+  - `python -m unittest tests/test_aios_runtime.py` passed 5/5.
+  - `python scripts/aios_runtime.py status --json` returned
+    `aios.runtime.status.v1`.
+  - `python scripts/aios_runtime.py step --json` returned
+    `aios.runtime.step.v1` and emitted a primitive event.
+  - `python scripts/aios_runtime.py run --max-rounds 1 --interval-seconds 0 --json`
+    returned `aios.runtime.run.v1`.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 125/125.
+- Stop conditions triggered: none.
+
 ## Work Packets
 
-### WP-0051-A — Codex@myworld builds the AIOS-native runtime entrypoint
+### WP-0052-A — Codex@myworld builds the AIOS-native runtime entrypoint
 
 - target_agent: codex
 - target_repo: myworld
 - status: accepted
+- closed: 2026-05-12 23:44 KST
 - issued: 2026-05-12 23:24 KST
 - brief: |
     Implement `scripts/aios_runtime.py`, `tests/test_aios_runtime.py`, and
     `docs/AIOS_RUNTIME.md`. Keep the runtime as an orchestrator over existing
     AIOS scripts and primitive events. Do not replace Hive/MemoryOS/CapabilityOS
     ownership or execute child repo edits directly.
+- result: implemented, verified, and ready for dispatch release.

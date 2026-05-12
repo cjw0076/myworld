@@ -168,6 +168,37 @@ python -m unittest tests/test_aios_web_research_receipt.py
 """
 
 
+BASH_GATE_CONTRACT = """---
+contract_id: ASC-0993
+status: accepted
+goal: Test bash verification packet.
+accepted: now
+closed:
+---
+
+# ASC-0993 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/check.sh`
+
+forbidden_files:
+
+- `.env`
+
+## Verification Gate
+
+```bash
+cd {root}
+bash scripts/check.sh
+```
+"""
+
+
 LOCAL_EVIDENCE_CONTRACT = """---
 contract_id: ASC-0994
 status: accepted
@@ -312,6 +343,20 @@ class AiosDispatchTest(unittest.TestCase):
             packet = json.loads(packet_path.read_text(encoding="utf-8"))
             self.assertEqual(packet["action_policy"]["decision"], "allow")
             self.assertEqual(packet["verification_commands"][0]["command"], "python -m unittest tests/test_aios_web_research_receipt.py")
+
+    def test_send_allows_repo_local_bash_verification_script(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0993-test.md"
+            contract.write_text(BASH_GATE_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0993.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["verification_commands"][0]["command"], "bash scripts/check.sh")
+            self.assertTrue(packet["verification_commands"][0]["cwd"].endswith(root.name))
 
     def test_policy_gate_allows_local_web_evidence_review(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
