@@ -152,6 +152,36 @@ class AiosChildWatcherTest(unittest.TestCase):
             self.assertEqual([item["agent"] for item in data["agent_attempts"]], ["codex"])
             self.assertEqual(data["stop_conditions_triggered"], ["child_agent_failed"])
 
+    def test_korean_access_denied_falls_back_once(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            self.write_capabilityos_route_cli(root, "claude")
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                "echo '접근 거부.' >&2\n"
+                "exit 1\n",
+            )
+            write_executable(
+                bin_dir / "claude",
+                "#!/usr/bin/env bash\n"
+                "echo 'fallback agent completed bounded turn'\n"
+                "exit 0\n",
+            )
+            self.write_packet(root, "asc-0994")
+
+            result = self.run_watcher(root, bin_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            result_path = root / ".aios" / "outbox" / "memoryOS" / "asc-0994.memoryOS.result.json"
+            data = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(data["status"], "passed")
+            self.assertTrue(data["fallback_used"])
+            self.assertEqual(data["failure_category"], "provider_access_denied")
+            self.assertEqual([item["agent"] for item in data["agent_attempts"]], ["codex", "claude"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -5,6 +5,56 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-05-12 KST — codex — Uri sprint dogfood: always-on MyWorld and capability provisioning gap
+
+- repo: myworld + uri
+- role: implementation + control-plane observation
+- goal: dogfood MyWorld as an always-on control plane while building Uri's
+  first mobile-first web product slice through Hive/Memory/Capability artifacts.
+- changed: Uri child repo gained Sprint 001 web prototype artifacts and app
+  implementation; MyWorld ledger records cross-OS improvement needs only.
+- evidence: Uri local checks passed: `npm run typecheck`, `npm run build`,
+  Playwright route check for `/u/ulsan`, `/connect`, `/me`, `/memory`; browser
+  screenshots saved under `uri/.runs/visual-check/`; route check found no Next
+  overlay, nonblank content, no mobile horizontal overflow, and successful
+  trace interaction.
+- decision: future product repos should be able to throw one goal at MyWorld
+  and have it continuously route work through Hive Mind, MemoryOS, and
+  CapabilityOS while feeding gaps back into MyWorld.
+- risk: current CapabilityOS doctrine says early versions recommend tools but
+  do not install/bind them, while this sprint needed capability-style
+  provisioning when Playwright browser/runtime was missing. This should become
+  an explicit reviewed BindingPlan or provisioning contract rather than ad hoc
+  installation inside a product repo.
+- next: draft a MyWorld/CapabilityOS improvement contract for capability
+  provisioning: detect missing tools, install when allowed, record receipts,
+  define fallback, and feed observations into CapabilityOS without violating
+  Hive execution ownership.
+- status: proposed
+
+## 2026-05-12 KST — codex — Uri app/platform direction and campus graph
+
+- repo: myworld + uri
+- role: product implementation observation
+- goal: record the founder direction that Uri must be both a fun/useful campus
+  app and a platform that creates one MemoryOS-compatible graph per campus.
+- changed: Uri child repo updated product docs, Hive/Memory/Capability sprint
+  artifacts, and `/u/[schoolSlug]` implementation; MyWorld ledger records the
+  cross-OS implication.
+- evidence: Uri Sprint 002 verification passed: `npm run typecheck`,
+  `npm run build`, Playwright screenshot checks for map-first `/u/ulsan`, and
+  interaction check confirming cell selection plus map spark after trace
+  creation.
+- decision: Uri should be `App first, Platform second`: the app creates lived
+  campus interaction; the platform converts that interaction into campus
+  graphs, memories, experiences, capabilities, and operating surfaces.
+- risk: one-campus-one-MemoryOS-graph is not yet a reviewed MemoryOS schema.
+  Current implementation is graph-ready local state only.
+- next: draft an ASC or Uri contract for CampusGraph schema review across Uri,
+  MemoryOS, and CapabilityOS before durable graph persistence or real source
+  ingestion.
+- status: proposed
+
 ## 2026-05-12 14:33 KST — codex — Uri child repo isolated
 
 - repo: myworld + uri
@@ -1172,3 +1222,43 @@ For repo-local implementation details, also update that repo's own worklog.
   AIOS vocabulary, performs a meaning handshake before cross-repo work, and
   reduces semantic drift before the self-resonant repo loop is expanded.
 - status: done
+
+## 2026-05-12 KST — claude — Uri personal agent loop pivot reviewed + AIOS routing surfaced
+
+- repo: uri + myworld
+- role: product narrative + control-plane surface
+- goal: review `codex@uri`'s in-flight Uri pivot to a personal-agent-loop wedge,
+  capture the founder's 2026-05-12 directive that Uri development must route
+  through AIOS (Hive / Memory / Capability), and surface remaining policy gaps
+  and one routing tension to the operator pair.
+- changed: `uri/CLAUDE.md`,
+  `uri/memory/drafts/2026-05-12-personal-agent-loop-claude-review.md`,
+  `uri/docs/AGENT_WORKLOG.md`,
+  `myworld/docs/discoveries/2026-05-12-uri-personal-agent-pivot.md`,
+  `myworld/docs/AIOS_AGENT_LEDGER.md`. Did not edit codex's existing pivot
+  docs or drafts inside `uri/`.
+- evidence: `uri/docs/URI_PERSONAL_AGENT_LOOP.md` (codex's seven-step pivot
+  doc), already-updated `uri/docs/URI_NORTHSTAR.md` (temporal-moat thesis),
+  `uri/docs/PRODUCT_BRIEF.md` (wedge order now personal-loop-first), and
+  `uri/docs/MEMORY_POLICY.md` (Self-Ingest Policy section already added by
+  codex); `uri/hive/packets/URI-002-sprint-001-web-prototype.md` authorizing
+  "Next.js App Router web app in the Uri repo" with Sprint 001 `in_progress`;
+  founder directive 2026-05-12 KST.
+- decision: hold three items for operator decision in a single follow-on
+  Uri ASC — (a) `avatar` operational definition for MemoryOS / CapabilityOS
+  routing; (b) self-ingest consent surface (per-source granularity,
+  revocation path, visibility split); (c) Sprint 002+ routing — whether
+  subsequent execution stays in `uri/` (treating `uri/hive/packets/` as the
+  durable hive layer) or moves to `hivemind/` via MyWorld dispatch.
+  Sprint 001 should reach its existing verification gate first so the
+  contract points at a working artifact.
+- risk: Sprint 001 implementing inside `uri/` is in tension with the founder's
+  "무조건 AIOS 통해" directive. Resolving without an ASC would either stall
+  the in-flight Next.js scaffold or silently entrench a non-AIOS execution
+  path. Also, the 2026-05-11 jaewon-search discovery still classifies Uri as
+  a non-absorption reference project — twice superseded, needs an annotation
+  entry once the follow-on ASC opens.
+- next: operator pair drafts the post-ASC-0032 Uri contract per
+  `docs/discoveries/2026-05-12-uri-personal-agent-pivot.md` (work packets
+  WP-A through WP-E sketched there).
+- status: open

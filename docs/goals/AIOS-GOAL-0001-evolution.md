@@ -1,10 +1,10 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T15:28:14+09:00`
+- generated_at: `2026-05-12T15:42:55+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
-- monitor_health: `clear`
-- readiness: `L6 repeatable`
+- monitor_health: `blocked`
+- readiness: `None`
 
 ## Recommendation
 
@@ -33,4 +33,4 @@
 
 ## Stop Conditions
 
-- none
+- monitor_not_clear

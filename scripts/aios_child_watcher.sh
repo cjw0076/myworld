@@ -174,6 +174,7 @@ Required reading:
 - ${ROOT}/AGENTS.md
 - ${ROOT}/docs/AIOS_NORTHSTAR.md
 - ${ROOT}/docs/AIOS_DEFINITION.md
+- ${ROOT}/docs/AIOS_SHARED_LANGUAGE.md
 - ${ROOT}/docs/AIOS_WORK_DISPATCH.md
 - ${ROOT}/docs/AIOS_SMART_CONTRACT.md
 - ${ROOT}/docs/AIOS_AGENT_PROTOCOL.md
@@ -188,6 +189,9 @@ Forbidden files JSON:
 ${forbidden}
 
 Operating rules:
+- Start with a semantic_handshake: name the contract, target repo, confirmed
+  AIOS terms from ${ROOT}/docs/AIOS_SHARED_LANGUAGE.md, and ambiguous_terms.
+  If ambiguous_terms is not empty, stop at a checkpoint.
 - Work from inside the target repo.
 - Do not claim AIOS progress unless the work advances one of the AIOS
   completion levels in ${ROOT}/docs/AIOS_DEFINITION.md.
@@ -307,7 +311,7 @@ failure_category() {
     echo "timeout"
   elif [[ "$rc" -eq 127 ]]; then
     echo "command_missing"
-  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied' "$log_file" 2>/dev/null; then
+  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied|접근[[:space:]]*거부|권한[[:space:]]*없|인증[[:space:]]*(필요|실패)' "$log_file" 2>/dev/null; then
     echo "provider_access_denied"
   else
     echo "child_agent_failed"

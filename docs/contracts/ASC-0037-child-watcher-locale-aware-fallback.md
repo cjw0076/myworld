@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0037
 slug: child-watcher-locale-aware-fallback
-status: accepted
+status: closed
 goal: Make child-watcher provider-fallback recognize codex CLI access-denied messages in Korean (and other locales) so ASC-0025 fallback triggers when codex CLI rejects non-interactive auth in localized text.
 created: 2026-05-12 KST
 accepted: 2026-05-12 KST by claude acting operator
-closed:
+closed: 2026-05-12 16:01 KST
 acceptance_authority: claude@myworld (operator) — ASC-0036 child dispatches just failed because the existing English-only regex did not catch the actual codex CLI Korean error.
 ---
 

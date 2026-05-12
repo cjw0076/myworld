@@ -15,6 +15,11 @@ surface of a large enterprise and a sovereign AI governance stack: strategy,
 memory, capability discovery, execution, verification, learning, policy,
 audit, resource routing, and operator checkpoints.
 
+The product form should become an on-premises, continuously evolving
+application: Hive, MemoryOS, CapabilityOS, and myworld run locally as one
+control system, improve from repo friction, and expose the loop through a
+visualization-first control surface.
+
 When the user gives one high-level goal, AIOS should repeatedly discover
 context, retrieve memory, choose capabilities, dispatch agents, verify results,
 learn from outcomes, and propose or execute the next best step with minimal
@@ -78,6 +83,12 @@ and reversible governance.
   myworld; myworld keeps talking with those repos, returns memory/capability/
   hive routes, dispatches packets, collects friction, and turns the friction
   into AIOS improvements.
+- visual_control_application: turn the always-on control plane into a
+  visualization-first app showing goals, contracts, repo loops, memory context,
+  capability routes, hive execution, stop conditions, and learning feedback.
+- on_prem_evolving_application: package AIOS as a local application whose
+  control plane, memory store, capability router, and execution harness keep
+  improving through verified repo feedback.
 - web_evidence_memory_review: turn validated web evidence receipts into
   MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations

@@ -174,6 +174,9 @@ AIOS_CONTINUE_AFTER_READY=1 AIOS_START_CHILD_WATCHERS=1 scripts/aios_pingpong.sh
 
 The follow-up loop should generate contracts and dispatch packets. It should
 not treat `myworld` as a broad worker that edits child repo source directly.
+See `docs/AIOS_OPERATING_LOOP.md` for the standard operator call sequence:
+MemoryOS context, CapabilityOS route, Hive dry-run or verification, contract,
+dispatch, watcher, collect, verify, learn.
 
 Workspace task radar:
 
@@ -231,6 +234,9 @@ Guardrails:
   control-plane rounds cannot bypass manual `send` policy checks.
 - packets include `allowed_files`, `forbidden_files`, required reading, and
   stop conditions from the contract surface.
+- child watcher prompts include `docs/AIOS_SHARED_LANGUAGE.md` and require a
+  `semantic_handshake` before cross-repo work. Ambiguous terms should produce
+  a checkpoint instead of a silent translation.
 - packets also include `must_produce`, `verification_commands`,
   `result_schema_version`, and `result_contract` when the contract has enough
   structure to extract them. These are optional additions to
