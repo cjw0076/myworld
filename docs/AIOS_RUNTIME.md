@@ -8,11 +8,27 @@ Claude CLI and Codex CLI are now substrates. They can still execute work, but
 the durable interface is AIOS:
 
 ```bash
+bin/aios status --json
+bin/aios step --json
+bin/aios provider-loop status --json
+
 python scripts/aios_runtime.py status --json
 python scripts/aios_runtime.py step --json
 python scripts/aios_runtime.py run --max-rounds 1 --interval-seconds 0 --json
 python scripts/aios_runtime.py submit-goal --repo hivemind --kind goal --goal "..."
 ```
+
+`bin/aios` is the thin global-launcher candidate. It can be put on `PATH` or
+symlinked later, but it does not move AIOS state into a global directory.
+
+Root resolution order:
+
+1. `--root <path>`
+2. nearest ancestor containing `scripts/aios_runtime.py`
+3. `AIOS_HOME`
+4. launcher-relative myworld root
+
+Use `bin/aios root --json` to see which root was selected.
 
 ## Commands
 
@@ -24,6 +40,8 @@ python scripts/aios_runtime.py submit-goal --repo hivemind --kind goal --goal ".
   loop. It never defaults to an infinite loop.
 - `submit-goal --repo <repo> --kind <kind> --goal <text> --json`: delegates to
   the repo-goal intake protocol.
+- `provider-loop <args...>` on `bin/aios`: delegates to Hive's
+  `hive provider-loop` surface from ASC-0053.
 
 ## Boundaries
 

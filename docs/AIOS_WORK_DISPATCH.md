@@ -178,6 +178,21 @@ See `docs/AIOS_OPERATING_LOOP.md` for the standard operator call sequence:
 MemoryOS context, CapabilityOS route, Hive dry-run or verification, contract,
 dispatch, watcher, collect, verify, learn.
 
+Global launcher candidate:
+
+```bash
+bin/aios root --json
+bin/aios status --json
+bin/aios step --json
+bin/aios provider-loop status --json
+AIOS_HOME=/home/user/workspaces/jaewon/myworld aios status --json
+```
+
+The command may be installed globally later, but the state remains local to the
+selected control-plane root. The launcher resolves `--root`, nearest ancestor,
+`AIOS_HOME`, then the launcher-relative myworld root. Provider commands route
+through Hive provider-loop receipts, not directly to Claude/Codex CLIs.
+
 Workspace task radar:
 
 ```bash

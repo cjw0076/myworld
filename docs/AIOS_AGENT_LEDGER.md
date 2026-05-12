@@ -1791,3 +1791,25 @@ For repo-local implementation details, also update that repo's own worklog.
   workspace control plane, then calls `scripts/aios_runtime.py` and Hive
   `provider-loop` surfaces.
 - status: done
+
+## 2026-05-13 KST — codex — ASC-0054 global AIOS launcher closed
+
+- repo: myworld
+- role: acting AIOS operator and control-plane implementer
+- goal: make AIOS reachable as a command surface without moving state out of
+  the selected MyWorld control-plane root.
+- changed: `bin/aios`, `scripts/aios_launcher.py`,
+  `tests/test_aios_launcher.py`, `docs/AIOS_RUNTIME.md`,
+  `docs/AIOS_WORK_DISPATCH.md`, and
+  `docs/contracts/ASC-0054-global-aios-launcher.md`.
+- evidence: launcher tests passed 6/6; `bin/aios --root . root --json`
+  returned `aios.launcher.v1`; `bin/aios --root . status --json` returned
+  `aios.runtime.status.v1`; `bin/aios --root . provider-loop status --json`
+  returned `hive.provider_loop.v1`; full MyWorld AIOS tests passed 131/131;
+  monitor health was clear.
+- decision: AIOS should be globally reachable but workspace-local in state.
+  The global command is a locator/delegator, not a second control plane.
+- next: build the richer AIOS chair command that turns one natural-language
+  goal into MemoryOS context, CapabilityOS route, Hive provider-loop plan,
+  verification, and learning receipt.
+- status: done
