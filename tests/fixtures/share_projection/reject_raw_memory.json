@@ -1,0 +1,32 @@
+{
+  "schema_version": "aios.share_projection.v1",
+  "projection_id": "sp-reject-raw-memory",
+  "source_os": "memoryOS",
+  "record_kind": "memory_object",
+  "visibility": {
+    "share": true,
+    "peer_whitelist": [],
+    "encryption": null,
+    "purpose": "peer_review"
+  },
+  "source_ref": "memoryOS/private/memory.json",
+  "source_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+  "projection_hash": "sha256:5f021047cb66daeb72cc9150692363d50ddf664f6e3b702c45109098865294eb",
+  "redaction_proof": {
+    "policy_version": "aios.share_policy.v1",
+    "removed_paths": [],
+    "removed_classes": []
+  },
+  "payload": {
+    "status": "accepted",
+    "memory": "raw private memory body"
+  },
+  "producer": {
+    "id": "peer-local-synthetic"
+  },
+  "signature": {
+    "algorithm": "ed25519-placeholder",
+    "value": "synthetic-signature-for-validator-fixture"
+  },
+  "created_at": "2026-05-13T00:00:00+09:00"
+}

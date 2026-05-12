@@ -1,0 +1,37 @@
+{
+  "schema_version": "aios.share_projection.v1",
+  "projection_id": "sp-valid-capability-observation",
+  "source_os": "CapabilityOS",
+  "record_kind": "capability_observation_projection",
+  "visibility": {
+    "share": true,
+    "peer_whitelist": [],
+    "encryption": null,
+    "purpose": "capability_observation"
+  },
+  "source_ref": "docs/contracts/ASC-0055-absorb-ollama-qwen25-7b.md",
+  "source_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+  "projection_hash": "sha256:9b5a513655884199b877fdbf466f4d061cb018acb77c5c03f678a56b4518faf7",
+  "redaction_proof": {
+    "policy_version": "aios.share_policy.v1",
+    "removed_paths": [],
+    "removed_classes": []
+  },
+  "payload": {
+    "capability_id": "cap_ollama_qwen25_7b_local",
+    "dispatch_id": "asc-0055",
+    "contract_id": "ASC-0055",
+    "outcome": "passed",
+    "evidence_refs": [
+      "docs/contracts/ASC-0055-absorb-ollama-qwen25-7b.md"
+    ]
+  },
+  "producer": {
+    "id": "peer-local-synthetic"
+  },
+  "signature": {
+    "algorithm": "ed25519-placeholder",
+    "value": "synthetic-signature-for-validator-fixture"
+  },
+  "created_at": "2026-05-13T00:00:00+09:00"
+}

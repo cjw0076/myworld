@@ -1840,3 +1840,30 @@ For repo-local implementation details, also update that repo's own worklog.
   checkpoint. Acting operator proceeded because this slice is declaration-only
   and recommendation-only.
 - status: done
+
+## 2026-05-13 KST — codex — ASC-0062 peer-share privacy projection closed
+
+- repo: myworld
+- role: control-plane implementation + verification
+- goal: close the first Sovereign Swarm layer by defining what can leave a
+  local AIOS instance before peer identity, share repo, remote sync, or raw
+  memory federation exists.
+- changed: `docs/AIOS_SWARM_NORTHSTAR.md`,
+  `docs/AIOS_SHARE_INVARIANTS.md`,
+  `scripts/aios_share_projection.py`,
+  `tests/test_aios_share_projection.py`,
+  `tests/fixtures/share_projection/*.json`,
+  `docs/contracts/ASC-0062-peer-share-privacy-projection.md`, and
+  `docs/contracts/README.md`.
+- evidence: valid capability observation projection passed; raw memory and
+  hard-ban secret-path fixtures were blocked; share projection validator
+  reports no network, git sync, memory acceptance, or provider execution;
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 142/142;
+  `python scripts/aios_monitor.py assess --json` returned `health=clear`.
+- decision: peer-share work remains local projection only. ASC-0063 may cover
+  peer identity later, but it requires a separate founder GO and must not
+  inherit authority from ASC-0062.
+- note: Codex CLI has no native indefinite loop command in `codex-cli 0.130.0`;
+  it provides `exec`, `exec resume`, app/remote servers, and JSON events.
+  AIOS should keep owning the loop and treat Codex as a bounded provider.
+- status: done

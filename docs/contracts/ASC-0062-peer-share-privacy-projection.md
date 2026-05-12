@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0062
 slug: peer-share-privacy-projection
-status: accepted
+status: closed
 goal: Define and verify the first Sovereign Swarm privacy projection layer before any peer identity, share repo, remote sync, or raw memory federation exists.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by codex acting operator (founder directive: next work after sovereign swarm design decision)
 acceptance_authority: codex@myworld initial accept (prep-only scope per A5); founder 재원 explicit GO 2026-05-13 KST in chat ("go"). Subsequent ASC-0063 (peer identity) requires separate founder GO per dialogue agreement.
 origin: docs/discoveries/2026-05-13-sovereign-swarm-design-dialogue.md TURN 5.
+closed: 2026-05-13 KST by codex acting operator
 ---
 
 # ASC-0062 Peer-Share Privacy Projection
@@ -155,6 +156,7 @@ Pass criteria:
 - target_agent: codex
 - target_repo: myworld
 - status: accepted
+- closed: 2026-05-13 KST
 - issued: 2026-05-13 KST
 - accepted: 2026-05-13 KST
 - depends_on: none
@@ -163,4 +165,12 @@ Pass criteria:
     tests. Do not create peer identity, share repos, remote sync, signing
     keys, MemoryOS import, or provider execution. This contract only defines
     what may be shared later.
-- result: pending
+- result: closed
+- evidence:
+  - `python -m py_compile scripts/aios_share_projection.py`
+  - `python -m unittest tests/test_aios_share_projection.py`
+  - `python scripts/aios_share_projection.py verify tests/fixtures/share_projection/valid_capability_observation.json --json`
+  - `python scripts/aios_share_projection.py verify tests/fixtures/share_projection/reject_raw_memory.json --json`
+  - `python scripts/aios_share_projection.py verify tests/fixtures/share_projection/reject_secret_path.json --json`
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'`
+  - `python scripts/aios_monitor.py assess --json`
