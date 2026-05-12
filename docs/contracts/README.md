@@ -116,3 +116,4 @@ decision rather than draft churn.
 | ASC-0028 | capability-route-binding | closed | Bind child watcher provider fallback selection to CapabilityOS observation-aware provider route recommendations. |
 | ASC-0029 | persistent-control-loop | closed | Add a persistent control-plane round controller so AIOS continuation does not depend on a chat turn staying open. |
 | ASC-0030 | capabilityos-web-research-route | closed | Add a recommendation-only CapabilityOS web research route so AIOS can deliberately use broad internet search with source and privacy guardrails. |
+| ASC-0031 | web-evidence-execution-loop | closed | Dogfood CapabilityOS web-route by producing and validating a cited web evidence receipt for AIOS capability routing. |

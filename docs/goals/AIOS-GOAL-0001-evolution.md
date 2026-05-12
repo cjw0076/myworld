@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T03:28:32+09:00`
+- generated_at: `2026-05-12T14:17:35+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:capability_observation_memory_import`
+- path: `goal:sovereign_ai_governance_readiness`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.
+- task: define the next readiness layer for AIOS as an accountable enterprise-scale and sovereign-AI operating system with authority, audit, resource, rollback, and human checkpoint semantics.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 

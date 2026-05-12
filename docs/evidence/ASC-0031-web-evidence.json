@@ -1,0 +1,129 @@
+{
+  "schema_version": "aios.web_research_receipt.v1",
+  "receipt_id": "ASC-0031-web-evidence",
+  "task": "Research current public evidence for treating broad web research as a first-class AIOS capability route.",
+  "executed_at": "2026-05-12T14:13:00+09:00",
+  "executed_by": "codex@myworld",
+  "route_contract": "capabilityos.web_research_route.v1",
+  "recommendation_only": true,
+  "capabilityos_executed_network": false,
+  "route": {
+    "capability_id": "cap_web_research_route",
+    "route_steps": [
+      "query",
+      "freshness_check",
+      "open",
+      "extract"
+    ],
+    "source_policy": {
+      "prefer": [
+        "official_docs",
+        "primary_sources",
+        "original_repositories"
+      ],
+      "citation_required": true,
+      "compare_dates_for_current_topics": true
+    },
+    "privacy_policy": {
+      "sent_to_web": [
+        "public task summary",
+        "public product/protocol names"
+      ],
+      "not_sent_to_web": [
+        "secrets",
+        "tokens",
+        "raw private exports",
+        "personal data"
+      ]
+    }
+  },
+  "queries": [
+    "Model Context Protocol official specification tools resources prompts 2026",
+    "OpenAI Agents SDK web search tool official documentation",
+    "Anthropic Model Context Protocol official docs tools resources prompts"
+  ],
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "OpenAI API web search guide",
+      "url": "https://developers.openai.com/api/docs/guides/tools-web-search",
+      "publisher": "OpenAI",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-12",
+      "claims": [
+        "OpenAI documents web search as a tool that lets models access up-to-date internet information and return sourced citations.",
+        "The guide distinguishes quick search, agentic search, and deep research, which supports separate route choices by task depth.",
+        "The current Responses API path uses a web_search tool, while older preview tooling is treated as legacy for newer controls."
+      ]
+    },
+    {
+      "source_id": "S2",
+      "title": "OpenAI Agents SDK tools guide",
+      "url": "https://openai.github.io/openai-agents-python/tools/",
+      "publisher": "OpenAI",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-12",
+      "claims": [
+        "The Agents SDK exposes hosted tools including web search, file search, code interpreter, hosted MCP, image generation, and tool search.",
+        "The tools guide documents advanced web search controls such as filters, user location, and search context size.",
+        "The guide also describes tool search and namespaced deferred tools, supporting a capability-routing layer before execution."
+      ]
+    },
+    {
+      "source_id": "S3",
+      "title": "Model Context Protocol introduction",
+      "url": "https://modelcontextprotocol.io/docs/getting-started/intro",
+      "publisher": "Model Context Protocol",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-12",
+      "claims": [
+        "MCP is presented as an open-source standard for connecting AI applications to external systems.",
+        "The introduction says MCP can connect AI applications to data sources, tools such as search engines, and workflows.",
+        "The docs state that MCP has broad ecosystem support across assistants and development tools."
+      ]
+    },
+    {
+      "source_id": "S4",
+      "title": "modelcontextprotocol/modelcontextprotocol repository",
+      "url": "https://github.com/modelcontextprotocol/modelcontextprotocol",
+      "publisher": "GitHub / Model Context Protocol project",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-12",
+      "claims": [
+        "The project repository contains the MCP specification, protocol schema, and official documentation.",
+        "The repository notes that the schema is TypeScript-first and also available as JSON Schema for broader compatibility.",
+        "The repository identifies modelcontextprotocol.io as the official documentation site."
+      ]
+    }
+  ],
+  "synthesis_claims": [
+    {
+      "claim": "AIOS should model web research as a routeable capability because current agent platforms expose web search as an explicit tool rather than an implicit language-model behavior.",
+      "source_ids": [
+        "S1",
+        "S2"
+      ]
+    },
+    {
+      "claim": "CapabilityOS should separate planning from execution: official tool ecosystems support tool routing and deferred tool surfaces, while execution should still return auditable evidence.",
+      "source_ids": [
+        "S2",
+        "S3",
+        "S4"
+      ]
+    },
+    {
+      "claim": "The ASC-0030 policy choice is justified: web route plans should require citations, freshness checks for current topics, privacy filtering, and bounded source opening.",
+      "source_ids": [
+        "S1",
+        "S2",
+        "S3"
+      ]
+    }
+  ],
+  "limitations": [
+    "This receipt records public documentation evidence only; it does not import facts into MemoryOS as accepted memory.",
+    "The actual web calls were performed by codex@myworld using the session web tool, not by CapabilityOS.",
+    "Future contracts should decide how MemoryOS reviews and retains selected web evidence."
+  ]
+}

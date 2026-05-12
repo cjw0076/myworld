@@ -1033,3 +1033,33 @@ For repo-local implementation details, also update that repo's own worklog.
   `web_evidence_execution_loop`, depending on whether the next priority is
   storing capability observations or dogfooding the new web route.
 - status: done
+
+## 2026-05-12 14:16 KST — codex — ASC-0031 web evidence execution loop closed
+
+- repo: myworld
+- role: acting operator + implementation + research
+- goal: dogfood CapabilityOS `web-route` by executing one bounded public web
+  evidence pass and validating the resulting cited receipt.
+- changed: `docs/contracts/ASC-0031-web-evidence-execution-loop.md`,
+  `docs/evidence/ASC-0031-web-evidence.json`,
+  `scripts/aios_web_research_receipt.py`,
+  `tests/test_aios_web_research_receipt.py`,
+  `docs/contracts/README.md`,
+  `docs/goals/AIOS-GOAL-0001-make-something-great.md`,
+  `docs/goals/AIOS-GOAL-0001-evolution.md`, and
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: web sources were gathered through the session web tool under the
+  ASC-0030 route policy; receipt cites OpenAI web search docs, OpenAI Agents
+  SDK tool docs, MCP official intro, and the MCP specification repository;
+  `tests/test_aios_web_research_receipt.py` passed 5/5; receipt validation
+  passed; full myworld suite passed 47/47; ASC-0031 dispatch result was
+  collected and released; final monitor assessment returned `health=clear`.
+- decision: web research evidence is now a validated artifact type, not only a
+  chat summary. CapabilityOS still routes; myworld/Hive execution produces
+  evidence; MemoryOS review remains a future contract.
+- risk: evidence is not yet transformed into MemoryOS source artifacts or
+  reviewed memory drafts.
+- next: create a governance/readiness contract for the expanded north star:
+  AIOS as an accountable enterprise-scale and sovereign-AI operating system
+  with authority, audit, resource, and rollback semantics.
+- status: done
