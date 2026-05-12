@@ -1223,6 +1223,85 @@ For repo-local implementation details, also update that repo's own worklog.
   reduces semantic drift before the self-resonant repo loop is expanded.
 - status: done
 
+## 2026-05-12 17:10 KST — codex — ASC-0036 cross-repo semantic alignment closed
+
+- repo: myworld + hivemind + memoryOS + CapabilityOS
+- role: acting operator + control-plane closeout
+- goal: teach every lower-repo agent the shared AIOS language and require
+  semantic handshakes before cross-repo AIOS work.
+- changed: `docs/AIOS_SHARED_LANGUAGE.md`, `docs/AIOS_OPERATING_LOOP.md`,
+  `scripts/aios_semantic_handshake.py`,
+  `tests/test_aios_semantic_handshake.py`, `scripts/aios_child_watcher.sh`,
+  lower-repo AGENTS/worklog surfaces, `docs/contracts/ASC-0036-cross-repo-semantic-alignment.md`,
+  `docs/contracts/README.md`, goal evolution docs, and this ledger.
+- evidence: MemoryOS context trace `rtrace_ff2208eaa6d9895b`; CapabilityOS
+  route top pick `cap_hivemind_execution_harness`; Hive dry-run
+  `run_20260512_153529_9eaea3`; result packets collected from all four repos;
+  child commits `hivemind@1d7e0d8`, `memoryOS@8d7955d`,
+  `CapabilityOS@42fc7c7` plus cleanup `CapabilityOS@4ab71e7`; semantic
+  handshake validator passed; monitor assessment returned `health=clear`.
+- decision: every lower-repo AIOS agent now has a shared vocabulary contract
+  and must checkpoint instead of silently translating ambiguous AIOS terms.
+- risk: shared language prevents obvious drift, but it does not yet make
+  working repos submit goals back to myworld automatically.
+- next: open `self_resonant_repo_loop` so child repos can submit goals to
+  always-on myworld and receive MemoryOS/CapabilityOS/Hive routes in return.
+- status: done
+
+## 2026-05-12 17:10 KST — codex — ASC-0037 locale-aware child fallback closed
+
+- repo: myworld
+- role: acting operator + watcher reliability closeout
+- goal: make the child watcher recognize Korean codex CLI access-denied/auth
+  prompt failures as provider access denial so fallback can run.
+- changed: `scripts/aios_child_watcher.sh`,
+  `tests/test_aios_child_watcher.py`,
+  `docs/contracts/ASC-0037-child-watcher-locale-aware-fallback.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: ASC-0036 child result packets show codex failed with
+  `provider_access_denied` and claude fallback succeeded for hivemind,
+  memoryOS, and CapabilityOS; `tests/test_aios_child_watcher.py` includes the
+  Korean-locale classifier regression; full myworld suite passed; `asc-0037`
+  was released with reason `asc_0037_locale_aware_fallback_verified`; monitor
+  assessment returned `health=clear`.
+- decision: localized provider auth/access failures are part of watcher
+  reliability, not ordinary child-agent implementation failure.
+- risk: future provider CLIs may emit new localized auth strings; those should
+  become targeted classifier tests, not broad catch-all regexes.
+- next: keep the round controller running and draft ASC-0038 for the
+  self-resonant repo loop.
+- status: done
+
+## 2026-05-12 17:36 KST — codex — ASC-0038 self-resonant repo loop closed
+
+- repo: myworld + hivemind + memoryOS + CapabilityOS
+- role: acting operator + control-plane implementation
+- goal: let lower repos submit goals or friction to myworld and receive routed
+  MemoryOS/CapabilityOS/Hive packets that can become AIOS contracts.
+- changed: `docs/AIOS_REPO_GOAL_LOOP.md`, `scripts/aios_repo_goal.py`,
+  `tests/test_aios_repo_goal.py`, `docs/AIOS_OPERATING_LOOP.md`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0038-self-resonant-repo-loop.md`,
+  `docs/contracts/README.md`, goal evolution docs, this ledger, and lower-repo
+  AGENTS/worklog surfaces.
+- evidence: MemoryOS trace `rtrace_7f8eb07cf6b0137e`; CapabilityOS top route
+  `cap_hivemind_execution_harness`; Hive dry-run
+  `run_20260512_171540_45136a`; result packets passed for myworld, hivemind,
+  memoryOS, and CapabilityOS; lower-repo commits `hivemind@33fdc56`,
+  `memoryOS@457bbf2`, `memoryOS@9f8b8bb`, and `CapabilityOS@ff25f5c`; full
+  myworld suite passed 69/69; final monitor assessment returned
+  `health=clear`.
+- decision: self-resonance now has an executable local protocol:
+  `aios_repo_goal.py submit` creates `aios.repo_goal.v1`, `route` creates
+  `aios.repo_goal_route.v1`, and lower repos are instructed to use it for
+  AIOS-relevant goals, blockers, observations, and friction.
+- risk: this is still file/CLI protocol, not the visualization-first app. The
+  route packet recommends the next smart contract; it does not dispatch or
+  execute automatically.
+- next: open `visual_control_application` as the next goal-preferred contract,
+  with `on_prem_evolving_application` as the packaging track behind it.
+- status: done
+
 ## 2026-05-12 KST — claude — Uri personal agent loop pivot reviewed + AIOS routing surfaced
 
 - repo: uri + myworld
@@ -1261,4 +1340,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: operator pair drafts the post-ASC-0032 Uri contract per
   `docs/discoveries/2026-05-12-uri-personal-agent-pivot.md` (work packets
   WP-A through WP-E sketched there).
+- status: open
+
+## 2026-05-12 KST — codex — Uri Kakao map provider gap surfaced
+
+- repo: uri + myworld
+- role: implementation + capability feedback
+- goal: inspect prior `uri-v2` KakaoMap-based `/u/[schoolSlug]` work and keep
+  Uri's current campus app moving toward real-map + Uri-owned overlay
+  architecture.
+- changed: `uri/hive/packets/URI-004-sprint-003-kakao-map-provider.md`,
+  `uri/memory/drafts/2026-05-12-kakao-map-provider.md`,
+  `uri/capabilities/kakao-map-provider-routing-2026-05-12.md`, and this
+  ledger entry.
+- evidence: GitHub `cjw0076/uri-v2` visible branches do not contain the Kakao
+  campus map source; local `_from_desktop/uri-v2` has a broken `HEAD`, while
+  `.next` chunks confirm a Kakao Maps loader, `CustomOverlay` place/spot
+  overlays, Roadview, campus bbox/polygon constraints, and Supabase realtime
+  bubbles. The supplied `3a69...` value is not a Git commit and appears to be
+  a public Kakao JS key in compiled local chunks.
+- capability gap: CapabilityOS needs a durable "provider + fallback + visual
+  verification" contract for external services. A child repo should be able to
+  add a provider route without blocking local development on credentials, while
+  still recording exact env requirements and verification limits.
+- decision: real map APIs are infrastructure; Uri's owned value is the
+  campus memory graph, cells, traces, experiences, and agent state overlays.
 - status: open

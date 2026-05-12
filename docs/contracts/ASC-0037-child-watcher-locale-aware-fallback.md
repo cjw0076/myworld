@@ -111,7 +111,30 @@ Pass criteria:
 
 ## Receipts
 
-Pending until verification.
+- implementation:
+  - `scripts/aios_child_watcher.sh` failure classification now recognizes
+    Korean codex CLI access-denied/auth-prompt failures, including
+    `접근.*거부` and `틀렸습니다`, as `provider_access_denied`.
+  - `tests/test_aios_child_watcher.py` includes a Korean-locale regression
+    test for the classifier.
+- result:
+  - `.aios/outbox/myworld/asc-0037.myworld.result.json` returned
+    `status=passed`.
+  - ASC-0036 retry/fallback evidence shows child packets first failed under
+    codex with `provider_access_denied`, then succeeded under claude fallback:
+    `.aios/outbox/hivemind/asc-0036.hivemind.result.json`,
+    `.aios/outbox/memoryOS/asc-0036.memoryOS.result.json`, and
+    `.aios/outbox/CapabilityOS/asc-0036.CapabilityOS.result.json`.
+- verification:
+  - `python -m unittest tests/test_aios_child_watcher.py` passed with the
+    Korean-locale fallback test.
+  - full myworld suite passed with ASC-0036/ASC-0037 tests included.
+  - `python scripts/aios_monitor.py assess --json` returned `health=clear`.
+- release:
+  - `asc-0036` was released after child work completed through the corrected
+    fallback path.
+  - `asc-0037` closeout is recorded here as the myworld-side classifier fix
+    that made the ASC-0036 child fallback path observable and usable.
 
 ## Work Packets
 
@@ -119,10 +142,10 @@ Pending until verification.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - issued: 2026-05-12 KST
 - accepted: 2026-05-12 KST
-- closed: pending
+- closed: 2026-05-12 KST
 - depends_on: ASC-0025 closed (existing fallback structure)
 - brief: |
     Extend `scripts/aios_child_watcher.sh` `failure_category` regex with
@@ -139,4 +162,6 @@ Pending until verification.
 
     After closeout: surface readiness for `aios_dispatch.py retry --dispatch-id asc-0036`
     so ASC-0036 fan-out can resume through the corrected watcher.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0037.myworld.result.json`; Korean
+  access-denied classifier regression passed; ASC-0036 child fallback path
+  subsequently completed with claude fallback.

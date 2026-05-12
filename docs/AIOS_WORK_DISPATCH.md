@@ -223,6 +223,20 @@ python scripts/aios_round_controller.py once --execute-children --json
 Use that only when pending child packets are already scoped by an accepted
 contract.
 
+Repo-originated goal intake:
+
+```bash
+python scripts/aios_repo_goal.py submit --repo hivemind --kind friction --goal "..." --json
+python scripts/aios_repo_goal.py route --repo hivemind --json
+python scripts/aios_repo_goal.py status --repo all --json
+```
+
+This is the self-resonant repo loop entry point. A lower repo reports a goal,
+blocker, friction, or improvement candidate; myworld writes a route packet with
+MemoryOS, CapabilityOS, and Hive responsibilities; the acting operator turns
+that route into a smart contract or a hold. The route packet is
+recommendation-only and must not execute child work directly.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

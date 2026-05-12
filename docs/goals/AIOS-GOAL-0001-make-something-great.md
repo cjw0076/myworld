@@ -76,13 +76,6 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- cross_repo_semantic_alignment: teach every lower-repo agent the AIOS common
-  language, add handshake checks for term meaning, then use that shared
-  language as the base for the self-resonant repo loop.
-- self_resonant_repo_loop: let working repos submit goals to always-on
-  myworld; myworld keeps talking with those repos, returns memory/capability/
-  hive routes, dispatches packets, collects friction, and turns the friction
-  into AIOS improvements.
 - visual_control_application: turn the always-on control plane into a
   visualization-first app showing goals, contracts, repo loops, memory context,
   capability routes, hive execution, stop conditions, and learning feedback.
@@ -126,3 +119,12 @@ and reversible governance.
   privacy, resource use, and checkpoint requirements.
 - policy_gated_dispatch: ASC-0035 wired the action policy into manual dispatch
   send and the autonomous control-plane loop before inbox delivery.
+- cross_repo_semantic_alignment: ASC-0036 taught hivemind, memoryOS, and
+  CapabilityOS the shared AIOS language and added semantic-handshake
+  validation before cross-repo work.
+- child_watcher_locale_fallback: ASC-0037 made the child watcher classify
+  Korean codex CLI access-denied/auth-prompt failures as provider access
+  denial so provider fallback can trigger in localized environments.
+- self_resonant_repo_loop: ASC-0038 added a repo-goal intake and route protocol
+  so lower repos can submit goals/friction to myworld and receive
+  MemoryOS/CapabilityOS/Hive route packets.

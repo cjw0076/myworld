@@ -9,6 +9,13 @@ For every meaningful AIOS task:
 
 1. **Sense**
    - Run monitor and goal evolution.
+   - Check repo-goal submissions when lower repos may have reported new goals
+     or friction:
+
+```bash
+python scripts/aios_repo_goal.py status --repo all --json
+```
+
    - Search relevant myworld docs, contracts, ledgers, child repo instructions,
      and current worktrees.
    - Record dirty repo state before dispatching new child work.
@@ -81,6 +88,7 @@ python -m hivemind.hive ask "<task>" --json
 
 Each closed AIOS contract should cite:
 
+- Repo-goal packet or explicit reason no lower-repo submission was involved.
 - MemoryOS `trace_id` or explicit reason MemoryOS was not needed.
 - CapabilityOS recommendation ID(s) or explicit reason routing was not needed.
 - Hive run ID, dry-run, watcher, or verification receipt.

@@ -121,3 +121,6 @@ decision rather than draft churn.
 | ASC-0033 | sovereign-ai-governance-readiness | closed | Define and validate the next AIOS readiness layer for accountable enterprise-scale and sovereign-AI governance. |
 | ASC-0034 | governance-action-policy-engine | closed | Add a machine-checkable AIOS action policy engine that gates proposed actions by authority, risk, privacy, resource use, and checkpoint requirements. |
 | ASC-0035 | policy-gated-dispatch | closed | Wire the action policy into dispatch creation and sending so checkpoint-required packets are blocked before inbox delivery. |
+| ASC-0036 | cross-repo-semantic-alignment | closed | Teach every lower-repo agent the AIOS shared language and require semantic handshakes before cross-repo work. |
+| ASC-0037 | child-watcher-locale-aware-fallback | closed | Make child-watcher provider-fallback recognize Korean codex CLI access-denied messages so localized provider failures trigger fallback. |
+| ASC-0038 | self-resonant-repo-loop | closed | Let lower repos submit goals or friction to myworld, receive MemoryOS/CapabilityOS/Hive route packets, and turn returned friction into AIOS improvement candidates. |
