@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0050
 slug: aios-primitive-surface
-status: accepted
+status: closed
 goal: Reverse-engineer the Claude CLI primitive set used by claude@myworld this session and provide an AIOS-native primitive surface that codex and local LLM workers can call with identical semantics.
 created: 2026-05-12 23:00 KST
 accepted: 2026-05-12 23:00 KST by claude acting operator (founder directive)
-closed:
+closed: 2026-05-12 23:10 KST
 acceptance_authority: claude@myworld (operator) per founder request "Claude의 CLI 기능들을 탑재할거야. 세션 로그나 대화 내용들을 토대로 역설계해서 시스템을 구축하는건 어때? codex와 local LLM도 사용할 수 있게".
 origin: founder directive 2026-05-12 evening + reverse-engineering analysis in `docs/discoveries/2026-05-12-claude-cli-primitives-reverse-engineering.md`.
 ---
@@ -204,27 +204,83 @@ Pass criteria:
 
 ## Receipts
 
-Pending until verification.
+Closed 2026-05-12 23:10 KST by `claude@myworld` (operator, founder directive
+"네가 작성하고 네가 스스로 암묵지를 형식지로 만들어").
+
+- Implemented in `scripts/aios_primitives/` package:
+  - `__init__.py` — exports (events, monitor, schedule, task, ask, tools, web)
+  - `events.py` — shared append-only event log with `aios.primitive_event.v1` schema
+  - `monitor.py` — start/stop/list named watchers; `start_new_session=True` for survival
+  - `_emitter.py` — line-to-event emitter (separate file to avoid inline-quote hell)
+  - `task.py` — create/update/list/get with `pending|in_progress|completed|deleted`
+  - `schedule.py` — once/repeat/stop timers, MAX_REPEAT_FIRES=100
+  - `ask.py` — operator question channel with blocking wait + timeout (exit code 124)
+  - `tools.py` — discover combining CapabilityOS recommend + local registry
+  - `web.py` — cited fetch/search emitting `aios.web_research_receipt.v1` artifacts
+  - `__main__.py` — argparse CLI dispatcher
+- Thin shim: `scripts/aios_primitives.py` for `python scripts/aios_primitives.py ...`
+- Tests in `tests/test_aios_primitives.py`:
+  - Event log: emit/read, kind/name filtering, partial-line tolerance
+  - Task: lifecycle, invalid status, list filter, event emission
+  - Ask: create/answer, wait blocks, timeout path
+  - Tools: register/discover/no-match
+  - Web: claims-required, receipt-shape, sources-required
+  - Monitor: start/list/stop, idempotency
+  - Schedule: once fires within deadline
+  - CLI: parser builds, subcommand dispatch
+- Documentation: `docs/AIOS_PRIMITIVES.md` with shell + Python invocation
+  recipes, schema, invariants, persistence semantics, comparison table
+- Dogfood:
+  - `python scripts/aios_primitives.py monitor start --name asc-0050-dogfood ...`
+    → list shows alive=True, events=2 captured → stop killed=True
+  - `python scripts/aios_primitives.py task create ...` → emit task.created
+    event → `events --event-kind task.created` returns the record
+- Verification:
+  - `python -m unittest tests.test_aios_primitives` → 19/19 OK
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` → 111/111 OK
+  - No child repo source touched; all writes under `scripts/aios_primitives/`,
+    `tests/`, `docs/AIOS_PRIMITIVES.md`, `docs/contracts/`, `docs/AIOS_AGENT_LEDGER.md`,
+    `docs/discoveries/`
+- Stop conditions triggered: none
+- Known limitations (defer to ASC-0051+):
+  - `tools.discover` does not yet inject schema-load for Claude CLI tools
+    (only AIOS capabilities + local registry)
+  - `web fetch` records the receipt but does not perform the network fetch
+    — execution still lives outside the primitive surface
+  - Child repos do not yet have an adapter to call these primitives from
+    their working directory (proposed ASC-0051)
+- Q1-Q6 answers in implementation:
+  - Q1: `start_new_session=True` (removed earlier `setsid` argv that
+    double-created sessions and made Popen.pid short-lived)
+  - Q2: wallclock ISO + monotonic_ns both stored
+  - Q3: single `aios.primitive_event.v1` with `kind` enum
+  - Q4: pure `O_APPEND` JSONL; readers skip partial last line
+  - Q5: package layout under `scripts/aios_primitives/` + thin shim;
+    workers append `scripts/` to sys.path (no separate pyproject)
+  - Q6: `ask.wait` polls every `poll_interval` (default 2s) up to
+    `timeout_seconds` (default 600); on timeout writes status=timeout +
+    emits `ask.timeout`; CLI returns exit code 124 via `TIMEOUT_EXIT_CODE`
 
 ## Work Packets
 
 ### WP-0050-A — Codex@myworld builds the AIOS primitive surface
 
-- target_agent: codex
+- target_agent: claude (operator self-implementation per founder directive)
 - target_repo: myworld
-- status: accepted
-- issued: 2026-05-12
-- accepted: 2026-05-12
-- closed: pending
+- status: done
+- issued: 2026-05-12 23:00 KST
+- accepted: 2026-05-12 23:00 KST
+- closed: 2026-05-12 23:10 KST
 - depends_on: ASC-0043 (autodraft) — useful for prompt scaffolding but not
   hard-blocking.
 - brief: |
-    Implement the unified primitive surface in `scripts/aios_primitives/`
-    (or a single `aios_primitives.py` if simpler), answer Q1-Q6, write the
-    tests, write `docs/AIOS_PRIMITIVES.md`, and dogfood by arming one
+    Implement the unified primitive surface, answer Q1-Q6, write the tests,
+    write `docs/AIOS_PRIMITIVES.md`, and dogfood by arming one
     `monitor start --name asc-0050-dogfood` watcher during verification.
 
-    After closeout, surface a follow-up note: once these primitives exist,
-    propose ASC-0051 — adapter for child repos so codex@hivemind /
-    codex@memoryOS / codex@CapabilityOS can call them through `../scripts/`.
-- result: pending
+    NOTE: Founder explicitly assigned this implementation to claude
+    ("네가 작성하고 네가 스스로 암묵지를 형식지로 만들어"), not codex,
+    because the tacit knowledge being formalized is claude's CLI operator
+    knowledge. claude@myworld therefore acts as both operator and
+    implementer for this contract.
+- result: implemented, verified, committed; see Receipts.
