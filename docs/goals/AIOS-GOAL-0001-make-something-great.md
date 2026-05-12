@@ -76,9 +76,6 @@ and reversible governance.
 
 ## Preferred Next Improvements
 
-- on_prem_evolving_application: package AIOS as a local application whose
-  control plane, memory store, capability router, and execution harness keep
-  improving through verified repo feedback.
 - web_evidence_memory_review: turn validated web evidence receipts into
   MemoryOS review candidates without auto-accepting web-derived facts.
 - capability_observation_memory_import: decide which CapabilityOS observations
@@ -129,3 +126,6 @@ and reversible governance.
   control surface and snapshot generator for goals, contracts, dispatches, repo
   loops, MemoryOS traces, CapabilityOS routes, Hive runs, stops, and next
   actions.
+- on_prem_evolving_application: ASC-0040 packaged the local control app,
+  snapshot refresh, monitor write, server lifecycle, and round-controller
+  status into one repeatable command.

@@ -237,6 +237,18 @@ MemoryOS, CapabilityOS, and Hive responsibilities; the acting operator turns
 that route into a smart contract or a hold. The route packet is
 recommendation-only and must not execute child work directly.
 
+Local control application:
+
+```bash
+python scripts/aios_local_app.py up --json
+python scripts/aios_local_app.py status --json
+python scripts/aios_local_app.py stop --json
+```
+
+`up` refreshes monitor state and the control snapshot, then serves
+`apps/control/` on localhost. It is a local operator surface, not a child-repo
+implementation worker.
+
 Guardrails:
 
 - `send` refuses contracts that are not `accepted` or `closed` unless

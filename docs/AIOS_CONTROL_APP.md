@@ -19,6 +19,20 @@ Open:
 apps/control/index.html
 ```
 
+Run as a local app:
+
+```bash
+python scripts/aios_local_app.py up --json
+python scripts/aios_local_app.py status --json
+python scripts/aios_local_app.py stop --json
+```
+
+Default URL:
+
+```text
+http://127.0.0.1:8765/
+```
+
 The app renders:
 
 - active goal and goal-evolution recommendation

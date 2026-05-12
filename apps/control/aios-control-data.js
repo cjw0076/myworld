@@ -2,20 +2,22 @@ window.AIOS_CONTROL_SNAPSHOT = {
   "aios_inputs": {
     "capability_routes": [
       "cap_capabilityos_recommendation",
-      "cap_memoryos_context_build",
-      "cap_hivemind_execution_harness",
-      "cap_memoryos_import_run",
       "cap_hivemind_execution_harness",
       "cap_memoryos_import_run",
       "cap_memoryos_context_build",
-      "cap_capabilityos_recommendation"
+      "cap_capabilityos_recommendation",
+      "cap_memoryos_context_build",
+      "cap_hivemind_execution_harness",
+      "cap_memoryos_import_run"
     ],
     "hive_runs": [
+      "run_20260512_182859_370b96",
       "run_20260512_181228_aef902",
       "run_20260512_171540_45136a",
       "run_20260512_153529_9eaea3"
     ],
     "memory_traces": [
+      "rtrace_02e5c1e5e56a02d5",
       "rtrace_c0619c4194e7535b",
       "rtrace_7f8eb07cf6b0137e",
       "rtrace_ff2208eaa6d9895b"
@@ -24,18 +26,36 @@ window.AIOS_CONTROL_SNAPSHOT = {
   "contracts": {
     "counts": {
       "accepted": 1,
-      "closed": 38
+      "closed": 39
     },
     "latest": [
       {
-        "accepted": "2026-05-12 18:13 KST by codex acting operator",
+        "accepted": "2026-05-12 18:30 KST by codex acting operator",
         "closed": "",
+        "created": "2026-05-12 18:30 KST",
+        "goal": "Package the local AIOS control app, snapshot refresh, monitor write, static server, and round-controller status into one repeatable local command.",
+        "id": "ASC-0040",
+        "path": "docs/contracts/ASC-0040-on-prem-evolving-application.md",
+        "slug": "on-prem-evolving-application",
+        "status": "accepted",
+        "stop_conditions": [
+          "`child_repo_source_edit`",
+          "`runtime_state_committed`",
+          "`server_orphaned`",
+          "`snapshot_refresh_failed`",
+          "`monitor_not_clear`",
+          "`verification_gate_failed`"
+        ]
+      },
+      {
+        "accepted": "2026-05-12 18:13 KST by codex acting operator",
+        "closed": "2026-05-12 18:24 KST",
         "created": "2026-05-12 18:13 KST",
         "goal": "Create the first local visualization-first AIOS control surface from generated myworld state snapshots.",
         "id": "ASC-0039",
         "path": "docs/contracts/ASC-0039-visual-control-application.md",
         "slug": "visual-control-application",
-        "status": "accepted",
+        "status": "closed",
         "stop_conditions": [
           "`snapshot_reads_logs`: snapshot reads `.aios/logs` bodies.",
           "`child_repo_source_edit`: implementation changes child repo source.",
@@ -184,35 +204,32 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "`capability_route_missing`: receipt does not reference the CapabilityOS `web-route` plan.",
           "`stale_source_policy`: current-topic source has no accessed date or source date when available."
         ]
-      },
-      {
-        "accepted": "2026-05-12 03:20 KST",
-        "closed": "2026-05-12 03:27 KST",
-        "created": "2026-05-12 03:20 KST",
-        "goal": "Add a recommendation-only CapabilityOS web research route so AIOS can deliberately use broad internet search with source and privacy guardrails.",
-        "id": "ASC-0030",
-        "path": "docs/contracts/ASC-0030-capabilityos-web-research-route.md",
-        "slug": "capabilityos-web-research-route",
-        "status": "closed",
-        "stop_conditions": [
-          "`network_execution_inside_capabilityos`: CapabilityOS opens URLs, calls web APIs, launches browsers, or downloads pages.",
-          "`unbounded_browse_plan`: route lacks source limits, evidence requirements, or stop rules.",
-          "`privacy_violation`: route suggests sending raw private exports, secrets, or local sensitive data to web.",
-          "`implicit_memory_acceptance`: web-derived facts are stored as accepted memory without MemoryOS review.",
-          "`hive_authority_bypass`: CapabilityOS directly executes Hive-owned work."
-        ]
       }
     ],
-    "total": 39
+    "total": 40
   },
   "dispatches": {
     "counts": {
       "collected": 4,
       "escalated": 1,
       "passed": 2,
-      "released": 26
+      "released": 27
     },
     "latest": [
+      {
+        "collected": [
+          "myworld"
+        ],
+        "contract_id": "ASC-0040",
+        "dispatch_id": "asc-0040",
+        "goal": "Package the local AIOS control app, snapshot refresh, monitor write, static server, and round-controller status into one repeatable local command.",
+        "reason": "asc_0040_on_prem_local_app_verified",
+        "sent": [
+          "myworld"
+        ],
+        "status": "released",
+        "timestamp": "2026-05-12T18:34:23+09:00"
+      },
       {
         "collected": [
           "myworld"
@@ -372,67 +389,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "status": "passed",
         "timestamp": "2026-05-12T03:13:10+09:00"
-      },
-      {
-        "collected": [
-          "CapabilityOS",
-          "myworld"
-        ],
-        "contract_id": "ASC-0028",
-        "dispatch_id": "asc-0028",
-        "goal": "Bind child watcher provider fallback selection to CapabilityOS observation-aware provider route recommendations.",
-        "reason": "asc_0028_capability_route_binding_verified",
-        "sent": [
-          "CapabilityOS",
-          "myworld"
-        ],
-        "status": "released",
-        "timestamp": "2026-05-12T03:03:58+09:00"
       }
     ],
     "timeline": [
-      {
-        "dispatch_id": "asc-0037",
-        "event": "released",
-        "repo": null,
-        "status": "released",
-        "timestamp": "2026-05-12T16:29:35+09:00"
-      },
-      {
-        "dispatch_id": "asc-0036",
-        "event": "collected",
-        "repo": "myworld",
-        "status": "collected",
-        "timestamp": "2026-05-12T16:29:41+09:00"
-      },
-      {
-        "dispatch_id": "asc-0037",
-        "event": "collected",
-        "repo": "myworld",
-        "status": "collected",
-        "timestamp": "2026-05-12T16:30:13+09:00"
-      },
-      {
-        "dispatch_id": "asc-0036",
-        "event": "released",
-        "repo": null,
-        "status": "released",
-        "timestamp": "2026-05-12T16:31:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0037",
-        "event": "released",
-        "repo": null,
-        "status": "released",
-        "timestamp": "2026-05-12T17:13:30+09:00"
-      },
-      {
-        "dispatch_id": "asc-0038",
-        "event": "created",
-        "repo": null,
-        "status": "created",
-        "timestamp": "2026-05-12T17:18:48+09:00"
-      },
       {
         "dispatch_id": "asc-0038",
         "event": "escalated",
@@ -600,11 +559,53 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "released",
         "timestamp": "2026-05-12T18:23:51+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "created",
+        "repo": null,
+        "status": "created",
+        "timestamp": "2026-05-12T18:30:26+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "sent",
+        "repo": "myworld",
+        "status": "sent",
+        "timestamp": "2026-05-12T18:30:26+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "running",
+        "repo": "myworld",
+        "status": "running",
+        "timestamp": "2026-05-12T18:34:00+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "watched",
+        "repo": "myworld",
+        "status": "passed",
+        "timestamp": "2026-05-12T18:34:11+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "collected",
+        "repo": "myworld",
+        "status": "collected",
+        "timestamp": "2026-05-12T18:34:23+09:00"
+      },
+      {
+        "dispatch_id": "asc-0040",
+        "event": "released",
+        "repo": null,
+        "status": "released",
+        "timestamp": "2026-05-12T18:34:23+09:00"
       }
     ],
-    "total": 33
+    "total": 34
   },
-  "generated_at": "2026-05-12T18:24:41+09:00",
+  "generated_at": "2026-05-12T18:34:43+09:00",
   "goals": {
     "active": {
       "completed": [
@@ -626,7 +627,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
       ],
       "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
       "preferred_next": [
-        "visual_control_application: turn the always-on control plane into a visualization-first app showing goals, contracts, repo loops, memory context, capability routes, hive execution, stop conditions, and learning feedback.",
         "on_prem_evolving_application: package AIOS as a local application whose control plane, memory store, capability router, and execution harness keep improving through verified repo feedback.",
         "web_evidence_memory_review: turn validated web evidence receipts into MemoryOS review candidates without auto-accepting web-derived facts.",
         "capability_observation_memory_import: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
@@ -639,7 +639,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "monitor_health": "clear",
       "path": "docs/goals/AIOS-GOAL-0001-evolution.md",
       "readiness": "L6 repeatable",
-      "recommendation": "goal:visual_control_application"
+      "recommendation": "goal:on_prem_evolving_application"
     },
     "items": [
       {
@@ -662,7 +662,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "path": "docs/goals/AIOS-GOAL-0001-make-something-great.md",
         "preferred_next": [
-          "visual_control_application: turn the always-on control plane into a visualization-first app showing goals, contracts, repo loops, memory context, capability routes, hive execution, stop conditions, and learning feedback.",
           "on_prem_evolving_application: package AIOS as a local application whose control plane, memory store, capability router, and execution harness keep improving through verified repo feedback.",
           "web_evidence_memory_review: turn validated web evidence receipts into MemoryOS review candidates without auto-accepting web-derived facts.",
           "capability_observation_memory_import: decide which CapabilityOS observations should enter MemoryOS as reviewable durable memory.",
@@ -675,7 +674,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "monitor": {
     "findings": [],
-    "generated_at": "2026-05-12T18:24:41+09:00",
+    "generated_at": "2026-05-12T18:34:43+09:00",
     "health": "clear",
     "next_actions": [
       {
@@ -686,11 +685,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
       }
     ],
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-05-12T18:24:41+09:00",
+    "snapshot_generated_at": "2026-05-12T18:34:43+09:00",
     "watched": {
       "alerts": 0,
-      "contracts": 39,
-      "dispatches": 32,
+      "contracts": 40,
+      "dispatches": 33,
       "reconciliations_applied": 1,
       "repos": 3
     }
@@ -771,12 +770,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-05-12T18:24:34+09:00",
+    "generated_at": "2026-05-12T18:34:13+09:00",
     "mode": "control_only",
     "recommended_next": {
-      "action": "open_next_contract",
-      "candidate_task": "turn the always-on control plane into a visualization-first app showing goals, contracts, repo loops, memory context, capability routes, hive execution, stop conditions, and learning feedback.",
-      "path": "goal:visual_control_application"
+      "action": "hold_for_monitor",
+      "reason": "blocked"
     },
     "root": "/home/user/workspaces/jaewon/myworld",
     "schema_version": "aios.round_controller.v1",
@@ -787,7 +785,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-05-12T18:24:32+09:00",
+          "generated_at": "2026-05-12T18:34:11+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -982,9 +980,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
             },
             {
               "contract_id": "ASC-0039",
-              "dispatch_id": "asc-0039",
-              "next": "ready_for_closeout",
-              "pending_results": [],
+              "next": "archive_or_next_contract",
+              "status": "closed"
+            },
+            {
+              "contract_id": "ASC-0040",
+              "dispatch_id": "asc-0040",
+              "next": "await_results",
+              "pending_results": [
+                "myworld"
+              ],
               "status": "accepted"
             }
           ],
@@ -1000,15 +1005,15 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "goal_evolution",
         "parsed": {
           "evidence": {
-            "monitor_findings": 0,
-            "monitor_health": "clear",
+            "monitor_findings": 1,
+            "monitor_health": "blocked",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-05-12T18:24:32+09:00",
+            "policy_generated_at": "2026-05-12T18:34:11+09:00",
             "radar_candidate_count": 60,
-            "readiness_level": 6,
-            "readiness_level_name": "L6 repeatable"
+            "readiness_level": null,
+            "readiness_level_name": null
           },
-          "generated_at": "2026-05-12T18:24:32+09:00",
+          "generated_at": "2026-05-12T18:34:11+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -1041,17 +1046,19 @@ window.AIOS_CONTROL_SNAPSHOT = {
             ],
             "blocked": false,
             "blocked_reasons": [],
-            "candidate_task": "turn the always-on control plane into a visualization-first app showing goals, contracts, repo loops, memory context, capability routes, hive execution, stop conditions, and learning feedback.",
+            "candidate_task": "package AIOS as a local application whose control plane, memory store, capability router, and execution harness keep improving through verified repo feedback.",
             "domain": "myworld",
             "goal_score": 100,
-            "path": "goal:visual_control_application",
+            "path": "goal:on_prem_evolving_application",
             "policy_decision": "goal_preferred",
             "policy_reason": "listed in active goal Preferred Next Improvements",
             "radar_score": 0,
             "signals": {}
           },
           "schema_version": "aios.goal_evolution.v1",
-          "stop_conditions": [],
+          "stop_conditions": [
+            "monitor_not_clear"
+          ],
           "top_candidates": [
             {
               "alignment_reasons": [
@@ -1349,23 +1356,38 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "error": "",
         "name": "monitor",
         "parsed": {
-          "findings": [],
-          "generated_at": "2026-05-12T18:24:32+09:00",
-          "health": "clear",
+          "findings": [
+            {
+              "action": "collect_result_or_run_watcher",
+              "alert": {
+                "code": "dispatch_results_pending",
+                "dispatch_id": "asc-0040",
+                "repos": [
+                  "myworld"
+                ]
+              },
+              "code": "dispatch_results_pending",
+              "owner": "myworld",
+              "reason": "A sent dispatch has no collected result packet for at least one target repo.",
+              "severity": "high"
+            }
+          ],
+          "generated_at": "2026-05-12T18:34:11+09:00",
+          "health": "blocked",
           "next_actions": [
             {
-              "action": "continue_observing",
+              "action": "collect_result_or_run_watcher",
               "owner": "myworld",
-              "reason": "No active monitor alerts.",
-              "severity": "info"
+              "reason": "A sent dispatch has no collected result packet for at least one target repo.",
+              "severity": "high"
             }
           ],
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-05-12T18:24:32+09:00",
+          "snapshot_generated_at": "2026-05-12T18:34:11+09:00",
           "watched": {
-            "alerts": 0,
-            "contracts": 39,
-            "dispatches": 32,
+            "alerts": 1,
+            "contracts": 40,
+            "dispatches": 33,
             "reconciliations_applied": 1,
             "repos": 3
           }
@@ -1414,6 +1436,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
+          "ASC-0040"
+        ],
+        "name": "`child_repo_source_edit`"
+      },
+      {
+        "contracts": [
           "ASC-0039"
         ],
         "name": "`child_repo_source_edit`: implementation changes child repo source."
@@ -1447,12 +1475,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "ASC-0037"
         ],
         "name": "`fallback_loop`: fallback agent (claude) also fails with same category and watcher recurses without bound."
-      },
-      {
-        "contracts": [
-          "ASC-0033"
-        ],
-        "name": "`governance_without_checkpoint`: high-authority actions can proceed without human checkpoint rules."
       }
     ]
   }

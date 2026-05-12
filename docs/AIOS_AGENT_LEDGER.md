@@ -1331,6 +1331,33 @@ For repo-local implementation details, also update that repo's own worklog.
   command.
 - status: done
 
+## 2026-05-12 18:35 KST — codex — ASC-0040 on-prem evolving application closed
+
+- repo: myworld
+- role: acting operator + local application packaging
+- goal: package the local AIOS control app, snapshot refresh, monitor write,
+  static server, and round-controller status into one repeatable local command.
+- changed: `scripts/aios_local_app.py`, `tests/test_aios_local_app.py`,
+  `docs/AIOS_CONTROL_APP.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0040-on-prem-evolving-application.md`,
+  `docs/contracts/README.md`, goal evolution docs, and this ledger.
+- evidence: MemoryOS trace `rtrace_02e5c1e5e56a02d5`; CapabilityOS routes
+  `cap_capabilityos_recommendation`, `cap_hivemind_execution_harness`,
+  `cap_memoryos_import_run`, and `cap_memoryos_context_build`; Hive dry-run
+  `run_20260512_182859_370b96`; result packet
+  `.aios/outbox/myworld/asc-0040.myworld.result.json`; full tests passed
+  74/74; monitor assessment returned `health=clear`; local app server is
+  running at `http://127.0.0.1:8765/`.
+- decision: AIOS now has a local app command surface:
+  `python scripts/aios_local_app.py up|refresh|status|start|stop --json`.
+  This packages the visual control app without moving implementation ownership
+  out of child repos.
+- risk: this is still a lightweight local wrapper around scripts and a static
+  server, not a full installer, service manager, or desktop application.
+- next: open `web_evidence_memory_review` so validated web evidence can become
+  MemoryOS review candidates without auto-accepting external facts.
+- status: done
+
 ## 2026-05-12 KST — claude — Uri personal agent loop pivot reviewed + AIOS routing surfaced
 
 - repo: uri + myworld

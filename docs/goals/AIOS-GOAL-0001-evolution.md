@@ -1,6 +1,6 @@
 # AIOS Goal Evolution Plan
 
-- generated_at: `2026-05-12T18:25:42+09:00`
+- generated_at: `2026-05-12T18:35:49+09:00`
 - goal_id: `AIOS-GOAL-0001`
 - goal_status: `active`
 - monitor_health: `clear`
@@ -8,11 +8,11 @@
 
 ## Recommendation
 
-- path: `goal:on_prem_evolving_application`
+- path: `goal:web_evidence_memory_review`
 - domain: `myworld`
 - goal_score: `100`
 - policy_decision: `goal_preferred`
-- task: package AIOS as a local application whose control plane, memory store, capability router, and execution harness keep improving through verified repo feedback.
+- task: turn validated web evidence receipts into MemoryOS review candidates without auto-accepting web-derived facts.
 - alignment_reasons: `goal_preferred_next`
 - blocked_reasons: ``
 
