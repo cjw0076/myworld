@@ -89,4 +89,125 @@ substrate-equivalent adapter (Claude / Codex / Local LLM).
 
 ---
 
+## 2026-05-13 10:30 KST — claude@universe — task/plan 관리 패턴 역설계
+
+- session_id: quantum/q_state_model P18 실험 재개 세션 (context compaction 후 계속)
+- mode_breakdown: observe(30%) decide(30%) intervene(35%) escalate(5%) — 실험 런치가 중심
+- tools_used: Bash, Read, Edit, Write, TaskUpdate (implicit via task list)
+- tools_NOT_used: Agent (단순 탐색은 Bash grep으로 충분), AskUserQuestion, ScheduleWakeup
+- substrate_specific_behaviors_observed:
+  - 세션 재개 시 "context summary + task list reminder" 조합으로 상태 재구성
+  - 독립 tool call 병렬화: gpu0/gpu1 launch, import 검증, log 확인을 단일 메시지에서 동시 실행
+  - 파일 수정 전 항상 Read → 수정 불일치 방지 (Edit tool 규칙 강제)
+  - `run_in_background=true` Bash + 즉시 상태 확인 조합으로 비동기 실험 관리
+- failures_recovered: none (clean session)
+- failures_escalated_to_founder: none
+- key_decision: g1_s4(σ_m=8.0)은 무효 control → x-only(p 채널 차단)이 진짜 weakened control
+- new_invariant_or_pattern_discovered: 아래 역설계도 참조
+- self-correction-of-prior-observation: none
+
+### Claude CLI Task/Plan 관리 역설계도
+
+#### 1. 세션 내 상태 계층 (State Hierarchy within Session)
+
+```
+[영속 상태]          [세션 내 상태]        [즉각 상태]
+MEMORY.md           Task List            Chat context
+comms_log.md   ←── (TaskCreate/Update)   Tool results
+project files        task status          Variable bindings
+                     (pending/in_progress
+                     /completed)
+```
+
+- **TaskCreate**: "큰 작업"을 원자 단위로 쪼갬. 사용자가 explicit하게 요청하거나 다단계 작업에서 자동으로 생성.
+- **TaskUpdate → in_progress/completed**: 실행 중 상태를 명시적으로 전환. context compaction이 일어나도 task list는 재주입됨 → 상태 연속성 보장.
+- **MEMORY.md**: 세션 간 지속이 필요한 정보만. Task list는 ephemeral (세션 종료 = 정리).
+
+#### 2. 실행 결정 트리 (Execution Decision Tree)
+
+```
+사용자 요청
+    │
+    ▼
+[컨텍스트 파악]
+읽어야 할 파일 ≤ 3개? → Bash grep / Read 직접
+                > 3개, 탐색 범위 불명확? → Agent(Explore) 파견
+    │
+    ▼
+[작업 분해]
+독립적 subtask? → 단일 메시지에서 병렬 tool call
+순서 의존적?    → 순차 실행 (이전 결과 → 다음 입력)
+    │
+    ▼
+[실행]
+로컬+가역적? → 직접 Edit/Bash
+오래 걸림?   → Bash(run_in_background=True) → 즉시 다음 작업
+리스크?      → 사용자 확인 후 실행
+    │
+    ▼
+[검증]
+Bash로 상태 확인 (ps, tail log, nvidia-smi)
+실패 시 → 근본 원인 진단, 우회로 찾기
+```
+
+#### 3. 병렬화 패턴 (Parallelization Pattern)
+
+Claude는 **단일 응답 내에서** 독립적인 tool call들을 병렬로 발행.
+
+```
+# 좋은 예: 독립적 read+check 동시에
+Read(file_A) || Bash("grep pattern file_B") || Bash("ps aux")
+
+# 나쁜 예: 의존적인데 병렬화
+Read(file_A) → Edit(file_A 기반) → 이건 순차 필수
+```
+
+AIOS 흡수 방법: provider wrapper가 "독립성 분석 → 병렬 dispatch" 레이어를 갖추면 됨.
+
+#### 4. 위임 vs 직접 실행 기준 (Delegation Threshold)
+
+| 조건 | 행동 |
+|---|---|
+| 알려진 파일 경로 | Read 직접 |
+| 키워드 위치 불명확 | Bash grep 또는 Agent(Explore) |
+| 다단계+격리 필요 | Agent 파견 (별도 context) |
+| 코드 리뷰/설계 | Agent(Plan 또는 code-reviewer) |
+| 단순 shell 실행 | Bash 직접 |
+
+Context window 보호가 핵심: "결과가 길고 main context를 오염시킬 수 있으면 agent에 위임."
+
+#### 5. 메모리 기록 트리거 (Memory Write Triggers)
+
+Claude가 memory를 쓰는 조건:
+- 사용자가 명시적으로 "기억해" 요청
+- 사용자 역할/배경 파악 (user memory)
+- 교정/확인 패턴 발견 (feedback memory)
+- 프로젝트 맥락 변화 (project memory)
+- 외부 시스템 위치 파악 (reference memory)
+
+**쓰지 않는 조건**: 코드 패턴, git 이력, 임시 task 상태, 이미 CLAUDE.md에 있는 내용.
+
+#### 6. AIOS 흡수 포인트 (Absorption Targets for AIOS)
+
+| Claude CLI 행동 | AIOS 등가 구조 |
+|---|---|
+| TaskCreate + TaskUpdate | contract → in_progress → closed lifecycle |
+| 병렬 tool call | hive dispatch로 멀티 provider 동시 실행 |
+| `run_in_background=True` Bash | async execution receipt + monitor watcher |
+| Agent(Explore) 파견 | capability-scoped sub-invocation |
+| MEMORY.md 계층 | MemoryOS draft/review/accept cycle |
+| comms_log.md | AIOS_AGENT_LEDGER.md / cross-repo log |
+| context compaction 대응 | session handoff document (현재 이 로그가 그 역할) |
+
+#### 핵심 관찰
+
+Claude CLI의 task 관리는 **"명시적 상태 + 병렬 실행 + 위임 임계값 + 메모리 계층"** 4요소로 구성됨.
+AIOS가 이것을 흡수하려면:
+1. contract lifecycle ↔ task status mapping을 정립
+2. hive가 provider를 병렬 dispatch하는 surface를 만들기
+3. MemoryOS write trigger 조건을 Claude 기준으로 명세화
+4. "context를 보호하기 위한 위임" 원칙을 agent selection 로직에 박기
+
+---
+
 (future entries append below)

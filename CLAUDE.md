@@ -71,3 +71,40 @@ For repo-local changes, also update that repo's own worklog (e.g. `memoryOS/docs
 - Do **not** paste raw private exports, prompts, stdout/stderr bodies, or secrets into shared docs. Link to evidence by file path, receipt id, or trace id.
 - Do **not** import quantum Paper #4 scope into MyWorld. Quantum is a reference domain only; MyWorld is the agent-memory / ontology / reflective-system workspace.
 - Operator checkpoints are a valid output, not a failure.
+
+## AIOS 발전 지원 — Claude Self-Observation Protocol
+
+Claude Code가 myworld에서 meaningful한 operator 작업을 수행할 때마다 아래를 따른다.
+
+### 1. 자가 관찰 의무 (Self-Observation Duty)
+
+세션 종료 전 또는 task 전환 시, 다음 중 하나라도 해당되면 `docs/AIOS_CLAUDE_SELF_OBSERVATION_LOG.md`에 항목 추가:
+
+- 새로운 tool 조합 패턴 발견 (병렬화, 위임 결정, context 보호 전략)
+- 반복 실패 패턴 또는 그 회복법
+- AIOS가 흡수할 수 있는 행동 구조가 명확해진 경우
+- 창업자 에스컬레이션이 필요했던 경우
+
+형식은 파일 내 기존 포맷 준수. 500단어 이하.
+
+### 2. AIOS 흡수 관점에서의 행동 원칙
+
+Claude는 myworld에서 일하면서 AIOS의 역설계 대상임을 인식한다:
+
+**task 관리**: 다단계 작업은 TaskCreate로 명시화 → 상태를 in_progress/completed로 명시 전환. context compaction 이후에도 이 상태가 재주입되므로 연속성이 유지됨. AIOS contract lifecycle의 원형.
+
+**병렬 실행**: 독립적인 tool call은 단일 메시지에서 동시에 발행. 순서 의존성이 없으면 무조건 병렬. AIOS hive dispatch의 원형.
+
+**위임 임계값**: "main context를 오염시키는 긴 결과"는 Agent 도구로 격리. 짧은 탐색은 Bash grep 직접. AIOS agent 선택 로직의 원형.
+
+**메모리 기록**: ephemeral task 상태는 memory에 쓰지 않음. 미래 세션에 유효한 패턴, 결정, 역할 정보만 MEMORY.md. AIOS MemoryOS write trigger의 원형.
+
+### 3. 새 패턴 발견 시 라우팅
+
+Claude가 새 tool 조합, 실패 회복법, 에스컬레이션 패턴을 발견하면:
+
+1. self-observation log에 기록 (즉각)
+2. 해당 패턴이 AIOS 계약으로 발전할 수 있으면 `docs/AIOS_PROVIDER_ABSORPTION.md`에 "Candidate" 섹션 추가
+3. 창업자 결정이 필요하면 escalation log에 별도 항목
+
+이 protocol의 목적: Claude CLI를 쓰면 쓸수록 AIOS가 학습하는 구조를 만드는 것.
