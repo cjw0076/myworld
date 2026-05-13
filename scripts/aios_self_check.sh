@@ -121,5 +121,52 @@ if ! echo "$controller_status" | grep -q "running=true"; then
   echo "self_check DAEMON_DEAD status=$controller_status"
 fi
 
+# === ORGANIC INTERACTION CHECKS (founder directive 2026-05-13) ===
+# AIOS now has 5 OS + 80+ contracts. Per-feature health is not enough.
+# Watch how agents/OS interact, not just what each does in isolation.
+
+# 8. cross-OS dispatch coverage in last 24h
+# (silent ghosting: if 1+ child OS hasn't received a packet in 24h, surface)
+ghost_repos=""
+for repo in hivemind memoryOS CapabilityOS GenesisOS; do
+  recent=$(find .aios/inbox/$repo -name "*.json" -mmin -1440 -type f 2>/dev/null | wc -l)
+  [ "$recent" -eq 0 ] && ghost_repos="$ghost_repos $repo"
+done
+if [ -n "$ghost_repos" ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check CROSS_OS_GHOST repos=$ghost_repos window=24h"
+fi
+
+# 9. ledger reference graph — are recent contracts citing each other?
+# (echo chamber: if last 5 contracts cite ZERO prior contracts, agents not building on each other)
+recent_refs=$(ls -t docs/contracts/ASC-*.md 2>/dev/null | head -5 | xargs grep -hoE 'ASC-[0-9]{4}' 2>/dev/null | sort -u | wc -l)
+if [ "${recent_refs:-0}" -lt 3 ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check ECHO_CHAMBER recent_5_contracts_unique_refs=$recent_refs"
+fi
+
+# 10. contract chain depth — are contracts forming long causal chains
+# (or only flat / single-step?)
+# Count contracts whose origin field cites another ASC
+chain_depth=$(grep -lE '^origin:.*ASC-[0-9]{4}' docs/contracts/ASC-*.md 2>/dev/null | wc -l)
+total_contracts=$(ls docs/contracts/ASC-*.md 2>/dev/null | wc -l)
+if [ "$total_contracts" -gt 30 ] && [ "${chain_depth:-0}" -lt $((total_contracts / 4)) ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check CHAIN_FLAT chain_origin=$chain_depth total=$total_contracts ratio=$(python -c "print(round(${chain_depth:-0}/$total_contracts,2))")"
+fi
+
+# 11. starvation — held contracts > 4h with no operator action
+held_aging=0
+held_files=$(grep -lE '^status: held$' docs/contracts/ASC-*.md 2>/dev/null)
+for f in $held_files; do
+  mtime=$(stat -c %Y "$f")
+  age_h=$(( (now_epoch - mtime) / 3600 ))
+  [ "$age_h" -gt 4 ] && held_aging=$((held_aging+1))
+done
+if [ "$held_aging" -gt 0 ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check HELD_STARVATION count=$held_aging"
+fi
+
 # Summary line (always, so monitor knows pulse fired)
 echo "self_check pass complete attention=$attention_count"
