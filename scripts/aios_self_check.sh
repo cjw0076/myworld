@@ -168,5 +168,46 @@ if [ "$held_aging" -gt 0 ]; then
   echo "self_check HELD_STARVATION count=$held_aging"
 fi
 
+# === ACTIVE VERIFICATION CHECKS (founder directive 2026-05-13: AIOS로 검증) ===
+# Don't just count states — actually run AIOS tools and verify they still work.
+# Bounded to fast checks (each < 10s) so the 10-min pulse stays fast.
+
+# 12. readiness probe — actually run aios_readiness, check L6 still holds
+ready_level=$(python scripts/aios_readiness.py --json 2>/dev/null | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('level','?'))" 2>/dev/null)
+ready_ok=$(python scripts/aios_readiness.py --json 2>/dev/null | python -c "import json,sys; d=json.load(sys.stdin); print(d.get('ready','false'))" 2>/dev/null)
+if [ "${ready_level:-0}" -lt 6 ] 2>/dev/null || [ "$ready_ok" = "False" ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check READINESS_DROP level=$ready_level ready=$ready_ok"
+fi
+
+# 13. invocation smoke — does aios_invoke still produce a 4-OS receipt?
+inv_smoke=$(python scripts/aios_invoke.py --goal "self_check verification probe" --plan-only --json 2>/dev/null | python -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    rs = d.get('role_statuses', {})
+    failed = [k for k,v in rs.items() if v != 'passed']
+    print(','.join(failed) if failed else 'ok')
+except: print('parse_error')")
+if [ "$inv_smoke" != "ok" ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check INVOCATION_DEGRADED failed_roles=$inv_smoke"
+fi
+
+# 14. dispatch state probe — can aios_dispatch.status still parse?
+dispatch_health=$(python scripts/aios_dispatch.py status 2>&1 | head -1 | grep -c "^asc-\|^inbox=" || echo 0)
+if [ "${dispatch_health:-0}" -lt 1 ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check DISPATCH_PARSE_BROKEN"
+fi
+
+# 15. test suite tripwire — random subset stays green
+# (full suite would be too slow; pick 1-2 small tests as canary)
+canary=$(python -m unittest tests.test_aios_primitives -k EventLogTests 2>&1 | tail -1 | grep -c "OK")
+if [ "${canary:-0}" -lt 1 ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check TESTS_CANARY_FAIL"
+fi
+
 # Summary line (always, so monitor knows pulse fired)
-echo "self_check pass complete attention=$attention_count"
+echo "self_check pass complete attention=$attention_count readiness=L${ready_level:-?} invocation=$inv_smoke dispatch=$dispatch_health canary=$canary"
