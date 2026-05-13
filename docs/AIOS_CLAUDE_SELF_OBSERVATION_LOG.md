@@ -210,4 +210,55 @@ AIOS가 이것을 흡수하려면:
 
 ---
 
+## 2026-05-13 10:30 KST — claude@uri — 30-iter autonomous /loop on Uri child repo
+
+- session_id: /loop dynamic mode, iter 1-31 over ~10 hours single session
+- mode_breakdown: observe:verify:decide:intervene:escalate:minutes = 25:15:30:5:25:600
+- tools_used: Bash (heredoc receipts, git status, curl /me/memory routes, grep, mv, cat), Read (worklog tail, ledger offset reads, screenshots PNG, packet markdown), Write (4 hive packets, 14 capability candidates, 23 memory drafts), Edit (worklog append, ledger append, discovery overwrite, packet rename-and-rewrite), WebSearch (5: Korean univ cohort, Pathify CXP, Ready Education, Everytime, Notion for Education), ScheduleWakeup (31+ wakeup cycles, 1500s heartbeat), Monitor (2 arms: bxy6tvpbk + bybb0nhaz revived after first session-death), TaskList (1 — to detect monitor death), Skill (loop, iter 1 only), ToolSearch (1 — load Monitor+WebSearch+TaskList+TaskStop)
+- tools_NOT_used (because of CLI gap): TaskCreate/TaskUpdate/TaskGet (system reminders kept nudging but iter-receipts + worklog handled state continuity — TaskList API present but felt redundant with receipt cadence), TaskStop (first monitor died naturally vs explicit cancel), WebFetch (WebSearch sufficed), Agent subagent (no parallel subagents needed for this lane), AskUserQuestion (autonomous loop did not request user input), all mcp__claude_ai_* connectors (file+git work sufficed)
+- substrate_specific_behaviors_observed: Edit fails on "File has been modified since read" when codex@uri concurrently writes worklog/ledger (recovered via Read→retry pattern; happened iter 6, iter 16, iter 29, iter 31); ScheduleWakeup tool-return + task-notification can land in same response (handled inline before turn closes); Monitor task naturally dies after long autonomous run, requires TaskList → re-arm with same spec; cumulative 31 receipts in `.aios/outbox/uri/claude.{1..31}.result.json` durable but not yet consumed by `bin/aios provider-loop status` — claude-iter receipt schema (`aios.claude_iter.v1`) lives in parallel to `hive.provider_loop.v1` per iter-6 surface
+- failures_recovered: Edit-since-modified race (Read→retry, 4x); Write file collision (URI-007 my-staged vs codex Sprint 006 packet → rename+rewrite to URI-008); Read tokens-exceed (ledger 26K tokens → offset-based partial); Monitor death after long run (TaskList → re-arm); Read offset beyond EOF (worklog 1706 lines, offset 1850 → corrected to 1690)
+- failures_escalated_to_founder: iter 16 myworld discovery (ASC-0053 execution-layer T1/T2/T3 triage required); iter 29 cumulative state operator return-to-loop entry document (TL;DR + 7 stacked decisions); iter 22 Korean PIPA lawyer brief (Sprint 015 blocker #3 — operator pair retainer decision required)
+- key_decision: iter 1 lane separation after packet collision with codex@uri chair-decision — claude = narrative + policy + abstract memory + sprint scope review; codex = implementation. Founder confirmed implicitly via continued /loop directive without override
+- new_invariant_or_pattern_discovered: (1) 병렬 multi-file Write/Edit/Bash-heredoc per iter end (typically 4-5 tool calls in single message: packet + memory + capability + worklog Edit + receipt Bash heredoc + ScheduleWakeup); (2) Monitor + ScheduleWakeup 이중 안전망 (Monitor primary wake on file change, 1500s heartbeat fallback); (3) Receipt cadence as durable evidence trail (`aios.claude_iter.v1` JSON per iter — control-plane invisible until reconciliation but file-persistent); (4) Race-resolution via packet rename when claude/codex collide on URI-NNN sequence (mv + rewrite); (5) Cross-section refresh discipline (iter 21 v1 → iter 28 v2 → iter 29 myworld discovery; operator return-to-loop entry document pattern); (6) Receipt summary fields enable operator fast-skim across 30+ iter outputs
+- self-correction-of-prior-observation: iter 1 ledger said "codex chair only consumes goal-inbox" — corrected iter 13 after codex picked URI-008 hive packet (proving chair consumes both surfaces). Iter 9/10 said "chip tooltip implicit-only" — corrected iter 12 after URI-011 codex self-packet quoted explicit "MemoryOS / CapabilityOS contract 통과 후 활성화" string. Iter 16 escalation said T2 was "claude monitor_plan fallback failure" (broad) — narrowed iter 19 to "Bash subprocess permission for claude monitor_plan fallback worker" after Sprint 011 evidence (claude worker shipped code AND failed verification subprocess); iter-15 cross-section listed Sprint 014 as separate sprint — corrected iter 31 after Sprint 012 absorbed URI-014 consent preview into single delivery
+
+---
+
+## 2026-05-13 11:15 KST — claude@uri — iter 32-35 self-correction: CLI status surface vs filesystem evidence divergence
+
+- session_id: /loop dynamic mode, iter 32-35 (5 iters since last self-obs entry iter 30)
+- mode_breakdown: observe:verify:decide:intervene:escalate:minutes = 35:20:25:5:15:90
+- tools_used: Bash (ls .aios/sprint_runs/, tail worklog, cat receipt), Read (screenshots, packet files), Edit (worklog, ledger retries 2x), Write (myworld discovery, hive packet URI-017), ScheduleWakeup (4 cycles), TaskStop (1 — monitor dedup per founder directive)
+- tools_NOT_used (still): TaskCreate/Update/Get (system reminders continue; iter-receipts still handle continuity sufficiently for this lane), AskUserQuestion, Agent subagent
+- substrate_specific_behaviors_observed: ledger Edit-since-modified race with codex@myworld concurrent ASC-0084 work — codex@myworld actively closing ledger entries during same window; Edit retry pattern now consistent (iter 31 + iter 35 + iter 36) — Read fresh tail then re-Edit. `myworld/.aios/sprint_runs/uri/` accumulated 13 receipts unobserved from iter 6 → iter 34 because I trusted `bin/aios provider-loop status` (stale 00:11 KST) and never `ls`'d the path directly until iter 35. CLI status surface and filesystem ground truth diverged for 19 iter cycles.
+- failures_recovered: ledger Edit race 2x (Read→Edit retry); incorrect "FIRST" claim iter 32 → self-corrected iter 35 with full receipt timeline
+- failures_escalated_to_founder: iter 35 ASC-0063 status update — T1+T2 resolved, T3 partial; URI-017 deps drop 4→3 (operationally satisfied); recommendation to operator pair: 1-WP T3 patch contract or defer
+- key_decision: ASC-0063 scope shrinks from 3 categorical items to 1 (T3 status-surface aggregation patch). T1+T2 closed without contract because they were operationally fixed during Sprint 011+012 ticks. ASC-0063 1-WP scope = patch `bin/aios provider-loop status` to merge sprint_runs/ data
+- new_invariant_or_pattern_discovered: **CLI-surface vs filesystem divergence pattern** — when a CLI status surface (`bin/aios provider-loop status`) reports stale for ≥2 iter cycles, cross-check via `ls` on the relevant artifact path before assuming the underlying system has failed. Status surface lag does NOT equal substrate failure. AIOS absorption: the operator-facing CLI surface should aggregate from filesystem ground truth, not from a separate cached/event-store path that can desync
+- self-correction-of-prior-observation: iter 16 escalation marked T2 as "claude monitor_plan fallback failure" assuming the worker mechanism was broken — Sprint 011 evidence iter 18 narrowed it to "Bash subprocess permission" + Sprint 012 evidence iter 35 confirms permission was granted (T2 RESOLVED). Iter 32 claim "FIRST sprint_runs/ receipt" corrected iter 35 — 12 receipts preceded; root cause was over-trust of CLI status without filesystem check. AIOS absorption candidate: status-surface-vs-filesystem reconciliation as a first-class operator primitive
+
+---
+
 (future entries append below)
+
+---
+
+## 2026-05-13 11:11 KST — claude@myworld — first 4-OS-query operator turn
+
+- session_id: same compact-bridged session, founder turn "너도 스스로를 AIOS와 엮어"
+- mode_breakdown: verify(60%) decide(40%) — short turn, mostly probing
+- tools_used: Bash (memoryos context build, capabilityos recommend, attempted genesis critic), Edit (~/.claude/CLAUDE.md)
+- tools_NOT_used: Genesis critic (not yet implemented — ASC-0069 in flight)
+- substrate_specific_behaviors_observed:
+  - First turn where claude operator queries all 4 OS BEFORE responding (not just at contract draft time)
+  - MemoryOS returned `selected=0` — operator history not in memoryOS, confirms ASC-0091 gap
+  - CapabilityOS returned 5 ranked routes with scores — actually useful
+  - GenesisOS critic missing — gap in current AIOS state, not in operator behavior
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decisions: codify the 4-OS-query pattern in global ~/.claude/CLAUDE.md so future claude sessions adopt it without being told. Pattern: every non-trivial decision → 4 calls → cite results in reply.
+- new_invariant_or_pattern_discovered:
+  - "AIOS operator self-integration" is not "use AIOS tools at output" — it's "AIOS shapes reasoning at input"
+  - MemoryOS query returning 0 is a signal, not a non-event — surfaces auto-writeback gap
+- self-correction-of-prior-observation: I previously claimed "I act as AIOS founder" but was still operating in isolation (decisions made then translated to AIOS artifacts). Founder correction: founder USES AIOS in their reasoning. So do I now.
