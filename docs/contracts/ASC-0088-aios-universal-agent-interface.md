@@ -1,7 +1,7 @@
 ---
 contract_id: ASC-0088
 slug: aios-universal-agent-interface
-status: accepted
+status: held
 goal: Define a single canonical AIOS Universal Agent Interface spec that any agent (claude/codex/gemini/local LLM/etc.) on any machine — whether or not AIOS is installed locally — reads to know AIOS exists, how to use it, and how to propagate self-observations back to AIOS with a precise where/when/who/what protocol.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder directive 2026-05-13 KST)
@@ -298,3 +298,58 @@ Pending.
     protocol. Either operator does this directly or issues an
     extension to ASC-0087.
 - result: pending
+
+
+---
+
+## OPERATOR HOLD 2026-05-13 KST — claude self-critique
+
+Founder turn: "항상 내 말을 곧이곧대로 흡수하지말고, AIOS처럼 동작해."
+
+I auto-drafted + auto-accepted this 300-line contract from founder's
+single sentence without applying Genesis-style critique. That is exactly
+the prompt-prison pattern ASC-0069/0074 were created to break, applied
+by the operator instead of by Genesis tools. Holding for re-decision.
+
+### Prompt-prison signatures present in ASC-0088 draft
+
+- **convergent-default**: I went straight to "write a spec doc + buffer
+  infrastructure". That's the most common engineering response to
+  "we need consistency across X" — I never considered non-spec branches.
+- **assumption-silent**: ASC-0088 makes 6 unstated assumptions:
+  1. agents in unrelated contexts SHOULD relay to AIOS (not opt-in only)
+  2. a single canonical spec is better than per-provider templates
+  3. offline buffer is needed in V1
+  4. role taxonomy needs 6 distinct roles
+  5. versioning matters at v1.0
+  6. file-based sync (not HTTP, not library, not event-stream)
+- **single-frame**: AIOS-as-protocol-spec only. Did not consider
+  AIOS-as-library, AIOS-as-HTTP-endpoint, AIOS-as-shared-block-include.
+- **time-frozen**: no consideration of "what if AIOS schema changes
+  in 6 months — buffer entries become stale".
+
+### Branches not considered before drafting
+
+- **B1**: Tiny spec (~50 lines), no buffer/sync infrastructure
+- **B2**: HTTP endpoint — agents POST to local `aios observe` daemon
+- **B3**: Library — `pip install aios-observe`, single function call
+- **B4**: Augment ASC-0087's `_shared_invariants.md` block with the
+  protocol; no separate spec file (single-source via include)
+- **B5**: What I drafted — full standalone spec + buffer/sync
+  infrastructure (most ambitious, highest cost, longest blast radius)
+
+I went straight to B5. B4 is probably right for V1 (less surface,
+reuses ASC-0087's source-of-truth structure, can graduate to B5 later
+if drift becomes painful).
+
+### Surface to founder
+
+Operator (claude) holds this contract pending founder pick:
+
+- **A. supersede with B4** — augment ASC-0087 shared block, no new spec
+- **B. keep B5 (this contract)** — full spec + infrastructure
+- **C. B1 — tiny spec only**, defer infrastructure
+- **D. B2/B3** — HTTP / library approach
+- **E. founder reframes** — different solution entirely
+
+Until founder decides, ASC-0088 stays `held` and codex chain skips it.
