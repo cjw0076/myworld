@@ -1,0 +1,173 @@
+---
+contract_id: ASC-0111
+slug: founder-behavior-ingestion
+status: accepted
+goal: Capture founder (재원) directives, reframes, and decision patterns as first-class memoryOS records — drafts with origin=founder_directive — so the system gains an actual model of how its founder operates. Today this is scattered across chat, operator_sessions, claude local memory, and verbatim acceptance_authority quotes; memoryOS itself has 0% coverage.
+created: 2026-05-13 KST
+accepted: 2026-05-13 KST by claude as verifier
+acceptance_authority: claude@myworld (verifier role, /loop GOAL-0002 + founder question "내 작업방식이 memoryOS에 저장되나?")
+origin: 2026-05-13 verifier round 2 probed memoryOS for founder-related drafts — 2/43 (passing mentions only, no structured capture). AIOS effectively has no memory of its own founder despite 1.5 days of intense direction-setting.
+---
+
+# ASC-0111 Founder Behavior Ingestion
+
+## Why Now (DNA Inv 5)
+
+DNA Invariant 5 (provenance chain) requires every record to be
+traceable. Today founder directives are the most causally-load-bearing
+inputs in AIOS — every reframe ("AIOS=Government", "discomfort=
+creativity source", "Founder처럼 동작") shapes downstream contracts —
+but they are not retrievable as memoryOS records. The provenance chain
+breaks at its most important link.
+
+When founder asked "내 작업방식이 memoryOS에 저장이 되는지? 그
+memoryOS를 토대로 네가 내 역할을 대신할 수 있는지?", the honest answer
+is: no, and no. This contract takes the first step on yes.
+
+## Required Reading
+
+- `docs/AIOS_DNA.md` (after ASC-0105) — Invariants 5, 6, 8
+- `docs/operator_sessions/2026-05-12-claude-myworld.md` (current
+  founder turn capture, NOT in memoryOS)
+- `~/.claude/projects/-home-user-workspaces-jaewon-myworld/memory/`
+  (claude-side, NOT in memoryOS)
+- `scripts/aios_contract_to_memory.py` (ASC-0091 closeout writeback —
+  pattern to extend)
+- `memoryOS/memoryos/schema.py` (memory object schema)
+
+## Scope
+
+repos: `myworld`, `memoryOS`
+
+allowed_files:
+
+- `scripts/aios_founder_capture.py`
+- `tests/test_aios_founder_capture.py`
+- `memoryOS/memoryos/cli.py` (new `ingest-founder-directive` subcommand)
+- `memoryOS/tests/test_founder_ingest.py`
+- `docs/AIOS_FOUNDER_INGESTION.md`
+- `docs/contracts/ASC-0111-founder-behavior-ingestion.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+forbidden_files:
+
+- `docs/operator_sessions/**` (read-only — source of capture)
+- `~/.claude/**` (claude private — NOT shared with memoryOS)
+- `_from_desktop/**`, `dain/**`, `minyoung/**`
+- `hivemind/**`, `CapabilityOS/**`, `GenesisOS/**`, `uri/**`
+- `.env`
+
+## Per-OS Responsibility
+
+### myworld.must_produce
+
+`scripts/aios_founder_capture.py`:
+
+- inputs:
+  - operator session log path (default
+    `docs/operator_sessions/<latest>.md`)
+  - OR explicit founder turn text (for live capture)
+- extraction (deterministic V1):
+  - parse "## Mode transitions" table — each entry where founder
+    appears
+  - parse "## Decisions log" entries citing founder words
+  - parse acceptance_authority lines across docs/contracts/ASC-*.md
+    that quote founder verbatim
+  - extract per-directive:
+    - `directive_text`: the verbatim Korean/English quote
+    - `reframe_class`: vision / scope / discomfort / role / privacy /
+      escalation / other
+    - `cited_in_contracts`: list of ASC-NNNN referencing this directive
+    - `captured_at`, `source_path`
+- output JSON conforms to new schema
+  `aios.founder_directive_memory.v1`
+- pipes into `memoryos ingest-founder-directive`
+
+### memoryOS.must_produce
+
+`memoryos ingest-founder-directive` subcommand:
+
+- accepts `aios.founder_directive_memory.v1`
+- produces `MemoryObject(type=decision, origin=founder_directive,
+  status=draft)`
+- preserves verbatim text in `content` field (no paraphrase)
+- raw_refs include source_path + line range
+- evidence_refs cite contracts that already use this directive
+- idempotent via stable_id on (directive_text, source_path)
+
+### child repos: no change
+
+## Verification Gate
+
+```bash
+python -m py_compile scripts/aios_founder_capture.py
+python -m unittest tests/test_aios_founder_capture.py
+python scripts/aios_founder_capture.py --json | python -c "
+import json, sys
+d = json.load(sys.stdin)
+n = len(d.get('directives',[]))
+assert n >= 20, f'expected ≥20 founder directives in session log, got {n}'
+"
+cd memoryOS && python -m memoryos --root . ingest-founder-directive < /tmp/founder_capture.json --json
+python -m memoryos --root . drafts list --json | python -c "
+import json, sys
+d = json.load(sys.stdin)
+founder_drafts = [x for x in d if x.get('origin') == 'founder_directive']
+assert len(founder_drafts) >= 20, f'founder_directive drafts: {len(founder_drafts)}'
+"
+cd ..
+python -m unittest tests/test_aios_founder_capture.py memoryOS/tests/test_founder_ingest.py
+python -m unittest discover -s tests -p 'test_aios_*.py'
+```
+
+Pass criteria (DNA Inv 5):
+
+- ≥20 founder directives extracted from current operator session log
+- All become memoryOS drafts with origin=founder_directive
+- Re-running ingest is idempotent (no duplicates)
+- ASC-0110 retrieval (once it ships) can find the directives by their
+  Korean/English keywords
+
+## Stop Conditions (DNA Inv 7)
+
+- `founder_paraphrased`: directives must be verbatim, not summarized
+- `founder_pii_leak`: real name/email/private personal info excluded
+  unless founder explicitly authorized
+- `chat_scroll_ingest`: do NOT scrape chat scroll (ephemeral, may
+  contain transient frustration not intended as durable directive)
+- `auto_accept_founder_draft`: drafts stay draft until reviewed
+- `child_repo_scope_leak`
+- `verification_gate_failed`
+
+## Receipts
+
+Pending.
+
+## Work Packets
+
+### WP-0111-A — codex@myworld extracts + ingest pipeline
+
+- target_agent: codex
+- target_repo: myworld
+- depends_on: ASC-0091 closed ✓
+- brief: implement deterministic extractor over operator_sessions/* +
+  contract acceptance_authority lines. Output founder_directive_memory.v1
+  JSON. Pipe to memoryOS.
+
+### WP-0111-B — codex@memoryOS adds founder ingest subcommand
+
+- target_agent: codex
+- target_repo: memoryOS
+- depends_on: WP-0111-A
+- brief: ingest-founder-directive subcommand producing MemoryObject
+  with origin=founder_directive. Stable id. Idempotent. Test.
+
+## Honest non-promise
+
+This contract captures founder directives. It does NOT model founder
+*reasoning* or *intuition*. Even after this closes, claude cannot
+replace founder for vision/reframe — only for routine acceptance of
+already-precedented patterns. Real "founder model" is a multi-contract
+deep arc (likely requires GenesisOS real implementation per ASC-0069+,
+plus discomfort manufacturing per the saved
+`feedback-discomfort-as-creativity-source` memory).
