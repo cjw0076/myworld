@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0075
 slug: genesis-seed-library
-status: proposed
+status: accepted
 goal: Build a curated, append-only seed library inside GenesisOS that captures wild ideas (from mutator, branches, analogies, operator dumps) BEFORE they pass any verification gate, so non-obvious thoughts are not silently filtered out by Hive's success criteria.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
-acceptance_authority: pending founder GO.
+acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive on prompt-prison. Verification gates filter for "works now" — they suppress "interesting but risky" thoughts. Genesis must preserve those before they're evaluated, otherwise the AIOS converges back to the safe default.
 ---
 

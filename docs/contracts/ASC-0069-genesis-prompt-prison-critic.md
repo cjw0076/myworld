@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0069
 slug: genesis-prompt-prison-critic
-status: proposed
+status: accepted
 goal: Add a GenesisOS critic that detects when an agent (claude/codex/local LLM) is stuck in a single line of reasoning produced by prompt structure, language pattern, or training distribution — and surfaces escape vectors.
 created: 2026-05-13 KST
 proposed_by: claude@myworld (operator) per founder GO of GenesisOS sub-contract sequence.
-acceptance_authority: pending founder GO ("GO ASC-0069" or batch).
+acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive 2026-05-13 KST "프롬프트, 언어, 구사 능력에 의해 Agent의 능력이 너무 제한되는 느낌을 받았어. GenesisOS는 이걸 해소" — first sub-contract addressing the prompt-prison constraint directly.
 ---
 

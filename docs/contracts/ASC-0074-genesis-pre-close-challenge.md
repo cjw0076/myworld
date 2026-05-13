@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0074
 slug: genesis-pre-close-challenge
-status: proposed
+status: accepted
 goal: Make every accepted contract pass through a GenesisOS challenge gate before close — running the prompt-prison critic, assumption mutator, multi-universe fork, modal compare, and analogy match — so closeouts ship only after their prompt-prison risk is examined.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
-acceptance_authority: pending founder GO.
+acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: integration of ASC-0069..0073 into AIOS contract lifecycle. The Genesis tools are useful only if the loop actually consults them — this contract enforces consultation as a gate.
 ---
 

@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0072
 slug: genesis-multi-modal-reasoning
-status: proposed
+status: accepted
 goal: Give GenesisOS a non-language reasoning surface — diagram, code, formal logic, math, constraint graph — so agents can think in modalities outside their training-language defaults and escape the linguistic prison.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
-acceptance_authority: pending founder GO.
+acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive on prompt-prison — "프롬프트, 언어, 구사 능력에 의해 Agent의 능력이 제한". Multi-modal reasoning is the most direct escape from language-only thinking.
 ---
 

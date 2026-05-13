@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0070
 slug: genesis-assumption-mutator
-status: proposed
+status: accepted
 goal: Add a GenesisOS mutator that takes any contract or memory record, enumerates its core assumptions, generates negations + dimensional rotations of each, and writes the resulting candidate-set as Genesis seeds for operator review.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
-acceptance_authority: pending founder GO.
+acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder GenesisOS sub-contract sequence — "assumption mutation" is one of GenesisOS's 4 declared responsibilities (per AGENTS.md).
 ---
 
