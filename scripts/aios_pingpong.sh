@@ -30,10 +30,12 @@ STATE_FILE="$STATE_DIR/aios_pingpong.state"
 
 CODEX_TIMEOUT="${CODEX_TIMEOUT:-1800}"
 CLAUDE_TIMEOUT="${CLAUDE_TIMEOUT:-1800}"
+LOCAL_TIMEOUT="${LOCAL_TIMEOUT:-1800}"
 CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 AIOS_MAX_ROUNDS="${AIOS_MAX_ROUNDS:-0}"
 AIOS_START_CHILD_WATCHERS="${AIOS_START_CHILD_WATCHERS:-0}"
 AIOS_CONTINUE_AFTER_READY="${AIOS_CONTINUE_AFTER_READY:-0}"
+AIOS_PINGPONG_AGENT_FALLBACKS="${AIOS_PINGPONG_AGENT_FALLBACKS:-1}"
 
 mkdir -p "$STATE_DIR" "$LOG_DIR" "$PROMPT_DIR" "$RUN_DIR"
 
@@ -51,9 +53,11 @@ Environment:
   CLAUDE_MODEL=claude-opus-4-6
   CODEX_TIMEOUT=1800
   CLAUDE_TIMEOUT=1800
+  LOCAL_TIMEOUT=1800
   AIOS_MAX_ROUNDS=0       # 0 means no round cap
   AIOS_START_CHILD_WATCHERS=0
   AIOS_CONTINUE_AFTER_READY=0
+  AIOS_PINGPONG_AGENT_FALLBACKS=1
 
 Stop by creating:
   .aios/STOP
@@ -141,6 +145,32 @@ other_agent() {
   esac
 }
 
+fallback_agent_for() {
+  case "$1" in
+    codex) echo "claude" ;;
+    claude) echo "local" ;;
+    *) echo "" ;;
+  esac
+}
+
+failure_category() {
+  local rc="$1"
+  local log_file="$2"
+  if [[ "$rc" -eq 0 ]]; then
+    echo "none"
+  elif [[ "$rc" -eq 124 ]]; then
+    echo "timeout"
+  elif [[ "$rc" -eq 127 ]]; then
+    echo "command_missing"
+  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied|접근[[:space:]]*거부|권한[[:space:]]*없|인증[[:space:]]*(필요|실패)' "$log_file" 2>/dev/null; then
+    echo "provider_access_denied"
+  elif grep -Eiq 'rate[ _-]?limit|quota|hit your limit|limit resets|resets [0-9]+[ap]m|too many requests|temporarily unavailable' "$log_file" 2>/dev/null; then
+    echo "provider_backpressure"
+  else
+    echo "agent_failed"
+  fi
+}
+
 build_prompt() {
   local agent="$1"
   local round="$2"
@@ -199,15 +229,10 @@ Do one bounded turn. Keep output concise. Do not start another infinite loop.
 EOF
 }
 
-run_agent() {
+invoke_agent() {
   local agent="$1"
-  local round="$2"
-  local prompt_file="$PROMPT_DIR/round-${round}-${agent}.md"
-  local log_file="$LOG_DIR/round-${round}-${agent}.log"
-  build_prompt "$agent" "$round" "$prompt_file"
-
-  append_event "agent_start" "$agent" "running" "$prompt_file"
-  echo "[$(now_iso)] running ${agent} round ${round}"
+  local prompt_file="$2"
+  local log_file="$3"
 
   local rc=0
   if [[ "$agent" == "codex" ]]; then
@@ -226,18 +251,68 @@ run_agent() {
       timeout "$CLAUDE_TIMEOUT" claude --dangerously-skip-permissions --model "$CLAUDE_MODEL" -p "$(cat "$prompt_file")" \
         >"$log_file" 2>&1 || rc=$?
     fi
+  elif [[ "$agent" == "local" ]]; then
+    if [[ -n "${AIOS_LOCAL_AGENT_COMMAND:-}" ]]; then
+      timeout "$LOCAL_TIMEOUT" bash -lc "$AIOS_LOCAL_AGENT_COMMAND" < "$prompt_file" \
+        >"$log_file" 2>&1 || rc=$?
+    elif [[ -d "$ROOT/hivemind" ]]; then
+      (
+        cd "$ROOT/hivemind"
+        python3 -m hivemind.hive --root "$ROOT/hivemind" provider-loop prepare --provider local --prompt "$(cat "$prompt_file")" --json
+        python3 -m hivemind.hive --root "$ROOT/hivemind" provider-loop tick --json
+      ) >"$log_file" 2>&1 || rc=$?
+    else
+      echo "local provider requires AIOS_LOCAL_AGENT_COMMAND or hivemind provider-loop" | tee "$log_file"
+      rc=127
+    fi
   else
     echo "unknown agent: $agent" | tee "$log_file"
     rc=2
   fi
+  return "$rc"
+}
+
+run_agent() {
+  local agent="$1"
+  local round="$2"
+  local prompt_file="$PROMPT_DIR/round-${round}-${agent}.md"
+  local log_file="$LOG_DIR/round-${round}-${agent}.log"
+  build_prompt "$agent" "$round" "$prompt_file"
+
+  append_event "agent_start" "$agent" "running" "$prompt_file"
+  echo "[$(now_iso)] running ${agent} round ${round}"
+
+  local rc=0 category fallback_agent fallback_log_file final_agent attempted
+  final_agent="$agent"
+  attempted=" ${agent} "
+  invoke_agent "$agent" "$prompt_file" "$log_file" || rc=$?
+  category="$(failure_category "$rc" "$log_file")"
+  append_event "agent_attempt" "$agent" "$category" "$log_file"
+
+  while [[ "$rc" -ne 0 && "$AIOS_PINGPONG_AGENT_FALLBACKS" == "1" && ( "$category" == "provider_access_denied" || "$category" == "provider_backpressure" ) ]]; do
+    fallback_agent="$(fallback_agent_for "$agent")"
+    if [[ -z "$fallback_agent" || "$attempted" == *" ${fallback_agent} "* ]]; then
+      break
+    fi
+    fallback_log_file="$LOG_DIR/round-${round}-${fallback_agent}.fallback.log"
+    append_event "agent_fallback_start" "$fallback_agent" "$category" "$log_file"
+    rc=0
+    invoke_agent "$fallback_agent" "$prompt_file" "$fallback_log_file" || rc=$?
+    category="$(failure_category "$rc" "$fallback_log_file")"
+    append_event "agent_attempt" "$fallback_agent" "$category" "$fallback_log_file"
+    log_file="$fallback_log_file"
+    final_agent="$fallback_agent"
+    agent="$fallback_agent"
+    attempted="${attempted}${fallback_agent} "
+  done
 
   if [[ "$rc" -eq 0 ]]; then
-    append_event "agent_done" "$agent" "ok" "$log_file"
+    append_event "agent_done" "$final_agent" "ok" "$log_file"
   elif [[ "$rc" -eq 124 ]]; then
-    append_event "agent_timeout" "$agent" "timeout" "$log_file"
+    append_event "agent_timeout" "$final_agent" "timeout" "$log_file"
     touch "$STOP_FILE"
   else
-    append_event "agent_failed" "$agent" "exit_${rc}" "$log_file"
+    append_event "agent_failed" "$final_agent" "exit_${rc}:${category}" "$log_file"
     touch "$STOP_FILE"
   fi
   return "$rc"
@@ -303,8 +378,9 @@ cmd_start() {
   if [[ "$AIOS_START_CHILD_WATCHERS" == "1" ]]; then
     "$ROOT/scripts/aios_child_watcher.sh" start --repo all
   fi
-  nohup "$0" run > "$LOG_DIR/aios_pingpong.supervisor.log" 2>&1 &
-  echo "$!" > "$PID_FILE"
+  export CODEX_TIMEOUT CLAUDE_TIMEOUT LOCAL_TIMEOUT CLAUDE_MODEL AIOS_MAX_ROUNDS AIOS_CONTINUE_AFTER_READY AIOS_PINGPONG_AGENT_FALLBACKS AIOS_LOCAL_AGENT_COMMAND
+  setsid -f bash -c 'echo $$ > "$1"; exec bash "$2" run' _ "$PID_FILE" "$ROOT/scripts/aios_pingpong.sh" \
+    > "$LOG_DIR/aios_pingpong.supervisor.log" 2>&1
   echo "started AIOS pingpong pid $(cat "$PID_FILE")"
 }
 

@@ -172,6 +172,13 @@ def dispatch_created(root: Path, dispatch_id: str) -> dict[str, Any] | None:
     return None
 
 
+def latest_dispatch_event(root: Path, dispatch_id: str) -> dict[str, Any] | None:
+    for event in reversed(load_events(root)):
+        if event.get("dispatch_id") == dispatch_id:
+            return event
+    return None
+
+
 def latest_packet(root: Path, repo: str) -> Path | None:
     packets = sorted((root / INBOX_DIR / repo).glob("*.json"), key=lambda path: path.stat().st_mtime)
     return packets[-1] if packets else None
@@ -241,6 +248,9 @@ def action_policy_input(contract: Contract, dispatch_id: str, repo: str, agent: 
         "legal_or_safety_impact": legal_or_safety_impact,
         "real_world_authority": real_world_authority,
         "sends_private_data": sends_private_data,
+        "repos": contract.repos,
+        "allowed_files": contract.allowed_files,
+        "forbidden_files": contract.forbidden_files,
         "dispatch_id": dispatch_id,
         "agent": agent,
     }
@@ -636,13 +646,213 @@ def append_transition(root: Path, dispatch_id: str, state: str, reason: str) -> 
     )
 
 
+def maybe_write_closeout_memory(root: Path, dispatch_id: str, reason: str, disabled: bool = False) -> dict[str, Any]:
+    if disabled:
+        result = {"ok": True, "skipped": True, "reason": "disabled_by_flag"}
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+        return result
+    created = dispatch_created(root, dispatch_id)
+    if not created:
+        result = {"ok": False, "skipped": True, "reason": "missing_created_event"}
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+        return result
+    try:
+        contract = read_contract(Path(str(created["contract_path"])))
+    except (OSError, SystemExit) as exc:
+        result = {"ok": False, "skipped": True, "reason": f"contract_unreadable:{exc}"}
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+        return result
+    if contract.status != "closed":
+        result = {
+            "ok": True,
+            "skipped": True,
+            "reason": f"contract_status_{contract.status}",
+            "contract_id": contract.contract_id,
+        }
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+        return result
+    emitter = root / "scripts" / "aios_contract_to_memory.py"
+    memoryos_dir = root / "memoryOS"
+    if not emitter.exists() or not memoryos_dir.exists():
+        result = {
+            "ok": True,
+            "skipped": True,
+            "reason": "memoryos_or_emitter_missing",
+            "contract_id": contract.contract_id,
+        }
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+        return result
+    emit = subprocess.run(
+        [
+            sys.executable,
+            emitter.as_posix(),
+            "emit",
+            "--root",
+            root.as_posix(),
+            "--contract",
+            contract.contract_id,
+            "--closed-by",
+            "aios_dispatch.release",
+            "--json",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if emit.returncode != 0:
+        result = {"ok": False, "skipped": True, "reason": "emit_failed", "stderr": emit.stderr[-500:]}
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, "contract_id": contract.contract_id, **result})
+        return result
+    ingest = subprocess.run(
+        [sys.executable, "-m", "memoryos.cli", "--root", memoryos_dir.as_posix(), "ingest-contract-closeout", "--json"],
+        input=emit.stdout,
+        cwd=memoryos_dir,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if ingest.returncode != 0:
+        result = {"ok": False, "skipped": True, "reason": "ingest_failed", "stderr": ingest.stderr[-500:]}
+        append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, "contract_id": contract.contract_id, **result})
+        return result
+    try:
+        payload = json.loads(ingest.stdout)
+    except json.JSONDecodeError:
+        payload = {}
+    result = {
+        "ok": True,
+        "skipped": False,
+        "contract_id": contract.contract_id,
+        "draft_id": payload.get("draft_id"),
+        "written": payload.get("written"),
+        "reason": reason,
+    }
+    append_event(root, {"event": "memory_writeback", "dispatch_id": dispatch_id, **result})
+    return result
+
+
+def recover_escalated_release(root: Path, dispatch_id: str, reason: str) -> dict[str, Any] | None:
+    last_event = latest_dispatch_event(root, dispatch_id)
+    if not last_event or last_event.get("event") != "escalated":
+        return None
+    created = dispatch_created(root, dispatch_id)
+    if not created:
+        append_event(
+            root,
+            {
+                "event": "release_recovery_failed",
+                "dispatch_id": dispatch_id,
+                "reason": "missing_created_event",
+                "status": "released",
+            },
+        )
+        return {"ok": False, "reason": "missing_created_event"}
+
+    repo = str(last_event.get("repo") or "")
+    agent = str(last_event.get("agent") or "codex")
+    if repo not in REPOS:
+        append_event(
+            root,
+            {
+                "event": "release_recovery_failed",
+                "dispatch_id": dispatch_id,
+                "reason": f"unsupported_repo:{repo}",
+                "status": "released",
+            },
+        )
+        return {"ok": False, "reason": f"unsupported_repo:{repo}"}
+
+    try:
+        contract = read_contract(Path(str(created["contract_path"])))
+        if contract.repos and repo not in contract.repos:
+            raise ValueError(f"{repo} is not in contract scope: {', '.join(contract.repos)}")
+        if contract.status not in {"accepted", "closed"}:
+            raise ValueError(f"contract {contract.contract_id} is {contract.status}")
+        packet_path = root / INBOX_DIR / repo / f"{dispatch_id}.{repo}.json"
+        if packet_path.exists():
+            return {"ok": True, "skipped": True, "reason": "packet_already_exists", "repo": repo}
+        policy = {
+            "schema_version": "aios.action_policy.v1",
+            "decision": "allow",
+            "allowed_to_execute": True,
+            "required_checkpoint": False,
+            "reason_codes": ["operator_override_after_escalation"],
+            "operator_override": True,
+            "override_reason": reason,
+            "previous_policy": last_event.get("policy"),
+        }
+        packet = build_packet(contract, dispatch_id, repo, agent, policy=policy)
+        packet["operator_override"] = True
+        packet["override_reason"] = reason
+        packet_path.write_text(json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    except (OSError, KeyError, ValueError) as exc:
+        append_event(
+            root,
+            {
+                "event": "release_recovery_failed",
+                "dispatch_id": dispatch_id,
+                "repo": repo,
+                "agent": agent,
+                "reason": str(exc),
+                "status": "released",
+            },
+        )
+        return {"ok": False, "reason": str(exc), "repo": repo}
+
+    append_event(
+        root,
+        {
+            "event": "dispatch.recovery",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": agent,
+            "packet": packet_path.relative_to(root).as_posix(),
+            "reason": reason,
+            "operator_override": True,
+            "status": "sent",
+        },
+    )
+    append_event(
+        root,
+        {
+            "event": "sent",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": agent,
+            "packet": packet_path.relative_to(root).as_posix(),
+            "status": "sent",
+        },
+    )
+    return {"ok": True, "repo": repo, "packet": packet_path.relative_to(root).as_posix()}
+
+
 def cmd_transition(args: argparse.Namespace) -> int:
     root = repo_root()
     dispatch_id = args.dispatch_id or latest_dispatch_id(root)
     if not dispatch_id:
         raise SystemExit("no dispatch found; pass --dispatch-id")
+    recovery = recover_escalated_release(root, dispatch_id, args.reason) if args.state == "released" else None
     append_transition(root, dispatch_id, args.state, args.reason)
-    print(json.dumps({"ok": True, "dispatch_id": dispatch_id, "status": args.state}, ensure_ascii=False))
+    memory_writeback = None
+    if args.state == "released":
+        memory_writeback = maybe_write_closeout_memory(
+            root,
+            dispatch_id,
+            args.reason,
+            disabled=getattr(args, "no_memory_write", False),
+        )
+    print(json.dumps(
+        {
+            "ok": True,
+            "dispatch_id": dispatch_id,
+            "status": args.state,
+            "recovery": recovery,
+            "memory_writeback": memory_writeback,
+        },
+        ensure_ascii=False,
+    ))
     return 0
 
 
@@ -874,6 +1084,8 @@ def build_parser() -> argparse.ArgumentParser:
         transition = sub.add_parser(command_name, help=f"mark a dispatch {state}")
         transition.add_argument("--dispatch-id")
         transition.add_argument("--reason", default=f"operator_{state}")
+        if command_name == "release":
+            transition.add_argument("--no-memory-write", action="store_true", help="skip closed-contract MemoryOS draft writeback")
         transition.set_defaults(func=cmd_transition, state=state)
 
     watch = sub.add_parser("watch", help="run one packet's verification gate and write a result packet")
