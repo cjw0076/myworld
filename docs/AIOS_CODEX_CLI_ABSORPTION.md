@@ -182,6 +182,52 @@ forbidden_actions:
   - promote_claim_beyond_existing_evidence
 ```
 
+### 5b. Forced-Continuation Hold Reentry Mode
+
+2026-05-15 KST quantum/Paper5 session exposed a second operator-hold boundary:
+an external goal loop can keep re-entering Codex with an open-ended objective
+(`진리`) even after Codex has already recorded an operator gate and pushed the
+handoff receipt.
+
+Observed behavior:
+
+- Codex completed the finite package/audit slice.
+- Codex explicitly refused to mark the open-ended objective complete.
+- Codex recorded and pushed an operator gate receipt in the product repo.
+- The external loop re-entered Codex anyway with "continue working toward the
+  active thread goal".
+- Safe action became evidence inspection, receipt hardening, and AIOS
+  observation capture rather than launching the next experiment.
+
+AIOS primitive:
+
+```yaml
+mode: forced_continuation_hold_reentry
+trigger:
+  - open_ended_objective
+  - prior_operator_hold_receipt_exists
+  - next_action_requires_operator_choice
+allowed_actions:
+  - inspect_current_state
+  - harden_completion_audit
+  - record_provider_observation
+  - confirm round_controller_or_monitor_state
+forbidden_actions:
+  - silently choose among mutually exclusive operator paths
+  - launch new experiments
+  - mark open-ended goal complete
+  - stack child-repo work on dirty owner repos
+exit:
+  - operator selects a path
+  - contract packet names an owner and allowed files
+  - monitor/controller remains armed with hold_for_monitor
+```
+
+This mode prevents "continue" pressure from becoming unauthorized execution.
+Repeated reentry after a durable hold should improve the hold receipt or
+control-plane observation exactly once, then report the same operator gate
+without widening scope.
+
 ### 6. Dirty-Workspace Custodian Mode
 
 Observed behavior:
