@@ -5709,3 +5709,15 @@ For repo-local implementation details, also update that repo's own worklog.
   evidence before worker execution.
 - status: ASC-0197 closed; future memory-required dispatches fail closed
   without rtrace evidence
+
+## 2026-05-18T05:30+09:00 — ASC-0194 verification: graph-control runs but governs nothing → ASC-0202
+
+- when: 2026-05-18T05:30+09:00 KST
+- repo: myworld → memoryOS
+- agent: claude@myworld
+- role: operator (verify)
+- goal: verify ASC-0194 (Graph Control Model) before closeout
+- decision: codex@memoryOS implemented ASC-0194 — the 7-step Graph Control Model is in memoryos/cli.py (build_graph_control_model), wired into the dream organ (aios_dream.py run_memory_graph_control as `memoryos memory graph-control run`), 4 unit tests pass on seeded fixtures. BUT operator verification against the named exit found it non-functional on the live store: every run reports `status: budget_exhausted`, `total_memories: 0`, all 7 steps `skipped` — `queryable_surface_count: 0`, `reclaimed_count: 0`. It governs nothing. ASC-0196 ("incremental budget") was closed but the symptom persists empirically — a false-closure signal. ASC-0194 is NOT closed: its named exit (queryable surface O(communities), bound ratio on a non-empty surface) is unmet. Drafted + dispatched ASC-0202 to codex@memoryOS to diagnose the score-step budget exhaustion and make graph-control do real bounded work on the 198K-node store.
+- evidence: `memoryos memory graph-control run --json` on the live store (198,790 nodes) → budget_exhausted, total_memories 0; child reported `status: passed` (agent exit 0) — the gap between "agent ran" and "named exit met" is exactly why operator verification exists ([[feedback_observation_vs_verification]]).
+- next: codex@memoryOS picks up ASC-0202; ASC-0194 closeout waits on real graph-control work; ASC-0196's empirical non-resolution noted.
+- status: ASC-0194 held open — graph-control implemented but governs nothing; ASC-0202 dispatched to fix
