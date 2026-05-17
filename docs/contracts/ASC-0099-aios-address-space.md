@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0099
 slug: aios-address-space
-status: accepted
+status: closed
 goal: Add an AIOS address layer above path-based files so large projects can route by content, meaning, provenance, capability, and execution state instead of only filesystem locations.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by Codex under founder-delegated operator instruction
-closed: pending
+closed: 2026-05-17 KST — operator reconciliation: the body implementation block (status: implemented) was never reflected in the frontmatter. Verified — scripts/aios_address.py + docs/AIOS_ADDRESS_SPACE.md present, tests/test_aios_address.py 7 passed, `aios_address.py resolve aios://contract/ASC-0091` returns found:true. Named exit met.
 origin: founder direction 2026-05-13 KST — "주소 기반 파일 시스템 이상으로의 효율을 가져야"
 ---
 

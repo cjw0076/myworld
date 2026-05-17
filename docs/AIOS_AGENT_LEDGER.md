@@ -5322,3 +5322,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: end-to-end — enqueue → claim_key (claimed) → 2nd claim_key (unavailable, double-claim rejected) → complete (done); watcher bash syntax ok; 50 watcher/dispatch/jobs tests pass.
 - next: pip/pipx packaging refactor; audit gaps #4 (GenesisOS generative layer) and #5 (hivemind verification auto-fire).
 - status: ASC-0185 closed — dispatch is now a leased jobs queue end to end
+
+## 2026-05-17T17:15+09:00 — stuck-contract reconciliation
+
+- when: 2026-05-17T17:15+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: the self-model surfaced 4 accepted-but-not-closed contracts (a "named exit" violation) — reconcile them
+- changed: docs/contracts/ASC-0099-aios-address-space.md → closed
+- decision: examined all 4. ASC-0099 (address space) — its body carried a `status: implemented` block that was never reflected in the frontmatter; verified the work landed (aios_address.py + doc present, 7 tests pass, resolve works) → closed. ASC-0116 (monitor attention-vs-broken) — NOT implemented (aios_monitor.py has only a bare `return "attention"`, no working/broken distinction); left accepted, not falsely closed. ASC-0117 (capacity policy retune) — partially present (aios_loop_policy.py has OPEN_STATUSES + accepted-timestamp + verifier_waiting machinery) but not confidently complete; left accepted. ASC-0180 (Hive hosting-trust debate) — correctly accepted: its verdict acceptance is reserved to the founder, so it waits by design, not stuck.
+- evidence: aios_self_model surfaced the 4; per-contract grep for the implementation signature in each scope file.
+- next: ASC-0116/0117 need a review pass — both predate ~5 days of round-controller evolution and may be partly superseded; not a silent close.
+- status: ASC-0099 closed; ASC-0116/0117 honestly left open with assessment; ASC-0180 founder-gated
