@@ -130,6 +130,13 @@ contract.
   `python -m unittest tests.test_aios_dream -v`,
   `python -m py_compile scripts/aios_dream.py scripts/aios_round_controller.py`,
   and `git diff --check`.
+- live controller receipt:
+  `.aios/state/round_controller.jsonl` entry `2026-05-18T00:54:22+09:00`
+  executed the new `dream` step and recorded
+  `memory_graph_control.status=degraded`,
+  `reason=graph_control_timeout`, `timeout_seconds=60`. The next rounds
+  skipped dream as `recent_dream`, proving the persistent loop continues
+  instead of hanging on MemoryOS graph-control.
 
 ### Remaining close condition
 

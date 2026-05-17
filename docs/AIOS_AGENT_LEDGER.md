@@ -5607,7 +5607,11 @@ For repo-local implementation details, also update that repo's own worklog.
   passed 5/5; `python -m py_compile scripts/aios_dream.py
   scripts/aios_round_controller.py` passed; short live smoke wrote a dream
   failure report with `memory_graph_control.status=degraded`,
-  `reason=graph_control_timeout`, and no lingering child process.
+  `reason=graph_control_timeout`, and no lingering child process. After
+  restarting the persistent round controller, `.aios/state/round_controller.jsonl`
+  entry `2026-05-18T00:54:22+09:00` ran the new `dream` step and recorded
+  `memory_graph_control.status=degraded`, `reason=graph_control_timeout`,
+  `timeout_seconds=60`; later rounds skipped dream as `recent_dream`.
 - next: dispatch MemoryOS performance/incremental-cursor work for
   `graph-control run --persist` so the dream stage can finish on the real
   memory ledger within budget; after that, ASC-0194 can move from bounded alpha
