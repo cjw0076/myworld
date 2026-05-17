@@ -6,6 +6,11 @@ operating system that can coordinate enterprise-scale and sovereign-AI
 workflows while preserving authority, evidence, consent, privacy, rollback, and
 human checkpoints.
 
+Canonical constitution: `docs/AIOS_DNA.md`. Governance readiness below is a
+phenotype of the DNA invariants, especially Invariant 1 (decide before acting),
+Invariant 5 (provenance chain), Invariant 6 (operator override), Invariant 7
+(private-gated data), and Invariant 8 (classify before committing).
+
 ## Post-L6 Readiness
 
 The base readiness model proves the cross-OS loop can repeat. Governance

@@ -1,16 +1,16 @@
 ---
 contract_id: ASC-0076
 slug: contract-closeout-reconciliation
-status: accepted
+status: closed
 goal: Reconcile accepted-but-unclosed contracts from ASC-0056 through ASC-0068 into an explicit execution queue before additional AIOS runtime work proceeds.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by founder directive to order the remaining contracts and proceed.
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: founder/operator approval in chat
 origin: founder asked why earlier contracts were not all complete before ASC-0067/0068 execution.
 ---
 
-# ASC-0069 Contract Closeout Reconciliation
+# ASC-0076 Contract Closeout Reconciliation
 
 ## Why Now
 
@@ -18,7 +18,7 @@ AIOS cannot claim autonomous execution if accepted contracts remain open
 without a visible order. A clean monitor is not enough: contract frontmatter,
 dispatch state, receipts, tests, and ledger entries must agree.
 
-ASC-0069 freezes new feature expansion long enough to classify the open
+ASC-0076 freezes new feature expansion long enough to classify the open
 contracts and identify the next executable closeout.
 
 ## Scope
@@ -33,7 +33,7 @@ allowed_files:
 - `docs/AIOS_CONTRACT_RECONCILIATION.md`
 - `scripts/aios_contract_reconcile.py`
 - `tests/test_aios_contract_reconcile.py`
-- `docs/contracts/ASC-0069-contract-closeout-reconciliation.md`
+- `docs/contracts/ASC-0076-contract-closeout-reconciliation.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
 
@@ -121,7 +121,7 @@ Pass criteria:
 
 ## Work Packets
 
-### WP-0069-A — codex@myworld implements reconciliation matrix
+### WP-0076-A — codex@myworld implements reconciliation matrix
 
 - target_agent: codex
 - target_repo: myworld
@@ -131,18 +131,18 @@ Pass criteria:
     Implement the contract reconciliation script, tests, and generated
     reconciliation report. Do not close feature contracts yet. The first
     output is an auditable order and classification matrix.
-- return_to: `.aios/outbox/myworld/asc-0069.myworld.result.json`
+- return_to: `.aios/outbox/myworld/asc-0076.myworld.result.json`
 - result: pending
 
-### WP-0069-B — claude@myworld reviews lifecycle semantics
+### WP-0076-B — claude@myworld reviews lifecycle semantics
 
 - target_agent: claude
 - target_repo: myworld
 - status: proposed
-- depends_on: WP-0069-A
+- depends_on: WP-0076-A
 - brief: |
     Review whether each classification is semantically correct: close, hold,
     retry, continue, or supersede. Pay special attention to ASC-0056 held
     status and ASC-0066 closeout evidence.
-- return_to: `.aios/outbox/myworld/asc-0069.claude-review.result.json`
+- return_to: `.aios/outbox/myworld/asc-0076.claude-review.result.json`
 - result: pending

@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0107
 slug: citizenship-implementation
-status: accepted
+status: closed
 goal: Implement agent citizenship — operator vs child-agent vs reviewer vs critic vs researcher vs outsider — using ASC-0090 (proposed) registry foundation plus role-based authority gates. Establishes WHO has WHAT authority in AIOS-as-Government.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder GO sequence)
+closed: 2026-05-13 21:31 KST by codex acting founder-delegated operator
 acceptance_authority: claude@myworld (operator) per founder direct delegation.
 origin: founder reframe AIOS=Government implies citizenship structure. Currently AIOS uses social-convention strings (claude@myworld, codex@hivemind) — no formal citizenship. ASC-0090 proposed identity registry; ASC-0107 builds the authority gates on top.
 ---
@@ -37,18 +38,22 @@ rule of law. Anyone can claim to be anyone.
 
 ## Scope
 
-repos: `myworld`
+repos:
+
+- `myworld`
 
 allowed_files:
 
 - `scripts/aios_authority.py`
-- `scripts/aios_dispatch.py` (authority check before operator-only ops)
-- `scripts/aios_action_policy.py` (citizenship check in policy)
+- `scripts/aios_dispatch.py`
+- `scripts/aios_action_policy.py`
 - `tests/test_aios_authority.py`
-- `tests/test_aios_dispatch.py` (extended)
-- `tests/test_aios_action_policy.py` (extended)
+- `tests/test_aios_dispatch.py`
+- `tests/test_aios_action_policy.py`
 - `docs/AIOS_CITIZENSHIP.md`
 - `docs/contracts/ASC-0107-citizenship-implementation.md`
+- `docs/contracts/README.md`
+- `docs/AGENT_WORKLOG.md`
 - `docs/AIOS_AGENT_LEDGER.md`
 
 forbidden_files:
@@ -133,7 +138,14 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- dependency: ASC-0090 closed and seeded agent registry.
+- dispatch: `.aios/inbox/myworld/asc-0107.myworld.json`
+- result: `.aios/outbox/myworld/asc-0107.myworld.result.json`
+- log: `.aios/logs/asc-0107.myworld.log`
+- authority_audit: `.aios/state/authority.jsonl`
+- verification: full `python -m unittest discover -s tests -p 'test_aios_*.py'`
+  passed 301/301.
+- memory_writeback: release wrote MemoryOS draft `mem_123026e80e205898`.
 
 ## Work Packets
 
@@ -141,7 +153,9 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
+- status: done
 - depends_on: ASC-0090 closed (registry exists)
 - brief: implement aios_authority.py with 6 classes + decision matrix.
   Wire into dispatch.release + action_policy. Soft-fail V1. Tests cover
   all matrix cells. Document in CITIZENSHIP.md.
+- result: `.aios/outbox/myworld/asc-0107.myworld.result.json`

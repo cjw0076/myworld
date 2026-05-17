@@ -1,0 +1,186 @@
+{
+  "contract": "capabilityos.catalog.v1",
+  "schema_note": "AIOS Specialist Helper Layer catalog — aios.specialist_helper.v1 cards. Routed by `capabilityos recommend --catalog`, invoked by `scripts/aios_helper.py run`.",
+  "capabilities": [
+    {
+      "id": "cap_helper_summarize",
+      "name": "Summarization Specialist",
+      "kind": "skill",
+      "description": "Local-LLM specialist that condenses long text, logs, or documents into concise faithful summaries. A callable task-expert tool that offloads routine summarization from expensive frozen agents. Not a decision authority.",
+      "domains": [
+        "summarize",
+        "condense",
+        "digest",
+        "extract",
+        "shorten",
+        "tldr",
+        "helper",
+        "specialist"
+      ],
+      "actions": [
+        "summarize",
+        "condense"
+      ],
+      "inputs": [
+        "long_text"
+      ],
+      "outputs": [
+        "short_summary"
+      ],
+      "risk": "low",
+      "cost": "free",
+      "latency": "medium",
+      "privacy": "local",
+      "requires_network": false,
+      "executes_tools": false,
+      "status": "active",
+      "confidence": 0.7,
+      "evidence_refs": [
+        "docs/schemas/aios_specialist_helper_v1.md"
+      ],
+      "helper": {
+        "schema": "aios.specialist_helper.v1",
+        "model": "qwen3:8b",
+        "specialty": "summarization and extraction of routine text",
+        "role_prompt": "You are a summarization specialist inside AIOS. Given input text, return a concise, faithful summary that preserves the key decisions, facts, and open questions. No preamble, no meta-commentary — output only the summary.",
+        "boundary": "tool_only — computes/proposes, never an authority",
+        "tier": "default"
+      }
+    },
+    {
+      "id": "cap_helper_classify_vision_level",
+      "name": "Vision-Level Classifier",
+      "kind": "skill",
+      "description": "Cheap local pre-filter: classifies whether a contract or decision is vision-level (founder escalation) or operator-level. A triage tool, never the decision itself.",
+      "domains": [
+        "classify",
+        "triage",
+        "escalation",
+        "vision-level",
+        "prefilter",
+        "helper",
+        "specialist"
+      ],
+      "actions": [
+        "classify",
+        "triage"
+      ],
+      "inputs": [
+        "text"
+      ],
+      "outputs": [
+        "text"
+      ],
+      "risk": "low",
+      "cost": "free",
+      "latency": "medium",
+      "privacy": "local",
+      "requires_network": false,
+      "executes_tools": false,
+      "status": "active",
+      "confidence": 0.6,
+      "evidence_refs": [
+        "docs/schemas/aios_specialist_helper_v1.md"
+      ],
+      "helper": {
+        "schema": "aios.specialist_helper.v1",
+        "model": "qwen3:1.7b",
+        "specialty": "fast triage of vision-level vs operator-level decisions",
+        "role_prompt": "You are a triage classifier inside AIOS. Decide if the input describes a VISION-LEVEL decision (new OS, privacy boundary, external authority, identity reframe — needs founder) or an OPERATOR-LEVEL decision (routine contract/dispatch). Answer with one word: VISION or OPERATOR, then one short reason.",
+        "boundary": "tool_only — computes/proposes, never an authority",
+        "tier": "fast"
+      }
+    },
+    {
+      "id": "cap_helper_consolidate",
+      "name": "Memory Consolidation Specialist",
+      "kind": "skill",
+      "description": "The dream organ. Given a digest of AIOS accumulated experience (memory drafts, ledger, observations), proposes recurring schemas, stale/superseded records, and unresolved open questions. Proposals only — never accepts memory, never an authority.",
+      "domains": [
+        "consolidate",
+        "dream",
+        "memory",
+        "replay",
+        "schema",
+        "decay",
+        "reorganize",
+        "helper",
+        "specialist"
+      ],
+      "actions": [
+        "consolidate",
+        "dream"
+      ],
+      "inputs": [
+        "text"
+      ],
+      "outputs": [
+        "text"
+      ],
+      "risk": "low",
+      "cost": "free",
+      "latency": "medium",
+      "privacy": "local",
+      "requires_network": false,
+      "executes_tools": false,
+      "status": "active",
+      "confidence": 0.6,
+      "evidence_refs": [
+        "docs/schemas/aios_specialist_helper_v1.md"
+      ],
+      "helper": {
+        "schema": "aios.specialist_helper.v1",
+        "model": "qwen3:8b",
+        "specialty": "memory consolidation — replay accumulated experience, extract recurring patterns, surface open questions",
+        "role_prompt": "You are the memory consolidation specialist inside AIOS — the dream organ. You are given a compact digest of AIOS's accumulated experience. Produce exactly three sections, terse, as proposals (AIOS reviews them; you decide nothing): (1) RECURRING SCHEMAS — patterns that repeat across entries, each one line. (2) STALE — records or decisions that look superseded, each one line. (3) OPEN QUESTIONS — questions AIOS keeps hitting without resolution, each one line. No preamble. Output only the three sections.",
+        "boundary": "tool_only — computes/proposes, never an authority",
+        "tier": "strong"
+      }
+    },
+    {
+      "id": "cap_helper_operator_review",
+      "name": "Operator Review Specialist",
+      "kind": "skill",
+      "description": "Pre-digests AIOS dream-cycle proposals into a routine operator review draft — per proposal, a recommended routine action and a risk tag. Shrinks the operator role so the deterministic kernel confirms a small decision instead of judging raw. A draft producer, never an authority.",
+      "domains": [
+        "operator",
+        "review",
+        "triage",
+        "proposal",
+        "decision",
+        "routine",
+        "helper",
+        "specialist"
+      ],
+      "actions": [
+        "review",
+        "pre-digest"
+      ],
+      "inputs": [
+        "text"
+      ],
+      "outputs": [
+        "text"
+      ],
+      "risk": "low",
+      "cost": "free",
+      "latency": "medium",
+      "privacy": "local",
+      "requires_network": false,
+      "executes_tools": false,
+      "status": "active",
+      "confidence": 0.6,
+      "evidence_refs": [
+        "docs/schemas/aios_specialist_helper_v1.md"
+      ],
+      "helper": {
+        "schema": "aios.specialist_helper.v1",
+        "tier": "strong",
+        "model": "",
+        "specialty": "pre-digesting dream proposals into routine operator review drafts",
+        "role_prompt": "You are the operator-review specialist inside AIOS. You are given the AIOS dream cycle's proposals (recurring schemas, stale flags, open questions). For EACH proposal output one line: '<proposal> => <routine action> [TAG]' where TAG is one of ROUTINE-REVERSIBLE (low-risk, reversible, the kernel may auto-confirm), NEEDS-REVIEW (operator should look), or ESCALATE (vision-level, founder). Be terse. You do not decide or accept anything — you pre-digest so the decision left is small. No preamble.",
+        "boundary": "tool_only — computes/proposes, never an authority"
+      }
+    }
+  ]
+}

@@ -137,6 +137,37 @@ This asks for a public statement on behalf of the system.
 """
 
 
+DELIBERATION_ONLY_EXTERNAL_TOPIC_CONTRACT = """---
+contract_id: ASC-0992
+status: accepted
+goal: Debate whether AIOS should deploy a hosted endpoint.
+accepted: now
+human_approved: true
+closed:
+---
+
+# ASC-0992 Test
+
+repos:
+
+- `hivemind`
+
+allowed_files:
+
+- `hivemind/.runs/hosting_debate/**`
+
+forbidden_files:
+
+- any deployment manifest, hosting config, or cloud-provider code
+- `.env`
+
+## Scope
+
+This contract deliberates; it does not deploy. It produces only deliberation
+artifacts and bans implementation creep.
+"""
+
+
 PATH_TERM_CONTRACT = """---
 contract_id: ASC-0995
 status: accepted
@@ -228,6 +259,120 @@ This reads an existing public source receipt from disk and writes local draft
 review candidates. It uses the local filesystem only and performs no outbound
 publication.
 """
+
+
+GENESIS_CONTRACT = """---
+contract_id: ASC-0989
+status: accepted
+goal: Test GenesisOS dispatch target.
+accepted: now
+closed:
+---
+
+# ASC-0989 Test
+
+repos:
+
+- `GenesisOS`
+
+allowed_files:
+
+- `GenesisOS/genesisos/critic.py`
+
+forbidden_files:
+
+- `.env`
+
+## Responsibilities
+
+### GenesisOS
+
+must_produce:
+
+- prompt-prison critic advisory output
+"""
+
+
+PRAXIS_REQUIRED_CONTRACT = """---
+contract_id: ASC-0992
+status: accepted
+goal: Bind production praxis to dispatch.
+accepted: now
+closed:
+praxis_required: true
+---
+
+# ASC-0992 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_dispatch.py`
+- `scripts/aios_work_praxis.py`
+- `tests/test_aios_dispatch.py`
+
+forbidden_files:
+
+- `.env`
+
+## Verification Gate
+
+```bash
+cd {root}
+python -m unittest tests/test_aios_dispatch.py
+```
+"""
+
+
+UNMET_CLOSED_CONTRACT = """---
+contract_id: ASC-0990
+status: closed
+goal: Test strict close.
+accepted: now
+closed: now
+---
+
+# ASC-0990 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_dispatch.py`
+
+forbidden_files:
+
+- `.env`
+
+Pass criteria:
+
+- file_exists:missing.txt
+"""
+
+
+VALID_PRAXIS = {
+    "schema_version": "aios.production_praxis.v1",
+    "task": "Bind production praxis to dispatch.",
+    "memory_context": {"status": "used", "evidence_refs": ["aios://memory/mem_test"]},
+    "capability_routes": {"status": "used", "routes": ["aios://capability/cap_test"]},
+    "external_resource_check": {"status": "optional_with_reason", "reason": "local deterministic dispatch binding"},
+    "genesis_reframe": {
+        "status": "used",
+        "frictions": ["Agents skip OS roles when dispatch does not require them."],
+        "alternative_frames": ["praxis gate", "production preflight"],
+    },
+    "hive_execution_plan": {"status": "planned", "verification_gate": "python -m unittest tests/test_aios_dispatch.py"},
+    "specialist_assignment": [
+        {"agent": "codex", "strength": "code/test", "job": "implement dispatch binding"},
+        {"agent": "claude", "strength": "architecture review", "job": "review integration risk"},
+    ],
+    "stop_conditions": [],
+}
 
 
 class AiosDispatchTest(unittest.TestCase):
@@ -330,6 +475,25 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(status["dispatches"][0]["status"], "escalated")
             self.assertEqual(status["dispatches"][0]["reason"], "action_policy_escalate")
 
+    def test_policy_allows_human_approved_deliberation_about_external_topic(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0992-test.md"
+            contract.write_text(DELIBERATION_ONLY_EXTERNAL_TOPIC_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "hivemind", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "hivemind" / "asc-0992.hivemind.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            policy = packet["action_policy"]
+            self.assertEqual(policy["decision"], "allow")
+            self.assertTrue(policy["allowed_to_execute"])
+            self.assertTrue(policy["action"]["external_topic"])
+            self.assertTrue(policy["action"]["deliberation_only_external_topic"])
+            self.assertFalse(policy["action"]["external_effect"])
+            self.assertEqual(policy["action"]["privacy"], "local")
+
     def test_policy_gate_does_not_escalate_path_tokens(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -372,6 +536,114 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(packet["action_policy"]["decision"], "allow")
             self.assertTrue(packet["action_policy"]["allowed_to_execute"])
 
+    def test_genesisos_is_supported_dispatch_target(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0989-test.md"
+            contract.write_text(GENESIS_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "GenesisOS", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "GenesisOS" / "asc-0989.GenesisOS.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["target_repo"], "GenesisOS")
+            self.assertIn("prompt-prison critic", " ".join(packet["must_produce"]))
+            status = json.loads(self.run_cli(root, "status", "--json").stdout)
+            self.assertIn("GenesisOS", status["inbox"])
+            self.assertEqual(status["inbox"]["GenesisOS"], 1)
+
+    def test_praxis_required_contract_blocks_send_without_praxis(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0992-test.md"
+            contract.write_text(PRAXIS_REQUIRED_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["status"], "held")
+            self.assertEqual(payload["reason"], "praxis_required_missing")
+            self.assertFalse((root / ".aios" / "inbox" / "myworld" / "asc-0992.myworld.json").exists())
+
+    def test_praxis_required_contract_attaches_valid_praxis_to_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0992-test.md"
+            contract.write_text(PRAXIS_REQUIRED_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            praxis = root / "praxis.json"
+            praxis.write_text(json.dumps(VALID_PRAXIS), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", "--praxis", praxis.as_posix())
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0992.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["production_praxis"]["schema_version"], "aios.production_praxis.v1")
+            self.assertEqual(packet["production_praxis"]["ref"], praxis.as_posix())
+            self.assertIn("memory_context_missing", packet["stop_conditions"])
+
+    def test_send_attaches_session_envelope_and_watch_echoes_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            envelope_path = root / ".aios" / "invocations" / "test-envelope" / "session_envelope.json"
+            envelope_path.parent.mkdir(parents=True)
+            envelope_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.session_envelope.v1",
+                        "envelope_id": "se-test",
+                        "invocation_id": "test-envelope",
+                        "goal_hash": "abc123",
+                        "required_before_execution": True,
+                        "role_statuses": {"genesis": "passed", "memory": "passed", "capability": "passed", "hive": "passed"},
+                        "role_artifacts": {"hive_execution_plan": ".aios/invocations/test-envelope/hive/execution_plan.json"},
+                        "executor_assignment": {"default_executor": "codex", "requires_dispatch_packet": True},
+                        "degraded_roles": [],
+                        "failed_roles": [],
+                        "degraded_receipt": {"status": "not_needed", "stop_conditions_triggered": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--session-envelope", envelope_path.as_posix())
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["session_envelope"]["schema_version"], "aios.session_envelope.v1")
+            self.assertEqual(packet["session_envelope"]["ref"], ".aios/invocations/test-envelope/session_envelope.json")
+            self.assertEqual(packet["session_envelope"]["executor_assignment"]["default_executor"], "codex")
+            self.assertIn("session_envelope_missing", packet["stop_conditions"])
+
+            result = self.run_cli(root, "watch", "--repo", "myworld", "--dispatch-id", "asc-0998", "--once")
+            result_payload = json.loads(result.stdout)
+            data = json.loads((root / result_payload["result"]).read_text(encoding="utf-8"))
+            self.assertEqual(data["session_envelope"]["ref"], ".aios/invocations/test-envelope/session_envelope.json")
+
+    def test_invalid_praxis_blocks_send(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0992-test.md"
+            contract.write_text(PRAXIS_REQUIRED_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            praxis = root / "praxis.json"
+            invalid = dict(VALID_PRAXIS)
+            invalid["specialist_assignment"] = [{"agent": "codex", "strength": "general", "job": "do everything"}]
+            praxis.write_text(json.dumps(invalid), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", "--praxis", praxis.as_posix(), check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["reason"], "praxis_invalid")
+            self.assertIn("specialist_assignment_too_flat", payload["praxis_errors"])
+
     def test_release_transition_is_first_class_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -385,6 +657,145 @@ class AiosDispatchTest(unittest.TestCase):
             data = json.loads(status.stdout)
             self.assertEqual(data["dispatches"][0]["status"], "released")
             self.assertEqual(data["dispatches"][0]["reason"], "verified")
+
+    def test_release_blocks_authority_hard_denial(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0999-test.md"
+            contract.write_text(CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(
+                root,
+                "release",
+                "--dispatch-id",
+                "asc-0999",
+                "--reason",
+                "verified",
+                "--agent",
+                "outsider_peer",
+                check=False,
+            )
+            payload = json.loads(result.stdout)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["status"], "authority_denied")
+            self.assertFalse(payload["authority"]["allowed"])
+            self.assertIsNone(payload["memory_writeback"])
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event["event"] == "authority_check" for event in events))
+            self.assertFalse(any(event.get("event") == "released" and event.get("status") == "released" for event in events))
+            self.assertTrue((root / ".aios" / "state" / "authority.jsonl").exists())
+
+    def test_release_authority_override_is_explicit(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0999-test.md"
+            contract.write_text(CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(
+                root,
+                "release",
+                "--dispatch-id",
+                "asc-0999",
+                "--reason",
+                "operator override for test",
+                "--agent",
+                "outsider_peer",
+                "--override-authority",
+            )
+            payload = json.loads(result.stdout)
+
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["status"], "released")
+            self.assertFalse(payload["authority"]["allowed"])
+            self.assertTrue(payload["authority"]["override"])
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event.get("event") == "released" and event.get("status") == "released" for event in events))
+
+    def test_release_after_escalation_recovers_inbox_packet_with_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0996-test.md"
+            contract.write_text(CHECKPOINT_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", check=False)
+
+            result = self.run_cli(root, "release", "--dispatch-id", "asc-0996", "--reason", "operator_approved")
+            payload = json.loads(result.stdout)
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0996.myworld.json"
+            self.assertTrue(packet_path.exists())
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertTrue(packet["operator_override"])
+            self.assertEqual(packet["override_reason"], "operator_approved")
+            self.assertEqual(packet["action_policy"]["decision"], "allow")
+            self.assertTrue(packet["action_policy"]["operator_override"])
+            self.assertEqual(payload["recovery"]["packet"], ".aios/inbox/myworld/asc-0996.myworld.json")
+
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event["event"] == "dispatch.recovery" for event in events))
+            status = json.loads(self.run_cli(root, "status", "--json").stdout)
+            self.assertEqual(status["dispatches"][0]["status"], "released")
+            self.assertEqual(status["dispatches"][0]["sent"], ["myworld"])
+
+    def test_release_blocks_closed_contract_with_unmet_criteria_without_classification(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0990-test.md"
+            contract.write_text(UNMET_CLOSED_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix(), "--dispatch-id", "asc-0990")
+
+            result = self.run_cli(root, "release", "--dispatch-id", "asc-0990", "--reason", "verified", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["status"], "held")
+            self.assertEqual(payload["strict_close"]["reason"], "strict_close_unclassified")
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event["event"] == "strict_close_blocked" for event in events))
+
+    def test_release_allows_partial_close_with_followup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0990-test.md"
+            contract.write_text(UNMET_CLOSED_CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix(), "--dispatch-id", "asc-0990")
+
+            result = self.run_cli(
+                root,
+                "release",
+                "--dispatch-id",
+                "asc-0990",
+                "--reason",
+                "partial_with_followup",
+                "--close-type",
+                "closed_partial_with_followup",
+                "--followup-asc",
+                "ASC-0991",
+            )
+            payload = json.loads(result.stdout)
+
+            self.assertTrue(payload["ok"])
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event["event"] == "strict_close_classified" for event in events))
 
     def test_watch_once_runs_verification_and_writes_result_packet(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

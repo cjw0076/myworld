@@ -1,0 +1,51 @@
+{
+  "schema_version": "aios.production_praxis.v1",
+  "task": "Build the AIOS visual control app with current provider routes.",
+  "memory_context": {
+    "status": "used",
+    "evidence_refs": [
+      "aios://memory/mem_d0b64430dd5da2a8"
+    ]
+  },
+  "capability_routes": {
+    "status": "used",
+    "routes": [
+      "aios://capability/cap_web_research_route",
+      "aios://capability/provider-route/codex"
+    ]
+  },
+  "external_resource_check": {
+    "status": "used",
+    "evidence_refs": [
+      "plugin:hugging_face.paper_search:ScreenCoder",
+      "plugin:github.repo_inspection"
+    ]
+  },
+  "genesis_reframe": {
+    "status": "used",
+    "frictions": [
+      "The dashboard shows state but not intent, discomfort, and next move."
+    ],
+    "alternative_frames": [
+      "Control tower",
+      "Swarm cockpit"
+    ]
+  },
+  "hive_execution_plan": {
+    "status": "planned",
+    "verification_gate": "python -m unittest tests/test_aios_work_view.py"
+  },
+  "specialist_assignment": [
+    {
+      "agent": "codex",
+      "strength": "multimodal/code/test",
+      "job": "Implement and visually verify."
+    },
+    {
+      "agent": "claude",
+      "strength": "large codebase topology",
+      "job": "Review architecture and integration."
+    }
+  ],
+  "stop_conditions": []
+}

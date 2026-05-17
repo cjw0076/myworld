@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0060
 slug: action-policy-scope-aware
-status: accepted
+status: closed
 goal: Stop the action policy gate (ASC-0034) from false-escalating myworld-only operator-script changes as `private_remote_data` so the dispatch flow does not require manual operator override for legitimate myworld-scope work.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: claude@myworld (operator) per founder directive.
 origin: ASC-0037 dispatch escalation incident (2026-05-12 15:47) where myworld-only locale-fix contract was escalated as `human_checkpoint_required:private_remote_data` despite touching no remote data — required manual claude release.
 ---
@@ -98,7 +98,13 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- 2026-05-13 KST codex@myworld implemented the scope-aware local operator
+  policy reason and private/raw path regression tests.
+- Verification passed:
+  - `python -m py_compile scripts/aios_action_policy.py scripts/aios_dispatch.py`
+  - `python -m unittest tests/test_aios_action_policy.py tests/test_aios_dispatch.py -v`
+  - `python scripts/aios_action_policy.py evaluate --example low_risk_local --json`
+  - `python scripts/aios_action_policy.py evaluate --example public_authority --json`
 
 ## Work Packets
 
@@ -106,9 +112,9 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - brief: |
     Implement the scope-aware classifier. Cases must include both the
     false-positive (myworld-only allow) and the true-positive (founder
     paths still escalate). Document the change.
-- result: pending
+- result: scope-aware policy reason and private/raw path regressions added.

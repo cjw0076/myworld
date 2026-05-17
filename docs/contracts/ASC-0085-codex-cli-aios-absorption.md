@@ -9,7 +9,7 @@ closed: 2026-05-13 KST by codex@myworld
 origin: founder asked whether blocked Claude caused inbox buildup, then directed Codex to continuously self-observe and leave reverse-engineering artifacts for AIOS and global Codex instructions.
 ---
 
-# ASC-0084 Codex CLI AIOS Absorption
+# ASC-0085 Codex CLI AIOS Absorption
 
 ## Scope
 
@@ -22,7 +22,7 @@ allowed_files:
 
 - `docs/AIOS_CODEX_CLI_ABSORPTION.md`
 - `docs/discoveries/2026-05-13-operator-cli-role-distillation-dialogue.md`
-- `docs/contracts/ASC-0084-codex-cli-aios-absorption.md`
+- `docs/contracts/ASC-0085-codex-cli-aios-absorption.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
 - `/home/user/.codex/AGENTS.md`
@@ -63,7 +63,7 @@ forbidden_files:
 
 ```bash
 test -f /home/user/.codex/AGENTS.md
-rg -n "AIOS|Codex CLI|접근 거부|role_capsule" docs/AIOS_CODEX_CLI_ABSORPTION.md docs/discoveries/2026-05-13-operator-cli-role-distillation-dialogue.md /home/user/.codex/AGENTS.md
+rg -n "AIOS|Codex CLI|접근 거부|pin_required_noninteractive|role_capsule" docs/AIOS_CODEX_CLI_ABSORPTION.md docs/discoveries/2026-05-13-operator-cli-role-distillation-dialogue.md /home/user/.codex/AGENTS.md
 python scripts/aios_monitor.py assess --json
 ```
 
@@ -71,8 +71,8 @@ Pass criteria:
 
 - Global Codex guidance exists.
 - Codex TURN 2 is no longer pending.
-- Absorption doc records the non-interactive Codex auth-denied behavior.
-- Monitor has no new ASC-0084-specific alert.
+- Absorption doc records the non-interactive Codex PIN/auth-denied behavior.
+- Monitor has no new ASC-0085-specific alert.
 
 ## Stop Conditions
 

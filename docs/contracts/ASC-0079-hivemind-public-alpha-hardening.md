@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0079
 slug: hivemind-public-alpha-hardening
-status: accepted
+status: closed
 goal: Convert the external GitHub evaluation of hivemind into a bounded public-alpha hardening plan: preserve the validated architecture strengths, correct public-facing gaps, and route implementation work through the Hive-owned repo.
 created: 2026-05-13 KST
-accepted:
-closed:
+accepted: 2026-05-13 KST
+closed: 2026-05-13 KST
 acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. External evaluation route to public alpha approved.
 origin: External evaluation of https://github.com/cjw0076/hivemind on 2026-05-13 KST plus Codex verification against GitHub API, README, pyproject, and local repo state.
 ---
@@ -43,12 +43,14 @@ allowed_files:
 
 - `docs/contracts/ASC-0079-hivemind-public-alpha-hardening.md`
 - `docs/contracts/README.md`
+- `docs/AGENT_WORKLOG.md`
 - `docs/AIOS_AGENT_LEDGER.md`
 - `hivemind/README.md`
 - `hivemind/pyproject.toml`
 - `hivemind/hivemind/hive.py`
 - `hivemind/hivemind/harness.py`
 - `hivemind/hivemind/plan_dag.py`
+- `hivemind/docs/AGENT_WORKLOG.md`
 - `hivemind/tests/test_cli_entrypoint.py`
 - `hivemind/tests/test_quickstart.py`
 - `hivemind/tests/test_plan_dag.py`
@@ -110,15 +112,17 @@ forbidden_files:
 Hive-owned verification should run from `hivemind/`:
 
 ```bash
+cd hivemind
 python -m pytest tests/test_cli_entrypoint.py tests/test_quickstart.py tests/test_plan_dag.py tests/test_production_hardening.py -v
 python -m pytest -q
-python -m hivemind.hive demo quickstart
+python -m hivemind.hive demo quickstart --json
 python -m hivemind.hive inspect --json
 ```
 
 MyWorld closeout gate:
 
 ```bash
+cd /home/user/workspaces/jaewon/myworld
 python scripts/aios_dispatch.py collect --repo hivemind
 python scripts/aios_monitor.py assess --json
 ```
@@ -148,7 +152,7 @@ Pass criteria:
 
 - target_agent: codex
 - target_repo: hivemind
-- status: proposed
+- status: done
 - brief: |
     Read the external evaluation summary in this contract, then inspect the
     current Hive repo. Implement only the smallest safe public-alpha hardening
@@ -156,4 +160,21 @@ Pass criteria:
     docs-code drift or module-size guard. Do not attempt a sweeping split of
     `harness.py` in one turn. Return exact tests and a staged refactor plan.
 - return_to: `.aios/outbox/hivemind/asc-0079.hivemind.result.json`
-- result: pending
+- result: passed; Hive commit `9daa35f`
+
+## Receipts
+
+- child_commit: `hivemind/9daa35f`
+- result_packet: `.aios/outbox/hivemind/asc-0079.hivemind.result.json`
+- result_status: `passed`
+- provider_note: initial child watcher attempt held because Codex provider
+  access was denied, Claude was under provider backpressure, and local fallback
+  cannot be final acceptor without verifier. Founder-delegated Codex then
+  completed the bounded Hive-owned patch and `aios_dispatch.watch` verified it.
+- verification:
+  - `cd hivemind && python -m pytest tests/test_cli_entrypoint.py tests/test_quickstart.py tests/test_plan_dag.py tests/test_production_hardening.py -v`
+    passed 145/145.
+  - `cd hivemind && python -m pytest -q` passed 341/341.
+  - `cd hivemind && python -m hivemind.hive demo quickstart --json` exited 0.
+  - `cd hivemind && python -m hivemind.hive inspect --json` exited 0 with
+    verdict `clean`.

@@ -66,6 +66,43 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def load_reconciliations(root: Path) -> list[dict[str, Any]]:
+    path = root / "docs" / "AIOS_MONITOR_RECONCILIATIONS.json"
+    if not path.exists():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    entries = payload.get("reconciliations", [])
+    if not isinstance(entries, list):
+        return []
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
+def reconciliation_matches(alert: dict[str, Any], entry: dict[str, Any]) -> bool:
+    match = entry.get("match")
+    if not isinstance(match, dict):
+        return False
+    for key, expected in match.items():
+        if alert.get(key) != expected:
+            return False
+    return True
+
+
+def running_dispatch_ids(root: Path) -> set[str]:
+    latest: dict[str, dict[str, Any]] = {}
+    for event in load_jsonl(root / ".aios/state/dispatches.jsonl"):
+        dispatch_id = event.get("dispatch_id")
+        if dispatch_id:
+            latest[str(dispatch_id)] = event
+    return {
+        dispatch_id
+        for dispatch_id, event in latest.items()
+        if event.get("event") == "running" and event.get("status") == "running"
+    }
+
+
 def result_packets(root: Path) -> list[dict[str, Any]]:
     packets: list[dict[str, Any]] = []
     for path in sorted((root / ".aios/outbox").glob("*/*.json")):
@@ -89,6 +126,8 @@ def contract_statuses(root: Path) -> dict[str, str]:
 
 def pending_packets(root: Path) -> list[str]:
     pending: list[str] = []
+    reconciliations = load_reconciliations(root)
+    running = running_dispatch_ids(root)
     for packet in sorted((root / ".aios/inbox").glob("*/*.json")):
         repo = packet.parent.name
         try:
@@ -96,8 +135,18 @@ def pending_packets(root: Path) -> list[str]:
         except json.JSONDecodeError:
             pending.append(packet.relative_to(root).as_posix())
             continue
-        return_to = payload.get("return_to") or f".aios/outbox/{repo}/{payload.get('dispatch_id')}.{repo}.result.json"
+        dispatch_id = str(payload.get("dispatch_id") or packet.name.split(".", 1)[0])
+        return_to = payload.get("return_to") or f".aios/outbox/{repo}/{dispatch_id}.{repo}.result.json"
         if not (root / str(return_to)).exists():
+            if dispatch_id in running:
+                continue
+            alert = {
+                "code": "dispatch_results_pending",
+                "dispatch_id": dispatch_id,
+                "repos": [repo],
+            }
+            if any(reconciliation_matches(alert, entry) for entry in reconciliations):
+                continue
             pending.append(packet.relative_to(root).as_posix())
     return pending
 

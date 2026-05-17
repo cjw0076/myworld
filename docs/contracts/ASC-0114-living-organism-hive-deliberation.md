@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0114
 slug: living-organism-hive-deliberation
-status: accepted
+status: closed
 goal: Run a long-round Hive deliberation on the deepest layer of founder's vision — AIOS as living organism that absorbs founder behavior so completely it can substitute for founder's role in routine decisions, with biological dynamics (consolidation, healing, growth, deprecation). Single-head decisions on this scale risk irreversible alignment drift.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier
+closed: 2026-05-13 21:49 KST by codex acting founder-delegated operator
 acceptance_authority: claude@myworld (verifier role) per founder GO "founder의 역할까지도 대체할 수 있도록. 살아있는 유기체처럼."
 origin: founder vision pushed to its endpoint — AIOS eventually substitutes for founder. Layer 2+3 of organism arc. Vision-level + reversal-hard. ASC-0084 / ASC-0089 patterns proved Hive deliberation catches 1-head bias on foundational decisions; ASC-0114 routes the same way.
 ---
@@ -125,10 +126,11 @@ forbidden_files:
 ## Verification Gate
 
 ```bash
-ls hivemind/.runs/living_organism_debate/round_1/
-ls hivemind/.runs/living_organism_debate/round_5/
-test -f hivemind/.runs/living_organism_debate/final_state.md
-test -f docs/discoveries/2026-05-13-hive-living-organism-debate-result.md
+python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/living_organism_debate/round_1').is_dir() else 1)"
+python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/living_organism_debate/round_5').is_dir() else 1)"
+python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/living_organism_debate/final_state.md').is_file() else 1)"
+python -c "exit(0 if __import__('pathlib').Path('docs/discoveries/2026-05-13-hive-living-organism-debate-result.md').is_file() else 1)"
+python -c "exit(0 if all(len(x.read_text(encoding='utf-8').split()).__ge__(600) for x in __import__('pathlib').Path('hivemind/.runs/living_organism_debate').glob('round_*/*.md') if x.name != 'synthesis.md') else 1)"
 python -m unittest discover -s tests -p 'test_aios_*.py'
 python scripts/aios_monitor.py assess --json
 ```
@@ -136,6 +138,7 @@ python scripts/aios_monitor.py assess --json
 Pass criteria:
 
 - ≥5 rounds, 3 voices each
+- each proposer/critic/extender voice ≥600 words
 - All 8 probes addressed
 - Verdict named in final_state.md
 - Discovery summary written
@@ -152,7 +155,18 @@ Pass criteria:
 
 ## Receipts
 
-Pending Hive deliberation.
+- hive_run: `hivemind/.runs/living_organism_debate/final_state.md`
+- hive_rounds: `hivemind/.runs/living_organism_debate/round_1/` through
+  `round_5/`
+- discovery:
+  `docs/discoveries/2026-05-13-hive-living-organism-debate-result.md`
+- dispatch: `.aios/inbox/myworld/asc-0114-closeout2.myworld.json`
+- result: `.aios/outbox/myworld/asc-0114-closeout2.myworld.result.json`
+- log: `.aios/logs/asc-0114-closeout2.myworld.log`
+- hive_commit: `af2e1fd Record living organism deliberation`
+- verdict: `proceed_role_substitution_only`
+- downstream_recommendation: `ASC-0124-role-substitution-lease-schema`
+- memory_writeback: release wrote MemoryOS draft `mem_18cfbb2cd700e98c`.
 
 ## Work Packets
 
@@ -160,16 +174,20 @@ Pending Hive deliberation.
 
 - target_agent: codex
 - target_repo: hivemind
+- status: done
 - depends_on: ASC-0084 closed ✓, ASC-0089 closed ✓ (format proven)
 - brief: 5+ round adversarial debate per spec. Each agent voice ≥
   600 words. Rotate substrates if available. Verdict + dissent in
   final_state.md.
+- result: `hivemind/.runs/living_organism_debate/final_state.md`
 
 ### WP-0114-B — claude@myworld writes summary + acts on verdict
 
 - target_agent: claude
 - target_repo: myworld
+- status: done
 - depends_on: WP-0114-A done
 - brief: read final_state.md, write discovery summary (≤600 words),
   surface verdict to founder. Downstream L2/L3 contracts follow only
   if verdict permits + founder GO.
+- result: `docs/discoveries/2026-05-13-hive-living-organism-debate-result.md`

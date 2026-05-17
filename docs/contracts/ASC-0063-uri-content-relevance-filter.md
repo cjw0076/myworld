@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0063
 slug: uri-content-relevance-filter
-status: accepted
+status: closed
 goal: Filter Uri-originated markdown so AIOS absorbs only cross-OS-relevant insights (pivots, friction surfaced to myworld, AIOS-protocol observations) and skips product-internal material (route configs, page specs, sprint deliverables) without losing audit trail.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder role delegated)
-closed:
+closed: 2026-05-13 KST by codex acting operator
 acceptance_authority: claude@myworld (operator) per founder directive "uri쪽에서 계속 md 파일 주입하고있는데 필요한 것만 잘 걸러내야 해 이것 또한 aios의 역할".
 origin: founder operational observation 2026-05-13 KST. uri/ submodule is actively generating product docs as the team builds Uri's personal-agent loop. doc_scout currently has no Uri-aware filter and treats every md as a candidate signal — polluting AIOS task radar with product-internal noise.
 ---
@@ -143,7 +143,7 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- `.aios/outbox/myworld/asc-0063.myworld.result.json`
 
 ## Work Packets
 
@@ -158,4 +158,11 @@ Pending.
     a signal, add tests, write the policy doc. Dogfood: run scout on
     real workspace and report counts. Operator review queue starts
     empty until first real run surfaces a borderline file.
-- result: pending
+- closed: 2026-05-13 KST
+- result: closed
+- evidence:
+  - `python -m py_compile scripts/aios_uri_filter.py scripts/aios_doc_scout.py`
+  - `python -m unittest tests/test_aios_uri_filter.py -v`
+  - `python scripts/aios_doc_scout.py --root /home/user/workspaces/jaewon --limit 80 --json > /tmp/radar.json`
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'`
+  - `python scripts/aios_monitor.py assess --json`

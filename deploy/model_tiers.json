@@ -1,0 +1,25 @@
+{
+  "schema": "aios.model_tiers.v1",
+  "note": "Model-agnostic tier map for the Specialist Helper Layer. A helper declares a tier; the runner resolves it against models actually installed in the local runtime (Ollama), walking the preference list and falling back gracefully. Attach any model — add it to a tier's prefer list (or it is picked up if already named) and helpers adapt. No single model is load-bearing (2026 consensus: there is no single best local LLM).",
+  "tiers": {
+    "fast": {
+      "use": "cheap, always-hot — classification, triage, routing pre-filters",
+      "prefer": ["qwen3:1.7b", "qwen3:8b", "deepseek-coder:6.7b"]
+    },
+    "default": {
+      "use": "routine helper work — summarization, extraction, formatting",
+      "prefer": ["qwen3:8b", "qwen3:14b", "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
+    },
+    "strong": {
+      "use": "consolidation, hard synthesis, the dream organ — general reasoning",
+      "prefer": ["qwen3:30b-a3b", "qwen3:32b", "qwen3:14b", "qwen3:8b", "deepseek-coder-v2:16b"]
+    },
+    "code": {
+      "use": "code-specific helper work — a coding-domain tier",
+      "prefer": ["deepseek-coder-v2:16b", "qwen3:30b-a3b", "deepseek-coder:6.7b", "qwen3:8b"]
+    }
+  },
+  "recommended_strong_base": "qwen3:30b-a3b",
+  "current_install_gap": "As of 2026-05-16 the only installed models are qwen3:8b, qwen3:1.7b (general, small) and deepseek-coder-v2:16b, deepseek-coder:6.7b (coding specialists). There is NO large GENERAL model installed — the strong tier currently falls back to qwen3:8b, because a coding-specialist model is the wrong base for general consolidation. Pull a large general model to genuinely upgrade the strong tier.",
+  "recommendation_rationale": "Qwen3 30B-A3B is a Mixture-of-Experts model: 30B total but only ~3B active per token, so it delivers near-frontier agentic quality (tool use, instruction following, thinking/non-thinking switch) at the memory/latency cost of a small model. It is the best quality-per-resource base for the strong tier as of 2026-05. To attach it: `ollama pull qwen3:30b-a3b` — the layer picks it up automatically; no code or config change needed. If unavailable, the layer falls back down the prefer list, so the system never depends on any single model."
+}

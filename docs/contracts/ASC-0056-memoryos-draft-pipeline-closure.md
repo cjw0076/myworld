@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0056
 slug: memoryos-draft-pipeline-closure
-status: accepted
+status: closed
 goal: Close the three open gaps in MemoryOS draft pipeline so accepted memory actually flows back into AIOS context: (a) memory_pulse can ingest current scout JSON, (b) drafts get auto-reviewed by local LLM proposal + operator approve, (c) accepted memory is verified to surface in next contract's required_reading.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder role delegated, founder directive "Gap 해소 다음 작업으로 잡아")
-closed:
+closed: 2026-05-13 KST by codex@myworld after closeout dispatch gate passed
 acceptance_authority: claude@myworld (operator) per founder request to issue all gap-fix contracts.
 origin: claude diagnostic 2026-05-13 KST showing 34 drafts stuck in queue since 2026-05-11, memory_pulse warnings=4 (format mismatch), no draft→accepted transitions in 1.5 days.
 ---
@@ -43,6 +43,7 @@ allowed_files:
 - `memoryOS/memoryos/importers.py`
 - `memoryOS/tests/test_doc_radar_ingest.py`
 - `docs/AIOS_MEMORY_REVIEW.md`
+- `docs/AGENT_WORKLOG.md`
 - `docs/contracts/ASC-0056-memoryos-draft-pipeline-closure.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
@@ -87,11 +88,12 @@ forbidden_files:
 ## Verification Gate
 
 ```bash
-cd /home/user/workspaces/jaewon/myworld
 bash scripts/aios_coevolution/memory_pulse.sh
 python -m unittest tests/test_aios_memory_review_proposer.py tests/test_aios_accepted_memory_surfaces.py
-cd memoryOS && python -m pytest tests/test_doc_radar_ingest.py -v
-cd /home/user/workspaces/jaewon/myworld
+python -m py_compile scripts/aios_memory_review_proposer.py
+python scripts/aios_memory_review_proposer.py --limit 40 --json
+python -m memoryos.cli --root memoryOS context build --task "ASC-0119 GenesisOS activity evidence" --for hive --project AIOS --json
+python -m pytest memoryOS/tests/test_doc_radar_ingest.py -q
 python -m unittest discover -s tests -p 'test_aios_*.py'
 python scripts/aios_monitor.py assess --json
 ```
@@ -113,7 +115,53 @@ Pass criteria:
 
 ## Receipts
 
-Pending until verification.
+- Earlier blocked packets preserved:
+  - `.aios/outbox/myworld/asc-0056.myworld.result.json` failed because the
+    memoryOS child packet hit provider access/fallback failure.
+  - `.aios/outbox/memoryOS/asc-0056.memoryOS.result.json` failed with
+    `provider_access_denied`.
+- Closeout implementation added:
+  - `scripts/aios_memory_review_proposer.py`
+  - `tests/test_aios_memory_review_proposer.py`
+  - `tests/test_aios_accepted_memory_surfaces.py`
+  - `docs/AIOS_MEMORY_REVIEW.md`
+  - `scripts/aios_coevolution/memory_pulse.sh` summary parsing for current
+    `ingest-doc-radar` JSON.
+- Memory review proposal dogfood:
+  - batch: `.aios/memory_review_proposals/mrev_115b2869e62b4d0e.json`
+  - selected: `40`
+  - proposed `accept`: `32`
+  - proposed `needs_more_evidence`: `8`
+  - proposed `reject`: `0`
+  - no auto-approval; proposal is recommendation-only.
+- Dispatch gate proposal dogfood:
+  - batch: `.aios/memory_review_proposals/mrev_e3b44539adc63383.json`
+  - selected: `40`
+  - proposed `accept`: `32`
+  - proposed `needs_more_evidence`: `8`
+  - proposed `reject`: `0`
+- Operator approval dogfood:
+  - approved `mem_561d7633490e0f56` with reviewer `aios-operator`.
+  - `memoryos context build --task "ASC-0119 GenesisOS activity evidence"
+    --for hive --project AIOS --json` returned `total_accepted=1` and selected
+    `mem_561d7633490e0f56`.
+- Closeout dispatch: `.aios/outbox/myworld/asc-0056-closeout.myworld.result.json`
+  status `passed`.
+- Monitor after collect: `health=clear`.
+- Release: `python scripts/aios_dispatch.py release --dispatch-id
+  asc-0056-closeout --reason "ASC-0056 memory draft pipeline verified; review
+  proposer and accepted-memory surfacing live"` returned `status=released`.
+- MemoryOS closeout writeback: draft `mem_ee01f19716c4afe2`.
+- Verification passed:
+  - `bash scripts/aios_coevolution/memory_pulse.sh` reported
+    `scout_signals=30 imported=26 skipped=0 warnings=0`.
+  - `python -m unittest tests/test_aios_memory_review_proposer.py
+    tests/test_aios_accepted_memory_surfaces.py tests/test_aios_coevolution.py`
+    passed (`8` tests).
+  - `python -m pytest memoryOS/tests/test_doc_radar_ingest.py -q` passed
+    (`9` tests).
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+    (`245` tests).
 
 ## Execution Order
 
@@ -134,7 +182,7 @@ contract must not edit CapabilityOS or move memory review authority into it.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - depends_on: none
 - brief: |
     Fix scout→ingest format in memory_pulse.sh. Add
@@ -153,13 +201,13 @@ contract must not edit CapabilityOS or move memory review authority into it.
   - `docs/AIOS_MEMORY_REVIEW.md` documents operator approval flow and stop
     conditions.
 - return_to: `.aios/outbox/myworld/asc-0056.myworld.result.json`
-- result: pending
+- result: `.aios/outbox/myworld/asc-0056-closeout.myworld.result.json`
 
 ### WP-0056-B — codex@memoryOS adapts ingest schema
 
 - target_agent: codex
 - target_repo: memoryOS
-- status: issued
+- status: done
 - depends_on: WP-0056-A
 - brief: |
     Make memoryos ingest-doc-radar accept current scout `top_tasks`
@@ -173,4 +221,4 @@ contract must not edit CapabilityOS or move memory review authority into it.
     idempotency, provenance, and no raw body storage.
   - repo-local worklog records the semantic handshake and verification.
 - return_to: `.aios/outbox/memoryOS/asc-0056.memoryOS.result.json`
-- result: pending
+- result: verified by `python -m pytest memoryOS/tests/test_doc_radar_ingest.py -q`

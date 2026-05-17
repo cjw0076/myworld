@@ -1,12 +1,14 @@
 ---
 contract_id: ASC-0088
 slug: aios-universal-agent-interface
-status: held
+status: superseded
 goal: Define a single canonical AIOS Universal Agent Interface spec that any agent (claude/codex/gemini/local LLM/etc.) on any machine — whether or not AIOS is installed locally — reads to know AIOS exists, how to use it, and how to propagate self-observations back to AIOS with a precise where/when/who/what protocol.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder directive 2026-05-13 KST)
 acceptance_authority: claude@myworld (operator) per founder turn correcting prior framing — the goal is not just templating per-provider prompt files (ASC-0087) but a UNIVERSAL spec inside global system prompts so any agent anywhere knows how to relay self-observation back to AIOS even when working in unrelated contexts.
 origin: ASC-0087 templates per-CLI prompt files but each file would otherwise have to re-define the AIOS interaction protocol. ASC-0088 extracts that protocol into a single versioned spec. ASC-0087 templates simply reference it by stable URL/path.
+superseded_by: ASC-0093
+superseded_reason: ASC-0089 Hive debate selected B1 tiny spec and rejected this B5 full spec + buffer/sync direction.
 ---
 
 # ASC-0088 AIOS Universal Agent Interface

@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0065
 slug: genesisos-bootstrap
-status: accepted
+status: closed
 goal: Create GenesisOS as the AIOS divergence layer that deliberately generates non-obvious, non-convergent candidate directions before Hive, MemoryOS, and CapabilityOS translate selected ideas into verifiable contracts.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by founder directive ("Genesis 좋다. 레포를 하나 더 파")
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: founder 재원 explicit GO 2026-05-13 KST in chat ("이런 새로운 발상을 하는게 GenesisOS의 목적이고, 우리가 만들어야할 것이야. A. 꼭 필요하기도 하고."). Rationale: prompt/언어/구사 능력에 의해 Agent 능력이 제한됨 — Genesis가 이를 해소.
 origin: founder concern that AIOS remains trapped by user prompt ability, language, intuition, and overly competent agent convergence.
 ---

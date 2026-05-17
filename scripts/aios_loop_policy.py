@@ -29,6 +29,8 @@ DOMAIN_PRIORITY = {
     "CapabilityOS": 3,
 }
 DECISION_LIMIT = 100
+VERIFIER_WAIT_SECONDS = 15 * 60
+VERIFIER_WARN_SECONDS = 60 * 60
 
 
 @dataclass(frozen=True)
@@ -39,6 +41,17 @@ class RadarCandidate:
     path: str
     signals: dict[str, int]
     candidate_task: str
+
+
+@dataclass(frozen=True)
+class OpenContract:
+    contract_id: str
+    path: str
+    status: str
+    issuer: str
+    accepted_at: float
+    wait_seconds: int
+    priority_reason: str
 
 
 def now_iso() -> str:
@@ -116,13 +129,110 @@ def parse_frontmatter(path: Path) -> dict[str, str]:
     return data
 
 
-def open_contract_count(root: Path) -> int:
-    count = 0
+def classify_issuer(frontmatter: dict[str, str]) -> str:
+    authority = " ".join(
+        str(frontmatter.get(key, ""))
+        for key in ("acceptance_authority", "accepted", "origin", "proposed_by")
+    ).lower()
+    if "founder explicit go" in authority or "founder go" in authority:
+        return "founder_go"
+    if "verifier" in authority or "claude as verifier" in authority:
+        return "verifier"
+    if "round_controller" in authority or "autodraft" in authority or "codex_auto" in authority:
+        return "codex_auto"
+    if "codex" in authority:
+        return "codex_auto"
+    if "operator" in authority or "claude@myworld" in authority:
+        return "operator"
+    return "operator"
+
+
+def accepted_timestamp(path: Path, frontmatter: dict[str, str]) -> float:
+    epoch = frontmatter.get("accepted_epoch") or frontmatter.get("accepted_at_epoch")
+    if epoch:
+        try:
+            return float(epoch)
+        except ValueError:
+            pass
+    accepted = frontmatter.get("accepted", "")
+    match = re.search(r"(\d{4}-\d{2}-\d{2})(?:[ T](\d{2}:\d{2}(?::\d{2})?))?", accepted)
+    if match:
+        time_part = match.group(2) or "00:00:00"
+        if len(time_part) == 5:
+            time_part += ":00"
+        try:
+            return datetime.fromisoformat(f"{match.group(1)}T{time_part}").replace(tzinfo=timezone.utc).timestamp()
+        except ValueError:
+            pass
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return datetime.now(timezone.utc).timestamp()
+
+
+def priority_reason_for(issuer: str, wait_seconds: int) -> str:
+    if issuer == "founder_go":
+        return "founder_go_immediate"
+    if issuer == "verifier" and wait_seconds >= VERIFIER_WAIT_SECONDS:
+        return "verifier_wait_threshold_met"
+    if issuer == "verifier":
+        return "verifier_waiting_below_threshold"
+    if issuer == "codex_auto":
+        return "codex_auto_fifo"
+    return "operator_fifo"
+
+
+def open_contracts(root: Path, now_ts: float | None = None) -> list[OpenContract]:
+    now_value = now_ts if now_ts is not None else datetime.now(timezone.utc).timestamp()
+    contracts: list[OpenContract] = []
     for path in sorted((root / "docs" / "contracts").glob("ASC-*.md")):
-        status = parse_frontmatter(path).get("status", "")
-        if status in OPEN_STATUSES:
-            count += 1
-    return count
+        frontmatter = parse_frontmatter(path)
+        status = frontmatter.get("status", "")
+        if status not in OPEN_STATUSES:
+            continue
+        accepted_at = accepted_timestamp(path, frontmatter)
+        wait_seconds = max(0, int(now_value - accepted_at))
+        issuer = classify_issuer(frontmatter)
+        contract_id = frontmatter.get("contract_id") or path.stem.split("-", 1)[0]
+        contracts.append(
+            OpenContract(
+                contract_id=contract_id,
+                path=path.relative_to(root).as_posix() if path.is_relative_to(root) else path.as_posix(),
+                status=status,
+                issuer=issuer,
+                accepted_at=accepted_at,
+                wait_seconds=wait_seconds,
+                priority_reason=priority_reason_for(issuer, wait_seconds),
+            )
+        )
+    return contracts
+
+
+def contract_priority(contract: OpenContract) -> tuple[int, float, str]:
+    if contract.issuer == "founder_go":
+        group = 0
+    elif contract.issuer == "verifier" and contract.wait_seconds >= VERIFIER_WAIT_SECONDS:
+        group = 1
+    elif contract.issuer in {"operator", "codex_auto"}:
+        group = 2
+    else:
+        group = 3
+    return (group, contract.accepted_at, contract.contract_id)
+
+
+def serialize_open_contract(contract: OpenContract) -> dict[str, Any]:
+    return {
+        "contract_id": contract.contract_id,
+        "path": contract.path,
+        "status": contract.status,
+        "issuer": contract.issuer,
+        "wait_seconds": contract.wait_seconds,
+        "priority_reason": contract.priority_reason,
+    }
+
+
+def open_contract_count(root: Path) -> int:
+    return len(open_contracts(root))
 
 
 def sort_key(candidate: RadarCandidate) -> tuple[int, int, str]:
@@ -191,7 +301,14 @@ def decide(root: Path, candidate: RadarCandidate, open_count: int, capacity: int
 
 def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str, Any]:
     candidates = parse_task_radar(radar, limit=min(limit, DECISION_LIMIT))
-    open_count = open_contract_count(root)
+    open_items = open_contracts(root)
+    open_count = len(open_items)
+    ordered_open = sorted(open_items, key=contract_priority)
+    verifier_waits = [item.wait_seconds for item in open_items if item.issuer == "verifier"]
+    verifier_starvation_seconds = max(verifier_waits) if verifier_waits else 0
+    priority_inversion_detected = any(
+        item.issuer == "verifier" and item.wait_seconds >= VERIFIER_WAIT_SECONDS for item in open_items
+    ) and any(item.issuer == "codex_auto" for item in open_items)
     decisions = []
     for candidate in candidates:
         decision, verdict, reason = decide(root, candidate, open_count, capacity)
@@ -201,6 +318,8 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
                 "decision": decision,
                 "semantic_verdict": verdict,
                 "reason": reason,
+                "issuer": "radar_candidate",
+                "ordering_reason": "radar_score_domain_path",
                 "score": candidate.score,
                 "sources": [
                     {
@@ -216,6 +335,18 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
         "generated_at": now_iso(),
         "capacity": capacity,
         "open_contract_count": open_count,
+        "verifier_starvation_seconds": verifier_starvation_seconds,
+        "priority_inversion_detected": priority_inversion_detected,
+        "open_contract_order": [serialize_open_contract(item) for item in ordered_open],
+        "warnings": [
+            {
+                "code": "verifier_starvation",
+                "severity": "warn",
+                "seconds": verifier_starvation_seconds,
+            }
+        ]
+        if verifier_starvation_seconds > VERIFIER_WARN_SECONDS
+        else [],
         "decision_limit": min(limit, DECISION_LIMIT),
         "operator_only_prefixes": list(OPERATOR_ONLY_PREFIXES),
         "decisions": decisions,
@@ -229,14 +360,31 @@ def write_markdown(path: Path, policy: dict[str, Any]) -> None:
         f"- generated_at: `{policy['generated_at']}`",
         f"- open_contract_count: `{policy['open_contract_count']}`",
         f"- capacity: `{policy['capacity']}`",
+        f"- verifier_starvation_seconds: `{policy['verifier_starvation_seconds']}`",
+        f"- priority_inversion_detected: `{policy['priority_inversion_detected']}`",
         "",
-        "| Decision | Verdict | Score | Source | Reason |",
-        "| --- | --- | ---: | --- | --- |",
+        "## Open Contract Order",
+        "",
+        "| Contract | Issuer | Wait Seconds | Reason |",
+        "| --- | --- | ---: | --- |",
     ]
+    for contract in policy.get("open_contract_order", [])[:20]:
+        lines.append(
+            f"| {contract['contract_id']} | {contract['issuer']} | {contract['wait_seconds']} | {contract['priority_reason']} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Radar Decisions",
+            "",
+            "| Decision | Verdict | Issuer | Score | Source | Reason |",
+            "| --- | --- | --- | ---: | --- | --- |",
+        ]
+    )
     for decision in policy["decisions"]:
         source = decision["sources"][0]
         lines.append(
-            f"| {decision['decision']} | {decision['semantic_verdict']} | {decision['score']} | `{source['path']}` | {decision['reason']} |"
+            f"| {decision['decision']} | {decision['semantic_verdict']} | {decision['issuer']} | {decision['score']} | `{source['path']}` | {decision['reason']} |"
         )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

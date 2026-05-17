@@ -38,6 +38,18 @@ import json
 print(json.dumps({"schema_version":"aios.monitor.assessment.v1","health":"clear","findings":[]}))
 """,
         )
+        coevolution = scripts / "aios_coevolution"
+        coevolution.mkdir()
+        write_executable(
+            coevolution / "persistent.py",
+            """#!/usr/bin/env python3
+import json
+from pathlib import Path
+Path(".aios/state/pulses_armed").parent.mkdir(parents=True, exist_ok=True)
+Path(".aios/state/pulses_armed").write_text("armed", encoding="utf-8")
+print(json.dumps({"schema_version":"aios.coevolution.persistent.v1","status":"passed","started":3,"failed":0}))
+""",
+        )
         write_executable(
             scripts / "aios_goal_evolution.py",
             """#!/usr/bin/env python3
@@ -93,7 +105,9 @@ esac
             data = json.loads(result.stdout)
             self.assertEqual(data["schema_version"], "aios.round_controller.v1")
             self.assertEqual(data["status"], "passed")
+            self.assertEqual(data["steps"]["coevolution_pulses"]["status"], "passed")
             self.assertEqual(data["recommended_next"]["action"], "open_next_contract")
+            self.assertTrue((root / ".aios" / "state" / "pulses_armed").exists())
             latest = root / ".aios" / "state" / "round_controller.latest.json"
             self.assertTrue(latest.exists())
             self.assertIn("goal:persistent_control_loop", latest.read_text(encoding="utf-8"))

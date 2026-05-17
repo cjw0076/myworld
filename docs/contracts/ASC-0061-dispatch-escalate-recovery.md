@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0061
 slug: dispatch-escalate-recovery
-status: accepted
+status: closed
 goal: When a dispatch is escalated by action policy, allow the operator's `release` to actually deliver the inbox packet so the contract can proceed — instead of the current dead-end where escalated dispatches never write to inbox even after release.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: claude@myworld (operator) per founder directive.
 origin: ASC-0037 incident (2026-05-12 15:47) where operator release of an escalated dispatch did not retry the inbox write — claude had to manually craft the result packet with policy_override evidence.
 ---
@@ -91,7 +91,19 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- 2026-05-13 KST codex@myworld implemented release recovery for escalated
+  dispatches and dogfooded it on `asc-0061`.
+- Verification passed:
+  - `python -m py_compile scripts/aios_dispatch.py`
+  - `python -m unittest tests/test_aios_dispatch.py -v`
+  - `python scripts/aios_dispatch.py release --dispatch-id asc-0061 --reason asc_0061_operator_override_verified`
+  - `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id asc-0061 --once`
+  - `python scripts/aios_dispatch.py collect --repo myworld`
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'`
+  - `python scripts/aios_monitor.py assess --json`
+- Evidence artifacts:
+  - `.aios/inbox/myworld/asc-0061.myworld.json`
+  - `.aios/outbox/myworld/asc-0061.myworld.result.json`
 
 ## Work Packets
 
@@ -99,8 +111,9 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - brief: |
     Add the recovery path to release. Audit the override. Test both
     escalate-then-release and normal release paths.
-- result: pending
+- result: release recovery writes an override packet, records
+  `dispatch.recovery`, and preserves normal release semantics.

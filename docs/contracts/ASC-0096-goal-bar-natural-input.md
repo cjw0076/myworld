@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0096
 slug: goal-bar-natural-input
-status: accepted
+status: closed
 goal: Add a natural-language Goal Bar input box to apps/control/ that classifies the user's text and routes to the right AIOS CLI (hive ask, agents status, dispatch status, primitive query, etc.) — running locally only, no external LLM, surfacing the result inline in the dashboard.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder explicit GO "A,D 진행하고 B도 병렬 처리.")
+closed: 2026-05-13 21:17 KST by codex acting founder-delegated operator
 acceptance_authority: claude@myworld (operator) per founder explicit GO 2026-05-13 KST.
 origin: founder turn diagnosing 5-CLI burden to ask "어떤 Agent가 있지?". Goal Bar removes the CLI memorization barrier.
 ---
@@ -31,7 +32,9 @@ keeping discovery cost zero.
 
 ## Scope
 
-repos: `myworld`
+repos:
+
+- `myworld`
 
 allowed_files:
 
@@ -40,17 +43,32 @@ allowed_files:
 - `apps/control/styles.css`
 - `apps/control/goal_bar.js`
 - `scripts/aios_goal_bar.py`
-- `scripts/aios_dashboard_ws.py` (POST endpoint for goal bar submissions)
+- `scripts/aios_local_app.py`
+- `scripts/aios_dashboard_ws.py`
 - `tests/test_aios_goal_bar.py`
+- `tests/test_aios_local_app.py`
 - `docs/AIOS_GOAL_BAR.md`
 - `docs/contracts/ASC-0096-goal-bar-natural-input.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
+- `docs/AGENT_WORKLOG.md`
+
+scope_notes:
+
+- `scripts/aios_local_app.py` owns HTTP POST `/api/goal_bar`.
+- `scripts/aios_dashboard_ws.py` is a read-only live-status dependency and
+  remains WebSocket-only.
 
 forbidden_files:
 
-- `hivemind/**`, `memoryOS/**`, `CapabilityOS/**`, `GenesisOS/**`, `uri/**`
-- `_from_desktop/**`, `dain/**`, `minyoung/**`
+- `hivemind/**`
+- `memoryOS/**`
+- `CapabilityOS/**`
+- `GenesisOS/**`
+- `uri/**`
+- `_from_desktop/**`
+- `dain/**`
+- `minyoung/**`
 - `.env`
 
 ## Per-OS Responsibility
@@ -76,8 +94,9 @@ forbidden_files:
   - submit button + Enter key
   - shows classified command before executing (allow operator cancel)
   - displays result inline (next to input, expand on click)
-- `aios_dashboard_ws.py` POST `/goal_bar` endpoint that runs
-  `aios_goal_bar.py --execute` and streams result
+- `aios_local_app.py` POST `/api/goal_bar` endpoint that runs
+  `aios_goal_bar.py` in classify mode first and `--execute` only after a
+  confirmed request. `aios_dashboard_ws.py` remains WebSocket-only.
 - Tests cover: each intent class, default fallback, dangerous-command
   rejection (e.g. `rm -rf` in input), result rendering
 
@@ -89,23 +108,23 @@ forbidden_files:
 
 ```bash
 python -m py_compile scripts/aios_goal_bar.py
-python -m unittest tests/test_aios_goal_bar.py
+python -m py_compile scripts/aios_local_app.py
+python -m unittest tests/test_aios_goal_bar.py tests/test_aios_local_app.py
 python scripts/aios_goal_bar.py "어떤 Agent가 있지?" --json
-# expect: classified_command="hive agents status", will_execute=true
 python scripts/aios_goal_bar.py "어떤 contract가 열려있나" --json
-# expect: classified_command containing "aios_dispatch.py status"
-python scripts/aios_local_app.py up --port 9877 --ws-port 9878 --json
-# manual: open http://localhost:9877, type query in goal bar, see result
-python scripts/aios_local_app.py stop
+python scripts/aios_local_app.py status --assert-live --json
 python -m unittest discover -s tests -p 'test_aios_*.py'
 ```
 
 Pass criteria:
 
-- 5 intent classes resolve to right command in tests
-- Submit → classified_command shown → on confirm, runs + result inline
-- Dangerous patterns (rm/dd/sudo) rejected
-- Full test suite green
+- 5 intent classes resolve to right command in tests.
+- Submit -> classified command shown first; execution requires confirmed
+  execute request and returns result inline.
+- Dangerous patterns (rm/dd/sudo) reject before execution.
+- Running control app serves the Goal Bar endpoint and WebSocket health remains
+  live.
+- Full test suite green.
 
 ## Stop Conditions
 
@@ -117,7 +136,16 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- dispatch: `.aios/inbox/myworld/asc-0096-goalbar.myworld.json`
+- result: `.aios/outbox/myworld/asc-0096-goalbar.myworld.result.json`
+- log: `.aios/logs/asc-0096-goalbar.myworld.log`
+- control_app: `http://127.0.0.1:9885/` restarted on 2026-05-13 21:14 KST
+  with Goal Bar endpoint loaded.
+- live_api_smoke: `POST /api/goal_bar` classified "어떤 Agent가 있지?",
+  rejected execution without `confirm`, and executed successfully with
+  `{execute:true, confirm:true}`.
+- close_condition: recommended `closed_goal_met`, unmet=0, manual=5.
+- memory_writeback: release wrote MemoryOS draft `mem_a1b127491f1482d1`.
 
 ## Work Packets
 
@@ -125,8 +153,9 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - depends_on: ASC-0064 (live dashboard) closed ✓
 - brief: implement classifier + DOM input + WS endpoint + tests + docs.
   Dogfood: open dashboard, type "어떤 Agent가 있지?", verify result is
   the same as `hive agents status` direct output.
+- result: `.aios/outbox/myworld/asc-0096-goalbar.myworld.result.json`

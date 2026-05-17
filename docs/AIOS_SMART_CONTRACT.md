@@ -56,6 +56,43 @@ draft contract
   -> receipt / trace / observation closeout
 ```
 
+## AIOS Role Evidence
+
+Generated contract seeds should reserve this compact section before executor
+work begins:
+
+```md
+## AIOS Role Evidence
+
+### MemoryOS
+- context_pack
+- retrieval_trace
+- accepted_memory_ids
+- draft_memory_policy
+
+### CapabilityOS
+- route
+- recommended_tools
+- fallback_plan
+- authority
+
+### GenesisOS
+- branch_set
+- assumption_mutations
+- semantic_alignment_notes
+- authority
+
+### Hive Mind
+- execution_plan
+- provider_route
+- verification_receipt
+- degraded_or_fallback_receipt
+```
+
+These fields can be `pending_or_not_required` in a proposal. The point is to
+make missing OS participation visible before acceptance, without making seed
+generation execute work or accept memories.
+
 ## Invariants
 
 - Hive Mind owns execution authority.

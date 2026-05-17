@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0072
 slug: genesis-multi-modal-reasoning
-status: accepted
+status: closed
 goal: Give GenesisOS a non-language reasoning surface — diagram, code, formal logic, math, constraint graph — so agents can think in modalities outside their training-language defaults and escape the linguistic prison.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
 acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive on prompt-prison — "프롬프트, 언어, 구사 능력에 의해 Agent의 능력이 제한". Multi-modal reasoning is the most direct escape from language-only thinking.
+closed: 2026-05-15 KST by codex@myworld
 ---
 
 # ASC-0072 Genesis Multi-Modal Reasoning
@@ -108,7 +109,21 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- GenesisOS WP-0072-A implemented:
+  - `GenesisOS/genesisos/modalities.py`
+  - `GenesisOS/genesisos/cli.py`
+  - `GenesisOS/tests/test_modalities.py`
+  - `GenesisOS/docs/MULTI_MODAL.md`
+- MyWorld WP-0072-B implemented:
+  - `scripts/aios_genesis_modal.py`
+  - `tests/test_aios_genesis_modal.py`
+- Verification:
+  - `cd GenesisOS && python -m pytest tests/test_modalities.py -v` passed 4/4.
+  - `cd GenesisOS && python -m unittest tests/test_critic.py tests/test_cli.py tests/test_mutator.py tests/test_branches.py tests/test_modalities.py` passed 26/26.
+  - `python -m genesisos.cli modal compare --text /tmp/sample.md --modalities all --json` emitted six non-empty modalities.
+  - `python -m unittest tests/test_aios_genesis_modal.py` passed 2/2.
+  - `python scripts/aios_genesis_modal.py --contract-id ASC-0072 --json` wrote `.aios/genesis_modal_views/ASC-0072-genesis-multi-modal-reasoning-1d4672da9b3c.json`.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 352/352.
 
 ## Work Packets
 

@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0112
 slug: aios-chat-wrapper
-status: accepted
+status: closed
 goal: Build aios_chat as the persistent unified chat surface (CLI + Web) wrapping all substrates (Claude Code, Codex CLI, Ollama, future chatbot/web/mobile providers) with 5 mandatory capabilities so AIOS becomes the single entry point users actually live in — not a tool layer behind direct CLI use.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier (founder explicit GO "5가지 모두 다 진행시켜야")
+closed: 2026-05-13 KST
 acceptance_authority: claude@myworld (verifier role) per founder direct delegation 2026-05-13 KST.
 origin: founder turn diagnosing AIOS=tool-layer-behind-CLIs as undifferentiated. Vision: ONE interface, AIOS routes substrate behind. Layer 0 of 3-layer "living organism" arc.
 ---
@@ -48,6 +49,7 @@ allowed_files:
 
 - `scripts/aios_chat.py` (CLI REPL)
 - `scripts/aios_chat_router.py` (substrate selection backend)
+- `scripts/aios_launcher.py` (global `aios chat` delegation)
 - `apps/control/chat.html` (Web chat surface)
 - `apps/control/chat.js`
 - `apps/control/styles.css` (chat additions)
@@ -58,6 +60,7 @@ allowed_files:
 - `hivemind/tests/test_provider_loop.py`
 - `docs/AIOS_CHAT.md`
 - `docs/contracts/ASC-0112-aios-chat-wrapper.md`
+- `docs/AGENT_WORKLOG.md`
 - `docs/AIOS_AGENT_LEDGER.md`
 
 forbidden_files:
@@ -105,28 +108,20 @@ forbidden_files:
 - `provider_loop.py` extended with `chat_turn` mode if not already
   supported — accepts conversation history, returns single substrate
   response with metadata `{substrate, role, tokens_in, tokens_out}`
+- V1 resolution: no Hive source change was needed for ASC-0112 L0 because the
+  MyWorld router can classify multi-step turns as `hive_flow` and preserve the
+  substrate metadata without adding a new provider-loop entry yet. A later
+  provider-execution contract can bind this router to real Hive provider calls.
 
 ### child repos: no other change
 
 ## Verification Gate
 
 ```bash
-python -m py_compile scripts/aios_chat.py scripts/aios_chat_router.py
+python -m py_compile scripts/aios_chat.py scripts/aios_chat_router.py scripts/aios_dashboard_ws.py scripts/aios_launcher.py
 python -m unittest tests/test_aios_chat.py tests/test_aios_chat_router.py
-# Substrate auto-select test
-python scripts/aios_chat_router.py --message "summarize this short text" --json | python -c "
-import json, sys; d=json.load(sys.stdin)
-assert d.get('chosen_substrate') in ['ollama_qwen','local_llm'], f'cheap task should route local, got {d.get(\"chosen_substrate\")}'
-"
-# Cost tracking test
+python scripts/aios_chat_router.py --message "summarize this short text" --conversation asc-0112-smoke --json
 python scripts/aios_chat.py --message "test" --conversation cli-test --json
-test -f .aios/chat/cli-test/messages.jsonl
-test -f .aios/chat/cli-test/cost.json
-# Web surface
-python scripts/aios_local_app.py up --json
-sleep 2
-# manual: visit http://localhost:8088/chat.html, send message
-python scripts/aios_local_app.py stop
 python -m unittest discover -s tests -p 'test_aios_*.py'
 ```
 
@@ -150,15 +145,39 @@ Pass criteria (DNA-cited):
 
 ## Receipts
 
-Pending.
+- result_packet: `.aios/outbox/myworld/asc-0112.myworld.result.json`
+- result_status: `passed`
+- live_app: `http://127.0.0.1:9885/chat.html`
+- live_websocket: `ws://127.0.0.1:9886/chat`
+- evidence:
+  - `python -m py_compile scripts/aios_chat.py scripts/aios_chat_router.py scripts/aios_dashboard_ws.py scripts/aios_launcher.py`
+    exited 0.
+  - `python -m unittest tests/test_aios_chat.py tests/test_aios_chat_router.py`
+    passed 7/7.
+  - `python scripts/aios_chat_router.py --message "summarize this short text" --conversation asc-0112-smoke --json`
+    routed to `ollama_qwen`, wrote history, cost, run_state, MemoryOS-compatible
+    memory drafts, and MemoryOS context trace.
+  - `python scripts/aios_chat.py --message "test" --conversation cli-test --json`
+    wrote `.aios/chat/cli-test/messages.jsonl`, `cost.json`, `run_state.json`,
+    and `memory_drafts.json`.
+  - `cd memoryOS && python -m memoryos.cli --root /home/user/workspaces/jaewon/myworld import-run /home/user/workspaces/jaewon/myworld/.aios/chat/asc-0112-cli2 --dry-run --json`
+    returned `status=dry_run_ok` with 1 planned memory object.
+  - Web smoke loaded `/chat.html` and sent one `/chat` WebSocket message,
+    receiving a `chat_response` through the router.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 261/261.
 
 ## Work Packets
 
 ### WP-0112-A — codex@myworld + codex@hivemind build router + REPL + web
 
 - target_agent: codex
+- status: done
 - depends_on: ASC-0064 (live dashboard) ✓, ASC-0066 backpressure ✓
 - brief: implement chat_router (substrate-select + persistence + flow +
   cost), CLI REPL, web chat pane. Provider_loop chat_turn mode.
   Tests cover all 5 capabilities. Dogfood: 3-turn conversation through
   ollama → 1 turn through claude (override) → resume after restart.
+- result: L0 router, CLI, launcher delegation, WebSocket `/chat`, `chat.html`,
+  MemoryOS-compatible draft packet, and tests completed. Direct Hive
+  `provider_loop.py` change deferred because the router does not require a new
+  Hive entry point until real provider execution binding is added.

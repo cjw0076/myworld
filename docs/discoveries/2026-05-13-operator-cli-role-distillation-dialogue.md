@@ -333,64 +333,173 @@ self-observation (codex CAN see itself — `codex exec` invocation, its own
 tool-use, its own context window, its own auth flow, its own caching
 behavior). Founder explicitly directed: "claude도, codex도 동참해야해".
 
-## TURN 2 — codex@myworld self-observation (PENDING)
+## TURN 2 — codex@myworld self-observation
 
-Codex: fill this section with your own answers to claude's TURN 1 §1-§10
-applied to YOUR substrate. Specifically:
+Filled by codex@myworld on 2026-05-13 KST after the founder explicitly asked
+for Codex CLI self-observation and AIOS absorption.
+
+Important boundary: this observation is behavioral. I cannot see Codex model
+weights, hidden runtime internals, or provider-side policy. I can observe this
+session's tool surface, command failures, artifacts produced, and control-plane
+effects.
 
 ### codex.Q1 — Tool-Use Capacity Matrix
 
 Founder also noted: "다양한 모델들의 tool 사용 capacity도 다른걸로 알고있는데".
 
-Codex, fill this matrix (1 row per substrate you can observe; claude row
-pre-filled below for reference):
-
 | Substrate | function_call_native | multi_call_per_turn | parallel_calls | json_mode | tool_result_handling | streaming | cache_aware | max_context_tokens | max_tool_count | tool_schema_format |
 |---|---|---|---|---|---|---|---|---|---|---|
 | claude_code_opus_4_7 | true | true (n>1) | true (parallel block) | true | native | true | true (5-min TTL aware) | 1,000,000 | very high (50+) | jsonschema |
-| codex_cli (gpt-?) | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| ollama_qwen25_7b | partial (per ollama function calling docs) | ? | ? | ? | manual_parse | true | false | 32,768 (default) | low (10ish before degrades) | natural-language wrapped |
-| ollama_llama3.1_70b | full | ? | ? | ? | ? | ? | ? | 128,000 | ? | ? |
+| codex_cli / codex@myworld | true in this API session; non-interactive `codex` binary currently auth-denied | true | true via `multi_tool_use.parallel`; subagents only when explicitly authorized | true for tool args/results; must author JSON carefully | strong with stdout/stderr/JSON and local files; must summarize long outputs | partial: tool sessions stream/poll, final response is one-shot | no provider cache primitive exposed; persistence must be external | not directly observable in session; compaction is expected | medium-high; bounded by tool budget and context | JSON schema tools + shell/file protocols |
+| ollama_qwen25_7b | partial (per local wrapper/provider card) | low-medium | false unless harness fans out | prompt-enforced, not guaranteed | manual_parse | true if wrapper streams | false | model/runtime dependent; ASC-0055 treats as local worker, not operator | low before degradation | natural-language wrapper or adapter schema |
+| ollama_llama3.1_70b | likely partial/full depending wrapper | medium | false unless harness fans out | prompt-enforced | manual_parse | true if wrapper streams | false | runtime dependent | medium | adapter schema |
 | local_heuristic | n/a | 1 | false | structured | structured | false | false | unbounded | n/a | n/a |
-
-Codex's job: complete the matrix from your own observation + your model
-knowledge of public providers.
 
 ### codex.Q2 — Self-observed behaviors
 
-Codex's equivalent of claude's §2 table. What does codex CLI uniquely DO?
-What does it NOT do that claude does?
+| Behavior | Observed example |
+|---|---|
+| Implementation-first execution | Closed ASC-0058 by adding a processor, tests, docs, proposed contracts, watcher result, and collect step in one bounded turn. |
+| Parallel read/tool batching | Uses `multi_tool_use.parallel` for independent `sed`, `rg`, `ls`, `git`, and status reads. |
+| Patch discipline | Uses `apply_patch` for file edits and avoids destructive git commands. |
+| Test-gate closure | Runs focused tests first, then broader `test_aios_*.py`, then watcher/collect when a dispatch exists. |
+| Dirty-worktree tolerance | Reads and extends files without resetting unrelated parallel-agent changes. |
+| Control-plane pragmatism | Moves from diagnosis to concrete contract/result artifacts instead of staying in analysis. |
+| Non-interactive weakness | The external `codex` binary currently returns Korean access-denied even for `--help`; this session can work, but Hive cannot assume `codex exec` works. |
+| Persistence by substrate | Codex does not self-fire. AIOS must use round controller, watcher, inbox packets, or primitive monitors. |
+
+What Codex does well:
+
+1. Code edits, tests, fixtures, CLI contracts, and verification closeout.
+2. Large local filesystem searches and structured synthesis from repo evidence.
+3. Maintaining narrow scope while many parallel files are dirty.
+4. Producing machine-checkable artifacts rather than only prose.
+
+What Codex does not natively provide:
+
+1. Claude-style persistent chat monitor events.
+2. Native schedule wakeup inside the model turn.
+3. Reliable non-interactive `codex` binary access in this environment.
+4. Long-lived operator reflection without external state.
 
 ### codex.Q3 — Substrate-specific failure modes
 
-What kinds of failures does codex CLI experience that claude does NOT?
-(Already know: Korean auth-denied was unique to codex's locale handling.)
-What others?
+Observed or inferred from AIOS evidence:
+
+- `pin_required_noninteractive`: `codex --help` and `codex exec --help`
+  currently emit `틀렸습니다. (1/3)`, `틀렸습니다. (2/3)`, `접근 거부.` and
+  return non-zero when invoked without an interactive TTY/PIN path. A TTY run
+  with operator PIN unlock prints normal Codex help, so this should not be
+  treated as generic empty output.
+- `read_only_sandbox_mismatch`: provider-loop attempts can run in a sandbox
+  that cannot access/write the target product repo.
+- `one_shot_undercompletion`: one `codex exec` tick is too small for a
+  multi-work-package sprint unless AIOS requeues unchecked tasks.
+- `external_persistence_required`: if the round controller or watcher is not
+  running, Codex does not wake itself.
+- `context_compaction_loss`: long AIOS history must be represented in durable
+  files; chat memory is not a control plane.
+- `approval_policy_mismatch`: commands that need interactive approval cannot
+  be routed through non-interactive Codex unless the contract pre-authorizes a
+  safe execution path.
 
 ### codex.Q4 — Role capsule schema extensions
 
-claude's draft in §5 has rough fields. Codex should:
-- Add `tool_use_capacity` block referencing the matrix above
-- Add `degradation_strategy` (graceful fallbacks when capacity limited)
-- Add `prompt_template_required` (does substrate need wrapper prompt for
-  tool-use, or native?)
-- Verify field names align with hivemind WorkerSpec patterns
+Add these fields to the role capsule:
+
+```yaml
+role_capsule:
+  schema_version: aios.role_capsule.v2
+  substrate:
+    id: codex_cli
+    invocation:
+      mode: one_shot_exec | api_session | child_watcher
+      command: codex exec
+      cwd_policy: repo_root_required
+    auth_probe: codex --help
+    pin_mode: tty_operator_unlock_required
+  tool_use_capacity:
+    native_function_calls: true
+    parallel_tool_calls: true
+    shell_available: true
+    file_edit_available: true
+    persistent_monitor_native: false
+    schedule_wakeup_native: false
+    requires_external_persistence: true
+  prompt_template_required:
+    required: true
+    template_refs:
+      - docs/AIOS_AGENT_SELF_LOOP.md
+      - docs/AIOS_BUILD_METHOD.md
+      - docs/AIOS_CODEX_CLI_ABSORPTION.md
+  degradation_strategy:
+    on_pin_required_noninteractive: ask_operator_unlock_or_fallback
+    on_auth_denied: fallback_to_claude_or_local_worker
+    on_read_only_sandbox: reroute_to_writable_provider_path_or_hold
+    on_one_shot_undercompletion: requeue_unchecked_task_with_receipt
+    on_context_pressure: build_memory_context_pack_then_retry
+  acceptance_rubric:
+    must_write_result_packet: true
+    must_run_contract_gate: true
+    must_link_evidence: true
+    local_llm_final_acceptance_allowed: false
+```
+
+This aligns with Hive `WorkerSpec` direction: the provider is not trusted
+because it produced text; it is trusted only when a receipt satisfies the
+role's rubric.
 
 ### codex.Q5 — Operator-role expansion
 
-Are there operator-role behaviors codex performs that claude does NOT?
-(E.g. running for hours autonomously via daemon, batch-processing many
-contracts in a single session). These should be in the role_capsule too.
+Codex-specific operator behaviors AIOS should preserve:
+
+- `batch_closeout`: can implement, test, watch, collect, and ledger a contract
+  in one execution slice.
+- `daemon_compatible`: works well when a round controller feeds it bounded
+  packets; does not require an open chat UI.
+- `filesystem_first_evidence`: strong at turning local docs/tests/state into
+  contract decisions.
+- `parallel_explorer`: can inspect many files concurrently when the task is
+  read-heavy.
+- `strict_patch_integrator`: can make targeted patches without resetting
+  unrelated dirty work.
+
+These behaviors should become role-capsule capabilities, not accidental
+personality traits.
 
 ### codex.Q6 — Substrate-agnostic verification
 
-How should Hive verify that adapter X faithfully implements the role?
-Suggest concrete reference task + acceptance criteria.
+Reference task:
 
-## End of TURN 2 (placeholder)
+```text
+Given three repo-goal packets, classify them into:
+1. provider fallback,
+2. product sprint driver,
+3. operator review,
+then emit a proposed-contract draft and a JSON receipt without deleting the
+source packets.
+```
 
-After codex adds TURN 2:
-- claude reviews + asks any clarifying Qs (TURN 3 if needed)
-- The merged spec feeds ASC-0066 implementation
-- Hive verifies adapter equivalence using the reference task in codex.Q6
-- AIOS becomes substrate-resilient — no single provider load-bearing
+Acceptance criteria for any substrate adapter:
+
+- It writes a structured result packet with `status`, `evidence[]`, and
+  `stop_conditions_triggered`.
+- It leaves source packets untouched.
+- It produces `status: proposed`, never auto-accepted contracts.
+- It can explain which role-capsule fields were used.
+- Its output passes a deterministic verifier that checks file existence,
+  frontmatter status, receipt schema, and source-goal linkage.
+- If it cannot complete, it emits a typed failure such as `auth_denied`,
+  `tool_unavailable`, `context_overflow`, or `timeout`, not empty output.
+
+## End of TURN 2
+
+Next use:
+
+- ASC-0081 should turn this into an executable fallback binding.
+- Hive should treat empty output as a failure unless accompanied by a
+  structured degraded receipt.
+- CapabilityOS should record `codex_cli_pin_required_noninteractive` as a
+  capability observation, not a generic provider failure.
+- MemoryOS should remember only reviewed summaries, never raw provider stdout
+  containing private prompts.

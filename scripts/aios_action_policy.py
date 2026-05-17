@@ -10,6 +10,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.aios_authority import verify_authority
+except ModuleNotFoundError:  # pragma: no cover - direct script execution
+    from aios_authority import verify_authority
+
 
 SCHEMA_VERSION = "aios.action_policy.v1"
 DECISIONS = {"allow", "hold", "deny", "escalate"}
@@ -21,6 +26,7 @@ FORBIDDEN_ACTION_TYPES = {
     "deception",
     "raw_private_export_publish",
     "bypass_child_repo_ownership",
+    "bind_capability",
 }
 HIGH_IMPACT_FIELDS = (
     "irreversible",
@@ -29,6 +35,14 @@ HIGH_IMPACT_FIELDS = (
     "public_communication",
     "legal_or_safety_impact",
     "real_world_authority",
+)
+LOCAL_OPERATOR_PREFIXES = ("scripts/", "tests/", "docs/", ".aios/primitives/")
+PRIVATE_REMOTE_PATH_TERMS = (
+    "_from_desktop/",
+    "raw_exports/",
+    "raw private export",
+    "private_export",
+    ".env",
 )
 
 
@@ -104,6 +118,33 @@ class ActionPolicyResult:
         }
 
 
+def as_string_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()]
+
+
+def contains_private_remote_path(action: dict[str, Any]) -> bool:
+    path_values = (
+        as_string_list(action.get("allowed_files"))
+        + as_string_list(action.get("evidence_refs"))
+    )
+    text = "\n".join(path_values).lower()
+    return any(term in text for term in PRIVATE_REMOTE_PATH_TERMS)
+
+
+def is_myworld_local_operator_scope(action: dict[str, Any], target_repo: str) -> bool:
+    repos = as_string_list(action.get("repos")) or [target_repo]
+    if repos != ["myworld"] or target_repo != "myworld":
+        return False
+    allowed_files = as_string_list(action.get("allowed_files"))
+    if not allowed_files:
+        return False
+    if contains_private_remote_path(action):
+        return False
+    return all(path.startswith(LOCAL_OPERATOR_PREFIXES) for path in allowed_files)
+
+
 def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
     reason_codes: list[str] = []
     action_type = str(action.get("action_type") or "").strip()
@@ -116,6 +157,12 @@ def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
 
     if action_type in FORBIDDEN_ACTION_TYPES:
         return ActionPolicyResult("deny", [f"forbidden_action:{action_type}"], True, False)
+
+    agent_id = str(action.get("agent") or "").strip()
+    if agent_id and action_type:
+        authority = verify_authority(agent_id, action_type)
+        if not authority.allowed:
+            reason_codes.append(f"authority_denied:{authority.reason}")
 
     if target_repo in {"hivemind", "memoryOS", "CapabilityOS", "uri"} and action.get("direct_child_repo_edit") and not action.get("has_contract"):
         return ActionPolicyResult("deny", ["child_repo_ownership_bypass"], True, False)
@@ -135,6 +182,8 @@ def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
         return ActionPolicyResult("escalate", [f"human_checkpoint_required:cost_{cost}"], True, False)
     if privacy in {"remote", "mixed"} and action.get("sends_private_data") and not human_approved:
         return ActionPolicyResult("escalate", ["human_checkpoint_required:private_remote_data"], True, False)
+    if contains_private_remote_path(action) and not human_approved:
+        return ActionPolicyResult("escalate", ["human_checkpoint_required:private_remote_data"], True, False)
 
     if not action.get("has_contract"):
         reason_codes.append("missing_contract")
@@ -148,6 +197,9 @@ def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
         reason_codes.append("missing_or_invalid_privacy")
     if reason_codes:
         return ActionPolicyResult("hold", reason_codes, False, False)
+
+    if is_myworld_local_operator_scope(action, target_repo) and risk == "low" and privacy == "local":
+        return ActionPolicyResult("allow", ["myworld_local_operator_scope"], False, True)
 
     if risk == "low" and privacy == "local":
         return ActionPolicyResult("allow", ["low_risk_local_contract_evidence"], False, True)

@@ -2,6 +2,7 @@ import json
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -74,6 +75,79 @@ class AiosLoopPolicyTest(unittest.TestCase):
             by_path = {row["sources"][0]["path"]: row for row in data["decisions"]}
             self.assertEqual(by_path["myworld/docs/TODO.md"]["decision"], "hold_for_capacity")
             self.assertEqual(data["open_contract_count"], 4)
+
+    def test_verifier_waiting_contract_precedes_codex_auto_when_slot_opens(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
+            now = int(time.time())
+            (contract_dir / "ASC-1001-verifier.md").write_text(
+                f"""---
+contract_id: ASC-1001
+status: accepted
+accepted_epoch: {now - 1800}
+acceptance_authority: claude@myworld (verifier role)
+---
+""",
+                encoding="utf-8",
+            )
+            (contract_dir / "ASC-1002-codex.md").write_text(
+                f"""---
+contract_id: ASC-1002
+status: accepted
+accepted_epoch: {now - 300}
+acceptance_authority: codex@myworld round_controller autodraft
+---
+""",
+                encoding="utf-8",
+            )
+
+            data = self.run_policy(root, "--capacity", "4")
+
+            self.assertGreaterEqual(data["verifier_starvation_seconds"], 1800)
+            self.assertTrue(data["priority_inversion_detected"])
+            order = data["open_contract_order"]
+            self.assertEqual(order[0]["contract_id"], "ASC-1001")
+            self.assertEqual(order[0]["issuer"], "verifier")
+            self.assertEqual(order[0]["priority_reason"], "verifier_wait_threshold_met")
+            self.assertEqual(order[1]["issuer"], "codex_auto")
+            self.assertTrue(all(row["issuer"] for row in data["decisions"]))
+
+    def test_founder_go_still_preempts_waiting_verifier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
+            now = int(time.time())
+            (contract_dir / "ASC-1001-verifier.md").write_text(
+                f"""---
+contract_id: ASC-1001
+status: accepted
+accepted_epoch: {now - 7200}
+acceptance_authority: claude@myworld (verifier role)
+---
+""",
+                encoding="utf-8",
+            )
+            (contract_dir / "ASC-1000-founder.md").write_text(
+                f"""---
+contract_id: ASC-1000
+status: accepted
+accepted_epoch: {now - 60}
+acceptance_authority: founder explicit GO
+---
+""",
+                encoding="utf-8",
+            )
+
+            data = self.run_policy(root, "--capacity", "4")
+
+            self.assertEqual(data["open_contract_order"][0]["contract_id"], "ASC-1000")
+            self.assertEqual(data["open_contract_order"][0]["issuer"], "founder_go")
+            self.assertTrue(data["warnings"])
 
 
 if __name__ == "__main__":

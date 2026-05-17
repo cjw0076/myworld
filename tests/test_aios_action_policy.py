@@ -110,6 +110,109 @@ class AiosActionPolicyTest(unittest.TestCase):
         self.assertFalse(payload["allowed_to_execute"])
         self.assertTrue(payload["required_checkpoint"])
 
+    def test_myworld_local_operator_scope_allows_without_private_remote_escalation(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "myworld",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "local",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0037-child-watcher-locale-aware-fallback.md"],
+                "human_approved": False,
+                "irreversible": False,
+                "external_effect": False,
+                "uses_credentials": False,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["myworld"],
+                "allowed_files": ["scripts/aios_child_watcher.sh", "docs/contracts/ASC-0037-child-watcher-locale-aware-fallback.md"],
+                "forbidden_files": [".cache/**"],
+            }
+        )
+
+        self.assertEqual(result.decision, "allow")
+        self.assertIn("myworld_local_operator_scope", result.reason_codes)
+        self.assertNotIn("human_checkpoint_required:private_remote_data", result.reason_codes)
+
+    def test_myworld_local_operator_scope_does_not_cover_cross_repo_contracts(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "hivemind",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "local",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0036-cross-repo-semantic-alignment.md"],
+                "repos": ["myworld", "hivemind", "memoryOS", "CapabilityOS"],
+                "allowed_files": ["hivemind/AGENTS.md", "memoryOS/AGENTS.md"],
+                "forbidden_files": [".env"],
+            }
+        )
+
+        self.assertEqual(result.decision, "allow")
+        self.assertNotIn("myworld_local_operator_scope", result.reason_codes)
+
+    def test_myworld_local_operator_scope_escalates_private_raw_paths(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "myworld",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "local",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0060-action-policy-scope-aware.md"],
+                "repos": ["myworld"],
+                "allowed_files": ["_from_desktop/export.json"],
+                "forbidden_files": [".env"],
+            }
+        )
+
+        self.assertEqual(result.decision, "escalate")
+        self.assertIn("human_checkpoint_required:private_remote_data", result.reason_codes)
+
+    def test_bind_capability_is_policy_forbidden(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "bind_capability",
+                "target_repo": "CapabilityOS",
+                "risk": "low",
+                "privacy": "local",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0107-citizenship-implementation.md"],
+                "agent": "codex@myworld",
+            }
+        )
+
+        self.assertEqual(result.decision, "deny")
+        self.assertIn("forbidden_action:bind_capability", result.reason_codes)
+
+    def test_citizenship_denial_is_visible_to_policy(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "release_dispatch",
+                "target_repo": "myworld",
+                "risk": "low",
+                "privacy": "local",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0107-citizenship-implementation.md"],
+                "agent": "unknown_outsider",
+            }
+        )
+
+        self.assertEqual(result.decision, "hold")
+        self.assertTrue(any(reason.startswith("authority_denied:") for reason in result.reason_codes))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,7 @@ bash scripts/aios_coevolution/capability_pulse.sh
 bash scripts/aios_coevolution/hive_pulse.sh
 
 bash scripts/aios_coevolution/arm.sh
+python scripts/aios_coevolution/persistent.py --json
 python scripts/aios_coevolution/status.py --json
 bash scripts/aios_coevolution/stop.sh
 ```
@@ -30,6 +31,17 @@ bash scripts/aios_coevolution/stop.sh
 
 The heartbeat does not dispatch work directly, accept memories, bind tools, or
 write child-repo source files. It only senses, records, and recommends.
+
+## Persistence
+
+ASC-0057 makes pulse monitors resilient. `scripts/aios_round_controller.py`
+runs `scripts/aios_coevolution/persistent.py` on every round. The helper lists
+`aios_primitives monitor` state, starts only missing or dead pulse monitors,
+and returns a JSON receipt with `started`, `failed`, and per-pulse actions.
+
+The helper is idempotent: already-alive pulse monitors are not restarted, and
+the round controller does not spawn any process outside the three named pulse
+monitors.
 
 ## Intervals
 

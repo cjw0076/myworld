@@ -1,0 +1,52 @@
+{
+  "schema_version": "aios.production_praxis.v1",
+  "task": "Extend the AIOS ask interface so an ask can emit a proposed smart-contract seed for operator review without bypassing acceptance or dispatch policy.",
+  "memory_context": {
+    "status": "used",
+    "evidence_refs": [
+      "aios://memory/mem_87c91dc592c3b649",
+      "docs/contracts/ASC-0103-aios-ask-interface.md"
+    ]
+  },
+  "capability_routes": {
+    "status": "used",
+    "routes": [
+      "aios://capability/cap_hivemind_execution_harness",
+      "aios://capability/cap_memoryos_context_build",
+      "aios://capability/cap_capabilityos_recommendation"
+    ]
+  },
+  "external_resource_check": {
+    "status": "optional_with_reason",
+    "reason": "This is local contract-seed generation and does not depend on current external API behavior."
+  },
+  "genesis_reframe": {
+    "status": "used",
+    "frictions": [
+      "Ask artifacts are useful but still require the founder to manually translate intent into a contract skeleton.",
+      "The interface should reduce ceremony without granting execution authority."
+    ],
+    "alternative_frames": [
+      "Ask as contract compiler",
+      "Ask as operator draft assistant",
+      "Ask as non-executing governance intake"
+    ]
+  },
+  "hive_execution_plan": {
+    "status": "planned",
+    "verification_gate": "python -m unittest tests/test_aios_ask.py"
+  },
+  "specialist_assignment": [
+    {
+      "agent": "codex",
+      "strength": "CLI implementation and tests",
+      "job": "Add --draft-contract and verify seed output."
+    },
+    {
+      "agent": "claude",
+      "strength": "governance and architecture critique",
+      "job": "Review that ask-generated seeds remain proposed and non-executing."
+    }
+  ],
+  "stop_conditions": []
+}

@@ -162,6 +162,8 @@ failure_category() {
     echo "timeout"
   elif [[ "$rc" -eq 127 ]]; then
     echo "command_missing"
+  elif grep -Eiq 'pin[ _-]?(required|denied|failed|invalid|wrong)|invalid[ _-]?pin|wrong[ _-]?pin|틀렸습니다' "$log_file" 2>/dev/null; then
+    echo "pin_required_noninteractive"
   elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied|접근[[:space:]]*거부|권한[[:space:]]*없|인증[[:space:]]*(필요|실패)' "$log_file" 2>/dev/null; then
     echo "provider_access_denied"
   elif grep -Eiq 'rate[ _-]?limit|quota|hit your limit|limit resets|resets [0-9]+[ap]m|too many requests|temporarily unavailable' "$log_file" 2>/dev/null; then
@@ -289,7 +291,7 @@ run_agent() {
   category="$(failure_category "$rc" "$log_file")"
   append_event "agent_attempt" "$agent" "$category" "$log_file"
 
-  while [[ "$rc" -ne 0 && "$AIOS_PINGPONG_AGENT_FALLBACKS" == "1" && ( "$category" == "provider_access_denied" || "$category" == "provider_backpressure" ) ]]; do
+  while [[ "$rc" -ne 0 && "$AIOS_PINGPONG_AGENT_FALLBACKS" == "1" && ( "$category" == "provider_access_denied" || "$category" == "provider_backpressure" || "$category" == "pin_required_noninteractive" ) ]]; do
     fallback_agent="$(fallback_agent_for "$agent")"
     if [[ -z "$fallback_agent" || "$attempted" == *" ${fallback_agent} "* ]]; then
       break

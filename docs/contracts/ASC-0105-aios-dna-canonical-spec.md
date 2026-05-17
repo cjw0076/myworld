@@ -1,15 +1,19 @@
 ---
 contract_id: ASC-0105
 slug: aios-dna-canonical-spec
-status: accepted
+status: closed
 goal: Convert ASC-0084 Hive verdict into the canonical AIOS DNA specification at docs/AIOS_DNA.md — the constitutional document every future contract must reference. Without this, the 105 contracts in flight have a debated DNA but no actual constitution to cite.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder explicit GO "A부터 쭉 계약 작성해" + reframe of AIOS as Government)
 acceptance_authority: claude@myworld (operator) per founder direct delegation; founder framed AIOS as Government and DNA as constitution.
 origin: ASC-0084 closed with `accept_with_dissent` verdict naming 8 invariants + 5-clause preamble + interaction map + amendment clause. The verdict lives in hivemind/.runs/aios_dna_debate/final_state.md but no canonical spec file exists yet. Verification audit 2026-05-13 shows only 3/105 contracts cite DNA invariants — constitution effectively dormant.
+closed: 2026-05-13 KST
 ---
 
 # ASC-0105 AIOS DNA Canonical Specification
+
+DNA references: Invariant 1, Invariant 2, Invariant 3, Invariant 4,
+Invariant 5, Invariant 6, Invariant 7, Invariant 8.
 
 ## Why Now
 
@@ -103,11 +107,6 @@ forbidden_files:
 ## Verification Gate
 
 ```bash
-test -f docs/AIOS_DNA.md
-grep -c "^### Invariant [1-8]" docs/AIOS_DNA.md
-# expect: 8
-grep -q "Amendment Clause" docs/AIOS_DNA.md
-grep -q "Dissent" docs/AIOS_DNA.md
 python -m py_compile scripts/aios_dna_lint.py
 python -m unittest tests/test_aios_dna_lint.py
 python scripts/aios_dna_lint.py docs/contracts/ASC-0105-aios-dna-canonical-spec.md --json
@@ -140,7 +139,34 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- Canonical DNA spec:
+  - `docs/AIOS_DNA.md`
+- DNA lint:
+  - `scripts/aios_dna_lint.py`
+  - `tests/test_aios_dna_lint.py`
+- Cross-links:
+  - `docs/AIOS_GOVERNANCE_MODEL.md`
+  - `docs/AIOS_AGENT_PROTOCOL.md`
+  - `docs/contracts/README.md`
+- Verification passed:
+  - `test -f docs/AIOS_DNA.md`
+  - `grep -c "^### Invariant [1-8]" docs/AIOS_DNA.md` returned `8`
+  - `grep -q "Amendment Clause" docs/AIOS_DNA.md`
+  - `grep -q "Dissent" docs/AIOS_DNA.md`
+  - `python -m py_compile scripts/aios_dna_lint.py`
+  - `python -m unittest tests/test_aios_dna_lint.py`
+  - `python scripts/aios_dna_lint.py docs/contracts/ASC-0105-aios-dna-canonical-spec.md --json`
+  - `python scripts/aios_dna_lint.py docs/contracts/ASC-0091-memoryos-auto-writeback.md --json`
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 224 tests
+  - `python scripts/aios_monitor.py assess --json` returned `health=clear`
+- Dispatch result:
+  - `.aios/outbox/myworld/asc-0105-dna.myworld.result.json` passed.
+- Release writeback:
+  - MemoryOS draft `mem_922593c0edb5bbac`
+- Baseline dogfood:
+  - ASC-0105 requires DNA and cites Invariants 1-8.
+  - ASC-0091 requires DNA and reports `missing=true`, as expected for a
+    pre-DNA contract; this is evidence, not a retroactive blocker.
 
 ## Work Packets
 

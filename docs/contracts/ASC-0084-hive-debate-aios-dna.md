@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0084
 slug: hive-debate-aios-dna
-status: accepted
+status: closed
 goal: Run a long-round Hive Mind deliberation on the proposed AIOS DNA (7 invariants framing) before any DNA spec is written, so the spec is shaped by adversarial multi-agent review rather than a single operator's draft.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder directive "hive로 토론 진행해. round는 길게")
+closed: 2026-05-13 KST by codex@myworld after hivemind fallback completion
 acceptance_authority: claude@myworld (operator) per founder delegation. Founder explicitly chose Hive deliberation over operator-drafted spec — DNA is too foundational to ship from one head.
 origin: founder turn 2026-05-13 KST proposing "DNA-level adaptation" framing instead of feature-by-feature engineering. Operator (claude) drafted 7-invariant candidate list; founder routed to Hive instead of accepting directly.
 ---
@@ -165,7 +166,13 @@ Pass criteria:
 
 ## Receipts
 
-Pending Hive deliberation completion.
+- hive result packet: `.aios/outbox/hivemind/asc-0084.hivemind.result.json`
+  with `status=passed`, `fallback_used=true`, and final agent `claude`.
+- hive artifacts: `hivemind/.runs/aios_dna_debate/round_1/` through
+  `round_5/`, each with proposer/critic/extender/synthesis artifacts.
+- final state: `hivemind/.runs/aios_dna_debate/final_state.md`
+- myworld summary:
+  `docs/discoveries/2026-05-13-hive-aios-dna-debate-result.md`
 
 ## Work Packets
 
@@ -173,7 +180,8 @@ Pending Hive deliberation completion.
 
 - target_agent: codex
 - target_repo: hivemind
-- status: accepted
+- status: done
+- closed: 2026-05-13 KST
 - depends_on: ASC-0065 (GenesisOS), ASC-0066 (provider role distillation)
   closed for context but not strict prerequisites.
 - brief: |
@@ -196,13 +204,14 @@ Pending Hive deliberation completion.
     efficient for the proposer/critic/extender roles. If multiple
     substrates are available, rotate them across rounds to avoid
     single-substrate bias.
-- result: pending
+- result: `.aios/outbox/hivemind/asc-0084.hivemind.result.json`
 
 ### WP-0084-B — claude@myworld writes discovery summary
 
 - target_agent: claude
 - target_repo: myworld
-- status: pending
+- status: done
+- closed: 2026-05-13 KST
 - depends_on: WP-0084-A done
 - brief: |
     Read final_state.md + synthesis docs. Write
@@ -210,4 +219,4 @@ Pending Hive deliberation completion.
     summarizing: convergence verdict, final invariant set, key
     disagreements that survived, recommendations for the downstream
     DNA spec contract.
-- result: pending
+- result: `docs/discoveries/2026-05-13-hive-aios-dna-debate-result.md`

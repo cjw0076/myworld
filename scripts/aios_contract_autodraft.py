@@ -89,6 +89,7 @@ def render_contract_body(plan: dict[str, Any], contract_id: str, slug: str, repo
             "- raw export paths",
         ]
     )
+    role_evidence = render_aios_role_evidence_section()
     return f"""---
 contract_id: {contract_id}
 slug: {slug}
@@ -140,6 +141,8 @@ forbidden_files:
 
 - No source role unless the accepted contract explicitly assigns one.
 
+{role_evidence}
+
 ## Verification Gate
 
 ```bash
@@ -170,6 +173,39 @@ Pass criteria:
 - readiness: `{evidence.get('readiness_level_name')}`
 - alignment_reasons: `{', '.join(rec.get('alignment_reasons') or [])}`
 - blocked_reasons: `{', '.join(rec.get('blocked_reasons') or [])}`
+"""
+
+
+def render_aios_role_evidence_section() -> str:
+    return """## AIOS Role Evidence
+
+### MemoryOS
+
+- context_pack: `pending_or_not_required`
+- retrieval_trace: `pending_or_not_required`
+- accepted_memory_ids: `pending_or_not_required`
+- draft_memory_policy: `draft_first_no_auto_accept`
+
+### CapabilityOS
+
+- route: `pending_or_not_required`
+- recommended_tools: `pending_or_not_required`
+- fallback_plan: `pending_or_not_required`
+- authority: `recommendation_only`
+
+### GenesisOS
+
+- branch_set: `pending_or_not_required`
+- assumption_mutations: `pending_or_not_required`
+- semantic_alignment_notes: `pending_or_not_required`
+- authority: `advisory_only`
+
+### Hive Mind
+
+- execution_plan: `pending_after_acceptance`
+- provider_route: `pending_after_acceptance`
+- verification_receipt: `pending_after_execution`
+- degraded_or_fallback_receipt: `pending_if_triggered`
 """
 
 

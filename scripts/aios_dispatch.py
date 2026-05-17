@@ -18,10 +18,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from aios_close_condition import CLOSE_TYPES, evaluate_contract
 from aios_action_policy import evaluate_action
+from aios_work_praxis import validate_praxis
+from aios_authority import audit_authority, current_agent_id, verify_authority
 
 
-REPOS = ("myworld", "hivemind", "memoryOS", "CapabilityOS")
+REPOS = ("myworld", "hivemind", "memoryOS", "CapabilityOS", "GenesisOS")
 STATE_DIR = Path(".aios/state")
 STATE_LOG = STATE_DIR / "dispatches.jsonl"
 INBOX_DIR = Path(".aios/inbox")
@@ -198,6 +201,29 @@ def contains_any_term(text: str, terms: tuple[str, ...]) -> bool:
     return any(contains_term(text, term) for term in terms)
 
 
+def is_deliberation_only_external_topic(text: str) -> bool:
+    deliberation_signal = contains_any_term(
+        text,
+        (
+            "contract deliberates; it does not deploy",
+            "this contract deliberates; it does not deploy",
+            "produces only deliberation artifacts",
+            "deliberation artifacts",
+        ),
+    )
+    no_execution_signal = contains_any_term(
+        text,
+        (
+            "forbidden_files",
+            "no deployment code",
+            "any deployment manifest",
+            "does not deploy",
+            "forbidden files",
+        ),
+    )
+    return deliberation_signal and no_execution_signal
+
+
 def action_policy_input(contract: Contract, dispatch_id: str, repo: str, agent: str) -> dict[str, Any]:
     text = f"{contract.goal}\n{contract.body}".lower()
     public_communication = contains_any_term(text, ("public communication", "public statement", "on behalf"))
@@ -231,18 +257,22 @@ def action_policy_input(contract: Contract, dispatch_id: str, repo: str, agent: 
             "credential",
         ),
     )
+    deliberation_only_external_topic = is_deliberation_only_external_topic(text)
+    effective_external_effect = external_effect and not deliberation_only_external_topic
     return {
         "action_type": "dispatch_packet",
         "target_repo": repo,
         "authority": "accepted_contract" if contract.status in {"accepted", "closed"} else "unaccepted_contract",
         "risk": "high" if any((public_communication, legal_or_safety_impact, paid_or_costly, irreversible, real_world_authority)) else "low",
-        "privacy": "remote" if external_effect or sends_private_data else "local",
+        "privacy": "remote" if effective_external_effect or sends_private_data else "local",
         "cost": "paid" if paid_or_costly else "free",
         "has_contract": contract.status in {"accepted", "closed"},
         "evidence_refs": [contract.path.as_posix()],
         "human_approved": contract.frontmatter.get("human_approved", "").lower() == "true",
         "irreversible": irreversible,
-        "external_effect": external_effect,
+        "external_effect": effective_external_effect,
+        "external_topic": external_effect,
+        "deliberation_only_external_topic": deliberation_only_external_topic,
         "uses_credentials": uses_credentials,
         "public_communication": public_communication,
         "legal_or_safety_impact": legal_or_safety_impact,
@@ -265,6 +295,68 @@ def evaluate_dispatch_policy(contract: Contract, dispatch_id: str, repo: str, ag
         "allowed_to_execute": result["allowed_to_execute"],
         "required_checkpoint": result["required_checkpoint"],
         "reason_codes": result["reason_codes"],
+        "action": action,
+    }
+
+
+def contract_requires_praxis(contract: Contract) -> bool:
+    value = contract.frontmatter.get("praxis_required", "").strip().lower()
+    if value in {"true", "yes", "1"}:
+        return True
+    if value in {"false", "no", "0"}:
+        return False
+    return False
+
+
+def load_praxis_payload(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("praxis file must contain a JSON object")
+    return payload
+
+
+def load_session_envelope(root: Path, path_text: str) -> tuple[str, dict[str, Any]]:
+    path = Path(path_text)
+    if not path.is_absolute():
+        path = root / path
+    try:
+        rel = path.resolve().relative_to((root / ".aios" / "invocations").resolve()).as_posix()
+    except ValueError as exc:
+        raise ValueError("session envelope must stay under .aios/invocations") from exc
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("session envelope must contain a JSON object")
+    if payload.get("schema_version") != "aios.session_envelope.v1":
+        raise ValueError("session envelope schema_version must be aios.session_envelope.v1")
+    if payload.get("required_before_execution") is not True:
+        raise ValueError("session envelope must set required_before_execution=true")
+    for field in ("role_statuses", "role_artifacts", "executor_assignment", "degraded_receipt"):
+        if not isinstance(payload.get(field), dict):
+            raise ValueError(f"session envelope missing object field: {field}")
+    return f".aios/invocations/{rel}", payload
+
+
+def append_praxis_block(root: Path, contract: Contract, dispatch_id: str, repo: str, agent: str, reason: str, errors: list[str] | None = None) -> dict[str, Any]:
+    append_event(
+        root,
+        {
+            "event": "held",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": agent,
+            "reason": reason,
+            "praxis_errors": errors or [],
+            "status": "held",
+        },
+    )
+    return {
+        "ok": False,
+        "dispatch_id": dispatch_id,
+        "repo": repo,
+        "status": "held",
+        "reason": reason,
+        "praxis_errors": errors or [],
     }
 
 
@@ -299,6 +391,7 @@ def repo_aliases(repo: str) -> set[str]:
         "hivemind": {"hivemind", "hive mind", "hive_mind", "hive"},
         "memoryOS": {"memoryos", "memory os", "memory_os"},
         "CapabilityOS": {"capabilityos", "capability os", "capability_os"},
+        "GenesisOS": {"genesisos", "genesis os", "genesis_os", "genesis"},
         "myworld": {"myworld", "my world", "control plane"},
     }
     return aliases.get(repo, {repo.lower()})
@@ -394,12 +487,22 @@ def cmd_create(args: argparse.Namespace) -> int:
     return 0
 
 
-def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str, policy: dict[str, Any] | None = None) -> dict[str, Any]:
+def build_packet(
+    contract: Contract,
+    dispatch_id: str,
+    repo: str,
+    agent: str,
+    policy: dict[str, Any] | None = None,
+    praxis: dict[str, Any] | None = None,
+    praxis_ref: str | None = None,
+    session_envelope: dict[str, Any] | None = None,
+    session_envelope_ref: str | None = None,
+) -> dict[str, Any]:
     verification_commands = [
         {"cwd": command["cwd"], "command": command["line"]}
         for command in extract_verification_commands(contract, repo, repo_root())
     ]
-    return {
+    packet = {
         "schema_version": "aios.dispatch.v1",
         "result_schema_version": "aios.dispatch.result.v1",
         "dispatch_id": dispatch_id,
@@ -453,6 +556,46 @@ def build_packet(contract: Contract, dispatch_id: str, repo: str, agent: str, po
             "contract_ambiguous",
         ],
     }
+    if praxis is not None:
+        packet["production_praxis"] = {
+            "ref": praxis_ref,
+            "schema_version": praxis.get("schema_version"),
+            "memory_context": praxis.get("memory_context"),
+            "capability_routes": praxis.get("capability_routes"),
+            "external_resource_check": praxis.get("external_resource_check"),
+            "genesis_reframe": praxis.get("genesis_reframe"),
+            "hive_execution_plan": praxis.get("hive_execution_plan"),
+            "specialist_assignment": praxis.get("specialist_assignment"),
+        }
+        packet["stop_conditions"] = [
+            *packet["stop_conditions"],
+            "memory_context_missing",
+            "capability_route_missing",
+            "genesis_reframe_missing",
+            "external_resource_skipped",
+            "specialist_flattening",
+            "hive_gate_missing",
+        ]
+    if session_envelope is not None:
+        packet["session_envelope"] = {
+            "ref": session_envelope_ref,
+            "schema_version": session_envelope.get("schema_version"),
+            "envelope_id": session_envelope.get("envelope_id"),
+            "invocation_id": session_envelope.get("invocation_id"),
+            "goal_hash": session_envelope.get("goal_hash"),
+            "role_statuses": session_envelope.get("role_statuses"),
+            "degraded_roles": session_envelope.get("degraded_roles"),
+            "failed_roles": session_envelope.get("failed_roles"),
+            "executor_assignment": session_envelope.get("executor_assignment"),
+            "degraded_receipt": session_envelope.get("degraded_receipt"),
+        }
+        packet["stop_conditions"] = [
+            *packet["stop_conditions"],
+            "session_envelope_missing",
+            "session_envelope_schema_invalid",
+            "session_envelope_role_degraded",
+        ]
+    return packet
 
 
 def cmd_send(args: argparse.Namespace) -> int:
@@ -489,7 +632,46 @@ def cmd_send(args: argparse.Namespace) -> int:
         blocked = append_policy_block(root, contract, dispatch_id, repo, args.agent, policy)
         print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
         return 1
-    packet = build_packet(contract, dispatch_id, repo, args.agent, policy=policy)
+    praxis_payload = None
+    praxis_ref = None
+    session_envelope_payload = None
+    session_envelope_ref = None
+    if args.praxis:
+        praxis_path = Path(args.praxis)
+        try:
+            praxis_payload = load_praxis_payload(praxis_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "praxis_unreadable", [str(exc)])
+            print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+            return 1
+        errors = validate_praxis(praxis_payload)
+        if errors:
+            blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "praxis_invalid", errors)
+            print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+            return 1
+        praxis_ref = praxis_path.as_posix()
+    elif contract_requires_praxis(contract):
+        blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "praxis_required_missing", ["praxis_required_missing"])
+        print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+        return 1
+    if getattr(args, "session_envelope", None):
+        try:
+            session_envelope_ref, session_envelope_payload = load_session_envelope(root, args.session_envelope)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "session_envelope_invalid", [str(exc)])
+            print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+            return 1
+    packet = build_packet(
+        contract,
+        dispatch_id,
+        repo,
+        args.agent,
+        policy=policy,
+        praxis=praxis_payload,
+        praxis_ref=praxis_ref,
+        session_envelope=session_envelope_payload,
+        session_envelope_ref=session_envelope_ref,
+    )
     packet_path = root / INBOX_DIR / repo / f"{dispatch_id}.{repo}.json"
     if packet_path.exists() and not args.force:
         raise SystemExit(f"packet already exists: {packet_path} (use --force to overwrite)")
@@ -731,8 +913,177 @@ def maybe_write_closeout_memory(root: Path, dispatch_id: str, reason: str, disab
     return result
 
 
+def strict_close_release_check(root: Path, dispatch_id: str, args: argparse.Namespace) -> dict[str, Any] | None:
+    if getattr(args, "operator_override_strict_close", False):
+        if not args.reason:
+            return {"ok": False, "reason": "override_without_reason"}
+        append_event(
+            root,
+            {
+                "event": "strict_close_override",
+                "dispatch_id": dispatch_id,
+                "reason": args.reason,
+                "status": "released",
+            },
+        )
+        return None
+    created = dispatch_created(root, dispatch_id)
+    if not created:
+        return None
+    try:
+        contract = read_contract(Path(str(created["contract_path"])))
+    except (OSError, SystemExit):
+        return None
+    if contract.status != "closed":
+        return None
+    payload = evaluate_contract(contract.path, root=root)
+    if int(payload.get("unmet", 0)) <= 0:
+        return None
+    close_type = getattr(args, "close_type", None)
+    followup = getattr(args, "followup_asc", None)
+    if close_type not in CLOSE_TYPES:
+        return {
+            "ok": False,
+            "reason": "strict_close_unclassified",
+            "contract_id": contract.contract_id,
+            "recommended_close_type": payload.get("recommended_close_type"),
+            "unmet": payload.get("unmet"),
+        }
+    if close_type == "closed_partial_with_followup" and not (followup and re.match(r"ASC-\d{4}$", followup)):
+        return {
+            "ok": False,
+            "reason": "strict_close_followup_required",
+            "contract_id": contract.contract_id,
+            "close_type": close_type,
+        }
+    append_event(
+        root,
+        {
+            "event": "strict_close_classified",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "close_type": close_type,
+            "followup_asc": followup,
+            "unmet": payload.get("unmet"),
+            "manual": payload.get("manual"),
+            "status": "released",
+        },
+    )
+    return None
+
+
+def import_genesis_challenge(root: Path):
+    genesis_root = (root / "GenesisOS").resolve()
+    if not (genesis_root / "genesisos").exists():
+        genesis_root = (Path(__file__).resolve().parents[1] / "GenesisOS").resolve()
+    package_dir = genesis_root / "genesisos"
+    if genesis_root.as_posix() not in sys.path:
+        sys.path.insert(0, genesis_root.as_posix())
+    loaded = sys.modules.get("genesisos")
+    loaded_paths = [Path(path).resolve() for path in getattr(loaded, "__path__", [])] if loaded else []
+    if loaded and package_dir not in loaded_paths:
+        for name in list(sys.modules):
+            if name == "genesisos" or name.startswith("genesisos."):
+                del sys.modules[name]
+    from genesisos.challenge import run  # type: ignore
+
+    return run
+
+
+def genesis_challenge_release_check(root: Path, dispatch_id: str, args: argparse.Namespace) -> dict[str, Any] | None:
+    if getattr(args, "without_genesis_challenge", False):
+        append_event(
+            root,
+            {
+                "event": "genesis_challenge_skipped",
+                "dispatch_id": dispatch_id,
+                "reason": args.reason,
+                "status": "released",
+            },
+        )
+        return None
+    created = dispatch_created(root, dispatch_id)
+    if not created:
+        return None
+    contract_path = Path(str(created["contract_path"]))
+    registry_root = (root / "docs" / "contracts").resolve()
+    try:
+        resolved_contract_path = contract_path.resolve()
+    except OSError as exc:
+        return {"ok": False, "reason": "genesis_challenge_failed", "error": str(exc)}
+    try:
+        resolved_contract_path.relative_to(registry_root)
+    except ValueError:
+        append_event(
+            root,
+            {
+                "event": "genesis_challenge_skipped",
+                "dispatch_id": dispatch_id,
+                "reason": "contract_outside_registry",
+                "contract_path": contract_path.as_posix(),
+                "status": "released",
+            },
+        )
+        return None
+    contract = read_contract(contract_path)
+    if contract.status not in {"accepted", "closed"}:
+        append_event(
+            root,
+            {
+                "event": "genesis_challenge_skipped",
+                "dispatch_id": dispatch_id,
+                "contract_id": contract.contract_id,
+                "reason": "contract_not_accepted",
+                "status": "released",
+            },
+        )
+        return None
+    try:
+        run_challenge = import_genesis_challenge(root)
+        report = run_challenge(contract.contract_id, myworld_root=root)
+    except (OSError, ValueError, KeyError, ImportError, FileNotFoundError) as exc:
+        return {"ok": False, "reason": "genesis_challenge_failed", "error": str(exc)}
+    append_event(
+        root,
+        {
+            "event": "genesis_challenge",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "risk_level": report.get("risk_level"),
+            "soft_block": report.get("soft_block"),
+            "recommendation": report.get("recommendation"),
+            "report": report.get("output_path"),
+            "status": "released" if not report.get("soft_block") else "held",
+        },
+    )
+    if not report.get("soft_block"):
+        return None
+    if getattr(args, "operator_override_genesis_block", False):
+        if not args.reason:
+            return {"ok": False, "reason": "genesis_override_without_reason", "challenge": report}
+        append_event(
+            root,
+            {
+                "event": "genesis_challenge_override",
+                "dispatch_id": dispatch_id,
+                "contract_id": contract.contract_id,
+                "reason": args.reason,
+                "challenge": report.get("output_path"),
+                "status": "released",
+            },
+        )
+        return None
+    return {"ok": False, "reason": "genesis_challenge_soft_block", "challenge": report}
+
+
 def recover_escalated_release(root: Path, dispatch_id: str, reason: str) -> dict[str, Any] | None:
     last_event = latest_dispatch_event(root, dispatch_id)
+    advisory_events = {"authority_check", "genesis_challenge", "genesis_challenge_skipped", "genesis_challenge_override"}
+    if last_event and last_event.get("event") in advisory_events:
+        for event in reversed(load_events(root)):
+            if event.get("dispatch_id") == dispatch_id and event.get("event") not in advisory_events:
+                last_event = event
+                break
     if not last_event or last_event.get("event") != "escalated":
         return None
     created = dispatch_created(root, dispatch_id)
@@ -833,7 +1184,68 @@ def cmd_transition(args: argparse.Namespace) -> int:
     dispatch_id = args.dispatch_id or latest_dispatch_id(root)
     if not dispatch_id:
         raise SystemExit("no dispatch found; pass --dispatch-id")
-    recovery = recover_escalated_release(root, dispatch_id, args.reason) if args.state == "released" else None
+    authority_payload = None
+    if args.state == "released":
+        genesis_error = genesis_challenge_release_check(root, dispatch_id, args)
+        if genesis_error:
+            append_event(
+                root,
+                {
+                    "event": "genesis_challenge_blocked",
+                    "dispatch_id": dispatch_id,
+                    "reason": genesis_error["reason"],
+                    "status": "held",
+                    "genesis_challenge": genesis_error,
+                },
+            )
+            print(json.dumps({"ok": False, "dispatch_id": dispatch_id, "status": "held", "genesis_challenge": genesis_error}, ensure_ascii=False))
+            return 1
+        strict_error = strict_close_release_check(root, dispatch_id, args)
+        if strict_error:
+            append_event(
+                root,
+                {
+                    "event": "strict_close_blocked",
+                    "dispatch_id": dispatch_id,
+                    "reason": strict_error["reason"],
+                    "status": "held",
+                    "strict_close": strict_error,
+                },
+            )
+            print(json.dumps({"ok": False, "dispatch_id": dispatch_id, "status": "held", "strict_close": strict_error}, ensure_ascii=False))
+            return 1
+    recovery = None
+    if args.state == "released":
+        agent = getattr(args, "agent", None) or current_agent_id()
+        authority = verify_authority(agent, "release_dispatch")
+        override = bool(getattr(args, "override_authority", False))
+        audit_authority(root, authority, override=override, reason=args.reason)
+        authority_payload = {**authority.to_json(), "override": override}
+        append_event(
+            root,
+            {
+                "event": "authority_check",
+                "dispatch_id": dispatch_id,
+                "agent": agent,
+                "action": "release_dispatch",
+                "authority": authority_payload,
+                "status": "released" if authority.allowed or override or authority.soft_fail else "authority_soft_denied",
+            },
+        )
+        if not (authority.allowed or override or authority.soft_fail):
+            print(json.dumps(
+                {
+                    "ok": False,
+                    "dispatch_id": dispatch_id,
+                    "status": "authority_denied",
+                    "recovery": None,
+                    "memory_writeback": None,
+                    "authority": authority_payload,
+                },
+                ensure_ascii=False,
+            ))
+            return 1
+        recovery = recover_escalated_release(root, dispatch_id, args.reason)
     append_transition(root, dispatch_id, args.state, args.reason)
     memory_writeback = None
     if args.state == "released":
@@ -850,6 +1262,7 @@ def cmd_transition(args: argparse.Namespace) -> int:
             "status": args.state,
             "recovery": recovery,
             "memory_writeback": memory_writeback,
+            "authority": authority_payload,
         },
         ensure_ascii=False,
     ))
@@ -1027,6 +1440,7 @@ def cmd_watch(args: argparse.Namespace) -> int:
         "agent_executed": "aios_dispatch.watch",
         "executed_reason": "verification_gate",
         "packet": packet_path.relative_to(root).as_posix(),
+        "session_envelope": packet.get("session_envelope"),
         "evidence": evidence,
         "log_path": log_path.relative_to(root).as_posix(),
         "stop_conditions_triggered": stop_conditions,
@@ -1063,6 +1477,8 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--repo", required=True, choices=REPOS)
     send.add_argument("--agent", default="codex")
     send.add_argument("--dispatch-id")
+    send.add_argument("--praxis", help="validated AIOS production praxis envelope JSON to attach to the packet")
+    send.add_argument("--session-envelope", help="AIOS session_envelope.json to bind into the dispatch packet")
     send.add_argument("--allow-proposed", action="store_true", help="testing only; bypass accepted-contract guard")
     send.add_argument("--force", action="store_true")
     send.set_defaults(func=cmd_send)
@@ -1085,7 +1501,14 @@ def build_parser() -> argparse.ArgumentParser:
         transition.add_argument("--dispatch-id")
         transition.add_argument("--reason", default=f"operator_{state}")
         if command_name == "release":
+            transition.add_argument("--agent", default=current_agent_id(), help="agent id requesting release")
+            transition.add_argument("--override-authority", action="store_true", help="record authority override for V1 soft-fail")
             transition.add_argument("--no-memory-write", action="store_true", help="skip closed-contract MemoryOS draft writeback")
+            transition.add_argument("--close-type", choices=sorted(CLOSE_TYPES), help="strict close classification when unmet criteria remain")
+            transition.add_argument("--followup-asc", help="required for closed_partial_with_followup")
+            transition.add_argument("--operator-override-strict-close", action="store_true", help="emergency bypass for strict close checks; requires reason")
+            transition.add_argument("--without-genesis-challenge", action="store_true", help="skip GenesisOS pre-close challenge with explicit event")
+            transition.add_argument("--operator-override-genesis-block", action="store_true", help="override GenesisOS soft-block; requires reason")
         transition.set_defaults(func=cmd_transition, state=state)
 
     watch = sub.add_parser("watch", help="run one packet's verification gate and write a result packet")

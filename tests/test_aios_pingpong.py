@@ -115,6 +115,58 @@ class AiosPingpongTest(unittest.TestCase):
             self.assertTrue(any(event["event"] == "agent_attempt" and event["agent"] == "claude" and event["status"] == "provider_backpressure" for event in events))
             self.assertTrue(any(event["event"] == "agent_done" and event["agent"] == "local" for event in events))
 
+    def test_pin_required_noninteractive_falls_back_without_secret_storage(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            marker = root / "fallback-ran"
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                "echo '틀렸습니다. (1/3)' >&2\n"
+                "echo '틀렸습니다. (2/3)' >&2\n"
+                "echo '접근 거부.' >&2\n"
+                "exit 1\n",
+            )
+            write_executable(
+                bin_dir / "claude",
+                "#!/usr/bin/env bash\n"
+                f"touch {marker.as_posix()}\n"
+                "echo 'claude fallback completed after pin-gated codex'\n",
+            )
+            env = os.environ.copy()
+            env["PATH"] = f"{bin_dir}{os.pathsep}{env['PATH']}"
+            env["AIOS_MAX_ROUNDS"] = "1"
+            env["AIOS_CONTINUE_AFTER_READY"] = "1"
+            env["CODEX_TIMEOUT"] = "5"
+            env["CLAUDE_TIMEOUT"] = "5"
+
+            result = subprocess.run(
+                [str(root / "scripts" / "aios_pingpong.sh"), "run"],
+                cwd=root,
+                env=env,
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            self.assertTrue(marker.exists())
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "aios_pingpong.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(
+                any(
+                    event["event"] == "agent_attempt"
+                    and event["agent"] == "codex"
+                    and event["status"] == "pin_required_noninteractive"
+                    for event in events
+                )
+            )
+            self.assertTrue(any(event["event"] == "agent_done" and event["agent"] == "claude" for event in events))
+
 
 if __name__ == "__main__":
     unittest.main()

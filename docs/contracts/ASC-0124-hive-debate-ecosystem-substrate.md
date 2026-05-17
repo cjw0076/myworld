@@ -1,7 +1,7 @@
 ---
 contract_id: ASC-0124
 slug: hive-debate-ecosystem-substrate
-status: accepted
+status: closed
 goal: Run a long-round Hive deliberation to sharpen the AIOS-as-substrate + sovereign-swarm-ecosystem vision before any container/federation contracts ship. Single-head decisions on whether AIOS becomes the agent's primary world (vs auxiliary tool) carry irreversibility risk; Hive adversarial review catches single-frame bias.
 created: 2026-05-14 KST
 accepted: 2026-05-14 KST by claude as verifier
@@ -145,16 +145,13 @@ multiple available.
 ## Verification Gate
 
 ```bash
-python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/ecosystem_substrate_debate/round_1').is_dir() else 1)"
-python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/ecosystem_substrate_debate/round_6').is_dir() else 1)"
-python -c "exit(0 if __import__('pathlib').Path('hivemind/.runs/ecosystem_substrate_debate/final_state.md').is_file() else 1)"
+cd hivemind
+python -c "exit(0 if __import__('pathlib').Path('.runs/ecosystem_substrate_debate/round_1').is_dir() else 1)"
+python -c "exit(0 if __import__('pathlib').Path('.runs/ecosystem_substrate_debate/round_6').is_dir() else 1)"
+python -c "exit(0 if __import__('pathlib').Path('.runs/ecosystem_substrate_debate/final_state.md').is_file() else 1)"
+python -c "exec('import pathlib\nroot=pathlib.Path(\".runs/ecosystem_substrate_debate\")\nvoices=[v for v in root.glob(\"round_*/*.md\") if v.name != \"synthesis.md\"]\ncounts=[len(v.read_text(encoding=\"utf-8\").split()) for v in voices]\nassert len(voices) in range(18, 1000), len(voices)\nassert min(counts) in range(700, 100000), min(counts)')"
+cd /home/user/workspaces/jaewon/myworld
 python -c "exit(0 if __import__('pathlib').Path('docs/discoveries/2026-05-14-hive-ecosystem-substrate-debate-result.md').is_file() else 1)"
-python -c "
-import pathlib
-voices = [v for v in pathlib.Path('hivemind/.runs/ecosystem_substrate_debate').glob('round_*/*.md') if v.name != 'synthesis.md']
-under = [v for v in voices if len(v.read_text(encoding='utf-8').split()) < 700]
-assert not under, f'voices under 700 words: {under}'
-"
 python -m unittest discover -s tests -p 'test_aios_*.py'
 python scripts/aios_monitor.py assess --json
 ```
@@ -179,7 +176,24 @@ Pass criteria:
 
 ## Receipts
 
-Pending Hive deliberation.
+- 2026-05-14 KST: Hive deliberation artifacts written under
+  `hivemind/.runs/ecosystem_substrate_debate/`.
+- Voice artifacts: 6 rounds, 3 voices per round. Word-count gate verified at
+  least 18 voice files and minimum voice count >=700 words.
+- Final verdict:
+  `hivemind/.runs/ecosystem_substrate_debate/final_state.md` converges on
+  `proceed_hybrid`.
+- Discovery summary:
+  `docs/discoveries/2026-05-14-hive-ecosystem-substrate-debate-result.md`
+  written at 318 words.
+- Watcher result:
+  `.aios/outbox/hivemind/asc-0124.hivemind.result.json` passed.
+- Watcher result:
+  `.aios/outbox/myworld/asc-0124.myworld.result.json` passed.
+- MyWorld full AIOS test suite passed: `python -m unittest discover -s tests
+  -p 'test_aios_*.py'` ran 307 tests OK.
+- No Dockerfile, container script, swarm script, raw memory sharing, or
+  implementation creep was created in this contract.
 
 ## Work Packets
 

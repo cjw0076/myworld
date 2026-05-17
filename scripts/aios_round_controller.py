@@ -10,8 +10,10 @@ Child agent execution is opt-in.
 from __future__ import annotations
 
 import argparse
+import importlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -31,6 +33,10 @@ PID_FILE = RUN_DIR / "aios_round_controller.pid"
 STOP_FILE = RUN_DIR / "aios_round_controller.stop"
 SUPERVISOR_LOG = LOG_DIR / "aios_round_controller.supervisor.log"
 DEFAULT_GOAL = Path("docs/goals/AIOS-GOAL-0001-make-something-great.md")
+
+
+def aios_loop_module() -> Any:
+    return importlib.import_module("aios_loop")
 
 
 def now_iso() -> str:
@@ -131,6 +137,81 @@ def parse_child_status(stdout: str) -> dict[str, Any]:
     return {"repos": repos, "pending_total": pending_total}
 
 
+DREAM_INTERVAL_SECONDS = 1800  # the dream/consolidation cycle runs at most every 30 min
+
+
+def dream_step(root: Path) -> dict[str, Any]:
+    """Time-gated dream tick — run the consolidation cycle periodically, not every round.
+
+    This makes the round controller the periodic 'wake' that fires the dream
+    organ, so AIOS consolidates without the operator driving it."""
+    script = root / "scripts" / "aios_dream.py"
+    if not script.exists():
+        return {"name": "dream", "status": "skipped", "reason": "missing_dream"}
+    latest = root / ".aios" / "dream" / "latest.json"
+    if latest.exists():
+        try:
+            data = json.loads(latest.read_text(encoding="utf-8"))
+            last = datetime.fromisoformat(data["generated_at"])
+            age = (datetime.now(timezone.utc).astimezone() - last).total_seconds()
+            if age < DREAM_INTERVAL_SECONDS:
+                return {"name": "dream", "status": "skipped",
+                        "reason": "recent_dream", "age_seconds": int(age)}
+        except (ValueError, KeyError, OSError):
+            pass
+    # consolidate-budget kept well under the step timeout so phase-1 embedding
+    # plus the consolidation helper + research tail all fit one round.
+    return json_step(root, "dream",
+                     [sys.executable, script.as_posix(), "--root", root.as_posix(), "run", "--json",
+                      "--consolidate-budget", "150"],
+                     timeout=420)
+
+
+def local_operator_step(root: Path) -> dict[str, Any]:
+    """Run the local-operator review once a fresh dream report exists — chains
+    dream → local-operator so the operator role is pre-digested locally."""
+    script = root / "scripts" / "aios_local_operator.py"
+    if not script.exists():
+        return {"name": "local_operator", "status": "skipped", "reason": "missing_local_operator"}
+    dream_latest = root / ".aios" / "dream" / "latest.json"
+    op_latest = root / ".aios" / "local_operator" / "latest.json"
+    if not dream_latest.exists():
+        return {"name": "local_operator", "status": "skipped", "reason": "no_dream_report"}
+    try:
+        dream_at = json.loads(dream_latest.read_text(encoding="utf-8")).get("generated_at", "")
+        if op_latest.exists():
+            op_src = json.loads(op_latest.read_text(encoding="utf-8")).get("generated_at", "")
+            # already reviewed this dream (op review newer than dream report)
+            if op_src and op_src >= dream_at:
+                return {"name": "local_operator", "status": "skipped", "reason": "dream_already_reviewed"}
+    except (ValueError, OSError):
+        pass
+    return json_step(root, "local_operator",
+                     [sys.executable, script.as_posix(), "--root", root.as_posix(), "run", "--json"],
+                     timeout=300)
+
+
+def librarian_step(root: Path) -> dict[str, Any]:
+    """Time-gated librarian tick — the MemoryOS librarian tends the library
+    periodically (embedding is slow, so hourly, not every round)."""
+    script = root / "scripts" / "aios_librarian.py"
+    if not script.exists():
+        return {"name": "librarian", "status": "skipped", "reason": "missing_librarian"}
+    latest = root / ".aios" / "librarian" / "latest.json"
+    if latest.exists():
+        try:
+            data = json.loads(latest.read_text(encoding="utf-8"))
+            last = datetime.fromisoformat(data["ran_at"])
+            age = (datetime.now(timezone.utc).astimezone() - last).total_seconds()
+            if age < 3600:
+                return {"name": "librarian", "status": "skipped", "reason": "recent_tend", "age_seconds": int(age)}
+        except (ValueError, KeyError, OSError):
+            pass
+    return json_step(root, "librarian",
+                     [sys.executable, script.as_posix(), "--root", root.as_posix(), "run", "--no-embed", "--json"],
+                     timeout=300)
+
+
 def child_watcher_status(root: Path) -> dict[str, Any]:
     script = root / "scripts/aios_child_watcher.sh"
     if not script.exists():
@@ -139,6 +220,195 @@ def child_watcher_status(root: Path) -> dict[str, Any]:
     step["parsed"] = parse_child_status(step.get("stdout") or "")
     step.pop("stdout", None)
     return step
+
+
+def loop_policy_step(root: Path) -> dict[str, Any]:
+    script = root / "scripts/aios_loop_policy.py"
+    if not script.exists():
+        return {"name": "loop_policy", "status": "skipped", "reason": "missing_loop_policy"}
+    return json_step(root, "loop_policy", [sys.executable, script.as_posix(), "--root", root.as_posix(), "--json"], timeout=60)
+
+
+def contract_from_policy_path(root: Path, path_text: str) -> Any | None:
+    path = Path(path_text)
+    if not path.is_absolute():
+        path = root / path
+    if not path.exists():
+        return None
+    loop = aios_loop_module()
+    return loop.read_contract(path)
+
+
+def infer_inline_repos(body: str) -> list[str]:
+    match = re.search(r"^\s*repos:\s*(.+?)\s*$", body, flags=re.MULTILINE)
+    if not match:
+        return []
+    raw = match.group(1).strip().strip("`")
+    values = [part.strip().strip("`") for part in re.split(r"[, ]+", raw) if part.strip().strip("`")]
+    return [value for value in values if value]
+
+
+def normalize_contract_scope(contract: Any) -> Any:
+    if contract.repos:
+        return contract
+    repos = infer_inline_repos(contract.body)
+    if not repos:
+        return contract
+    loop = aios_loop_module()
+    return loop.Contract(
+        path=contract.path,
+        frontmatter=contract.frontmatter,
+        body=contract.body,
+        repos=repos,
+        allowed_files=contract.allowed_files,
+        forbidden_files=contract.forbidden_files,
+    )
+
+
+def policy_bound_dispatch_loop(root: Path, policy: dict[str, Any] | None) -> dict[str, Any]:
+    loop = aios_loop_module()
+    loop.ensure_layout(root)
+    before_events = loop.load_events(root)
+    actions: list[dict[str, Any]] = []
+    observations: list[dict[str, Any]] = []
+    actions.extend(loop.collect_results(root, before_events))
+    events = loop.load_events(root)
+
+    order = (policy or {}).get("open_contract_order") or []
+    if not order:
+        fallback = json_step(root, "dispatch_loop", [sys.executable, (root / "scripts/aios_loop.py").as_posix(), "once", "--apply", "--json"])
+        parsed = fallback.get("parsed") or {}
+        return {
+            "name": "dispatch_loop",
+            "status": fallback.get("status"),
+            "returncode": fallback.get("returncode"),
+            "timed_out": fallback.get("timed_out"),
+            "error": fallback.get("error"),
+            "stderr_tail": fallback.get("stderr_tail"),
+            "parsed": parsed,
+            "policy_binding": {"enabled": False, "reason": "missing_open_contract_order"},
+        }
+
+    for item in order:
+        contract = contract_from_policy_path(root, str(item.get("path") or ""))
+        if contract is None:
+            continue
+        contract = normalize_contract_scope(contract)
+        state = loop.dispatch_state(events, contract.dispatch_id)
+        policy_event_base = {
+            "event": "policy_dispatch_decision",
+            "dispatch_id": contract.dispatch_id,
+            "contract_id": contract.contract_id,
+            "policy_contract_id": item.get("contract_id"),
+            "policy_recommendation_followed": False,
+            "policy_priority_reason": item.get("priority_reason"),
+            "policy_issuer": item.get("issuer"),
+        }
+        if contract.status != "accepted":
+            loop.append_dispatch_event(root, {**policy_event_base, "reason": f"contract_status_{contract.status}", "status": "skipped"})
+            continue
+        target_repos = contract.repos or []
+        if not target_repos:
+            loop.append_dispatch_event(root, {**policy_event_base, "reason": "missing_repos", "status": "skipped"})
+            observations.append({"contract_id": contract.contract_id, "status": contract.status, "next": "checkpoint_missing_repos"})
+            continue
+        invalid_repos = [repo for repo in target_repos if repo not in loop.REPOS]
+        if invalid_repos:
+            loop.append_dispatch_event(root, {**policy_event_base, "reason": "invalid_repos", "repos": invalid_repos, "status": "skipped"})
+            observations.append({"contract_id": contract.contract_id, "next": "checkpoint_invalid_repos", "repos": invalid_repos})
+            continue
+        if state["terminal"]:
+            loop.append_dispatch_event(root, {**policy_event_base, "reason": f"policy_{state['terminal_status']}_checkpoint", "status": "skipped"})
+            observations.append(
+                {
+                    "contract_id": contract.contract_id,
+                    "status": contract.status,
+                    "dispatch_id": contract.dispatch_id,
+                    "pending_results": sorted(set(target_repos) - set(state["collected"])),
+                    "next": f"policy_{state['terminal_status']}_checkpoint",
+                }
+            )
+            continue
+
+        decision_recorded = False
+        if not state["created"]:
+            loop.append_dispatch_event(root, {**policy_event_base, "policy_recommendation_followed": True, "reason": "policy_order_create", "status": "selected"})
+            decision_recorded = True
+            actions.append(loop.create_dispatch(root, contract))
+            events = loop.load_events(root)
+            state = loop.dispatch_state(events, contract.dispatch_id)
+        for repo in target_repos:
+            if repo in state["sent"]:
+                continue
+            if not decision_recorded:
+                loop.append_dispatch_event(root, {**policy_event_base, "policy_recommendation_followed": True, "reason": "policy_order_send", "status": "selected"})
+                decision_recorded = True
+            try:
+                actions.append(loop.send_packet(root, contract, repo))
+            except Exception as exc:  # noqa: BLE001 - record and continue to the next policy-ranked contract.
+                reason = f"send_error:{exc.__class__.__name__}"
+                loop.append_dispatch_event(
+                    root,
+                    {
+                        **policy_event_base,
+                        "policy_recommendation_followed": False,
+                        "reason": reason,
+                        "detail": str(exc)[:240],
+                        "repo": repo,
+                        "status": "skipped",
+                    },
+                )
+                observations.append(
+                    {
+                        "contract_id": contract.contract_id,
+                        "status": contract.status,
+                        "dispatch_id": contract.dispatch_id,
+                        "next": "checkpoint_dispatch_error",
+                        "reason": reason,
+                        "detail": str(exc)[:240],
+                    }
+                )
+                decision_recorded = False
+                break
+            events = loop.load_events(root)
+            state = loop.dispatch_state(events, contract.dispatch_id)
+        pending = sorted(set(target_repos) - set(state["collected"]))
+        observations.append(
+            {
+                "contract_id": contract.contract_id,
+                "status": contract.status,
+                "dispatch_id": contract.dispatch_id,
+                "pending_results": pending,
+                "next": "await_results" if pending else "ready_for_closeout",
+                "policy_recommendation_followed": decision_recorded,
+            }
+        )
+        if decision_recorded:
+            break
+
+    snapshot = {
+        "schema_version": "aios.loop.v1",
+        "generated_at": now_iso(),
+        "mode": "apply",
+        "actions": actions,
+        "observations": observations,
+        "policy_binding": {
+            "enabled": True,
+            "open_contract_order_count": len(order),
+            "verifier_starvation_seconds": (policy or {}).get("verifier_starvation_seconds"),
+            "priority_inversion_detected": (policy or {}).get("priority_inversion_detected"),
+        },
+    }
+    loop.append_loop_event(root, snapshot)
+    return {
+        "name": "dispatch_loop",
+        "status": "passed",
+        "returncode": 0,
+        "timed_out": False,
+        "parsed": snapshot,
+        "error": "",
+        "stderr_tail": "",
+    }
 
 
 def execute_pending_children(root: Path, child_status: dict[str, Any]) -> list[dict[str, Any]]:
@@ -208,6 +478,21 @@ def run_round(root: Path, *, goal: Path, execute_children: bool) -> dict[str, An
     ensure_layout(root)
     steps: dict[str, Any] = {}
 
+    persistent_script = root / "scripts/aios_coevolution/persistent.py"
+    if persistent_script.exists():
+        steps["coevolution_pulses"] = json_step(
+            root,
+            "coevolution_pulses",
+            [sys.executable, persistent_script.as_posix(), "--root", root.as_posix(), "--json"],
+            timeout=60,
+        )
+    else:
+        steps["coevolution_pulses"] = {
+            "name": "coevolution_pulses",
+            "status": "skipped",
+            "reason": "missing_persistent_helper",
+        }
+
     monitor_script = root / "scripts/aios_monitor.py"
     if monitor_script.exists():
         steps["monitor"] = json_step(root, "monitor", [sys.executable, monitor_script.as_posix(), "assess", "--json"])
@@ -225,9 +510,39 @@ def run_round(root: Path, *, goal: Path, execute_children: bool) -> dict[str, An
     else:
         steps["goal_evolution"] = {"name": "goal_evolution", "status": "skipped", "reason": "missing_goal_or_script"}
 
+    steps["dream"] = dream_step(root)
+    steps["librarian"] = librarian_step(root)
+    steps["local_operator"] = local_operator_step(root)
+    vf = root / "scripts" / "aios_verify.py"
+    steps["verify"] = (
+        json_step(root, "verify", [sys.executable, vf.as_posix(), "--root", root.as_posix(), "run", "--json"], timeout=60)
+        if vf.exists() else {"name": "verify", "status": "skipped", "reason": "missing_verify"}
+    )
+    jq = root / "scripts" / "aios_jobs.py"
+    steps["jobs_sweep"] = (
+        json_step(root, "jobs_sweep", [sys.executable, jq.as_posix(), "--root", root.as_posix(), "--json", "sweep"], timeout=45)
+        if jq.exists() else {"name": "jobs_sweep", "status": "skipped", "reason": "missing"}
+    )
+    dr = root / "scripts" / "aios_dispatch_reconcile.py"
+    steps["dispatch_reconcile"] = (
+        json_step(root, "dispatch_reconcile", [sys.executable, dr.as_posix(), "--root", root.as_posix(), "run", "--json"], timeout=60)
+        if dr.exists() else {"name": "dispatch_reconcile", "status": "skipped", "reason": "missing"}
+    )
+    cf = root / "scripts" / "aios_capability_feedback.py"
+    steps["capability_feedback"] = (
+        json_step(root, "capability_feedback", [sys.executable, cf.as_posix(), "--root", root.as_posix(), "--json"], timeout=60)
+        if cf.exists() else {"name": "capability_feedback", "status": "skipped", "reason": "missing"}
+    )
+    se = root / "scripts" / "aios_self_evolve.py"
+    steps["self_evolve"] = (
+        json_step(root, "self_evolve", [sys.executable, se.as_posix(), "--root", root.as_posix(), "run", "--json"], timeout=120)
+        if se.exists() else {"name": "self_evolve", "status": "skipped", "reason": "missing_self_evolve"}
+    )
+
+    steps["loop_policy"] = loop_policy_step(root)
     loop_script = root / "scripts/aios_loop.py"
     if loop_script.exists():
-        steps["dispatch_loop"] = json_step(root, "dispatch_loop", [sys.executable, loop_script.as_posix(), "once", "--apply", "--json"])
+        steps["dispatch_loop"] = policy_bound_dispatch_loop(root, (steps["loop_policy"].get("parsed") or {}))
     else:
         steps["dispatch_loop"] = {"name": "dispatch_loop", "status": "skipped", "reason": "missing_dispatch_loop"}
 

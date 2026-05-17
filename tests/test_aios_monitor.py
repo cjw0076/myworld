@@ -52,6 +52,37 @@ class AiosMonitorTest(unittest.TestCase):
             codes = {alert["code"] for alert in payload["alerts"]}
             self.assertIn("dispatch_contract_status_stale", codes)
 
+    def test_snapshot_includes_genesisos_repo_surface(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            payload = self.run_snapshot(root)
+
+            repos = {row["repo"] for row in payload["repos"]}
+            self.assertIn("GenesisOS", repos)
+            genesis = next(row for row in payload["repos"] if row["repo"] == "GenesisOS")
+            self.assertFalse(genesis["exists"])
+
+    def test_generated_cache_only_repo_status_is_low_signal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            genesis = root / "GenesisOS"
+            (genesis / "genesisos" / "__pycache__").mkdir(parents=True)
+            subprocess.run(["git", "init"], cwd=genesis, text=True, capture_output=True, check=True)
+            (genesis / "genesisos" / "__pycache__" / "critic.cpython-313.pyc").write_text(
+                "cache",
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            genesis_status = next(row for row in payload["repos"] if row["repo"] == "GenesisOS")
+            self.assertFalse(genesis_status["dirty"])
+            self.assertTrue(genesis_status["generated_cache_entries"])
+            alerts = [alert for alert in payload["alerts"] if alert.get("repo") == "GenesisOS"]
+            self.assertNotIn("repo_dirty", {alert["code"] for alert in alerts})
+            self.assertIn("generated_cache_present", {alert["code"] for alert in alerts})
+
     def test_snapshot_applies_exact_reconciliation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -324,6 +355,38 @@ class AiosMonitorTest(unittest.TestCase):
             self.assertEqual("dispatch_results_pending", payload["findings"][0]["code"])
             self.assertEqual("myworld", payload["findings"][0]["owner"])
             self.assertEqual("collect_result_or_run_watcher", payload["next_actions"][0]["action"])
+
+    def test_snapshot_reports_orphan_dirty_post_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "memoryOS"
+            repo.mkdir()
+            subprocess.run(["git", "init"], cwd=repo, text=True, capture_output=True, check=True)
+            worklog = repo / "docs" / "AGENT_WORKLOG.md"
+            worklog.parent.mkdir()
+            worklog.write_text("orphan\n", encoding="utf-8")
+            result_dir = root / ".aios" / "outbox" / "memoryOS"
+            result_dir.mkdir(parents=True)
+            (result_dir / "asc-0992.memoryOS.result.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.dispatch.result.v1",
+                        "target_repo": "memoryOS",
+                        "dispatch_id": "asc-0992",
+                        "contract_id": "ASC-0992",
+                        "status": "failed",
+                        "orphan_work_detected": True,
+                        "orphan_work_files": ["?? docs/AGENT_WORKLOG.md"],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            alerts = {alert["code"]: alert for alert in payload["alerts"]}
+            self.assertIn("orphan_dirty_post_failure", alerts)
+            self.assertEqual("memoryOS", alerts["orphan_dirty_post_failure"]["repo"])
 
     def test_status_reports_latest_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

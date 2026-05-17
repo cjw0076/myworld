@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0064
 slug: live-dashboard-websocket
-status: accepted
+status: closed
 goal: Replace ASC-0039's static snapshot with a live web dashboard that tails `.aios/primitives/events.jsonl` over WebSocket and updates the DOM in real time, while supporting both an "operator mode" (full state) and a "simple mode" (status + headline events) so the same surface scales from technical operators to non-technical viewers.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder role delegated)
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: claude@myworld (operator) per founder approval of UI sequence and directive "최종적으로 레이어가 다른 사람들을 전부 아우를 수 있어야하니까".
 origin: claude UI proposal 2026-05-13 KST. ASC-0039 dashboard is currently static — must reload to see new state. Live event stream is the foundation for every later UI ASC.
 ---
@@ -91,17 +91,12 @@ forbidden_files:
 ```bash
 python -m py_compile scripts/aios_dashboard_ws.py scripts/aios_local_app.py
 python -m unittest tests/test_aios_dashboard_ws.py
-python scripts/aios_local_app.py up --json   # should report ws_url
+python scripts/aios_local_app.py up --json
 sleep 2
 # touch a new event to test live push
 python scripts/aios_primitives.py task create --subject "ASC-0064 live test" --description x --json
 sleep 2
-python scripts/aios_local_app.py status --json | python -c "
-import json, sys
-d = json.load(sys.stdin)
-assert d.get('ws_running'), 'ws server should be running'
-assert d.get('http_running'), 'http server should be running'
-print('OK ws + http both running')"
+python scripts/aios_local_app.py status --json --assert-live
 python scripts/aios_local_app.py stop
 python -m unittest discover -s tests -p 'test_aios_*.py'
 python scripts/aios_monitor.py assess --json
@@ -132,7 +127,18 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- implementation: `scripts/aios_dashboard_ws.py`, `scripts/aios_local_app.py`,
+  `apps/control/live.js`, `apps/control/index.html`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_dashboard_ws.py`
+- local verification:
+  - `python -m py_compile scripts/aios_dashboard_ws.py scripts/aios_local_app.py`
+  - `python -m unittest tests/test_aios_dashboard_ws.py tests/test_aios_local_app.py`
+  - `python scripts/aios_local_app.py up --port 9875 --ws-port 9876 --json`
+  - `python scripts/aios_primitives.py task create --subject "ASC-0064 live test" --description x --json`
+  - `python scripts/aios_local_app.py status --json --assert-live`
+  - `python scripts/aios_local_app.py stop --json`
+- dispatch receipt: `.aios/outbox/myworld/asc-0064.myworld.result.json`
+  with `status=passed`.
 
 ## Work Packets
 
@@ -140,7 +146,8 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
+- closed: 2026-05-13 KST
 - brief: |
     Add WebSocket server, integrate with aios_local_app.py up/status/stop,
     write live.js client, add mode toggle (operator ↔ simple) to index.html
@@ -150,4 +157,4 @@ Pending.
 
     After verification, dogfood: run `up`, open browser, toggle modes,
     fire a `task create` event, confirm both modes update within 1 s.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0064.myworld.result.json`

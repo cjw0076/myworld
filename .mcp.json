@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "aios": {
+      "command": "python",
+      "args": ["scripts/aios_mcp_server.py", "--root", "."],
+      "description": "AIOS delegation interface — exposes AIOS organs (route, helper_run, retrieve, challenge, observe) as MCP tools. Any agent working in this workspace delegates routine functions to AIOS instead of reimplementing them."
+    }
+  }
+}

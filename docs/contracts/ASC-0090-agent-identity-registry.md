@@ -1,11 +1,13 @@
 ---
 contract_id: ASC-0090
 slug: agent-identity-registry
-status: proposed
+status: closed
 goal: Replace ad-hoc `<agent>@<host>` social-convention strings with a stable per-agent identity registry so observations, contracts, packets, and ledger entries cite a real id with capabilities + substrate + public-key seed (swarm-ready).
 created: 2026-05-13 KST
 proposed_by: claude@myworld (operator)
-acceptance_authority: pending founder GO.
+accepted: 2026-05-13 KST by codex acting founder-delegated operator as prerequisite for accepted ASC-0107
+closed: 2026-05-13 21:25 KST by codex acting founder-delegated operator
+acceptance_authority: codex@myworld under founder-delegated AIOS operator loop.
 origin: founder verification 2026-05-13 KST that AIOS has no formal agent identity registry — only social conventions like `claude@myworld`, `codex@hivemind`. Confirmed by claude scan: no `agent_registry` file exists. Cited as Q4 in founder turn alongside the 5-layer Claude Code session reverse-engineering.
 ---
 
@@ -78,8 +80,7 @@ forbidden_files:
 
 ```bash
 python -m unittest tests/test_aios_agent_registry.py
-python scripts/aios_agent_registry.py register --id claude_at_myworld_dev \
-  --substrate claude_code --capabilities operator,reviewer
+python scripts/aios_agent_registry.py register --id claude_at_myworld_dev --substrate claude_code --capabilities operator,reviewer
 python scripts/aios_agent_registry.py list --json
 python scripts/aios_agent_registry.py verify claude_at_myworld_dev
 python -m unittest discover -s tests -p 'test_aios_*.py'
@@ -96,4 +97,9 @@ python -m unittest discover -s tests -p 'test_aios_*.py'
 
 ## Receipts
 
-Pending.
+- dispatch: `.aios/inbox/myworld/asc-0090.myworld.json`
+- result: `.aios/outbox/myworld/asc-0090.myworld.result.json`
+- log: `.aios/logs/asc-0090.myworld.log`
+- registry: `~/.aios/agents.json`
+- doc_mirror: `docs/AIOS_AGENTS_REGISTRY.md`
+- memory_writeback: release wrote MemoryOS draft `mem_7e99392705adcae1`.

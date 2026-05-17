@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0073
 slug: genesis-cross-domain-analogy
-status: accepted
+status: closed
 goal: Add a GenesisOS analogy engine that pulls solution patterns from unrelated domains (biology, geology, music, architecture, sports, mythology, etc.) and proposes how they apply to a current AIOS problem, breaking domain frame-lock.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
 acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive on prompt-prison. Cross-domain analogy is one of the most powerful escape mechanisms — biology's evolution patterns, music's polyphony, architecture's load-bearing all encode novel solutions.
+closed: 2026-05-15 KST by codex@myworld
 ---
 
 # ASC-0073 Genesis Cross-Domain Analogy Engine
@@ -108,7 +109,23 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- GenesisOS WP-0073-A implemented:
+  - `GenesisOS/genesisos/analogy.py`
+  - `GenesisOS/genesisos/cli.py`
+  - `GenesisOS/genesisos/data/analogy_library.json`
+  - `GenesisOS/tests/test_analogy.py`
+  - `GenesisOS/docs/CROSS_DOMAIN.md`
+- MyWorld WP-0073-B implemented:
+  - `scripts/aios_genesis_analogy.py`
+  - `tests/test_aios_genesis_analogy.py`
+- Verification:
+  - `cd GenesisOS && python -m pytest tests/test_analogy.py -v` passed 4/4.
+  - `cd GenesisOS && python -m unittest tests/test_critic.py tests/test_cli.py tests/test_mutator.py tests/test_branches.py tests/test_modalities.py tests/test_analogy.py` passed 30/30.
+  - `python -m genesisos.cli analogy match --text /tmp/sample.md --top 3 --json` returned three ranked matches with domain, abstract rule, and applications.
+  - `python -m genesisos.cli analogy add --domain biology --pattern-name "test" --rule r --example e --applications x --json` wrote operator-attributed entry `biology-test-561c6a08`.
+  - `python -m unittest tests/test_aios_genesis_analogy.py` passed 2/2.
+  - `python scripts/aios_genesis_analogy.py --contract-id ASC-0050 --json` wrote `.aios/genesis_analogies/ASC-0050-aios-primitive-surface-68764cf9b6cf.json`.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 356/356.
 
 ## Work Packets
 

@@ -1,7 +1,7 @@
 ---
 contract_id: ASC-0075
 slug: genesis-seed-library
-status: accepted
+status: closed
 goal: Build a curated, append-only seed library inside GenesisOS that captures wild ideas (from mutator, branches, analogies, operator dumps) BEFORE they pass any verification gate, so non-obvious thoughts are not silently filtered out by Hive's success criteria.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
@@ -110,7 +110,32 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+### 2026-05-15 KST — codex closeout
+
+- changed: `scripts/aios_genesis_seed_capture.py`,
+  `tests/test_aios_genesis_seed_capture.py`,
+  `docs/contracts/ASC-0075-genesis-seed-library.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`, and
+  `GenesisOS/docs/AGENT_WORKLOG.md`.
+- GenesisOS WP-A evidence: existing `genesisos.library.Library` supports
+  capture, list, random, bury, and revive with append-only seed files under
+  `GenesisOS/seeds/library/<date>/` and event-only bury/revive lifecycle.
+- MyWorld WP-B behavior: `scripts/aios_genesis_seed_capture.py` captures
+  ad-hoc operator seeds, writes a seed through GenesisOS `Library`, and writes
+  a MyWorld receipt with `authority=speculative_only` and
+  `review_required_before_promotion=true`.
+- evidence:
+  - `cd GenesisOS && python -m pytest tests/test_library.py -v` passed 8/8.
+  - GenesisOS CLI capture/list/random smoke passed and wrote
+    `lib-665c8b0b316d` with tags `test,asc-0075`.
+  - `python -m unittest tests/test_aios_genesis_seed_capture.py` passed 2/2.
+  - `python scripts/aios_genesis_seed_capture.py --inline ... --source operator --tags asc-0075,smoke --confidence 0.4 --captured-by codex --seeds-root /tmp/asc0075-seeds --output-root /tmp/asc0075-receipts --json`
+    wrote seed `lib-d4df6719852f` and receipt `lib-d4df6719852f.json`.
+  - GenesisOS local unit set including library passed 39/39.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+    360/360.
+- boundary: seeds are speculative only. Capture does not create contracts,
+  accept memory, route capabilities, execute providers, or delete records.
 
 ## Work Packets
 

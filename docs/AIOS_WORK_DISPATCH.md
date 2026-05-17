@@ -10,6 +10,7 @@ myworld        = control tower
 hivemind       = aircraft operations / execution fleet
 memoryOS       = flight history, maps, black boxes, and reviewed knowledge
 CapabilityOS   = runway/tool availability, routing options, and fallback plans
+GenesisOS      = divergence, semantic mutation, and prompt-prison critique
 operator       = air traffic controller with release/hold authority
 ```
 
@@ -31,6 +32,10 @@ memoryOS/
 
 CapabilityOS/
   -> recommends tools, MCPs, APIs, skills, provider routes, and fallbacks
+
+GenesisOS/
+  -> produces divergence, semantic alignment, prompt-prison critique, and
+     contract seeds without taking execution authority
 ```
 
 ## Correct Flow
@@ -95,6 +100,7 @@ For each meaningful task, `myworld` should produce:
 | Provider CLI wrapping, scheduler, verifier, receipts | `hivemind/` |
 | Memory import, context build, review lifecycle, provenance | `memoryOS/` |
 | Tool/MCP/API/skill discovery, scoring, binding plans | `CapabilityOS/` |
+| Divergence, semantic alignment, prompt-prison critique, seeds | `GenesisOS/` |
 | Cross-repo contract, north star, ecosystem ledger | `myworld/` |
 
 If ownership is unclear, stop and create an operator checkpoint.
@@ -111,21 +117,39 @@ myworld/
   .aios/inbox/hivemind/*.json
   .aios/inbox/memoryOS/*.json
   .aios/inbox/CapabilityOS/*.json
+  .aios/inbox/GenesisOS/*.json
   .aios/outbox/myworld/*.json
   .aios/outbox/hivemind/*.json
   .aios/outbox/memoryOS/*.json
   .aios/outbox/CapabilityOS/*.json
+  .aios/outbox/GenesisOS/*.json
   .aios/state/dispatches.jsonl
 ```
 
 The runtime `.aios/` directory is local state and should not be committed.
 
+Direct ask interface:
+
+```bash
+python scripts/aios_ask.py "ship a scoped AIOS improvement" --draft-contract --json
+bin/aios ask "ship a scoped AIOS improvement" --draft-contract --json
+```
+
+`ask` is intent intake, not execution authority. It writes an ask receipt,
+instruction, praxis envelope, and invocation artifact set under `.aios/`, then
+optionally writes a proposed `contract_seed.md`. The operator or control loop
+can then assign a real ASC id, narrow scope, accept, and dispatch through the
+normal policy gates.
+
 CLI entry point:
 
 ```bash
+bin/aios ask "describe the work goal" --json
 python scripts/aios_dispatch.py create docs/contracts/ASC-0001-memoryos-hivemind-loop.md
 python scripts/aios_dispatch.py send --repo memoryOS --agent codex
 python scripts/aios_dispatch.py send --repo hivemind --agent codex
+python scripts/aios_dispatch.py send --repo GenesisOS --agent codex
+python scripts/aios_dispatch.py send --repo myworld --agent codex --praxis docs/praxis/ASC-0102-dispatch-praxis-binding.json
 python scripts/aios_dispatch.py watch --repo memoryOS --once
 python scripts/aios_dispatch.py watch --repo hivemind --once
 python scripts/aios_dispatch.py status
@@ -137,6 +161,18 @@ python scripts/aios_dispatch.py escalate --reason scope_conflict
 python scripts/aios_dispatch.py stop --reason operator_checkpoint
 ```
 
+Release recovery semantics:
+
+- If `send` was blocked by `action_policy_escalate`, no inbox packet exists.
+- A later `release --dispatch-id <id> --reason <reason>` writes one inbox
+  packet with `operator_override=true`, only for the repo and contract already
+  recorded in the escalated event.
+- The recovery path records a `dispatch.recovery` event and a normal `sent`
+  event before the final `released` state, so the packet can be audited and
+  consumed by the watcher.
+- The override bypasses only the action-policy decision. It still uses the
+  normal contract reader, repo-scope check, packet builder, and inbox path.
+
 Child repo agent watcher entry point:
 
 ```bash
@@ -144,6 +180,7 @@ Child repo agent watcher entry point:
 scripts/aios_child_watcher.sh once --repo memoryOS
 scripts/aios_child_watcher.sh once --repo hivemind
 scripts/aios_child_watcher.sh once --repo CapabilityOS
+scripts/aios_child_watcher.sh once --repo GenesisOS
 
 # Start background watchers for all child repos.
 scripts/aios_child_watcher.sh start --repo all
@@ -354,6 +391,13 @@ Guardrails:
 - `send` evaluates `docs/AIOS_ACTION_POLICY.md` before writing an inbox packet.
   A non-`allow` decision records `held`, `escalated`, or `stopped` in
   `.aios/state/dispatches.jsonl` and leaves the inbox unchanged.
+- contracts may set `praxis_required: true`. In that case `send` also requires
+  `--praxis <json>` and validates `aios.production_praxis.v1` before writing
+  an inbox packet. The praxis envelope is attached to the packet under
+  `production_praxis` so MemoryOS, CapabilityOS, GenesisOS, Hive, external
+  resource checks, and specialist assignment are visible to the worker.
+- invalid or missing praxis records `held` with `praxis_required_missing` or
+  `praxis_invalid` and leaves the inbox unchanged.
 - `aios_loop.py once --apply` uses the same action-policy gate, so autonomous
   control-plane rounds cannot bypass manual `send` policy checks.
 - packets include `allowed_files`, `forbidden_files`, required reading, and
@@ -389,6 +433,12 @@ Guardrails:
   route planning is unavailable, it falls back to the static ASC-0025 alternate.
   It does not fallback on timeouts, missing commands, unsupported agents, or
   ordinary child-agent failures.
+- Under ASC-0081, the provider fallback identity set is `codex`, `claude`,
+  `gemini`, and `local`. `gemini` is treated as a provider CLI substrate.
+  `local` is treated as a bounded local-worker substrate: it may draft,
+  summarize, classify, or propose a route, but a local-only successful attempt
+  holds with `local_llm_used_as_final_acceptor_without_verifier` until a
+  separate verifier accepts it.
 - The child watcher prompt includes `AIOS_DEFINITION.md`; if a packet cannot
   advance a valid completion level, the child agent should return a checkpoint
   instead of claiming done.

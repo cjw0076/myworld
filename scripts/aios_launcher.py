@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import webbrowser
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +66,14 @@ def runtime_command(root: Path, argv: list[str]) -> list[str]:
     return [sys.executable, (root / "scripts" / "aios_runtime.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
+def ask_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_ask.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def chat_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_chat.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
 def provider_loop_command(root: Path, argv: list[str]) -> tuple[list[str], Path]:
     hive_root = root / "hivemind"
     if not (hive_root / "hivemind" / "hive.py").exists():
@@ -81,6 +90,125 @@ def provider_loop_command(root: Path, argv: list[str]) -> tuple[list[str], Path]
         ],
         hive_root,
     )
+
+
+def discover_command(root: Path, argv: list[str]) -> list[str]:
+    args = argv if argv and argv[0] in {"scan", "invoke"} else ["scan", *argv]
+    return [sys.executable, (root / "scripts" / "aios_project_discovery.py").as_posix(), "--control-root", root.as_posix(), *args]
+
+
+def init_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_workbench_init.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def workbench_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_workbench.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def emit_recap_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_emit_recap.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def helper_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_helper.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def dream_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_dream.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def research_fetch_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_research_fetch.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def mcp_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_mcp_server.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def sovereignty_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_sovereignty.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def local_operator_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_local_operator.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def self_evolve_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_self_evolve.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def verify_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_verify.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def complete_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_completion.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def ingest_conversations_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_ingest_conversations.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def librarian_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_librarian.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def setup_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_setup.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def capability_feedback_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_capability_feedback.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def device_profile_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_device_profile.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def self_model_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_self_model.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def dispatch_reconcile_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_dispatch_reconcile.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def jobs_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_jobs.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def hooks_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_hooks.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def install_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_install.py").as_posix(), "--root", root.as_posix(), "install", *argv]
+
+
+def uninstall_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_install.py").as_posix(), "--root", root.as_posix(), "uninstall", *argv]
+
+
+def local_app_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_local_app.py").as_posix(), "--root", root.as_posix(), *argv]
+
+
+def open_control_app(root: Path, argv: list[str]) -> int:
+    args = [item for item in argv if item not in {"--no-browser", "--json"}]
+    no_browser = "--no-browser" in argv
+    json_mode = "--json" in argv
+    up_args = ["up", *args]
+    if "--json" not in up_args:
+        up_args.append("--json")
+    rc = run_delegate(local_app_command(root, up_args), cwd=root)
+    if rc != 0:
+        return rc
+    url = "http://127.0.0.1:8765/"
+    if not no_browser:
+        webbrowser.open(url)
+    if not json_mode:
+        print(url)
+    return 0
 
 
 def root_report(root: Path, source: str) -> dict[str, Any]:
@@ -102,7 +230,47 @@ def run_delegate(command: list[str], *, cwd: Path) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="AIOS global launcher")
     parser.add_argument("--root", help="AIOS control-plane root. Defaults to nearest ancestor, AIOS_HOME, then launcher-relative root.")
-    parser.add_argument("cmd", choices=["root", "status", "step", "run", "submit-goal", "provider-loop"])
+    parser.add_argument(
+        "cmd",
+        choices=[
+            "root",
+            "ask",
+            "chat",
+            "status",
+            "step",
+            "run",
+            "submit-goal",
+            "sprint-loop",
+            "provider-loop",
+            "discover",
+            "init",
+            "workbench",
+            "emit-recap",
+            "helper",
+            "dream",
+            "research-fetch",
+            "mcp",
+            "sovereignty",
+            "local-operator",
+            "self-evolve",
+            "verify",
+            "complete",
+            "ingest-conversations",
+            "librarian",
+            "setup",
+            "capability-feedback",
+            "device-profile",
+            "self-model",
+            "dispatch-reconcile",
+            "jobs",
+            "hooks",
+            "install",
+            "uninstall",
+            "up",
+            "open",
+            "stop",
+        ],
+    )
     parser.add_argument("args", nargs=argparse.REMAINDER)
     return parser
 
@@ -120,12 +288,108 @@ def main(argv: list[str] | None = None) -> int:
             print(payload["root"])
         return 0
 
-    if args.cmd in {"status", "step", "run", "submit-goal"}:
+    if args.cmd in {"status", "step", "run", "submit-goal", "sprint-loop"}:
         return run_delegate(runtime_command(root, [args.cmd, *args.args]), cwd=root)
+
+    if args.cmd == "ask":
+        return run_delegate(ask_command(root, args.args), cwd=root)
+
+    if args.cmd == "chat":
+        return run_delegate(chat_command(root, args.args), cwd=root)
 
     if args.cmd == "provider-loop":
         command, cwd = provider_loop_command(root, args.args)
         return run_delegate(command, cwd=cwd)
+
+    if args.cmd == "discover":
+        return run_delegate(discover_command(root, args.args), cwd=root)
+
+    if args.cmd == "init":
+        return run_delegate(init_command(root, args.args), cwd=Path.cwd())
+
+    if args.cmd == "workbench":
+        return run_delegate(workbench_command(root, args.args), cwd=root)
+
+    if args.cmd == "emit-recap":
+        return run_delegate(emit_recap_command(root, args.args), cwd=root)
+
+    if args.cmd == "helper":
+        return run_delegate(helper_command(root, args.args), cwd=root)
+
+    if args.cmd == "dream":
+        return run_delegate(dream_command(root, args.args), cwd=root)
+
+    if args.cmd == "research-fetch":
+        return run_delegate(research_fetch_command(root, args.args), cwd=root)
+
+    if args.cmd == "mcp":
+        return run_delegate(mcp_command(root, args.args), cwd=root)
+
+    if args.cmd == "sovereignty":
+        return run_delegate(sovereignty_command(root, args.args), cwd=root)
+
+    if args.cmd == "local-operator":
+        return run_delegate(local_operator_command(root, args.args), cwd=root)
+
+    if args.cmd == "self-evolve":
+        return run_delegate(self_evolve_command(root, args.args), cwd=root)
+
+    if args.cmd == "verify":
+        return run_delegate(verify_command(root, args.args), cwd=root)
+
+    if args.cmd == "complete":
+        return run_delegate(complete_command(root, args.args), cwd=root)
+
+    if args.cmd == "ingest-conversations":
+        return run_delegate(ingest_conversations_command(root, args.args), cwd=Path.cwd())
+
+    if args.cmd == "librarian":
+        return run_delegate(librarian_command(root, args.args), cwd=root)
+
+    if args.cmd == "setup":
+        return run_delegate(setup_command(root, args.args), cwd=root)
+
+    if args.cmd == "capability-feedback":
+        return run_delegate(capability_feedback_command(root, args.args), cwd=root)
+
+    if args.cmd == "device-profile":
+        return run_delegate(device_profile_command(root, args.args), cwd=root)
+
+    if args.cmd == "self-model":
+        return run_delegate(self_model_command(root, args.args), cwd=root)
+
+    if args.cmd == "dispatch-reconcile":
+        return run_delegate(dispatch_reconcile_command(root, args.args), cwd=root)
+
+    if args.cmd == "jobs":
+        return run_delegate(jobs_command(root, args.args), cwd=root)
+
+    if args.cmd == "hooks":
+        return run_delegate(hooks_command(root, args.args), cwd=root)
+
+    if args.cmd == "install":
+        install_args = args.args or ["--json", "--enable-now"]
+        return run_delegate(install_command(root, install_args), cwd=root)
+
+    if args.cmd == "uninstall":
+        uninstall_args = args.args or ["--json", "--disable-now"]
+        return run_delegate(uninstall_command(root, uninstall_args), cwd=root)
+
+    if args.cmd == "up":
+        up_args = args.args or ["--json"]
+        if up_args and up_args[0] not in {"refresh", "start", "serve", "stop", "status", "up"}:
+            up_args = ["up", *up_args]
+        elif not up_args or up_args[0] != "up":
+            up_args = ["up", *up_args]
+        return run_delegate(local_app_command(root, up_args), cwd=root)
+
+    if args.cmd == "open":
+        return open_control_app(root, args.args)
+
+    if args.cmd == "stop":
+        rc_app = run_delegate(local_app_command(root, ["stop", "--json", *args.args]), cwd=root)
+        rc_round = run_delegate([sys.executable, (root / "scripts" / "aios_round_controller.py").as_posix(), "stop", "--root", root.as_posix()], cwd=root)
+        return rc_app or rc_round
 
     parser.error(f"unknown command: {args.cmd}")
     return 2

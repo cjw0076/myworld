@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0059
 slug: watcher-race-resolution
-status: accepted
+status: closed
 goal: Eliminate the watcher race between aios_child_watcher.sh's codex exec and any concurrently-running interactive codex sessions, so partial work in child repos doesn't leave orphan dirty state.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: claude@myworld (operator) per founder directive.
 origin: ASC-0036 deadlock incident (2026-05-12 15:43) where watcher's codex exec auth-failed in Korean while interactive codex sessions completed the work but left it uncommitted, causing repo_dirty deadlock.
 ---
@@ -98,7 +98,18 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- 2026-05-13 KST codex@myworld added pre-spawn dirty work detection,
+  post-failure orphan work detection, and monitor surfacing.
+- Verification passed:
+  - `bash -n scripts/aios_child_watcher.sh`
+  - `python -m py_compile scripts/aios_monitor.py`
+  - `python -m unittest tests/test_aios_child_watcher.py tests/test_aios_monitor.py -v`
+  - `python scripts/aios_dispatch.py release --dispatch-id asc-0059 --reason asc_0059_watcher_race_detection_verified`
+  - `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id asc-0059 --once`
+  - `python scripts/aios_monitor.py assess --json`
+- Evidence artifacts:
+  - `.aios/inbox/myworld/asc-0059.myworld.json`
+  - `.aios/outbox/myworld/asc-0059.myworld.result.json`
 
 ## Work Packets
 
@@ -106,8 +117,10 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
 - brief: |
     Add pre-spawn dirty check + post-attempt orphan detection to
     aios_child_watcher.sh. Add monitor finding. Tests for both paths.
-- result: pending
+- result: watcher now holds related pre-existing dirty work and flags
+  orphan work left after failed agent attempts; monitor raises
+  `orphan_dirty_post_failure`.

@@ -1,0 +1,9 @@
+{{include _shared_invariants.md}}
+
+Codex CLI idioms:
+
+- Treat each invocation as one bounded worker turn.
+- Before finishing, leave a durable next step through a contract, inbox packet,
+  result packet, or worklog entry.
+- Use tests, command receipts, and file references as the main evidence.
+- Keep implementation scoped to the owning repo and current contract.

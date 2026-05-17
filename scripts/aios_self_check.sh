@@ -125,13 +125,17 @@ fi
 # AIOS now has 5 OS + 80+ contracts. Per-feature health is not enough.
 # Watch how agents/OS interact, not just what each does in isolation.
 
-# 8. cross-OS dispatch coverage in last 24h
-# (silent ghosting: if 1+ child OS hasn't received a packet in 24h, surface)
-ghost_repos=""
-for repo in hivemind memoryOS CapabilityOS GenesisOS; do
-  recent=$(find .aios/inbox/$repo -name "*.json" -mmin -1440 -type f 2>/dev/null | wc -l)
-  [ "$recent" -eq 0 ] && ghost_repos="$ghost_repos $repo"
-done
+# 8. cross-OS activity coverage in last 24h
+# (silent ghosting: if 1+ OS has neither inbox packets nor invocation role
+# receipts in 24h, surface)
+ghost_repos=$(python scripts/aios_os_activity.py --json 2>/dev/null | python -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    print(' '.join(d.get('ghost_repos') or []))
+except Exception:
+    print('activity_probe_failed')
+" 2>/dev/null)
 if [ -n "$ghost_repos" ]; then
   attention_count=$((attention_count+1))
   echo "self_check CROSS_OS_GHOST repos=$ghost_repos window=24h"
@@ -195,7 +199,11 @@ if [ "$inv_smoke" != "ok" ]; then
 fi
 
 # 14. dispatch state probe — can aios_dispatch.status still parse?
-dispatch_health=$(python scripts/aios_dispatch.py status 2>&1 | head -1 | grep -c "^asc-\|^inbox=" || echo 0)
+dispatch_health=$(python scripts/aios_dispatch.py status 2>/dev/null | python -c '
+import sys
+lines = sys.stdin.read().splitlines()
+print(1 if any(line.startswith(("asc-", "inbox=")) for line in lines) else 0)
+' 2>/dev/null)
 if [ "${dispatch_health:-0}" -lt 1 ]; then
   attention_count=$((attention_count+1))
   echo "self_check DISPATCH_PARSE_BROKEN"
@@ -209,5 +217,49 @@ if [ "${canary:-0}" -lt 1 ]; then
   echo "self_check TESTS_CANARY_FAIL"
 fi
 
+# 16. governance theater tripwire — contracts must carry real evidence
+governance_probe=$(python scripts/aios_governance_audit.py --json 2>/dev/null | python -c '
+import json, sys
+try:
+    payload = json.load(sys.stdin)
+    aggregate = payload.get("aggregate", {})
+    theater = str(bool(aggregate.get("governance_theater"))).lower()
+    score = aggregate.get("governance_score", "?")
+    recent_low = aggregate.get("recent_low_score_count", "?")
+    window = aggregate.get("recent_window", "?")
+    print(f"theater={theater} score={score} recent_low={recent_low} window={window}")
+except Exception:
+    print("parse_error")
+' 2>/dev/null)
+if echo "$governance_probe" | grep -q "^theater=true"; then
+  attention_count=$((attention_count+1))
+  echo "self_check GOVERNANCE_THEATER governance_theater=true $governance_probe"
+elif [ "$governance_probe" = "parse_error" ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check GOVERNANCE_AUDIT_BROKEN"
+fi
+
+# 17. MemoryOS accepted-memory retrieval audit — accepted memories must be
+# selected by context build, not only stored.
+retrieval_probe=$(python scripts/aios_memory_retrieval_audit.py --json 2>/dev/null | python -c '
+import json, sys
+try:
+    payload = json.load(sys.stdin)
+    rate = payload.get("retrieval_rate", 0)
+    hits = payload.get("hits", 0)
+    total = payload.get("total_cases", 0)
+    passed = str(bool(payload.get("passed"))).lower()
+    print(f"passed={passed} rate={rate} hits={hits}/{total}")
+except Exception:
+    print("parse_error")
+' 2>/dev/null)
+if echo "$retrieval_probe" | grep -q "^passed=false"; then
+  attention_count=$((attention_count+1))
+  echo "self_check RETRIEVAL_DEGRADED $retrieval_probe"
+elif [ "$retrieval_probe" = "parse_error" ]; then
+  attention_count=$((attention_count+1))
+  echo "self_check RETRIEVAL_AUDIT_BROKEN"
+fi
+
 # Summary line (always, so monitor knows pulse fired)
-echo "self_check pass complete attention=$attention_count readiness=L${ready_level:-?} invocation=$inv_smoke dispatch=$dispatch_health canary=$canary"
+echo "self_check pass complete attention=$attention_count readiness=L${ready_level:-?} invocation=$inv_smoke dispatch=$dispatch_health canary=$canary governance=$governance_probe retrieval=$retrieval_probe"

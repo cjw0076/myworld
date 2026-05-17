@@ -72,6 +72,35 @@ class AiosLauncherTest(unittest.TestCase):
         self.assertEqual(command[2:5], ["--root", ROOT.as_posix(), "status"])
         self.assertEqual(command[-1], "--json")
 
+    def test_ask_command_constructs_aios_ask_delegation(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("aios_launcher", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+
+        command = module.ask_command(ROOT, ["Build", "AIOS", "interface", "--json"])
+
+        self.assertEqual(command[0], sys.executable)
+        self.assertEqual(command[1], (ROOT / "scripts" / "aios_ask.py").as_posix())
+        self.assertEqual(command[2:4], ["--root", ROOT.as_posix()])
+        self.assertEqual(command[-1], "--json")
+
+    def test_sprint_loop_uses_runtime_delegation(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("aios_launcher", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+
+        command = module.runtime_command(ROOT, ["sprint-loop", "status", "--sprint-file", "current.md", "--json"])
+
+        self.assertEqual(command[1], (ROOT / "scripts" / "aios_runtime.py").as_posix())
+        self.assertEqual(command[2:5], ["--root", ROOT.as_posix(), "sprint-loop"])
+        self.assertEqual(command[-1], "--json")
+
     def test_provider_loop_command_constructs_hive_delegation(self) -> None:
         import importlib.util
 
@@ -86,6 +115,49 @@ class AiosLauncherTest(unittest.TestCase):
         self.assertEqual(command[:3], [sys.executable, "-m", "hivemind.hive"])
         self.assertEqual(command[3:6], ["--root", (ROOT / "hivemind").as_posix(), "provider-loop"])
         self.assertEqual(command[-2:], ["status", "--json"])
+
+    def test_discover_command_constructs_project_discovery_delegation(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("aios_launcher", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+
+        command = module.discover_command(ROOT, ["scan", "--root", "workspace", "--json"])
+
+        self.assertEqual(command[0], sys.executable)
+        self.assertEqual(command[1], (ROOT / "scripts" / "aios_project_discovery.py").as_posix())
+        self.assertEqual(command[2:5], ["--control-root", ROOT.as_posix(), "scan"])
+
+    def test_install_command_constructs_aios_install_delegation(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("aios_launcher", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+
+        command = module.install_command(ROOT, ["--json", "--enable-now"])
+
+        self.assertEqual(command[0], sys.executable)
+        self.assertEqual(command[1], (ROOT / "scripts" / "aios_install.py").as_posix())
+        self.assertEqual(command[2:5], ["--root", ROOT.as_posix(), "install"])
+        self.assertEqual(command[-2:], ["--json", "--enable-now"])
+
+    def test_local_app_command_constructs_control_app_delegation(self) -> None:
+        import importlib.util
+
+        spec = importlib.util.spec_from_file_location("aios_launcher", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+
+        command = module.local_app_command(ROOT, ["up", "--json"])
+
+        self.assertEqual(command[0], sys.executable)
+        self.assertEqual(command[1], (ROOT / "scripts" / "aios_local_app.py").as_posix())
+        self.assertEqual(command[2:5], ["--root", ROOT.as_posix(), "up"])
 
     def test_bin_aios_smoke_root_json(self) -> None:
         result = subprocess.run(

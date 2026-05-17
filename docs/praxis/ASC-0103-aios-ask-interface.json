@@ -1,0 +1,58 @@
+{
+  "schema_version": "aios.production_praxis.v1",
+  "task": "Create a first-class AIOS ask interface so the founder can issue direct work instructions through AIOS instead of manually chaining invoke, praxis, contract, and dispatch commands.",
+  "memory_context": {
+    "status": "used",
+    "evidence_refs": [
+      "aios://memory/mem_e4a9c7fe7d342598",
+      "docs/contracts/ASC-0102-dispatch-praxis-binding.md",
+      "docs/AIOS_WORK_DISPATCH.md"
+    ]
+  },
+  "capability_routes": {
+    "status": "used",
+    "routes": [
+      "aios://capability/cap_hivemind_execution_harness",
+      "aios://capability/cap_memoryos_context_build",
+      "aios://capability/cap_capabilityos_recommendation"
+    ]
+  },
+  "external_resource_check": {
+    "status": "optional_with_reason",
+    "reason": "The first ask interface composes existing local AIOS CLIs; no current external API behavior is required."
+  },
+  "genesis_reframe": {
+    "status": "used",
+    "frictions": [
+      "The founder currently has to know too many internal commands to direct AIOS.",
+      "A real OS should accept intent first and build role artifacts before asking for implementation details."
+    ],
+    "alternative_frames": [
+      "Ask as intent intake",
+      "Ask as control-plane preflight",
+      "Ask as dispatch-ready instruction compiler"
+    ]
+  },
+  "hive_execution_plan": {
+    "status": "planned",
+    "verification_gate": "python -m unittest tests/test_aios_ask.py tests/test_aios_launcher.py tests/test_aios_invoke.py"
+  },
+  "specialist_assignment": [
+    {
+      "agent": "codex",
+      "strength": "CLI implementation, tests, artifact contracts",
+      "job": "Implement scripts/aios_ask.py and launcher delegation."
+    },
+    {
+      "agent": "claude",
+      "strength": "architecture review and operator UX critique",
+      "job": "Review whether ask remains a control-plane interface and does not bypass contracts."
+    },
+    {
+      "agent": "local-llm",
+      "strength": "cheap summarization",
+      "job": "May draft ask instruction text, not final acceptance."
+    }
+  ],
+  "stop_conditions": []
+}

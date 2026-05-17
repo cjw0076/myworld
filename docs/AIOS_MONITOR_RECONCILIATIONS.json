@@ -14,6 +14,58 @@
       "accepted_by": "codex acting operator",
       "accepted_at": "2026-05-11 23:51 KST",
       "authorized_by_contract": "ASC-0016"
+    },
+    {
+      "id": "reconcile-asc-0105-end-user-surface-id-collision-path",
+      "match": {
+        "code": "dispatch_contract_path_missing",
+        "contract_path": "docs/contracts/ASC-0105-end-user-ask-surface.md",
+        "dispatch_id": "asc-0105"
+      },
+      "reason": "The end-user ask surface was initially drafted under ASC-0105, but ASC-0105 was already assigned to the AIOS DNA canonical spec. The active contract is ASC-0109; preserve the bad dispatch event as historical drift.",
+      "accepted_by": "codex acting operator",
+      "accepted_at": "2026-05-13 KST",
+      "authorized_by_contract": "ASC-0109"
+    },
+    {
+      "id": "reconcile-asc-0105-end-user-surface-id-collision-pending",
+      "match": {
+        "code": "dispatch_results_pending",
+        "dispatch_id": "asc-0105",
+        "repos": [
+          "myworld"
+        ]
+      },
+      "reason": "The transient ASC-0105 end-user surface dispatch was superseded before execution because ASC-0105 was already assigned. ASC-0109 is the executable dispatch.",
+      "accepted_by": "codex acting operator",
+      "accepted_at": "2026-05-13 KST",
+      "authorized_by_contract": "ASC-0109"
+    },
+    {
+      "id": "reconcile-asc-0171-memoryos-health-id-collision-path",
+      "match": {
+        "code": "dispatch_contract_path_missing",
+        "contract_path": "docs/contracts/ASC-0171-memoryos-continuous-health-instrumentation.md",
+        "dispatch_id": "asc-0171"
+      },
+      "reason": "MemoryOS continuous health was initially drafted with ASC-0171 but collided with the accepted Hive permissioned dangerous-provider contract. The MemoryOS health contract was renumbered to ASC-0175 and closed with evidence; preserve the stale ASC-0171 dispatch event as historical ID-collision drift.",
+      "accepted_by": "codex acting operator",
+      "accepted_at": "2026-05-15 KST",
+      "authorized_by_contract": "ASC-0175"
+    },
+    {
+      "id": "reconcile-asc-0174-created-proposed-then-closed",
+      "match": {
+        "code": "dispatch_contract_status_stale",
+        "contract_path": "docs/contracts/ASC-0174-hive-debate-observer-vs-executor-reframe.md",
+        "current": "closed",
+        "dispatch_id": "asc-0174",
+        "recorded": "proposed"
+      },
+      "reason": "ASC-0174 was initially created while proposed, then accepted and closed under the active continuous-goal directive after Hive debate evidence landed. Preserve the proposed creation event and reconcile the exact historical status drift after closeout.",
+      "accepted_by": "codex acting operator",
+      "accepted_at": "2026-05-16 KST",
+      "authorized_by_contract": "ASC-0174"
     }
   ]
 }

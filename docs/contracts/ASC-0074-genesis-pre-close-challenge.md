@@ -1,7 +1,7 @@
 ---
 contract_id: ASC-0074
 slug: genesis-pre-close-challenge
-status: accepted
+status: closed
 goal: Make every accepted contract pass through a GenesisOS challenge gate before close — running the prompt-prison critic, assumption mutator, multi-universe fork, modal compare, and analogy match — so closeouts ship only after their prompt-prison risk is examined.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
@@ -106,7 +106,29 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+### 2026-05-15 KST — codex closeout
+
+- changed: `GenesisOS/genesisos/challenge.py`,
+  `GenesisOS/tests/test_challenge.py`, `scripts/aios_genesis_challenge.py`,
+  `tests/test_aios_genesis_challenge.py`, `scripts/aios_dispatch.py`,
+  `docs/AIOS_GENESIS_GATE.md`.
+- behavior: registry `accepted`/`closed` contract releases run the GenesisOS
+  challenge by default; high-risk reports soft-block release unless
+  `--operator-override-genesis-block --reason ...` is present. Non-registry
+  and proposed dispatches record explicit `genesis_challenge_skipped` events.
+- report: `.aios/genesis_challenges/ASC-0050.json` generated with
+  `risk_level=high`, `soft_block=true`, six modality views, six assumption
+  seeds, one alive branch, and three top analogies.
+- evidence:
+  - `cd GenesisOS && python -m pytest tests/test_challenge.py -v` passed 1/1.
+  - `cd GenesisOS && python -m unittest tests/test_critic.py tests/test_cli.py tests/test_mutator.py tests/test_branches.py tests/test_modalities.py tests/test_analogy.py tests/test_challenge.py` passed 31/31.
+  - `python -m unittest tests/test_aios_dispatch.py tests/test_aios_genesis_challenge.py` passed 25/25.
+  - `python scripts/aios_genesis_challenge.py --contract-id ASC-0050 --json`
+    generated a high-risk soft-block report.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+    358/358.
+- boundary: the gate is read-only against contract text and remains an
+  advisory soft block; operator override and explicit skip remain possible.
 
 ## Work Packets
 

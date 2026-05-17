@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0097
 slug: hive-unified-explore-tui
-status: accepted
+status: closed
 goal: Improve `hive tui` so the 5 separate Hive exploration commands (agents status / runs / inspect / live / events) are reachable from one screen with shared context, eliminating CLI hop overhead for operators exploring Hive state.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder explicit GO "A,D 진행하고 B도 병렬 처리.")
+closed: 2026-05-13 21:05 KST by codex acting operator
 acceptance_authority: claude@myworld (operator) per founder explicit GO 2026-05-13 KST.
 origin: founder verified 5-CLI burden to explore Hive state. ASC-0097 unifies into one TUI surface without inventing new commands — just compose existing ones.
 ---
@@ -106,7 +107,13 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- hivemind commit: `522d1b6 Add unified explore TUI`
+- result packet: `.aios/outbox/hivemind/asc-0097.hivemind.result.json`
+- `cd hivemind && python -m py_compile hivemind/hive.py hivemind/tui.py hivemind/tui_explore.py`
+- `cd hivemind && python -m pytest tests/test_tui*.py -v` -> 49 passed
+- `cd hivemind && python -m hivemind.hive tui --help` -> `--explore` present
+- `python -m unittest discover -s tests -p 'test_aios_*.py'` -> 275 tests OK
+- `python scripts/aios_monitor.py assess --write --json` -> health `clear`
 
 ## Work Packets
 

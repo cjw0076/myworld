@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0069
 slug: genesis-prompt-prison-critic
-status: accepted
+status: closed
 goal: Add a GenesisOS critic that detects when an agent (claude/codex/local LLM) is stuck in a single line of reasoning produced by prompt structure, language pattern, or training distribution — and surfaces escape vectors.
 created: 2026-05-13 KST
 proposed_by: claude@myworld (operator) per founder GO of GenesisOS sub-contract sequence.
 acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder directive 2026-05-13 KST "프롬프트, 언어, 구사 능력에 의해 Agent의 능력이 너무 제한되는 느낌을 받았어. GenesisOS는 이걸 해소" — first sub-contract addressing the prompt-prison constraint directly.
+closed: 2026-05-14 KST by codex@myworld
 ---
 
 # ASC-0069 Genesis Prompt-Prison Critic
@@ -37,7 +38,10 @@ allowed_files:
 - `GenesisOS/tests/test_critic.py`
 - `GenesisOS/docs/PROMPT_PRISON.md`
 - `scripts/aios_genesis_critic_dispatch.py`
+- `scripts/aios_monitor.py`
 - `tests/test_aios_genesis_critic_dispatch.py`
+- `GenesisOS/docs/AGENT_WORKLOG.md`
+- `docs/AGENT_WORKLOG.md`
 - `docs/contracts/ASC-0069-genesis-prompt-prison-critic.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
@@ -88,7 +92,8 @@ forbidden_files:
 ## Verification Gate
 
 ```bash
-cd GenesisOS && python -m pytest tests/test_critic.py -v
+cd GenesisOS
+python -m pytest tests/test_critic.py -v
 python -m genesisos.cli critic --text README.md --json
 cd /home/user/workspaces/jaewon/myworld
 python -m unittest tests/test_aios_genesis_critic_dispatch.py
@@ -115,7 +120,18 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- GenesisOS commit `0f681a9 Add prompt prison critic`.
+- `.aios/outbox/GenesisOS/asc-0069.GenesisOS.result.json`
+- `.aios/outbox/myworld/asc-0069.myworld.result.json`
+- `python -m pytest tests/test_critic.py -v` passed 4/4 inside GenesisOS.
+- `python -m genesisos.cli critic --text README.md --json` emitted
+  `schema_version=genesisos.critic.v1`, `authority=advisory_only`, and four
+  escape vectors on GenesisOS README.
+- `python -m unittest tests/test_aios_genesis_critic_dispatch.py` passed 2/2.
+- `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 304/304.
+- `python scripts/aios_monitor.py assess --json` surfaced
+  `genesis_prompt_prison_advisory` as an info-level finding, not a blocking
+  gate.
 
 ## Work Packets
 

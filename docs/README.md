@@ -12,8 +12,12 @@ Read order:
 5. `AIOS_WORK_DISPATCH.md` — how myworld assigns work to lower repos.
 6. `AIOS_BUILD_METHOD.md` — how Codex searches, directs, improves, and uses
    the OS layers while building AIOS.
-7. `AIOS_AGENT_LEDGER.md` — append-only human-readable progress log.
-8. `agents/*.md` — role-specific instructions for each OS agent.
+7. `AIOS_BASE_ARCHITECTURE_AUDIT.md` — current base check for purpose, inputs,
+   outputs, behavior loop, infra, and weak spots.
+8. `AIOS_AGENT_LEDGER.md` — append-only human-readable progress log.
+9. `AIOS_CODEX_CLI_ABSORPTION.md` — reverse-engineering notes for absorbing
+   Codex CLI work discipline into AIOS primitives and contracts.
+10. `agents/*.md` — role-specific instructions for each OS agent.
 
 These files are coordination documents. Implementation details still live inside
 each repo.

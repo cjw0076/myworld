@@ -1,0 +1,76 @@
+{
+  "schema_version": "aios.production_praxis.v1",
+  "task": "Raise the AIOS control app into an end-user ask intake surface that creates plan-only ask artifacts and proposed contract seeds without executing child repo work.",
+  "memory_context": {
+    "status": "used",
+    "owner": "MemoryOS",
+    "evidence_refs": [
+      "aios://memory/mem_87c91dc592c3b649",
+      "aios://memory/mem_437c94a8a73d7de7",
+      "docs/contracts/ASC-0103-aios-ask-interface.md",
+      "docs/contracts/ASC-0104-ask-contract-seed.md"
+    ]
+  },
+  "capability_routes": {
+    "status": "used",
+    "owner": "CapabilityOS",
+    "routes": [
+      "aios://capability/cap_hivemind_execution_harness",
+      "aios://capability/cap_memoryos_context_build",
+      "aios://capability/cap_capabilityos_recommendation"
+    ],
+    "evidence_refs": [
+      "scripts/aios_ask.py",
+      "scripts/aios_local_app.py"
+    ]
+  },
+  "external_resource_check": {
+    "status": "optional_with_reason",
+    "reason": "This is a local on-prem control surface over existing AIOS ask artifacts and does not depend on current external API behavior."
+  },
+  "genesis_reframe": {
+    "status": "used",
+    "owner": "GenesisOS",
+    "frictions": [
+      "The current interface still assumes the user knows CLI commands and contract mechanics.",
+      "End-user intent must enter AIOS without granting execution authority.",
+      "The interface should reveal concrete artifacts rather than hiding AIOS work behind chat."
+    ],
+    "alternative_frames": [
+      "Control app as user intake",
+      "Ask as non-executing contract compiler",
+      "Local AIOS as product surface before autonomous execution"
+    ]
+  },
+  "hive_execution_plan": {
+    "status": "planned",
+    "owner": "Hive Mind",
+    "verification_gate": "python -m unittest tests/test_aios_local_app.py tests/test_aios_ask.py && python scripts/aios_local_app.py refresh --json && python scripts/aios_control_snapshot.py --check-app-js apps/control/app.js --json"
+  },
+  "specialist_assignment": [
+    {
+      "agent": "codex",
+      "strength": "UI implementation, local API wiring, tests, and smoke verification",
+      "job": "Own the end-user ask form, local POST API, docs, and verification."
+    },
+    {
+      "agent": "claude",
+      "strength": "governance and architecture critique",
+      "job": "Review whether the intake surface preserves contract acceptance and non-execution boundaries."
+    },
+    {
+      "agent": "local-llm",
+      "strength": "cheap bounded summaries",
+      "job": "Summarize generated ask artifacts only after trusted verification has produced them."
+    }
+  ],
+  "stop_conditions": [
+    "ask_api_executes_child_repo_work",
+    "ask_api_bypasses_contract_acceptance",
+    "ask_api_accepts_empty_goal",
+    "ask_api_writes_outside_aios_asks",
+    "private_provider_auth_exposed",
+    "control_app_static_mode_crashes",
+    "contract_id_collision_unreconciled"
+  ]
+}

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AIOS Chat</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="chat-shell">
+      <section class="chat-topbar">
+        <div>
+          <p class="eyebrow">AIOS Chat</p>
+          <h1>AIOS Chat</h1>
+        </div>
+        <a class="chat-link chat-link-muted" href="./index.html">Back to AIOS TUI</a>
+      </section>
+
+      <section class="chat-subtitle-wrap">
+        <p>Ask in plain language. AIOS handles routing and execution safety.</p>
+      </section>
+
+      <section class="chat-layout" aria-label="AIOS chat">
+        <div class="quick-questions" id="quick-questions" aria-label="Quick prompts">
+          <button type="button" data-chat-prompt="오늘 상태가 어때?">현재 상태 알려줘</button>
+          <button type="button" data-chat-prompt="진행 막힌 것과 다음 행동 알려줘">다음 액션</button>
+          <button type="button" data-chat-prompt="이 대화에서 불편함과 숨은 필요성을 찾아줘">불편함 찾기</button>
+          <button type="button" data-chat-prompt="최근 산출물만 요약해줘">요약만</button>
+        </div>
+
+        <div class="chat-thread" id="chat-thread" aria-live="polite">
+          <article class="chat-empty">대화를 시작하려면 아래에 메시지를 입력하세요.</article>
+        </div>
+
+        <form class="chat-compose" id="chat-form">
+          <div class="chat-compose-row">
+            <textarea id="chat-input" rows="1" maxlength="8000" placeholder="무엇이든 물어보세요." required></textarea>
+            <button id="chat-submit" type="submit">전송</button>
+          </div>
+          <div class="chat-status" id="chat-status" role="status">연결 중</div>
+          <input id="chat-conversation" type="hidden" value="web" />
+        </form>
+      </section>
+    </main>
+    <script src="./chat.js"></script>
+  </body>
+</html>

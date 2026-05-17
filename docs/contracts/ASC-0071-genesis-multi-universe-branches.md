@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0071
 slug: genesis-multi-universe-branches
-status: accepted
+status: closed
 goal: Add a GenesisOS mechanism for parallel "universe branches" — same goal explored along N independent reasoning paths simultaneously — so AIOS does not pre-converge on a single solution before evidence justifies it.
 created: 2026-05-13 KST
 proposed_by: claude@myworld
 acceptance_authority: claude@myworld (operator) per founder "네가 판단" delegation 2026-05-13 KST. Founder declined to micromanage; operator pair authorized for batch decisions on this proposed queue.
 origin: founder GenesisOS sub-contract sequence — "multiple-universe branches" is one of GenesisOS's 4 declared responsibilities.
+closed: 2026-05-15 KST by codex@myworld
 ---
 
 # ASC-0071 Genesis Multi-Universe Branches
@@ -102,7 +103,24 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- GenesisOS WP-0071-A implemented:
+  - `GenesisOS/genesisos/branches.py`
+  - `GenesisOS/genesisos/cli.py`
+  - `GenesisOS/tests/test_branches.py`
+  - `GenesisOS/docs/MULTI_UNIVERSE.md`
+  - `GenesisOS/universes/g-test-goal-1af40c3e/*.json`
+- MyWorld WP-0071-B implemented:
+  - `scripts/aios_genesis_branch.py`
+  - `tests/test_aios_genesis_branch.py`
+- Verification:
+  - `cd GenesisOS && python -m pytest tests/test_branches.py -v` passed 5/5.
+  - `cd GenesisOS && python -m unittest tests/test_critic.py tests/test_cli.py tests/test_mutator.py tests/test_branches.py` passed 22/22.
+  - `python -m genesisos.cli branch fork --goal "test goal" --n 3 --json` emitted three distinct branches.
+  - `python -m genesisos.cli branch list --json` showed the live branch set.
+  - `python -m genesisos.cli branch collapse --goal "test goal" --winner b-fdab6e1c3a3b --reason test --json` left one winner alive and marked losers `collapsed_to`.
+  - `python -m unittest tests/test_aios_genesis_branch.py` passed 2/2.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 350/350.
+  - `python scripts/aios_monitor.py assess --json` completed with `health=attention`; findings were dirty-worktree triage across child repos plus advisory Genesis/persona findings, not ASC-0071 test failure.
 
 ## Work Packets
 

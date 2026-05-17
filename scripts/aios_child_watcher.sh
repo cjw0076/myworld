@@ -21,9 +21,12 @@ STOP_FILE="$AIOS_DIR/STOP"
 
 CODEX_TIMEOUT="${CODEX_TIMEOUT:-1800}"
 CLAUDE_TIMEOUT="${CLAUDE_TIMEOUT:-1800}"
+GEMINI_TIMEOUT="${GEMINI_TIMEOUT:-1800}"
+LOCAL_TIMEOUT="${LOCAL_TIMEOUT:-600}"
 CLAUDE_MODEL="${CLAUDE_MODEL:-claude-opus-4-6}"
 WATCH_INTERVAL="${WATCH_INTERVAL:-5}"
 AIOS_CHILD_AGENT_FALLBACKS="${AIOS_CHILD_AGENT_FALLBACKS:-1}"
+AIOS_CHILD_PREFER_PROVIDER_BEFORE_LOCAL="${AIOS_CHILD_PREFER_PROVIDER_BEFORE_LOCAL:-1}"
 
 mkdir -p "$OUTBOX_DIR" "$LOG_DIR" "$PROMPT_DIR" "$RUN_DIR" "$STATE_DIR"
 
@@ -40,13 +43,17 @@ Repos:
   hivemind
   memoryOS
   CapabilityOS
+  GenesisOS
 
 Environment:
   CLAUDE_MODEL=claude-opus-4-6
   CODEX_TIMEOUT=1800
   CLAUDE_TIMEOUT=1800
+  GEMINI_TIMEOUT=1800
+  LOCAL_TIMEOUT=600
   WATCH_INTERVAL=5
   AIOS_CHILD_AGENT_FALLBACKS=1
+  AIOS_CHILD_PREFER_PROVIDER_BEFORE_LOCAL=1
 
 Global stop file:
   .aios/STOP
@@ -85,6 +92,7 @@ repo_path() {
     hivemind) echo "$ROOT/hivemind" ;;
     memoryOS) echo "$ROOT/memoryOS" ;;
     CapabilityOS) echo "$ROOT/CapabilityOS" ;;
+    GenesisOS) echo "$ROOT/GenesisOS" ;;
     *) return 1 ;;
   esac
 }
@@ -141,6 +149,38 @@ git_status_short() {
   if [[ -d "$dir/.git" ]]; then
     git -C "$dir" status --short --untracked-files=all || true
   fi
+}
+
+related_dirty_status() {
+  local repo="$1"
+  local status_file="$2"
+  local packet="$3"
+  python3 - "$repo" "$status_file" "$packet" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+repo, status_file, packet_path = sys.argv[1:]
+packet = json.load(open(packet_path, encoding="utf-8"))
+allowed = packet.get("scope", {}).get("allowed_files") or []
+normalized = []
+for raw in allowed:
+    value = str(raw).strip().strip("`")
+    value = value.replace("` read-only", "").replace(" read-only", "").strip()
+    if value.startswith(f"{repo}/"):
+        value = value[len(repo) + 1 :]
+    if value:
+        normalized.append(value.rstrip("/"))
+
+for line in Path(status_file).read_text(encoding="utf-8", errors="replace").splitlines():
+    if not line.strip():
+        continue
+    path = line[3:].strip() if len(line) > 3 else line.strip()
+    for allowed_path in normalized:
+        if path == allowed_path or path.startswith(f"{allowed_path}/"):
+            print(line)
+            break
+PY
 }
 
 build_prompt() {
@@ -219,14 +259,15 @@ write_result() {
   local before_file="$8"
   local after_file="$9"
   local attempts_file="${10}"
+  local control_condition="${11:-}"
   mkdir -p "$(dirname "$result_path")"
-  python3 - "$result_path" "$repo" "$packet" "$status" "$exit_code" "$prompt_file" "$log_file" "$before_file" "$after_file" "$attempts_file" <<'PY'
+  python3 - "$result_path" "$repo" "$packet" "$status" "$exit_code" "$prompt_file" "$log_file" "$before_file" "$after_file" "$attempts_file" "$control_condition" <<'PY'
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-result_path, repo, packet_path, status, exit_code, prompt_file, log_file, before_file, after_file, attempts_file = sys.argv[1:]
+result_path, repo, packet_path, status, exit_code, prompt_file, log_file, before_file, after_file, attempts_file, control_condition = sys.argv[1:]
 packet = json.load(open(packet_path, encoding="utf-8"))
 
 def read_lines(path: str) -> list[str]:
@@ -247,6 +288,8 @@ if attempts_path.exists():
         attempts.append(json.loads(line))
 changed = after
 result_status = "passed" if status == "done" else status
+new_changes = sorted(set(after) - set(before))
+orphan_work_detected = int(exit_code) != 0 and bool(new_changes) and control_condition != "pending_concurrent_work"
 failed_categories = [
     item.get("failure_category")
     for item in attempts
@@ -254,6 +297,21 @@ failed_categories = [
 ]
 failure_category = failed_categories[0] if failed_categories else ("none" if int(exit_code) == 0 else "child_agent_failed")
 stop_conditions = [] if int(exit_code) == 0 else [failure_category]
+local_final_without_verifier = bool(
+    attempts
+    and attempts[-1].get("agent") == "local"
+    and int(attempts[-1].get("exit_code") or 0) == 0
+)
+if control_condition:
+    result_status = "held" if control_condition == "pending_concurrent_work" else result_status
+    failure_category = control_condition
+    stop_conditions = [control_condition]
+if local_final_without_verifier and int(exit_code) == 0:
+    result_status = "held"
+    failure_category = "local_llm_used_as_final_acceptor_without_verifier"
+    stop_conditions = [failure_category]
+if orphan_work_detected and "orphan_work_detected" not in stop_conditions:
+    stop_conditions.append("orphan_work_detected")
 row = {
     "schema_version": "aios.dispatch.result.v1",
     "executed_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
@@ -289,6 +347,10 @@ row = {
     "git_status_before_count": len(before),
     "git_status_after_count": len(after),
     "changed_files": changed[:200],
+    "pending_concurrent_work": control_condition == "pending_concurrent_work",
+    "local_final_without_verifier": local_final_without_verifier,
+    "orphan_work_detected": orphan_work_detected,
+    "orphan_work_files": new_changes[:200] if orphan_work_detected else [],
     "stop_conditions_triggered": stop_conditions,
     "privacy": {
         "raw_prompt_included": False,
@@ -302,6 +364,155 @@ Path(result_path).write_text(json.dumps(row, ensure_ascii=False, indent=2, sort_
 PY
 }
 
+write_memory_draft_review_result() {
+  local result_path="$1"
+  local repo="$2"
+  local packet="$3"
+  mkdir -p "$(dirname "$result_path")"
+  python3 - "$result_path" "$repo" "$packet" "$ROOT" <<'PY'
+import json
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+result_path, repo, packet_path, root_path = sys.argv[1:]
+root = Path(root_path)
+result = Path(result_path)
+packet_abs = Path(packet_path).resolve()
+packet = json.load(open(packet_path, encoding="utf-8"))
+draft = packet.get("draft") if isinstance(packet.get("draft"), dict) else {}
+raw_refs = draft.get("raw_refs") if isinstance(draft.get("raw_refs"), list) else []
+provenance = draft.get("provenance") if isinstance(draft.get("provenance"), dict) else {}
+missing = []
+if not packet.get("dispatch_id"):
+    missing.append("dispatch_id_missing")
+if not packet.get("source_artifact"):
+    missing.append("source_artifact_missing")
+if not packet.get("draft_id"):
+    missing.append("draft_id_missing")
+if not (raw_refs or provenance):
+    missing.append("provenance_missing")
+
+import_json_path = Path(f"{result_path}.memoryos-import.json")
+log_path = Path(f"{result_path}.memoryos-import.log")
+import_result = {}
+import_rc = 1 if missing else 0
+import_failure = ""
+if not missing:
+    repo_dir = root / "memoryOS"
+    cmd = [
+        sys.executable,
+        "-m",
+        "memoryos.cli",
+        "--root",
+        str(repo_dir),
+        "drafts",
+        "import-review-request",
+        str(packet_abs),
+        "--json",
+    ]
+    completed = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, check=False)
+    import_rc = completed.returncode
+    log_path.write_text((completed.stderr or "") + (completed.stdout if completed.returncode else ""), encoding="utf-8")
+    if completed.returncode == 0:
+        try:
+            import_result = json.loads(completed.stdout)
+            import_json_path.write_text(json.dumps(import_result, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        except json.JSONDecodeError:
+            import_rc = 1
+            import_failure = "memoryos_import_invalid_json"
+    else:
+        import_failure = "memoryos_import_failed"
+
+status = "passed" if not missing and import_rc == 0 else "held"
+failure_category = (
+    "none"
+    if status == "passed"
+    else "memory_draft_review_request_incomplete"
+    if missing
+    else import_failure or "memoryos_import_failed"
+)
+review_decision = import_result.get("review_action") or "needs_more_evidence"
+imported_counts = import_result.get("imported_counts") if isinstance(import_result.get("imported_counts"), dict) else {}
+memory_mutated = any(int(imported_counts.get(key, 0) or 0) > 0 for key in ("source_artifacts", "memory_objects", "hyperedges", "reviews"))
+row = {
+    "schema_version": "aios.dispatch.result.v1",
+    "executed_at": datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+    "target_repo": repo,
+    "dispatch_id": packet.get("dispatch_id") or packet.get("request_id"),
+    "contract_id": packet.get("contract_id") or "MEMORY-DRAFT-REVIEW",
+    "agent_assigned": packet.get("agent"),
+    "agent_executed": "aios_child_watcher.memory_draft_review_adapter",
+    "agent_attempts": [
+        {
+            "agent": "memoryOS-review-adapter",
+            "exit_code": import_rc,
+            "failure_category": failure_category,
+            "status": "done" if status == "passed" else "held",
+            "log_ref": "" if status == "passed" else log_path.as_posix(),
+        }
+    ],
+    "fallback_used": False,
+    "final_agent": "memoryOS-review-adapter",
+    "failure_category": failure_category,
+    "final_failure_category": failure_category,
+    "executed_reason": "memory_draft_review_request",
+    "status": status,
+    "exit_code": import_rc,
+    "packet": str(Path(packet_path).as_posix()),
+    "prompt_ref": "",
+    "log_ref": "" if status == "passed" else log_path.as_posix(),
+    "evidence": [
+        {
+            "kind": "memory_draft_review_request",
+            "status": status,
+            "source_artifact": packet.get("source_artifact"),
+            "draft_id": packet.get("draft_id"),
+            "draft_type": draft.get("type"),
+            "review_decision": review_decision,
+            "auto_accept": bool((packet.get("review_policy") or {}).get("auto_accept")),
+            "memory_object_id": import_result.get("memory_object_id"),
+            "source_artifact_id": import_result.get("source_artifact_id"),
+            "review_id": import_result.get("review_id"),
+            "import_result_ref": import_json_path.as_posix() if import_result else "",
+        }
+    ],
+    "review_request": {
+        "schema_version": packet.get("schema_version"),
+        "request_id": packet.get("request_id"),
+        "source_artifact": packet.get("source_artifact"),
+        "draft_id": packet.get("draft_id"),
+        "draft_type": draft.get("type"),
+        "origin": draft.get("origin"),
+        "confidence": draft.get("confidence"),
+        "review_decision": review_decision,
+        "memory_mutated": memory_mutated,
+        "memory_object_id": import_result.get("memory_object_id"),
+        "source_artifact_id": import_result.get("source_artifact_id"),
+        "review_id": import_result.get("review_id"),
+        "import_result_ref": import_json_path.as_posix() if import_result else "",
+        "next_owner": "memoryOS",
+        "next_action": "operator_review_memory_draft",
+    },
+    "changed_files": [],
+    "pending_concurrent_work": False,
+    "local_final_without_verifier": False,
+    "orphan_work_detected": False,
+    "orphan_work_files": [],
+    "stop_conditions_triggered": missing,
+    "privacy": {
+        "raw_prompt_included": False,
+        "stdout_included": False,
+        "stderr_included": False,
+        "full_log_included": False,
+    },
+    "next": "collect_from_myworld",
+}
+result.write_text(json.dumps(row, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+PY
+}
+
 failure_category() {
   local rc="$1"
   local log_file="$2"
@@ -309,20 +520,54 @@ failure_category() {
     echo "none"
   elif [[ "$rc" -eq 124 ]]; then
     echo "timeout"
+  elif grep -Eiq 'rate[ _-]?limit|hit your limit|usage limit|quota|too many requests|429|resets?[[:space:]]+[0-9]|provider[ _-]?backpressure|limit exceeded' "$log_file" 2>/dev/null; then
+    echo "provider_backpressure"
   elif [[ "$rc" -eq 127 ]]; then
     echo "command_missing"
-  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|invalid[ _-]?(api[ _-]?)?key|provider.*denied|접근[[:space:]]*거부|권한[[:space:]]*없|인증[[:space:]]*(필요|실패)' "$log_file" 2>/dev/null; then
+  elif grep -Eiq 'pin[ _-]?(required|denied|failed|invalid|wrong)|invalid[ _-]?pin|wrong[ _-]?pin|틀렸습니다' "$log_file" 2>/dev/null; then
+    echo "pin_required_noninteractive"
+  elif grep -Eiq 'access[ _-]?denied|permission[ _-]?denied|unauthorized|authentication|auth[ _-]?required|auth[ _-]?method|set an auth method|missing.*(api[ _-]?)?key|invalid[ _-]?(api[ _-]?)?key|gemini_api_key|google_genai|invalid[ _-]?pin|wrong[ _-]?pin|provider.*denied|접근[[:space:]]*거부|권한[[:space:]]*없|인증[[:space:]]*(필요|실패)|틀렸습니다' "$log_file" 2>/dev/null; then
     echo "provider_access_denied"
   else
     echo "child_agent_failed"
   fi
 }
 
-fallback_agent_for() {
+fallback_order_for() {
   case "$1" in
-    codex) echo "claude" ;;
-    claude) echo "codex" ;;
-    *) echo "" ;;
+    codex) echo "claude gemini local" ;;
+    claude) echo "codex gemini local" ;;
+    gemini) echo "claude codex local" ;;
+    local) echo "codex claude gemini" ;;
+    *) echo "codex claude gemini local" ;;
+  esac
+}
+
+agent_was_tried() {
+  local candidate="$1"
+  local tried_agents="$2"
+  [[ " $tried_agents " == *" $candidate "* ]]
+}
+
+first_untried_default_fallback() {
+  local assigned_agent="$1"
+  local tried_agents="$2"
+  local candidate
+  for candidate in $(fallback_order_for "$assigned_agent") codex claude gemini local; do
+    if ! agent_was_tried "$candidate" "$tried_agents"; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo ""
+}
+
+provider_command_available() {
+  local agent="$1"
+  case "$agent" in
+    codex|claude|gemini) command -v "$agent" >/dev/null 2>&1 ;;
+    local) [[ -n "${AIOS_LOCAL_AGENT_COMMAND:-}" || -d "$ROOT/hivemind" ]] ;;
+    *) return 1 ;;
   esac
 }
 
@@ -331,9 +576,10 @@ capability_route_fallback_agent() {
   local repo="$2"
   local category="$3"
   local route_file="$4"
+  local tried_agents="${5:-}"
   local capabilityos_dir="$ROOT/CapabilityOS"
   if [[ ! -f "$capabilityos_dir/capabilityos/cli.py" ]]; then
-    fallback_agent_for "$assigned_agent"
+    first_untried_default_fallback "$assigned_agent" "$tried_agents"
     return 0
   fi
   if (
@@ -345,11 +591,12 @@ capability_route_fallback_agent() {
         --json
   ) >"$route_file" 2>"$route_file.stderr"; then
     local routed
-    routed="$(python3 - "$route_file" "$assigned_agent" <<'PY'
+    routed="$(python3 - "$route_file" "$assigned_agent" "$tried_agents" <<'PY'
 import json
 import sys
 
-path, assigned = sys.argv[1:]
+path, assigned, tried_raw = sys.argv[1:]
+tried = {item for item in tried_raw.split() if item}
 try:
     data = json.load(open(path, encoding="utf-8"))
 except (OSError, json.JSONDecodeError):
@@ -360,17 +607,25 @@ if data.get("contract") != "capabilityos.provider_route.v1":
     raise SystemExit(0)
 for agent in data.get("fallback_agents") or []:
     agent = str(agent)
-    if agent in {"codex", "claude"} and agent != assigned:
+    if agent in {"codex", "claude", "gemini", "local"} and agent != assigned and agent not in tried:
         print(agent)
         break
 PY
 )"
     if [[ -n "$routed" ]]; then
+      if [[ "$routed" == "local" && "$AIOS_CHILD_PREFER_PROVIDER_BEFORE_LOCAL" == "1" ]]; then
+        local default_candidate
+        default_candidate="$(first_untried_default_fallback "$assigned_agent" "$tried_agents")"
+        if [[ -n "$default_candidate" && "$default_candidate" != "local" ]] && provider_command_available "$default_candidate"; then
+          echo "$default_candidate"
+          return 0
+        fi
+      fi
       echo "$routed"
       return 0
     fi
   fi
-  fallback_agent_for "$assigned_agent"
+  first_untried_default_fallback "$assigned_agent" "$tried_agents"
 }
 
 run_agent_once() {
@@ -394,6 +649,28 @@ run_agent_once() {
     else
       (cd "$repo_dir" && timeout "$CLAUDE_TIMEOUT" claude --dangerously-skip-permissions --model "$CLAUDE_MODEL" -p "$(cat "$prompt_file")") \
         >"$log_file" 2>&1 || rc=$?
+    fi
+  elif [[ "$agent" == "gemini" ]]; then
+    if ! command -v gemini >/dev/null 2>&1; then
+      echo "gemini command not found" > "$log_file"
+      rc=127
+    else
+      (cd "$repo_dir" && timeout "$GEMINI_TIMEOUT" gemini --approval-mode plan -p "$(cat "$prompt_file")") \
+        >"$log_file" 2>&1 || rc=$?
+    fi
+  elif [[ "$agent" == "local" ]]; then
+    if [[ -n "${AIOS_LOCAL_AGENT_COMMAND:-}" ]]; then
+      (cd "$repo_dir" && timeout "$LOCAL_TIMEOUT" bash -lc "$AIOS_LOCAL_AGENT_COMMAND" < "$prompt_file") \
+        >"$log_file" 2>&1 || rc=$?
+    elif [[ -d "$ROOT/hivemind" ]]; then
+      (
+        cd "$ROOT/hivemind"
+        python3 -m hivemind.hive --root "$ROOT/hivemind" provider-loop prepare --provider local --prompt "$(cat "$prompt_file")" --json
+        python3 -m hivemind.hive --root "$ROOT/hivemind" provider-loop tick --json
+      ) >"$log_file" 2>&1 || rc=$?
+    else
+      echo "local provider requires AIOS_LOCAL_AGENT_COMMAND or hivemind provider-loop" > "$log_file"
+      rc=127
     fi
   else
     echo "unsupported packet agent: $agent" > "$log_file"
@@ -434,6 +711,14 @@ run_packet() {
     return 0
   fi
 
+  local schema_version
+  schema_version="$(json_get "$packet" "schema_version")"
+  if [[ "$schema_version" == "aios.memory_draft_review_request.v1" ]]; then
+    write_memory_draft_review_result "$result_path" "$repo" "$packet"
+    append_event "packet_done" "$repo" "passed" "$result_path"
+    return 0
+  fi
+
   local repo_dir
   repo_dir="$(repo_path "$repo")"
   if [[ ! -d "$repo_dir" ]]; then
@@ -462,24 +747,42 @@ run_packet() {
   append_event "packet_start" "$repo" "running" "$packet"
   rm -f "$attempts_file"
 
-  local rc=0 category fallback_agent fallback_log_file route_file
+  local related_before
+  related_before="$(related_dirty_status "$repo" "$before_file" "$packet")"
+  if [[ -n "$related_before" ]]; then
+    cp "$before_file" "$after_file"
+    append_event "pending_concurrent_work" "$repo" "held" "$related_before"
+    write_result "$result_path" "$repo" "$packet" "held" "1" "$prompt_file" "$LOG_DIR/${safe_id}.child.log" "$before_file" "$after_file" "$attempts_file" "pending_concurrent_work"
+    append_event "packet_done" "$repo" "held" "$result_path"
+    rm -f "$lock_file"
+    return 0
+  fi
+
+  local rc=0 category fallback_agent fallback_log_file route_file current_agent tried_agents attempt_index
   run_agent_once "$agent" "$repo_dir" "$prompt_file" "$log_file" || rc=$?
   category="$(failure_category "$rc" "$log_file")"
   append_attempt "$attempts_file" "$agent" "$rc" "$category" "$log_file"
+  current_agent="$agent"
+  tried_agents="$agent"
+  attempt_index=0
 
-  if [[ "$rc" -ne 0 && "$AIOS_CHILD_AGENT_FALLBACKS" == "1" && "$category" == "provider_access_denied" ]]; then
-    route_file="$LOG_DIR/${safe_id}.provider_route.json"
-    fallback_agent="$(capability_route_fallback_agent "$agent" "$repo" "$category" "$route_file")"
-    if [[ -n "$fallback_agent" ]]; then
-      fallback_log_file="$LOG_DIR/${safe_id}.${fallback_agent}.fallback.child.log"
-      append_event "packet_fallback_start" "$repo" "$category" "$fallback_agent"
-      rc=0
-      run_agent_once "$fallback_agent" "$repo_dir" "$prompt_file" "$fallback_log_file" || rc=$?
-      category="$(failure_category "$rc" "$fallback_log_file")"
-      append_attempt "$attempts_file" "$fallback_agent" "$rc" "$category" "$fallback_log_file"
-      log_file="$fallback_log_file"
+  while [[ "$rc" -ne 0 && "$AIOS_CHILD_AGENT_FALLBACKS" == "1" && ( "$category" == "provider_access_denied" || "$category" == "provider_backpressure" || "$category" == "pin_required_noninteractive" ) ]]; do
+    attempt_index=$((attempt_index + 1))
+    route_file="$LOG_DIR/${safe_id}.fallback-${attempt_index}.provider_route.json"
+    fallback_agent="$(capability_route_fallback_agent "$current_agent" "$repo" "$category" "$route_file" "$tried_agents")"
+    if [[ -z "$fallback_agent" ]] || agent_was_tried "$fallback_agent" "$tried_agents"; then
+      break
     fi
-  fi
+    fallback_log_file="$LOG_DIR/${safe_id}.${fallback_agent}.fallback.child.log"
+    append_event "packet_fallback_start" "$repo" "$category" "$fallback_agent"
+    rc=0
+    run_agent_once "$fallback_agent" "$repo_dir" "$prompt_file" "$fallback_log_file" || rc=$?
+    category="$(failure_category "$rc" "$fallback_log_file")"
+    append_attempt "$attempts_file" "$fallback_agent" "$rc" "$category" "$fallback_log_file"
+    log_file="$fallback_log_file"
+    current_agent="$fallback_agent"
+    tried_agents="$tried_agents $fallback_agent"
+  done
 
   git_status_short "$repo_dir" > "$after_file"
   local status
@@ -559,8 +862,9 @@ stop_repo() {
 }
 
 status_all() {
-  for repo in hivemind memoryOS CapabilityOS; do
+  for repo in hivemind memoryOS CapabilityOS GenesisOS; do
     local pid_file running inbox_count outbox_count pending_count
+    mkdir -p "$INBOX_DIR/$repo" "$OUTBOX_DIR/$repo"
     pid_file="$(pid_file_for "$repo")"
     if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
       running="true pid=$(cat "$pid_file")"
@@ -615,6 +919,7 @@ case "$command" in
       start_repo hivemind
       start_repo memoryOS
       start_repo CapabilityOS
+      start_repo GenesisOS
     else
       start_repo "$repo_arg"
     fi
@@ -625,6 +930,7 @@ case "$command" in
       stop_repo hivemind
       stop_repo memoryOS
       stop_repo CapabilityOS
+      stop_repo GenesisOS
     else
       stop_repo "$repo_arg"
     fi

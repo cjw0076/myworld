@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+import aios_uri_filter
+
 
 DEFAULT_ROOT = Path("/home/user/workspaces/jaewon")
 MARKDOWN_SUFFIXES = {".md", ".mdx"}
@@ -119,6 +121,8 @@ def domain_for(rel_path: str) -> str:
     parts = Path(rel_path).parts
     if not parts:
         return "unknown"
+    if "uri" in parts:
+        return "uri"
     if "myworld" in parts:
         idx = parts.index("myworld")
         if idx + 1 < len(parts) and parts[idx + 1] in {"hivemind", "memoryOS", "CapabilityOS"}:
@@ -177,6 +181,18 @@ def scan_file(path: Path, root: Path) -> DocItem | None:
     )
 
 
+def maybe_scan_file(path: Path, root: Path, uri_filter_counts: dict[str, int]) -> DocItem | None:
+    result = aios_uri_filter.classify(path, root=root)
+    if result.outcome != "not_uri":
+        uri_filter_counts[result.outcome] = uri_filter_counts.get(result.outcome, 0) + 1
+        if result.outcome == "operator_review":
+            aios_uri_filter.write_review_queue(root, result)
+            return None
+        if result.outcome == "uri_internal":
+            return None
+    return scan_file(path, root)
+
+
 def summarize_signals(signals: list[SignalHit]) -> dict[str, Any]:
     counts: dict[str, int] = {}
     line_samples: dict[str, list[int]] = {}
@@ -189,6 +205,8 @@ def summarize_signals(signals: list[SignalHit]) -> dict[str, Any]:
 
 
 def candidate_task(item: DocItem) -> str:
+    if item.domain == "uri":
+        return "triage Uri-originated AIOS signal before promoting it into a control-plane contract or memory draft"
     if item.domain == "myworld":
         return "promote this control-plane signal into an AIOS contract or readiness gate"
     if item.domain == "memoryOS":
@@ -282,7 +300,8 @@ def proposed_contracts(items: list[DocItem], root: Path) -> list[dict[str, Any]]
 
 def build_report(root: Path, limit: int) -> dict[str, Any]:
     doc_paths = iter_doc_paths(root)
-    items = [item for path in doc_paths if (item := scan_file(path, root))]
+    uri_filter_counts: dict[str, int] = {}
+    items = [item for path in doc_paths if (item := maybe_scan_file(path, root, uri_filter_counts))]
     items.sort(key=lambda item: (-item.score, item.path))
     top = items[:limit]
     counts_by_domain: dict[str, int] = {}
@@ -303,6 +322,7 @@ def build_report(root: Path, limit: int) -> dict[str, Any]:
             "documents_with_signals": len(items),
             "by_domain": dict(sorted(counts_by_domain.items())),
         },
+        "uri_filter_counts": dict(sorted(uri_filter_counts.items())),
         "top_tasks": [
             {
                 "path": item.path,

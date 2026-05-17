@@ -31,6 +31,13 @@ Inspect counts:
 python scripts/aios_repo_goal.py status --repo all --json
 ```
 
+Process all repo-goal packets into reviewable outcomes:
+
+```bash
+python scripts/aios_goal_inbox_processor.py --json
+python scripts/aios_goal_inbox_processor.py report --json
+```
+
 ## Files
 
 Runtime packets stay under `.aios/` and are not committed:
@@ -38,6 +45,9 @@ Runtime packets stay under `.aios/` and are not committed:
 ```text
 .aios/goal_inbox/<repo>/rg_*.json
 .aios/goal_routes/<repo>/route_*.json
+.aios/primitives/goal_inbox_run/gir_*.json
+.aios/primitives/goal_inbox_run/index.json
+.aios/capability_gaps/rg_*.json
 ```
 
 ## Goal Packet
@@ -69,6 +79,34 @@ private evidence paths.
 
 The route is recommendation-only. It does not dispatch, execute, accept memory,
 bind tools, or edit child repos.
+
+## Processor Stage
+
+`scripts/aios_goal_inbox_processor.py` is the bridge from "child repo spoke"
+to "operator can act." It reads every packet under `.aios/goal_inbox/<repo>/`
+without deleting or modifying the packet, classifies it, and writes one
+processing receipt under `.aios/primitives/goal_inbox_run/`.
+
+Classifications:
+
+- `auto_promote_distinct`: the packet maps to an AIOS capability theme and
+  becomes its own `status: proposed` contract candidate in `docs/contracts/`.
+  The generated contract body cites the originating packet so the citizen
+  voice is not collapsed into a generic theme.
+- `merge_with_justification`: the packet is explicitly merged with an existing
+  contract only when a merge target and justification are recorded.
+- `needs_operator_review`: the packet is valid but ambiguous and becomes a
+  triage note under `docs/operator_queue/`.
+- `reject_out_of_scope`: the packet is malformed or references forbidden
+  secret/raw/private surfaces and becomes a rejection note under
+  `docs/operator_queue/`.
+- `defer_capability_gap`: the packet needs CapabilityOS route/card review
+  before promotion and becomes a local `.aios/capability_gaps/` record.
+
+The processor is idempotent. It stores processed goal ids in
+`.aios/primitives/goal_inbox_run/index.json`; repeated runs preserve each
+packet's explicit response while still writing a fresh receipt. Receipts report
+`silently_skipped: 0`; silent skip is not a valid response.
 
 ## Operating Rule
 

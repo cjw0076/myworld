@@ -38,8 +38,11 @@ scout = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 ingest = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
 top_tasks = scout.get("top_tasks") or []
 memory = ingest.get("memory_objects") or {}
-imported = memory.get("new_count", memory.get("created", 0))
-skipped = memory.get("skipped_count", memory.get("skipped", 0))
+counts = ingest.get("counts") or {}
+imported_counts = counts.get("imported") or {}
+skipped_counts = counts.get("skipped") or {}
+imported = memory.get("new_count", memory.get("created", imported_counts.get("memory_objects", 0)))
+skipped = memory.get("skipped_count", memory.get("skipped", skipped_counts.get("memory_objects", 0)))
 warnings = len(ingest.get("warnings") or [])
 print(f"memory_pulse stage=done scout_signals={len(top_tasks)} imported={imported} skipped={skipped} warnings={warnings}")
 PY

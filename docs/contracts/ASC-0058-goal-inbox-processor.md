@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0058
 slug: goal-inbox-processor
-status: accepted
+status: closed
 goal: Process the 11 pending goal/friction packets in `.aios/goal_inbox/` (uri:7, hivemind:2, CapabilityOS:1, myworld:1) into operator-reviewable contract candidates so child-repo voices actually reach the contract chain.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator (founder role delegated)
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: claude@myworld (operator) per founder directive.
 origin: claude diagnostic showed ASC-0038 repo-goal protocol successfully accepts child→myworld submissions (11 packets across 4 repos), but no processor converts them to contract candidates. They sit unprocessed.
 ---
@@ -37,6 +37,10 @@ allowed_files:
 - `scripts/aios_goal_inbox_processor.py`
 - `tests/test_aios_goal_inbox_processor.py`
 - `docs/AIOS_REPO_GOAL_LOOP.md`
+- `docs/operator_queue/<goal_id>-<classification>.md`
+- `docs/contracts/ASC-0081-provider-fallback-execution-binding.md`
+- `docs/contracts/ASC-0082-product-repo-sprint-driver.md`
+- `docs/contracts/ASC-0083-research-to-sprint-context-primitive.md`
 - `docs/contracts/ASC-0058-goal-inbox-processor.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_AGENT_LEDGER.md`
@@ -71,12 +75,8 @@ forbidden_files:
 
 ```bash
 python -m unittest tests/test_aios_goal_inbox_processor.py
-python scripts/aios_goal_inbox_processor.py --json | python -c "
-import json, sys
-d = json.load(sys.stdin)
-print(f'classified: {sum(d.get(\"classifications\",{}).values())}')
-assert sum(d.get('classifications',{}).values()) >= 11, 'should process at least 11 pending'"
-ls docs/contracts/ | grep -E '^ASC-' | wc -l   # might gain N proposed contracts
+python scripts/aios_goal_inbox_processor.py --json --assert-min-classified 11
+python scripts/aios_goal_inbox_processor.py report --json
 python -m unittest discover -s tests -p 'test_aios_*.py'
 python scripts/aios_monitor.py assess --json
 ```
@@ -99,7 +99,30 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- processor receipt:
+  `.aios/primitives/goal_inbox_run/gir_20260513T101137_cdc6f06d0599.json`
+- watcher result:
+  `.aios/outbox/myworld/asc-0058.myworld.result.json`
+- outcome:
+  - 15 goal inbox packets classified.
+  - 15 `auto_promote`.
+  - 0 `needs_operator_review`.
+  - 0 `reject_out_of_scope`.
+  - 0 `defer_capability_gap`.
+  - proposed contracts created:
+    - `docs/contracts/ASC-0081-provider-fallback-execution-binding.md`
+    - `docs/contracts/ASC-0082-product-repo-sprint-driver.md`
+    - `docs/contracts/ASC-0083-research-to-sprint-context-primitive.md`
+- verification:
+  - `python -m unittest tests/test_aios_goal_inbox_processor.py` passed 4/4.
+  - `python scripts/aios_goal_inbox_processor.py --json --assert-min-classified 11` passed with 15 classified.
+  - `python scripts/aios_goal_inbox_processor.py report --json` reported processed_index_count 15.
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 177/177.
+  - `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id asc-0058 --once` passed.
+  - `python scripts/aios_dispatch.py collect --repo myworld` collected the passed result.
+- monitor:
+  - `asc-0058` pending alert cleared after collect.
+  - Monitor still reports pending results for `asc-0064` and `asc-0068`; those are the next control-plane queue items.
 
 ## Work Packets
 
@@ -107,9 +130,10 @@ Pending.
 
 - target_agent: codex
 - target_repo: myworld
-- status: accepted
+- status: done
+- closed: 2026-05-13 KST
 - brief: |
     Implement the goal inbox processor with the four classification
     paths above. Process the 11 currently pending packets as the
     dogfood run. Write the receipt. Add tests + doc.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0058.myworld.result.json`

@@ -3,17 +3,289 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AIOS Control</title>
+    <title>AIOS TUI</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="shell">
+    <div class="app-frame">
+      <aside class="side-rail" aria-label="AIOS navigation">
+        <div class="brand-block">
+          <strong>AIOS</strong>
+          <span>AIOS TUI</span>
+          <small>v0.14.6</small>
+        </div>
+        <nav class="side-nav" aria-label="Primary">
+          <a class="active" href="#session-form">AIOS TUI</a>
+          <a href="#runtime-band">Runtime</a>
+          <a href="#hive-board">Hive TUI</a>
+          <a href="#execution-lens">Execution</a>
+          <a href="#agent-work-title">Sessions</a>
+          <a href="#promotion-queue">Promotions</a>
+          <a href="#artifact-lane">Artifacts</a>
+          <a href="#work-timeline">Timeline</a>
+          <a href="#contract-flow">Contracts</a>
+          <a href="#repo-list">Agents</a>
+          <a href="#route-lanes">Routes</a>
+          <a href="#stop-list">Stops</a>
+        </nav>
+        <div class="side-goal">
+          <span>Active Goal</span>
+          <strong id="side-active-goal">Loading</strong>
+          <small id="side-active-status">On track</small>
+        </div>
+      </aside>
+      <main class="shell">
       <section class="topbar" aria-label="Control status">
         <div>
-          <p class="eyebrow">AIOS Control</p>
-          <h1 id="goal-title">Loading control plane</h1>
+          <p class="eyebrow">System Status</p>
+          <h1>AIOS TUI</h1>
+          <p class="goal-subtitle" id="goal-title">Loading operation plane</p>
         </div>
-        <div class="status-strip" id="status-strip"></div>
+        <div class="top-actions">
+          <div class="mode-toggle" role="group" aria-label="Dashboard mode">
+            <button type="button" data-mode="simple">Simple</button>
+            <button type="button" data-mode="operator">Operator</button>
+          </div>
+          <div class="live-status" id="live-status">Live stream waiting</div>
+          <div class="status-strip" id="status-strip"></div>
+        </div>
+      </section>
+
+      <section class="runtime-band" id="completion-band" aria-label="AIOS completion">
+        <div class="runtime-head">
+          <div>
+            <p class="eyebrow">Completion</p>
+            <h2 id="completion-verdict">Checking AIOS completion</h2>
+          </div>
+          <span id="completion-status">—</span>
+        </div>
+        <div class="runtime-grid" id="completion-grid"></div>
+      </section>
+
+      <section class="runtime-band" id="runtime-band" aria-label="AIOS runtime">
+        <div class="runtime-head">
+          <div>
+            <p class="eyebrow">Runtime</p>
+            <h2>AIOS on this machine</h2>
+          </div>
+          <span id="runtime-status">Checking</span>
+        </div>
+        <div class="runtime-grid" id="runtime-grid"></div>
+      </section>
+
+      <section class="runtime-band" id="workbench-band" aria-label="AIOS workbench">
+        <div class="runtime-head">
+          <div>
+            <p class="eyebrow">Workbench</p>
+            <h2>What AIOS observed about your repos</h2>
+          </div>
+          <span id="workbench-status">No repos</span>
+        </div>
+        <div class="runtime-grid" id="workbench-grid"></div>
+      </section>
+
+      <section class="execution-lens-band" id="execution-lens" aria-label="AIOS execution lens">
+        <div class="execution-lens-head">
+          <div>
+            <p class="eyebrow">Execution Lens</p>
+            <h2>Hive/Executor activity in one visual frame</h2>
+          </div>
+          <span id="execution-lens-status">Watching</span>
+        </div>
+        <div class="execution-lens-grid" id="execution-lens-grid"></div>
+      </section>
+
+      <section class="hive-tui-band" id="hive-board" aria-label="Hive execution board">
+        <div class="hive-tui-head">
+          <div>
+            <p class="eyebrow">Hive TUI</p>
+            <h2>Hive run board (pipeline, agents, artifacts)</h2>
+          </div>
+          <span id="hive-board-status">Watching</span>
+        </div>
+        <div class="hive-board-overview" id="hive-board-overview"></div>
+        <div class="hive-board-lane">
+          <article class="hive-board-card">
+            <h3>Pipeline</h3>
+            <div id="hive-board-pipeline" class="hive-board-list">No run loaded.</div>
+          </article>
+          <article class="hive-board-card">
+            <h3>Agents</h3>
+            <div id="hive-board-agents" class="hive-board-list">No run loaded.</div>
+          </article>
+          <article class="hive-board-card">
+            <h3>Artifacts</h3>
+            <div id="hive-board-artifacts" class="hive-board-list">No run loaded.</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="session-band" aria-label="AIOS Session">
+        <form class="session-form" id="session-form">
+          <div class="session-copy">
+            <h2>Start a goal</h2>
+          </div>
+          <label class="session-field" for="session-input">
+            <span>Goal</span>
+            <textarea id="session-input" name="goal" rows="5" maxlength="4000" placeholder="무엇을 만들까?" required></textarea>
+          </label>
+          <div class="session-controls">
+            <label class="session-contract" for="session-contract-id">
+              <span>Contract</span>
+              <input id="session-contract-id" name="contract_id" placeholder="optional" />
+            </label>
+            <button id="session-submit" type="submit">Start</button>
+          </div>
+          <div class="session-status" id="session-status" role="status">Ready</div>
+          <div class="session-result" id="session-result" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="conversation-band" aria-label="AIOS conversation">
+        <div class="conversation-head">
+          <div>
+            <p class="eyebrow">Conversation</p>
+            <h2>Talk to AIOS</h2>
+          </div>
+          <span id="inline-chat-status">Connecting</span>
+        </div>
+        <div class="quick-action-row" id="quick-action-row" aria-label="Quick actions">
+          <button type="button" data-chat-prompt="현재 막힌 것과 다음 행동을 알려줘">Find Blockers</button>
+          <button type="button" data-chat-prompt="최근 산출물과 Agent 작업 결과를 요약해줘">Summarize Artifacts</button>
+          <button type="button" data-chat-prompt="이 대화에서 불편함과 숨은 필요성을 찾아줘">Find Friction</button>
+          <button type="button" data-chat-prompt="이 대화를 실행 가능한 목표로 바꿔줘">Turn Into Goal</button>
+          <button type="button" data-chat-prompt="ASC-0145를 진행하려면 무엇이 필요한지 알려줘">Promote Session</button>
+        </div>
+        <div class="inline-chat-thread" id="inline-chat-thread" aria-live="polite"></div>
+        <form class="inline-chat-form" id="inline-chat-form">
+          <label class="inline-chat-field" for="inline-chat-input">
+            <span>Message</span>
+            <textarea id="inline-chat-input" rows="2" maxlength="8000" placeholder="AIOS에게 물어보기" required></textarea>
+          </label>
+          <div class="inline-chat-actions">
+            <input id="inline-chat-conversation" value="control-center" aria-label="Conversation" />
+            <button id="inline-chat-submit" type="submit">Send</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="promotion-band" id="promotion-queue" aria-label="Promotion queue">
+        <div class="promotion-head">
+          <div>
+            <p class="eyebrow">Promotions</p>
+            <h2>Reviewed sessions ready for contract review</h2>
+          </div>
+          <span id="promotion-status">Waiting</span>
+        </div>
+        <div class="promotion-queue-grid" id="promotion-queue-grid"></div>
+      </section>
+
+      <section class="memory-draft-band" aria-label="Memory draft queue">
+        <div class="memory-draft-head">
+          <div>
+            <p class="eyebrow">Memory Drafts</p>
+            <h2>Signals waiting for MemoryOS review</h2>
+          </div>
+          <span id="memory-draft-status">Watching</span>
+        </div>
+        <div class="memory-draft-grid" id="memory-draft-grid"></div>
+      </section>
+
+      <section class="friction-radar-band" aria-label="Friction radar">
+        <div class="friction-radar-head">
+          <div>
+            <p class="eyebrow">Friction Radar</p>
+            <h2>Needs found by AIOS</h2>
+          </div>
+          <span id="friction-radar-status">Watching</span>
+        </div>
+        <div class="friction-grid" id="friction-grid"></div>
+      </section>
+
+      <section class="os-observatory-band" aria-label="OS Observatory">
+        <div class="os-observatory-head">
+          <div>
+            <p class="eyebrow">OS Observatory</p>
+            <h2>Operating systems at work</h2>
+          </div>
+          <span id="os-observatory-status">Watching</span>
+        </div>
+        <div class="os-orbit" id="os-orbit"></div>
+        <div class="os-lane-grid" id="os-lane-grid"></div>
+      </section>
+
+      <section class="genesis-lens-band" aria-label="Genesis Lens">
+        <div class="genesis-lens-head">
+          <div>
+            <p class="eyebrow">Genesis Lens</p>
+            <h2>Worldlines before execution</h2>
+          </div>
+          <span id="genesis-lens-status">Speculative</span>
+        </div>
+        <div class="genesis-branch-grid" id="genesis-branch-grid"></div>
+      </section>
+
+      <section class="agent-work-band" aria-label="Agent work">
+        <div class="agent-work-head">
+          <div>
+            <p class="eyebrow">Agent Work</p>
+            <h2 id="agent-work-title">Latest session</h2>
+          </div>
+          <span id="agent-work-status">Waiting</span>
+        </div>
+        <div class="agent-role-grid" id="agent-role-grid"></div>
+        <div class="artifact-lane" id="artifact-lane"></div>
+        <div class="work-timeline" id="work-timeline"></div>
+      </section>
+
+      <section class="goal-bar-band" aria-label="Goal Bar">
+        <form class="goal-bar-form" id="goal-bar-form">
+          <label class="goal-bar-field" for="goal-bar-input">
+            <span>Goal Bar</span>
+            <input id="goal-bar-input" name="goal" maxlength="4000" placeholder="어떤 Agent가 있지?  /  Which contracts are open?" required />
+          </label>
+          <button type="submit">Classify</button>
+          <button id="goal-bar-run" type="button" disabled>Run</button>
+          <div class="goal-bar-status" id="goal-bar-status" role="status">Ready</div>
+          <div class="goal-bar-result" id="goal-bar-result" aria-live="polite"></div>
+        </form>
+      </section>
+
+      <section class="simple-dashboard" id="simple-dashboard" aria-label="Simple AIOS status">
+        <div>
+          <h2>Health</h2>
+          <p id="simple-health">Checking the system.</p>
+        </div>
+        <div>
+          <h2>Last Activity</h2>
+          <p id="simple-activity">Waiting for new work.</p>
+        </div>
+        <div>
+          <h2>Decisions Waiting</h2>
+          <p id="simple-decisions">No review count yet.</p>
+        </div>
+      </section>
+
+      <section class="ask-band" aria-label="Ask AIOS">
+        <form class="ask-form" id="ask-form">
+          <div class="ask-copy">
+            <p class="eyebrow">Ask AIOS</p>
+            <h2>Give the system one goal.</h2>
+          </div>
+          <label class="ask-field" for="ask-input">
+            <span>Goal</span>
+            <textarea id="ask-input" name="goal" rows="4" maxlength="4000" placeholder="Build, improve, investigate, or route something." required></textarea>
+          </label>
+          <div class="ask-controls">
+            <label class="check-row">
+              <input id="ask-draft-contract" type="checkbox" checked />
+              <span>Draft contract</span>
+            </label>
+            <button id="ask-submit" type="submit">Create Ask</button>
+          </div>
+          <div class="ask-status" id="ask-status" role="status">Ready</div>
+          <div class="ask-result" id="ask-result" aria-live="polite"></div>
+        </form>
       </section>
 
       <section class="map-band" aria-label="AIOS operating map">
@@ -68,9 +340,20 @@
           </div>
           <div class="dispatch-table" id="dispatch-table"></div>
         </div>
+
+        <div class="panel span-3">
+          <div class="panel-head">
+            <h2>Live Events</h2>
+            <span id="live-event-count">0 received</span>
+          </div>
+          <div class="live-events" id="live-events"></div>
+        </div>
       </section>
-    </main>
+      </main>
+    </div>
     <script src="./aios-control-data.js"></script>
     <script src="./app.js"></script>
+    <script src="./goal_bar.js"></script>
+    <script src="./live.js"></script>
   </body>
 </html>

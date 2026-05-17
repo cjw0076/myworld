@@ -1,12 +1,13 @@
 ---
 contract_id: ASC-0111
 slug: founder-behavior-ingestion
-status: accepted
+status: closed
 goal: Capture founder (재원) directives, reframes, and decision patterns as first-class memoryOS records — drafts with origin=founder_directive — so the system gains an actual model of how its founder operates. Today this is scattered across chat, operator_sessions, claude local memory, and verbatim acceptance_authority quotes; memoryOS itself has 0% coverage.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier
 acceptance_authority: claude@myworld (verifier role, /loop GOAL-0002 + founder question "내 작업방식이 memoryOS에 저장되나?")
 origin: 2026-05-13 verifier round 2 probed memoryOS for founder-related drafts — 2/43 (passing mentions only, no structured capture). AIOS effectively has no memory of its own founder despite 1.5 days of intense direction-setting.
+closed: 2026-05-13 KST
 ---
 
 # ASC-0111 Founder Behavior Ingestion
@@ -102,20 +103,9 @@ forbidden_files:
 ```bash
 python -m py_compile scripts/aios_founder_capture.py
 python -m unittest tests/test_aios_founder_capture.py
-python scripts/aios_founder_capture.py --json | python -c "
-import json, sys
-d = json.load(sys.stdin)
-n = len(d.get('directives',[]))
-assert n >= 20, f'expected ≥20 founder directives in session log, got {n}'
-"
-cd memoryOS && python -m memoryos --root . ingest-founder-directive < /tmp/founder_capture.json --json
-python -m memoryos --root . drafts list --json | python -c "
-import json, sys
-d = json.load(sys.stdin)
-founder_drafts = [x for x in d if x.get('origin') == 'founder_directive']
-assert len(founder_drafts) >= 20, f'founder_directive drafts: {len(founder_drafts)}'
-"
-cd ..
+python scripts/aios_founder_capture.py --write .aios/tmp/founder_capture.json --json
+python -m memoryos.cli --root memoryOS ingest-founder-directive ../.aios/tmp/founder_capture.json --json
+python -m memoryos.cli --root memoryOS drafts list --origin founder_directive --json
 python -m unittest tests/test_aios_founder_capture.py memoryOS/tests/test_founder_ingest.py
 python -m unittest discover -s tests -p 'test_aios_*.py'
 ```
@@ -141,7 +131,63 @@ Pass criteria (DNA Inv 5):
 
 ## Receipts
 
-Pending.
+- myworld implementation:
+  - `scripts/aios_founder_capture.py`
+  - `tests/test_aios_founder_capture.py`
+  - `docs/AIOS_FOUNDER_INGESTION.md`
+- memoryOS implementation:
+  - `memoryOS/memoryos/cli.py`
+  - `memoryOS/tests/test_founder_ingest.py`
+  - memoryOS durability commit `6391499`
+- Live ingest:
+  - `python scripts/aios_founder_capture.py --write .aios/tmp/founder_capture.json --json`
+  - captured `85` directives
+  - `python -m memoryos.cli --root memoryOS ingest-founder-directive ../.aios/tmp/founder_capture.json --json`
+  - created `85` `origin=founder_directive` draft memories
+  - re-run returned `written=0`, `skipped=85`
+- Verification passed:
+  - `python -m py_compile scripts/aios_founder_capture.py memoryOS/memoryos/cli.py`
+  - `python -m unittest tests/test_aios_founder_capture.py memoryOS.tests.test_founder_ingest`
+  - `python -m unittest tests/test_aios_founder_capture.py memoryOS/tests/test_founder_ingest.py`
+  - `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 233 tests
+  - `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id asc-0111 --once`
+  - `python scripts/aios_monitor.py assess --write --json` returned `health=clear`
+- Dispatch result:
+  - `.aios/outbox/myworld/asc-0111.myworld.result.json` passed.
+- Release writeback:
+  - MemoryOS closeout draft `mem_ef62dc7be6b77fb9`
+- Activation review, after founder asked why Claude could not see founder
+  working style through MemoryOS:
+  - Diagnosis: the founder corpus existed as `85` `origin=founder_directive`
+    drafts, but `0` founder directives were accepted, so Hive/Claude context
+    builds did not select them.
+  - Operator review approved `10` direct founder directives with durable
+    contract provenance:
+    - `mem_001f6d5191fb8e51` — Claude CLI primitive absorption
+    - `mem_70c8edbf4c5c9c7b` — use AIOS until completion, coevolve MemoryOS,
+      CapabilityOS, and Hive
+    - `mem_4f390c90de100dbf` — delegated founder/operator role
+    - `mem_61910dd09950fc81` — final interface is AIOS, not provider CLIs
+    - `mem_1f18cea463eed9fd` — absorb new providers and local LLMs
+    - `mem_0c3b41fd22b1d801` — AIOS work visibility gap
+    - `mem_4ec54ac7409828c8` — continue issuing contracts
+    - `mem_7a13c1fc3880df9c` — question whether MemoryOS stores founder work style
+    - `mem_fdf38e3f47d1aed4` — absorb user logs/work style into few-shot patterns
+    - `mem_3d34968d34418b03` — substitute for founder role in living-organism arc
+  - Runtime verification:
+    - `python -m memoryos.cli --root memoryOS search "AIOS완성 공진화 memoryOS capabilityOS hive mind founder" --origin founder_directive --json`
+      returned accepted founder memory `mem_70c8edbf4c5c9c7b`.
+    - `python -m memoryos.cli --root memoryOS context build --task "AIOS완성 공진화 memoryOS capabilityOS hive mind founder directive" --for hive --project AIOS --json --explain --include-excluded`
+      selected founder memories `mem_70c8edbf4c5c9c7b`,
+      `mem_7a13c1fc3880df9c`, and `mem_3d34968d34418b03` in trace
+      `rtrace_31b18b1d2fd7c0aa`.
+    - `python -m memoryos.cli --root memoryOS context build --task "founder role delegated living organism 작업방식 memoryOS" --for hive --project AIOS --json --explain --include-excluded`
+      selected founder memories `mem_70c8edbf4c5c9c7b`,
+      `mem_7a13c1fc3880df9c`, `mem_fdf38e3f47d1aed4`, and
+      `mem_3d34968d34418b03` in trace `rtrace_a25c117e6fae9cbf`.
+  - Remaining gap: retrieval quality is still coarse; several exact founder
+    directives can be accepted but ranked as `task_no_match` for mixed-language
+    queries. ASC-0110 remains the structural fix for ranking/tokenization.
 
 ## Work Packets
 

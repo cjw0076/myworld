@@ -1,7 +1,7 @@
 ---
 contract_id: ASC-0115
 slug: goal-inbox-per-citizen-response
-status: accepted
+status: closed
 goal: Stop ASC-0058 goal_inbox_processor from collapsing N distinct citizen packets into 1 generic theme contract. Each citizen voice (each uri sprint, each hivemind friction note, each memoryOS request) deserves its own response — accepted to dedicated contract, explicitly rejected with cited reason, OR explicitly merged with merge-justification. No silent skips.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier (founder /loop GOAL-0002 — verifier surfaces necessity)
@@ -102,22 +102,7 @@ packets with new rules. Output: how many each classification.
 python -m py_compile scripts/aios_goal_inbox_processor.py
 python -m unittest tests/test_aios_goal_inbox_processor.py
 # Re-process current goal_inbox under new rules
-python scripts/aios_goal_inbox_processor.py --json | python -c "
-import json, sys
-d = json.load(sys.stdin)
-counts = d.get('counts', {})
-assert counts.get('silently_skipped', 0) == 0, f'silent skip not allowed; got {counts}'
-results = d.get('results', [])
-uri_results = [r for r in results if r.get('source_repo') == 'uri']
-# each uri packet got distinct response or merge_justification
-for r in uri_results:
-    if r.get('classification') == 'merge_with_justification':
-        assert r.get('merge_justification'), f'merge without justification: {r.get(\"goal_id\")}'
-    else:
-        # else must point to a contract whose body cites this packet
-        assert r.get('classification') != 'auto_promote' or 'auto_promote_distinct' in r.get('classification','')
-print(f'  per-citizen response verified for {len(uri_results)} uri packets')
-"
+python scripts/aios_goal_inbox_processor.py --assert-silently-skipped-zero --assert-per-citizen-response --json
 python -m unittest discover -s tests -p 'test_aios_*.py'
 ```
 
@@ -141,8 +126,21 @@ Pass criteria (DNA-cited):
 
 ## Receipts
 
-Pending. Dogfood requirement: re-process current 15 packets and show
-zero silent skips, distinct or justified-merged responses for each.
+- 2026-05-14 KST: `scripts/aios_goal_inbox_processor.py` now emits
+  `auto_promote_distinct`, `merge_with_justification`,
+  `needs_operator_review`, `reject_out_of_scope`, and
+  `defer_capability_gap`. Legacy `auto_promote` is not emitted by current
+  classification.
+- Repeated runs preserve explicit responses with `previously_processed`
+  instead of returning `skipped=True`.
+- Receipts include top-level and count-level `silently_skipped: 0`.
+- Dogfood run processed 15 current goal-inbox packets and produced 15
+  `auto_promote_distinct` contract candidates:
+  `ASC-0128` through `ASC-0142`.
+- Dogfood verified all 11 `uri` packets have explicit per-citizen responses
+  and generated contract bodies cite the originating `goal_id`.
+- Watcher result `.aios/outbox/myworld/asc-0115.myworld.result.json` passed.
+- Full MyWorld AIOS test suite passed 308 tests.
 
 ## Work Packets
 

@@ -43,6 +43,11 @@ class AiosContractAutodraftTest(unittest.TestCase):
         self.assertIn("status: proposed", draft["body"])
         self.assertIn("accepted:", draft["body"])
         self.assertIn("operator acceptance", draft["body"].lower())
+        self.assertIn("## AIOS Role Evidence", draft["body"])
+        self.assertIn("### MemoryOS", draft["body"])
+        self.assertIn("### CapabilityOS", draft["body"])
+        self.assertIn("### GenesisOS", draft["body"])
+        self.assertIn("### Hive Mind", draft["body"])
 
     def test_draft_contract_rejects_blocked_recommendation(self) -> None:
         with self.assertRaises(ValueError):
@@ -83,6 +88,7 @@ class AiosContractAutodraftTest(unittest.TestCase):
             text = path.read_text(encoding="utf-8")
             self.assertIn("status: proposed", text)
             self.assertIn("## Verification Gate", text)
+            self.assertIn("## AIOS Role Evidence", text)
 
 
 if __name__ == "__main__":

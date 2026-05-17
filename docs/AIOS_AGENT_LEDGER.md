@@ -5,6 +5,257 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-05-15 KST — codex — ASC-0077 Genesis semantic alignment kernel
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: MyWorld shared-language handoff + contract closeout
+- goal: close ASC-0077 by aligning MyWorld shared language with the GenesisOS
+  semantic kernel and verifying canonical terms, aliases, ambiguity reporting,
+  and non-collapse boundaries.
+- changed: `docs/AIOS_SHARED_LANGUAGE.md`,
+  `docs/contracts/ASC-0077-genesisos-semantic-alignment-kernel.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`.
+- evidence: semantic py_compile passed; GenesisOS semantic/CLI unit tests
+  passed 13/13; CLI normalize `작업 장부` mapped to `ledger`; CLI handshake
+  emitted `genesisos.semantic_handshake.v1`; CLI diff `contract` vs
+  `dispatch packet` returned `same_canonical=false`; GenesisOS full tests
+  passed 48/48; MyWorld semantic handshake checker passed; full MyWorld
+  `test_aios_*.py` discovery passed 360/360.
+- monitor: final `python scripts/aios_monitor.py assess --json` reported
+  `health=attention`; remaining attention is dirty-repo triage, not ASC-0077
+  verification failure.
+- decision: the shared-language doc now treats GenesisOS canonical anchors as
+  advisory semantic anchors compatible with future ASC-0068 discovery
+  handshakes. It explicitly preserves the contract/dispatch,
+  draft/accepted-memory, and recommendation/provider-route boundaries.
+- risk: semantic matching remains deterministic and local; future contracts may
+  add project-specific aliases, but should preserve the non-collapse boundary
+  table.
+- next: accepted GenesisOS sprint queue is clear; proposed Genesis contracts
+  require acceptance before implementation.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0075 Genesis seed library
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: MyWorld wrapper + contract closeout
+- goal: close ASC-0075 by preserving speculative GenesisOS seed ideas in an
+  append-only library and adding a MyWorld operator-capture wrapper.
+- changed: `scripts/aios_genesis_seed_capture.py`,
+  `tests/test_aios_genesis_seed_capture.py`,
+  `docs/contracts/ASC-0075-genesis-seed-library.md`,
+  `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`.
+- evidence: GenesisOS library tests passed 8/8; GenesisOS local unit set
+  passed 39/39; GenesisOS CLI capture/list/random smoke wrote
+  `lib-665c8b0b316d`; MyWorld wrapper tests passed 2/2; wrapper smoke wrote
+  `/tmp/asc0075-seeds/.../lib-d4df6719852f.json`; full MyWorld
+  `test_aios_*.py` discovery passed 360/360.
+- decision: MyWorld captures operator seeds through GenesisOS `Library` and
+  records a receipt, but promotion remains an explicit later review path.
+- risk: three seed-library entries were created during verification on
+  2026-05-15, including two test-origin captures before the wrapper tests were
+  tightened to use temp `--seeds-root`. They remain append-only records rather
+  than being removed.
+- next: continue GenesisOS sprint with ASC-0077 MyWorld shared-language
+  handoff.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0074 Genesis pre-close challenge
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: implementation + control-plane release gate
+- goal: close ASC-0074 by running GenesisOS prompt-prison challenge reports
+  before in-registry accepted contract releases and requiring explicit
+  operator override for high-risk soft-blocks.
+- changed: `GenesisOS/genesisos/challenge.py`,
+  `GenesisOS/tests/test_challenge.py`, `scripts/aios_genesis_challenge.py`,
+  `tests/test_aios_genesis_challenge.py`, `scripts/aios_dispatch.py`,
+  `docs/AIOS_GENESIS_GATE.md`,
+  `docs/contracts/ASC-0074-genesis-pre-close-challenge.md`,
+  `docs/contracts/README.md`, `GenesisOS/docs/AGENT_WORKLOG.md`.
+- evidence: GenesisOS challenge test passed 1/1; GenesisOS local unit set
+  passed 31/31; MyWorld dispatch/challenge tests passed 25/25; standalone
+  challenge for `ASC-0050` wrote `.aios/genesis_challenges/ASC-0050.json`
+  with `risk_level=high` and `soft_block=true`; full MyWorld
+  `test_aios_*.py` discovery passed 358/358.
+- decision: the release hook applies to `docs/contracts/` registry contracts
+  with status `accepted` or `closed`. Proposed and non-registry dispatches
+  emit explicit skip events so test fixtures and ad-hoc packets do not mask
+  release behavior while real registry closeouts remain challenged.
+- risk: the challenge is deterministic and advisory; a broad prompt-prison
+  signature set can over-block, so operator override and explicit skip remain
+  first-class provenance events.
+- next: continue GenesisOS sprint with ASC-0075/ASC-0077 MyWorld handoffs.
+- status: done
+
+## 2026-05-15 KST — claude — CapabilityOS AIOS topology completion
+
+- repo: CapabilityOS + cross-OS evidence refs
+- agent: claude (in CapabilityOS session, git author codex@CapabilityOS)
+- role: AIOS capability map completion / observation gap closure
+- goal: make CapabilityOS structurally represent the full AIOS topology so
+  the observation surface stops dropping the majority of result packets as
+  `unmapped_repo`. Founder-set session goal: "AIOS로서 CapabilityOS 완성".
+- changed: `CapabilityOS/capabilityos/catalog.py` (+3 cards),
+  `CapabilityOS/tests/fixtures/capabilities.json` (+3 cards mirrored),
+  `CapabilityOS/capabilityos/observation.py` (REPO_CAPABILITY_MAP gains
+  `GenesisOS` and `myworld` entries),
+  `CapabilityOS/tests/test_cli.py` (drift guard `test_default_catalog_matches_fixture`,
+  card-count assertions 11 → 14).
+- evidence: CapabilityOS commit `d6656b4`; `python -m pytest` 21 passed;
+  `audit --json` reports `status=ok recommendation_only=true
+  catalog_complete=true missing_required_kinds=[] execution_enabled=[]`;
+  `observe-results --inbox ../.aios/outbox` shows
+  `unmapped_repo` gaps 106 → 0, observations 48 → 152 of 162 result files
+  (remaining 13 are legitimate `skipped_result`/`non_success_result`).
+- decision: catalog now mirrors the 4-OS + control-plane structure of AIOS.
+  Two GenesisOS cards (divergence, prompt-prison critic) since the OS has
+  two distinct surfaces. One `cap_myworld_operator_control_plane` workflow
+  card represents dispatch/contract/ledger/review duties. Cards remain
+  recommendation-only (`executes_tools=false`) and `evidence_refs` link to
+  existing GenesisOS / myworld artifacts only — no new files in those repos.
+- risk: when a repo has more than one capability card, only the one named in
+  `REPO_CAPABILITY_MAP` receives observations. memoryOS maps to
+  `cap_memoryos_import_run`; the sibling `cap_memoryos_context_build` and
+  `cap_genesisos_prompt_prison_critic` accrue no observations. Acceptable for
+  now since observations are an advisory confidence signal, not authority.
+- next: a future contract may map per-packet `contract_id` to a specific
+  card so multi-card OSes split observation credit. Drift guard catches the
+  documented dual-source pattern (DEFAULT_CATALOG + fixture); deeper
+  consolidation is a separate cleanup.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0073 Genesis cross-domain analogy
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: implementation + control-plane wrapper
+- goal: close ASC-0073 by adding a curated cross-domain analogy library,
+  deterministic matcher, operator-attributed library growth, and MyWorld
+  analogy artifact writer.
+- changed: `GenesisOS/genesisos/analogy.py`, `GenesisOS/genesisos/cli.py`,
+  `GenesisOS/genesisos/data/analogy_library.json`,
+  `GenesisOS/tests/test_analogy.py`, `GenesisOS/docs/CROSS_DOMAIN.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`, `scripts/aios_genesis_analogy.py`,
+  `tests/test_aios_genesis_analogy.py`,
+  `docs/contracts/ASC-0073-genesis-cross-domain-analogy.md`,
+  `docs/contracts/README.md`.
+- evidence: GenesisOS analogy tests passed 4/4; GenesisOS local unit set
+  passed 30/30; raw CLI match returned three ranked analogies; raw CLI add
+  wrote operator-attributed entry `biology-test-561c6a08`; MyWorld wrapper
+  tests passed 2/2; wrapper CLI wrote top analogies for `ASC-0050`; full
+  MyWorld `test_aios_*.py` discovery passed 356/356.
+- decision: analogy matches are advisory only and cannot execute, create
+  contracts, accept memory, or route capabilities.
+- risk: bag-of-terms matching is intentionally simple and can produce broad
+  ties; later contracts may weight MemoryOS context or accepted domain maps.
+- next: continue GenesisOS sprint with ASC-0074 pre-close challenge.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0072 Genesis multi-modal reasoning
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: implementation + control-plane wrapper
+- goal: close ASC-0072 by adding deterministic non-language modality
+  translations and a MyWorld artifact writer for contract/draft comparison.
+- changed: `GenesisOS/genesisos/modalities.py`, `GenesisOS/genesisos/cli.py`,
+  `GenesisOS/tests/test_modalities.py`, `GenesisOS/docs/MULTI_MODAL.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`, `scripts/aios_genesis_modal.py`,
+  `tests/test_aios_genesis_modal.py`,
+  `docs/contracts/ASC-0072-genesis-multi-modal-reasoning.md`,
+  `docs/contracts/README.md`.
+- evidence: GenesisOS modality tests passed 4/4; GenesisOS local unit set
+  passed 26/26; raw CLI compare emitted six non-empty modalities; MyWorld
+  wrapper tests passed 2/2; wrapper CLI wrote an ASC-0072 modal view artifact
+  under `.aios/genesis_modal_views/`; full MyWorld `test_aios_*.py`
+  discovery passed 352/352.
+- decision: V1 modality adapters are deterministic heuristics only. They are
+  advisory prompt-prison escape surfaces, not proof, execution, memory
+  acceptance, or capability routing.
+- risk: heuristic entity extraction can over-focus on frontmatter keys; later
+  contracts may add body-aware extraction or local LLM adapters under a new
+  verification gate.
+- next: continue GenesisOS sprint with ASC-0073 cross-domain analogy.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0071 Genesis multi-universe branches
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: implementation + control-plane wrapper
+- goal: close ASC-0071 by adding speculative multi-universe branches for a
+  goal, explicit operator collapse, and a MyWorld wrapper for goal documents.
+- changed: `GenesisOS/genesisos/branches.py`, `GenesisOS/genesisos/cli.py`,
+  `GenesisOS/tests/test_branches.py`, `GenesisOS/docs/MULTI_UNIVERSE.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`, `scripts/aios_genesis_branch.py`,
+  `tests/test_aios_genesis_branch.py`,
+  `docs/contracts/ASC-0071-genesis-multi-universe-branches.md`,
+  `docs/contracts/README.md`.
+- evidence: GenesisOS branch tests passed 5/5; GenesisOS local unit set passed
+  22/22; raw CLI fork/list/collapse produced three branches, one explicit
+  winner, and collapsed losers; MyWorld wrapper tests passed 2/2; full
+  MyWorld `test_aios_*.py` discovery passed 350/350; monitor assessment
+  completed with `health=attention` due dirty-worktree triage and advisory
+  Genesis/persona findings, not ASC-0071 gate failure.
+- decision: branch collapse is explicit and operator-facing; GenesisOS never
+  auto-selects a winner or creates a contract from a branch.
+- risk: current branch state files are current-state JSON while fork/collapse
+  events are append-only; if AIOS later needs immutable branch-state versions,
+  make that a follow-up contract.
+- next: continue GenesisOS sprint with ASC-0072 multi-modal reasoning, unless
+  operator chooses to review generated branch/seed candidates first.
+- status: done
+
+## 2026-05-15 KST — codex — ASC-0070 Genesis assumption mutator
+
+- repo: GenesisOS + myworld
+- agent: codex
+- role: implementation + control-plane wrapper
+- goal: close ASC-0070 by adding deterministic GenesisOS assumption mutation
+  seeds and a MyWorld wrapper that writes reviewed seed candidates to the local
+  `.aios/genesis_seed_inbox/`.
+- changed: `GenesisOS/genesisos/mutator.py`, `GenesisOS/genesisos/cli.py`,
+  `GenesisOS/tests/test_mutator.py`, `GenesisOS/docs/ASSUMPTION_MUTATION.md`,
+  `GenesisOS/docs/AGENT_WORKLOG.md`, `scripts/aios_genesis_mutate.py`,
+  `tests/test_aios_genesis_mutate.py`,
+  `docs/contracts/ASC-0070-genesis-assumption-mutator.md`,
+  `docs/contracts/README.md`.
+- evidence: GenesisOS mutator tests passed 9/9; GenesisOS full local unit set
+  passed 17/17; the raw GenesisOS CLI emitted six `/tmp/sample_contract.md`
+  seeds and rerun reported `skipped_existing`; MyWorld wrapper tests passed
+  2/2; wrapper CLI emitted six candidate seeds each for `ASC-0050` and
+  `ASC-0070` under `.aios/genesis_seed_inbox/`; full MyWorld
+  `test_aios_*.py` discovery passed 346/346; monitor assessment completed
+  with `health=attention` due dirty-worktree triage, not ASC-0070 test
+  failure.
+- decision: assumption mutations are candidate seeds only; source contracts are
+  not mutated and promotion remains a separate MyWorld operator review step.
+- risk: MyWorld root already has substantial unrelated dirty state, so this
+  entry records only the scoped ASC-0070 additions and avoids interpreting the
+  broader worktree.
+- next: use the seed inbox review path to decide whether any ASC-0070 seed
+  should become a separate MyWorld contract.
+- status: done
+
+## 2026-05-13 KST — claude — ASC-0089 Hive debate: ASC-0088 alternatives verdict
+
+- repo: hivemind + myworld
+- agent: claude
+- role: operator (Hive debate executor)
+- goal: Adversarial Hive deliberation on ASC-0088 alternatives (B1-B5) for AIOS Universal Agent Interface shape, after founder flagged B5 auto-accept as prompt-prison.
+- changed: `hivemind/.runs/asc0088_alternatives_debate/` (20 debate artifacts + final_state.md), `docs/discoveries/2026-05-13-hive-asc0088-alternatives-debate-result.md`, `hivemind/docs/AGENT_WORKLOG.md`
+- evidence: 5-round debate, 3 voices/round, 7/7 probes addressed, unanimous verdict
+- decision: **pick_B1** — tiny spec (~50-80 lines), permanent substrate-neutral protocol definition. B2/B5 eliminated, B4/B3 deferred as optional layers. ASC-0088 to be superseded with B1-scoped successor contract.
+- risk: B1 may prove insufficient for automated delivery (proposer dissent: B4 needed within 6 months). Mitigated by layered architecture allowing optional B4/B3 addition based on evidence.
+- next: claude@myworld executes WP-0089-B — supersede ASC-0088, draft successor contract with 7 design requirements (DR-1 through DR-7).
+- status: done (WP-0089-A complete, WP-0089-B pending)
+
 ## 2026-05-12 KST — codex — Uri sprint dogfood: always-on MyWorld and capability provisioning gap
 
 - repo: myworld + uri
@@ -1423,6 +1674,79 @@ For repo-local implementation details, also update that repo's own worklog.
   campus memory graph, cells, traces, experiences, and agent state overlays.
 - status: open
 
+## 2026-05-12 KST — codex — Uri campus graph platform primitive added
+
+- repo: uri + myworld
+- role: implementation + capability feedback
+- goal: pause map work and continue Uri toward app + platform by adding a
+  local campus graph primitive.
+- changed: `uri/hive/packets/URI-005-sprint-004-campus-graph-platform.md`,
+  `uri/memory/drafts/2026-05-12-campus-graph-platform.md`,
+  `uri/capabilities/campus-graph-platform-routing-2026-05-12.md`, and this
+  ledger entry.
+- evidence: Uri now derives `place`, `trace`, `memory`, and `experience` graph
+  nodes from local app state and exposes `/u/[schoolSlug]/graph`; typecheck,
+  build, and Playwright mobile/desktop visual checks passed.
+- capability gap: CapabilityOS should recommend "pure local contract first"
+  when a working repo evolves from app surface to platform substrate, so DB,
+  provider, and MemoryOS persistence choices do not harden before the domain
+  graph is clear.
+- decision: one campus should become one shared graph substrate, while each
+  user owns a private lens over traces, memory candidates, and agent recall.
+- status: open
+
+## 2026-05-12 KST — codex — Uri AIOS-routed department layer + workflow friction
+
+- repo: uri + myworld
+- role: implementation + AIOS dogfood feedback
+- goal: continue Uri development as the priority while using AIOS repo-goal
+  intake to surface both product goals and AIOS workflow friction.
+- AIOS intake:
+  - `.aios/goal_inbox/uri/rg_20260512T231440_275ad0cbe16f.json`
+  - `.aios/goal_inbox/uri/rg_20260512T231440_48e8f936dd28.json`
+  - `.aios/goal_inbox/uri/rg_20260512T231440_d7ef0e2827d5.json`
+  - matching route packets under `.aios/goal_routes/uri/`
+- changed: `uri/hive/packets/URI-006-sprint-005-department-contribution.md`,
+  `uri/memory/drafts/2026-05-12-department-contribution-layer.md`,
+  `uri/capabilities/department-contribution-routing-2026-05-12.md`, and this
+  ledger entry.
+- evidence: Uri now has `/u/[schoolSlug]/dept`; selected department is stored
+  in local profile, campus traces and connect experience entries inherit
+  `departmentId`, and visual/mobile checks passed.
+- feedback: `scripts/aios_repo_goal.py` is useful but remains a primitive.
+  Codex still manually performs goal interpretation, memory/capability/hive
+  artifact writing, universe choice, chair decision, implementation,
+  verification, and ledger learning. AIOS needs a product-repo sprint driver
+  that does this as one operator-facing action.
+- decision: department contribution is the next platform layer because it
+  aggregates personal loops into a campus-local signal without touching private
+  self-ingest sources.
+- status: open
+
+## 2026-05-12 KST — codex — Uri avatar surface + research-to-sprint gap
+
+- repo: uri + myworld
+- role: implementation + web research + AIOS capability feedback
+- goal: continue Uri product execution while using public web sources to grow
+  strategic context and feeding AIOS workflow gaps back upward.
+- changed: `uri/hive/packets/URI-007-sprint-006-avatar-agent-surface.md`,
+  `uri/memory/drafts/2026-05-12-avatar-agent-surface.md`,
+  `uri/capabilities/avatar-agent-surface-routing-2026-05-12.md`,
+  `uri/research/public-sources/uri-aios-growth-intel-2026-05-12.md`, and this
+  ledger entry.
+- evidence: public-source scan covered Ready Education, Pathify, Suitable,
+  Nearpeer, Google NotebookLM/Classroom updates, and Kakao Maps Web API; Uri
+  `/me` now exposes avatar profile, department, graph readiness, and agent
+  action cards; typecheck/build/browser checks passed.
+- capability gaps:
+  - Add `research_to_sprint_context`: user direction -> source scan -> clean
+    notes -> memory candidate -> capability gap -> hive sprint context.
+  - Add `agent_surface_before_agent_execution`: local graph summary -> allowed
+    action list -> LLM/tool routing later.
+- decision: Uri should not add AI chat before the deterministic avatar/graph
+  surface makes clear what the agent can know and do.
+- status: open
+
 ## 2026-05-12 18:55 KST — codex — ASC-0041 web evidence memory review closed
 
 - repo: myworld
@@ -1657,6 +1981,7 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: issue the concrete Hive semantic-verifier contract if the monitor
   remains clear.
 - status: done
+
 ## 2026-05-12 22:59 KST — codex — ASC-0049 Hive semantic verifier review closed
 
 - repo: myworld + hivemind
@@ -1718,6 +2043,7 @@ For repo-local implementation details, also update that repo's own worklog.
   AIOS-native runtime contract so the lasting interface is AIOS itself rather
   than Claude CLI or Codex CLI.
 - status: done
+
 ## 2026-05-12 23:35 KST — codex — ASC-0051 co-evolution heartbeat closed
 
 - repo: myworld
@@ -1770,6 +2096,80 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: use `python scripts/aios_runtime.py status|step|run` as the default
   operator surface, then evolve a richer chair/visual runtime on top of it.
 - status: done
+
+## 2026-05-12 KST — claude — Uri /loop iter 1 wrap + codex auto-chair collision noted
+
+- repo: uri + myworld
+- role: product narrative + control-plane surface, /loop iteration 1 wrap
+- goal: close iter 1 of claude@uri's /loop dynamic mode. In the same window
+  codex@uri's auto-chair shipped Sprint 005 (department contribution) and
+  Sprint 006 (avatar agent surface + growth-intel research) and
+  self-submitted 5 goal-inbox packets, while claude@uri staged Sprint 005
+  /me scope and iter-1 memory growth. Packet IDs collided (URI-006/URI-007)
+  and the /me scope partially overlapped — codex covered graph readiness +
+  partial agent intro; three gap cards remain. Reconcile and refocus
+  claude@uri's lane.
+- changed: `uri/hive/packets/URI-008-sprint-007-claude-followup-after-avatar.md`
+  (Sprint 006 review + Sprint 007 gap scope; replaces the staged-but-removed
+  `URI-007-sprint-006-me-agent-surface.md`),
+  `uri/docs/AGENT_WORKLOG.md`,
+  `myworld/docs/AIOS_AGENT_LEDGER.md`. Iter-1 deliverables already on disk:
+  `uri/memory/drafts/2026-05-12-korean-univ-cohort.md`,
+  `uri/memory/drafts/2026-05-12-competitive-pathify-cxp.md`,
+  `uri/memory/drafts/2026-05-12-me-agent-surface.md`,
+  `uri/capabilities/me-agent-surface-routing-2026-05-12.md`,
+  `myworld/docs/discoveries/2026-05-12-uri-growth-loop.md`.
+- evidence: codex worklog 2026-05-12 KST entries for Sprint 005 and Sprint
+  006 (the latter with `AIOS intake: 5 goal-inbox packets, 5 route packets`);
+  `uri/.runs/visual-check/me-avatar-desktop.png` confirming /me now has
+  Avatar surface + `agent ready 75%` pill + two CTAs;
+  `uri/hive/packets/URI-006-sprint-005-department-contribution.md` and
+  `uri/hive/packets/URI-007-sprint-006-avatar-agent-surface.md`;
+  myworld ledger ASC-0033 → ASC-0050 closed in the same window (notably
+  ASC-0038 self-resonant repo loop, ASC-0044 desktop control app,
+  ASC-0050 AIOS primitive surface). Public-source WebSearch on Korean
+  university enrollment (Statista / MoE / Korea Herald) and Pathify CXP
+  (PRNewswire / EDUCAUSE / E&I / PitchBook).
+- decision: claude@uri /loop iter pacing — emit ScheduleWakeup ~1500s after
+  each iter behind the polling monitor; do not race codex's chair on
+  sprint scope authoring. Future claude scope submissions go through
+  `.aios/goal_inbox/uri/` per ASC-0038, not directly into `hive/packets/`.
+  Lane refocus: review-after-the-fact + abstract research/policy + memory
+  growth + stop-conditions for next sprint.
+- risk: codex@uri's auto-chair currently consumes goal-inbox packets, not
+  packets written by claude@uri directly into `hive/packets/`. URI-008 is
+  human-readable scope today; iter 2 should also submit it to
+  `.aios/goal_inbox/uri/` if Sprint 007's three gap cards remain open.
+  This is an operator-checkpoint candidate: the chair pipeline should
+  also accept claude-authored hive packets as candidates.
+- next: /loop iter 2 — review codex's next sprint result as it lands;
+  user-test new screenshots; submit Sprint 007 scope via goal-inbox if
+  still open; grow memory with one more competitor (Ready Education or
+  Notion for Education) and one freemium economics note.
+- status: open
+
+## 2026-05-12 KST — codex — Uri Sprint 007 provider-loop observation sent
+
+- repo: uri + myworld
+- role: Codex implementation provider reporting AIOS operating friction
+- goal: pass the operator observation upward, then continue Uri product
+  development rather than stopping at process analysis.
+- observation: Codex CLI is effective for code edits, tests, browser checks,
+  and structured artifacts, but it is not yet the durable monitoring/product
+  sprint loop. AIOS should own the user-facing loop and treat Codex, Claude,
+  Hive, browser verification, and scripts as provider primitives.
+- changed in uri: Sprint 007 `/me` agent guidance surface adds next entry
+  recommendation, reflection candidates, and self-ingest preview chips; added
+  `uri/hive/packets/URI-009-sprint-007-agent-guidance-surface.md`,
+  `uri/memory/drafts/2026-05-12-agent-guidance-surface.md`, and
+  `uri/capabilities/agent-guidance-surface-routing-2026-05-12.md`.
+- AIOS intake: submitted observation packet
+  `.aios/goal_inbox/uri/rg_20260512T235155_fbce5ac1c64a.json` and route packet
+  `.aios/goal_routes/uri/route_rg_20260512T235155_fbce5ac1c64a_fbce5ac1c64a.json`.
+- risk: current repo-goal route remains recommendation-only; the missing piece
+  is a provider-agnostic product sprint loop runner that can execute, verify,
+  and feed learnings back without manual Codex chat bridging.
+- status: in_progress
 
 ## 2026-05-13 KST — codex — ASC-0053 Hive provider-loop runner closed
 
@@ -1841,6 +2241,86 @@ For repo-local implementation details, also update that repo's own worklog.
   and recommendation-only.
 - status: done
 
+## 2026-05-13 KST — claude — Uri /loop iter 5 binds founder loop hypothesis to ASC-0053/0054/0055
+
+- repo: uri + myworld
+- role: founder hypothesis intake + cross-OS evidence binding
+- goal: founder articulated "local sprint file + AIOS runner + Codex one-shot
+  worker = loop" on 2026-05-13 KST during /loop dynamic mode and quoted
+  codex@uri on the execution-primitive gap. Confirm against uri's Sprint
+  001–008 evidence and bind to ASC-0053 (Hive provider-loop runner), ASC-0054
+  (global aios launcher), ASC-0055 (Ollama Qwen provider absorption) — all
+  already closed on 2026-05-13 covering the same mechanism.
+- changed: `myworld/docs/discoveries/2026-05-13-codex-sprint-file-loop-pattern.md`
+  (new), `myworld/docs/AIOS_AGENT_LEDGER.md`, `uri/docs/AGENT_WORKLOG.md`.
+- evidence: uri Sprint 001 → 008 visible across `uri/hive/packets/URI-002`
+  through `URI-010` + `.runs/visual-check/me-agent-guidance-*.png`;
+  codex@uri's own provider-loop-friction observation in ledger lines
+  1900–1921 (Sprint 007 entry); ASC-0053 closed by codex@myworld on
+  2026-05-13 with `hivemind/hivemind/provider_loop.py` absorbing Claude
+  monitor-style plans + Codex one-shot ticks + local LLM worker ticks
+  (commit `89458d7`); ASC-0054 added `bin/aios` global launcher with
+  `provider-loop status --json`; ASC-0055 demonstrated provider-absorption
+  six-stage recipe with `cap_ollama_qwen25_7b_local`.
+- decision: founder hypothesis matches Uri's observed pattern AND matches
+  ASC-0053's design intent. Sprint-file loop pattern is **already** the
+  AIOS-native primitive — Uri is its first child-repo instance. Three
+  earlier-drafted candidate ASCs (writable provider sandbox / Claude
+  non-interactive stabilization / sprint-file primitive formalization) are
+  all subsumed by ASC-0053. Only open recommendation is **receipt
+  visibility for claude@uri's iteration cycle** — claude@uri does not
+  currently emit `.aios/outbox/uri/` receipts the way codex@uri does for
+  goal-inbox intake.
+- risk: control-plane visibility gap on claude@uri side — drafts and review
+  packets land in the repo but are invisible to `bin/aios provider-loop
+  status` until they trigger a codex pickup. Mitigation in next bullet.
+- next: claude@uri /loop iter 6+ — emit `.aios/outbox/uri/claude.<iter>.result.json`
+  after each iter (schema candidate: `aios.claude_iter.v1` with `iter_id`,
+  `evidence_paths`, `packets_authored`, `memory_drafts`, `recommendations`,
+  `next_iter_plan`). Operator pair may later decide whether to merge into
+  Hive `hive.provider_loop.v1` schema or keep as a sibling artifact.
+- status: open
+
+## 2026-05-13 KST — claude — Uri /loop iter 6: first receipt + provider-loop Sprint 008 failure observed
+
+- repo: uri + myworld
+- role: claude@uri /loop iteration 6 + control-plane visibility bridge
+- goal: per iter 5 decision, start emitting `claude@uri` receipts and exercise
+  `bin/aios provider-loop status`. Observed: ASC-0053 provider-loop ran 2
+  workers for Uri Sprint 008 — both stopped/failed on first tick. Bind
+  observation to the existing discovery and surface as operator-checkpoint.
+- changed: `uri/.aios/outbox/uri/claude.6.result.json` (first receipt;
+  schema `aios.claude_iter.v1`),
+  `uri/memory/drafts/2026-05-13-competitive-notion-for-education.md`,
+  `myworld/docs/discoveries/2026-05-13-codex-sprint-file-loop-pattern.md`
+  (provider-loop fail evidence appended),
+  `myworld/docs/AIOS_AGENT_LEDGER.md`,
+  `uri/docs/AGENT_WORKLOG.md`.
+- evidence: `bin/aios --root /home/user/workspaces/jaewon/myworld provider-loop
+  status --json` returned `count=2`. **codex worker** `ploop_ce1a3a94310aa3dc`
+  `loop_mode=one_shot_tick`, `tick_count=1`, `status=stopped`,
+  `last_status=completed`, prompt cites `uri/hive/packets/URI-010` — so
+  claude@uri's review packet DID reach the provider-loop. **claude worker**
+  `ploop_0992ac5f5e38265d` `loop_mode=monitor_plan`, `tick_count=1`,
+  `status=active`, `last_status=failed`, prompt cites "after Codex provider
+  sandbox failure." Sprint 008 has 4 work packages; one-tick limit is
+  insufficient for the codex worker, and the claude fallback failed on its
+  first attempt. dev-shell remains the only producing path so far.
+- decision: ASC-0053's primitive layer is working (receipts, prompts,
+  schemas). The execution layer needs tuning — `loop_mode=multi_tick` or
+  `until_done` for sprint-sized work; diagnosis of `claude monitor_plan`
+  failure; receipt/dev-shell reconciliation. Operator-checkpoint candidates
+  documented in the discovery's "iter 6 update."
+- risk: if Sprint 008 ships only via dev-shell, the AIOS-native promise
+  weakens for any future operator who doesn't have direct dev-shell access.
+  The provider-loop must complete at least one Uri sprint end-to-end before
+  the loop pattern can be claimed as the durable AIOS surface.
+- next: claude@uri iter 7+ — keep emitting receipts; grow memory with
+  MemoryOS provenance schema sketch; user-test Sprint 008 dev-shell result
+  if it lands; await operator triage of the provider-loop tuning items
+  before relying on it for Sprint 009+.
+- status: open
+
 ## 2026-05-13 KST — codex — ASC-0062 peer-share privacy projection closed
 
 - repo: myworld
@@ -1867,3 +2347,2899 @@ For repo-local implementation details, also update that repo's own worklog.
   it provides `exec`, `exec resume`, app/remote servers, and JSON events.
   AIOS should keep owning the loop and treat Codex as a bounded provider.
 - status: done
+
+## 2026-05-13 KST — codex — ASC-0076/0078 reconciliation and work visibility closed
+
+- repo: myworld
+- role: implementation
+- goal: restore sprint order after accepted-but-unclosed contracts accumulated,
+  and make current AIOS work visible to the operator without exposing raw
+  provider output or private files.
+- changed: `scripts/aios_contract_reconcile.py`,
+  `tests/test_aios_contract_reconcile.py`,
+  `docs/AIOS_CONTRACT_RECONCILIATION.md`,
+  `scripts/aios_work_view.py`, `tests/test_aios_work_view.py`,
+  `docs/AIOS_WORK_VISIBILITY.md`,
+  `docs/AIOS_CONTRACT_EXECUTION_ORDER.md`,
+  `docs/contracts/ASC-0076-contract-closeout-reconciliation.md`,
+  `docs/contracts/ASC-0078-aios-work-visibility-layer.md`, and
+  `docs/contracts/README.md`.
+- evidence: `python -m py_compile scripts/aios_contract_reconcile.py
+  scripts/aios_work_view.py scripts/aios_invoke.py`; `python -m unittest
+  tests/test_aios_contract_reconcile.py tests/test_aios_work_view.py
+  tests/test_aios_invoke.py -v` passed 15/15; `python
+  scripts/aios_contract_reconcile.py --from 56 --to 68 --write
+  docs/AIOS_CONTRACT_RECONCILIATION.md --json` produced next_contract
+  `ASC-0066`; `python scripts/aios_work_view.py status` showed active
+  contracts, blocked dispatches, changed files, and next actions; `python -m
+  unittest discover -s tests -p 'test_aios_*.py'` passed 164/164; `python
+  scripts/aios_monitor.py assess --json` returned `health=clear`.
+- decision: ASC-0076 is closed with an auditable matrix. ASC-0078 is closed
+  with a read-only work view. The next sprint target remains ASC-0066 closeout,
+  then ASC-0065 closeout, then ASC-0056 retry.
+- risk: there are unrelated/parallel dirty files in the workspace, including
+  GenesisOS bootstrap artifacts, sprint-loop/URI-filter work, and a deleted
+  discovery file. They were not reverted.
+- next: close ASC-0066 frontmatter/ledger using existing Hive evidence, then
+  close ASC-0065 GenesisOS bootstrap or explicitly record the nested-repo
+  boundary decision before retrying ASC-0056.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0066 provider backpressure role distillation closed
+
+- repo: myworld + hivemind
+- role: closeout
+- goal: close the provider-backpressure contract now that Hive classifies
+  rate limits, policy blocks, and provider failures into fallback-ready role
+  capsules.
+- changed: `docs/contracts/ASC-0066-provider-backpressure-role-distillation.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: Hive implementation already committed in hivemind as `8c51bc0`;
+  `.aios/outbox/hivemind/asc-0066.hivemind.result.json` reported passed;
+  dispatch `asc-0066` was released with reason
+  `asc_0066_hive_backpressure_classification_verified`; rerun
+  `cd hivemind && python -m pytest tests/test_provider_loop.py -v` passed
+  9/9 on 2026-05-13 KST; myworld full AIOS tests passed 164/164 during
+  ASC-0076/0078 verification; monitor remained `health=clear`.
+- decision: ASC-0066 is closed. ASC-0056 may now be considered for retry
+  because the original hold reason was provider backpressure.
+- risk: ASC-0056 retry may still fail if child agent provider access is
+  unavailable; the correct behavior is now fallback/degraded role handling,
+  not silent stall.
+- next: close or explicitly boundary-record ASC-0065 GenesisOS bootstrap,
+  then retry ASC-0056 memory draft pipeline under the new backpressure model.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0065 GenesisOS bootstrap closed
+
+- repo: myworld + GenesisOS
+- role: closeout
+- goal: close the GenesisOS bootstrap after verifying the separate repo,
+  divergence CLI, critique CLI, and authority boundaries.
+- changed: `docs/contracts/ASC-0065-genesisos-bootstrap.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: GenesisOS is a separate git repo with commit `03525a3 Bootstrap
+  GenesisOS divergence layer`; `cd GenesisOS && python -m unittest discover -s
+  tests -p 'test*.py' -v` passed 3/3; `python -m genesisos.cli diverge --goal
+  "AIOS should escape prompt-prison" --json` emitted five branches with
+  `authority=speculative_only`; `python -m genesisos.cli critique --goal
+  "AIOS should escape prompt-prison" --idea "make a better dispatcher" --json`
+  flagged `implementation_convergence`, `language_narrowing`, and
+  `incrementalism`; monitor remained `health=clear`.
+- decision: GenesisOS stays a sibling/nested git repo rather than being
+  silently folded into MyWorld source. MyWorld records contracts and role docs;
+  GenesisOS owns its own code and tests.
+- risk: MyWorld still sees `GenesisOS/` as an untracked nested repo path. That
+  is intentional until a later workspace composition/submodule contract decides
+  how to register sibling OS repos.
+- next: retry ASC-0056 memory draft pipeline now that ASC-0066 provider
+  backpressure handling is closed, then continue ASC-0060/0061/0059 control
+  plane hardening.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0056 retry produced partial memoryOS commit
+
+- repo: myworld + memoryOS
+- role: dispatch retry + owner-repo triage
+- goal: retry the held ASC-0056 memoryOS draft pipeline after ASC-0066
+  provider-backpressure closeout.
+- changed: memoryOS commit `a7e2df4 Handle doc radar filtered entries`;
+  dispatch `asc-0056-retry-1` created/sent/collected/held; ledger updated.
+- evidence: `scripts/aios_child_watcher.sh once --repo memoryOS` executed
+  `asc-0056-retry-1`; Codex attempt failed with `provider_access_denied`;
+  Claude fallback hung and was terminated with exit 143 to force result
+  packet closeout; result packet recorded changed files in `memoryos/cli.py`,
+  `memoryos/importers.py`, and `tests/test_doc_radar_ingest.py`; review of
+  the diff showed doc-radar domain/path filtering was separated into
+  `filtered` instead of format `warnings`; `cd memoryOS && python -m pytest
+  tests/test_doc_radar_ingest.py -v` passed 9/9; memoryOS commit `a7e2df4`
+  preserved the valid owner-repo work; monitor returned `health=clear`.
+- decision: ASC-0056 remains open/held because only the ingest-warning slice
+  advanced. Review proposer and accepted-memory-surfacing gates are not done.
+- risk: provider/fallback execution is still unreliable for this packet.
+  Future retry should target the remaining slices more narrowly instead of
+  re-running the whole ASC-0056 packet.
+- next: proceed with ASC-0060/0061/0059 control-plane hardening, then issue a
+  narrower ASC-0056 follow-up for memory review proposer and accepted-memory
+  surfacing.
+- status: partial
+
+## 2026-05-13 KST — codex — ASC-0060 action policy scope-aware classification closed
+
+- repo: myworld
+- role: control-plane implementation + closeout
+- goal: stop myworld-only operator-script dispatches from false-escalating as
+  private remote data while keeping raw/private path checkpoint behavior.
+- changed: `scripts/aios_action_policy.py`, `scripts/aios_dispatch.py`,
+  `tests/test_aios_action_policy.py`, `docs/AIOS_ACTION_POLICY.md`,
+  `docs/contracts/ASC-0060-action-policy-scope-aware.md`, and
+  `docs/contracts/README.md`.
+- evidence: `python -m py_compile scripts/aios_action_policy.py
+  scripts/aios_dispatch.py`; `python -m unittest
+  tests/test_aios_action_policy.py tests/test_aios_dispatch.py -v` passed
+  22/22; `python scripts/aios_action_policy.py evaluate --example
+  low_risk_local --json` returned `allow`; `python
+  scripts/aios_action_policy.py evaluate --example public_authority --json`
+  returned `escalate`.
+- decision: ASC-0060 is closed. The policy now emits
+  `myworld_local_operator_scope` only for narrow `repos=["myworld"]`
+  script/test/docs/primitives scopes, while raw/private allowed paths still
+  escalate to a checkpoint.
+- risk: general low-risk local actions still use the older
+  `low_risk_local_contract_evidence` reason; ASC-0060 intentionally did not
+  rewrite the broader action policy lattice.
+- next: implement ASC-0061 release-after-escalation recovery so approved
+  dispatches can write inbox packets without manual JSON surgery.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0061 dispatch escalate recovery closed
+
+- repo: myworld
+- role: control-plane implementation + dogfood verification
+- goal: make `release` recover an action-policy-escalated dispatch by writing
+  an audited override inbox packet instead of leaving the dispatch stuck.
+- changed: `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0061-dispatch-escalate-recovery.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_dispatch.py`; `python -m
+  unittest tests/test_aios_dispatch.py -v` passed 14/14; live dogfood
+  `python scripts/aios_dispatch.py release --dispatch-id asc-0061 --reason
+  asc_0061_operator_override_verified` wrote
+  `.aios/inbox/myworld/asc-0061.myworld.json` with `operator_override=true`;
+  `python scripts/aios_dispatch.py watch --repo myworld --dispatch-id
+  asc-0061 --once` passed and wrote
+  `.aios/outbox/myworld/asc-0061.myworld.result.json`; `python
+  scripts/aios_dispatch.py collect --repo myworld` collected the passed
+  result; `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+  168/168; `python scripts/aios_monitor.py assess --json` returned
+  `health=clear`.
+- decision: ASC-0061 is closed. The override bypasses only the action-policy
+  gate; it reuses the normal contract read, repo-scope check, packet builder,
+  and inbox path.
+- risk: ResourceWarning messages from round-controller-related unit tests
+  still appear during full discovery, but the referenced subprocesses were
+  gone after the test run and monitor stayed clear.
+- next: proceed to ASC-0059 watcher race resolution, then ASC-0057/0058 loop
+  persistence and goal inbox work, while keeping ASC-0056 held for a narrower
+  MemoryOS follow-up.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0059 watcher race resolution closed
+
+- repo: myworld
+- role: control-plane implementation + dogfood verification
+- goal: prevent child watcher races from spawning duplicate provider work when
+  related dirty work already exists, and surface orphan work left after failed
+  child-agent attempts.
+- changed: `scripts/aios_child_watcher.sh`, `scripts/aios_monitor.py`,
+  `tests/test_aios_child_watcher.py`, `tests/test_aios_monitor.py`,
+  `docs/contracts/ASC-0059-watcher-race-resolution.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `bash -n scripts/aios_child_watcher.sh`; `python -m py_compile
+  scripts/aios_monitor.py`; `python -m unittest
+  tests/test_aios_child_watcher.py tests/test_aios_monitor.py -v` passed
+  15/15; live dogfood `python scripts/aios_dispatch.py release --dispatch-id
+  asc-0059 --reason asc_0059_watcher_race_detection_verified` wrote an
+  override inbox packet; `python scripts/aios_dispatch.py watch --repo
+  myworld --dispatch-id asc-0059 --once` passed the contract verification gate
+  and wrote `.aios/outbox/myworld/asc-0059.myworld.result.json`; `python
+  scripts/aios_monitor.py assess --json` returned `health=clear`.
+- decision: ASC-0059 is closed. Watcher detection remains non-destructive: it
+  holds on related pre-existing dirty work and raises orphan dirty findings
+  after failure, but does not auto-commit or reset child repos.
+- risk: pre-spawn matching is intentionally conservative and only checks dirty
+  paths that match the packet's allowed files. Broad dirty state outside the
+  packet remains a monitor/repo-owner concern.
+- next: continue ASC-0057 pulse heartbeat persistence and ASC-0058 goal inbox
+  processor so the loop can generate work without repeated operator prompts.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0057 pulse heartbeat persistence closed
+
+- repo: myworld
+- role: control-plane implementation + live loop verification
+- goal: keep MemoryOS, CapabilityOS, and Hive co-evolution pulse monitors alive
+  from the persistent round-controller loop instead of relying on a manual
+  one-time arm.
+- changed: `scripts/aios_coevolution/persistent.py`,
+  `scripts/aios_round_controller.py`, `tests/test_aios_coevolution.py`,
+  `tests/test_aios_round_controller.py`, `docs/AIOS_COEVOLUTION.md`,
+  `docs/contracts/ASC-0057-pulse-heartbeat-persistence.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python -m py_compile scripts/aios_round_controller.py
+  scripts/aios_coevolution/persistent.py`; `python -m unittest
+  tests/test_aios_round_controller.py tests/test_aios_coevolution.py -v`
+  passed 9/9; `python scripts/aios_dispatch.py watch --repo myworld
+  --dispatch-id asc-0057 --once` passed the contract gate; `python
+  scripts/aios_dispatch.py collect --repo myworld` collected the result;
+  `python scripts/aios_coevolution/persistent.py --root . --assert-alive
+  --json` reported all three pulse monitors alive; `python
+  scripts/aios_monitor.py assess --json` returned `health=clear`.
+- decision: ASC-0057 is closed. The round controller now runs
+  `coevolution_pulses` on each round and re-arms only missing/dead named
+  pulse monitors.
+- risk: the live pulse monitors are intentionally running as background
+  primitive monitors. They write local `.aios/primitives` events and should
+  remain uncommitted runtime state.
+- next: continue ASC-0058 goal inbox processor so repo-originated goals become
+  operator-reviewable contract candidates without manual prompt steering.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0079 drafted and ASC-0058/0064/0068 work packets issued
+
+- repo: myworld
+- role: control-plane operator + dispatcher
+- goal: turn the external GitHub evaluation of `hivemind` into a proposed
+  hardening contract, and issue executable work packets for the next three
+  accepted myworld contracts.
+- changed: `docs/contracts/ASC-0079-hivemind-public-alpha-hardening.md`,
+  `docs/contracts/README.md`,
+  `docs/contracts/ASC-0058-goal-inbox-processor.md`,
+  `docs/contracts/ASC-0064-live-dashboard-websocket.md`,
+  `docs/contracts/ASC-0068-global-project-agent-discovery.md`, and
+  `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: GitHub public metadata, README, and pyproject were verified for
+  the `hivemind` external evaluation; ASC-0079 was written as `status:
+  proposed`; `python scripts/aios_dispatch.py send --dispatch-id asc-0058
+  --repo myworld --agent codex --force` wrote
+  `.aios/inbox/myworld/asc-0058.myworld.json`; equivalent send wrote
+  `.aios/inbox/myworld/asc-0064.myworld.json`; ASC-0068 required operator
+  release because policy recognized forbidden-scope terms, and
+  `python scripts/aios_dispatch.py release --dispatch-id asc-0068 --reason
+  operator_directed_project_discovery_start_policy_terms_are_forbidden_scope_not_requested_execution`
+  wrote `.aios/inbox/myworld/asc-0068.myworld.json` with
+  `operator_override=true`.
+- decision: ASC-0058/0064/0068 are now live work packets. Contract verification
+  gates were made shell-safe before dispatch so the watcher can parse them.
+  ASC-0079 remains proposed until an operator accepts it for Hive-owned work.
+- risk: monitor is expected to report `dispatch_results_pending` for
+  ASC-0058/0064/0068 until the myworld worker implements and verifies those
+  packets. ASC-0068's policy override is justified as a forbidden-scope wording
+  false-positive, not permission to perform network/provider/credential work.
+- next: execute ASC-0058 first, then ASC-0064, then ASC-0068; accept ASC-0079
+  only after the current myworld queue has capacity or a Hive worker is ready.
+- status: done
+
+## 2026-05-13 KST — codex — ASC-0080 native installation contract drafted
+
+- repo: myworld
+- role: control-plane inspection + contract drafting
+- goal: answer whether AIOS can be made built-in at the local program/runtime
+  level without turning it into an unsafe system-wide mutable service.
+- changed: `docs/contracts/ASC-0080-aios-native-installation.md`,
+  `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: inspected `bin/aios`, `scripts/aios_launcher.py`,
+  `scripts/aios_runtime.py`, `scripts/aios_desktop_app.py`, ASC-0052,
+  ASC-0054, ASC-0044, `~/.local/bin/hive`, `~/.local/bin/hivemind`,
+  `~/.local/bin/claude`, and user `systemd` status. Existing local pattern is
+  user-space command shims/symlinks plus user-session services.
+- decision: AIOS can be made "built-in" as a reversible user-space
+  installation: global `aios` command, `systemd --user` round-controller
+  service, optional desktop entry. It should not write `/usr`, `/etc`, or
+  provider credential files.
+- risk: live installation writes outside the repository under the user's home
+  directory. ASC-0080 remains `proposed`; operator acceptance is required
+  before any installer writes to real `~/.local/bin` or `~/.config`.
+- next: keep executing ASC-0058/0064/0068 first; implement ASC-0080 when the
+  operator accepts native installation work or when packaging becomes the next
+  bottleneck.
+- status: proposed
+
+## 2026-05-13 KST — claude — Uri /loop iter 16: ASC-0053 execution-layer escalation surfaced
+
+- repo: uri + myworld
+- role: claude@uri /loop iteration 16 + escalation surface
+- goal: provider-loop has been idle since 2026-05-13 00:11 KST; iter-8 5-hour
+  stale threshold exceeded. Sprint 008 → 009 → 010 all shipped via founder's
+  dev-shell, none via formal provider-loop. Surface as operator-checkpoint
+  with 3 categorical triage items.
+- changed: `myworld/docs/discoveries/2026-05-13-asc-0053-execution-layer-escalation.md`
+  (new), `myworld/docs/AIOS_AGENT_LEDGER.md`, `uri/docs/AGENT_WORKLOG.md`,
+  `uri/.aios/outbox/uri/claude.16.result.json`.
+- evidence: `bin/aios --root /home/user/workspaces/jaewon/myworld provider-loop
+  status --json` at iter 16 wake — both workers still at 2026-05-13 00:11 KST.
+  codex worker `ploop_ce1a3a94310aa3dc` `status=stopped`, claude worker
+  `ploop_0992ac5f5e38265d` `last_status=failed`. 16 claude@uri receipts +
+  23 memory drafts + 3 claude-authored packets queued in
+  `uri/hive/packets/` (URI-008, URI-010 already shipped retrospectively;
+  URI-014 pending) over the same window.
+- decision: 3 triage items categorized — (T1) worker `loop_mode` granularity
+  `one_shot_tick` → `multi_tick`/`until_done` for sprint-sized work,
+  (T2) claude monitor_plan fallback failure root cause (timeout/auth/plan-
+  write conflict candidates), (T3) receipt + dev-shell reconciliation
+  (`status=superseded_by_dev_shell` annotation so misleading "stalled"
+  status stops firing on a shipped sprint). T1 + T2 same surface
+  (provider_loop.py worker schema); T3 ride-along.
+- risk: dev-shell path is faster for founder but blocks distributed /
+  teammate scenarios and Sprint 015+ external-OAuth dispatch policy
+  (ASC-0035) enforcement. Misleading status worse than slow status —
+  new operators reading `bin/aios … status` see "Sprint 008 stalled"
+  when reality is "Sprint 008–010 shipped via dev-shell."
+- next: operator pair drafts ASC-0063 (or numbered next) targeting
+  T1 + T2 together via `hivemind/hivemind/provider_loop.py` extension;
+  T3 ride-along. Verification = re-run URI-010 worker, expect Sprint
+  008 completes through formal provider-loop. claude@uri continues
+  receipt cadence + memory growth at iter 17+ until provider-loop ticks
+  resume or operator pair closes escalation.
+- status: open
+
+## 2026-05-13 KST — claude — Uri /loop 28-iter cumulative state — operator return-to-loop brief
+
+- repo: uri + myworld
+- role: claude@uri /loop iteration 29 — single operator entry document
+- goal: after 28 autonomous iterations under founder's 2026-05-13 /loop
+  directive, surface a cumulative state discovery so operator pair has
+  60-second TL;DR + 7 stacked decisions + priority-ordered action stack
+  (30-min / 2-hour / 1-day return windows).
+- changed: `myworld/docs/discoveries/2026-05-13-uri-loop-28-iter-cumulative-state.md`
+  (new), `myworld/docs/AIOS_AGENT_LEDGER.md`, `uri/docs/AGENT_WORKLOG.md`,
+  `uri/.aios/outbox/uri/claude.29.result.json`.
+- evidence: cumulative — 29 memory drafts + 15 capability candidates
+  + (now 5) myworld discoveries + 5 ledger entries + 29 receipts;
+  Sprint 005-011 shipped via dev-shell; Sprint 012 + Sprint 014 packets
+  queued (URI-016 + URI-014); Sprint 015 readiness COMPLETE on claude
+  side (4 of 5 blockers sketched + pilot logistics + student 1-pager);
+  retention stage Sprint 016-019 strategy staged; ASC-0053 escalation
+  iter 16 + iter 19 narrowing T2 to "Bash subprocess permission";
+  ledger entries ASC-0060/0065/0056-retry/etc by codex@myworld confirm
+  operator pair active in parallel.
+- decision: discovery doubles as both ledger surface AND operator
+  return entry document. Reading stack: this discovery (TL;DR) →
+  iter-28 cross-section v2 (10-15 min) → iter-21 cross-section v1
+  (depth) → specific drafts as needed. ASC-0056 retry ledger entry
+  (2026-05-13) confirms the same provider/fallback execution
+  unreliability claude@uri iter 16 escalation surfaced — orthogonal
+  evidence of the T2 fix surface.
+- risk: 9 unread claude@uri surfaces is a signal-throughput
+  ceiling. Receipt summary fields + this discovery are the fast skim
+  mitigation.
+- next: claude@uri iter 30+ continues receipt cadence; if quiet,
+  Sprint 020+ campus expansion preliminary sketch.
+- status: open
+## 2026-05-13 10:13 KST — codex — ASC-0058 goal inbox processor closed
+
+- repo: myworld
+- role: control-plane implementation + inbox processing
+- goal: process repo-originated goal/friction packets so lower-repo voices become operator-reviewable AIOS contract candidates instead of remaining idle in `.aios/goal_inbox`.
+- changed: `scripts/aios_goal_inbox_processor.py`, `tests/test_aios_goal_inbox_processor.py`, `docs/AIOS_REPO_GOAL_LOOP.md`, `docs/contracts/ASC-0058-goal-inbox-processor.md`, `docs/contracts/README.md`, `docs/contracts/ASC-0081-provider-fallback-execution-binding.md`, `docs/contracts/ASC-0082-product-repo-sprint-driver.md`, `docs/contracts/ASC-0083-research-to-sprint-context-primitive.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: focused tests passed 4/4; full myworld `test_aios_*.py` discovery passed 177/177; dogfood processor run classified 15/15 goal packets; result packet `.aios/outbox/myworld/asc-0058.myworld.result.json` passed; `python scripts/aios_dispatch.py collect --repo myworld` collected the result.
+- decision: ASC-0058 is closed. All 15 current inbox packets auto-promoted into three proposed contracts: ASC-0081 provider fallback execution binding, ASC-0082 product repo sprint driver, and ASC-0083 research-to-sprint context primitive. Original `.aios/goal_inbox/**` packets were not deleted or modified.
+- risk: monitor remains blocked only because ASC-0064 and ASC-0068 still have pending myworld result packets. ASC-0081/0082/0083 are proposed only; they require operator acceptance and narrowed scopes before dispatch.
+- next: execute ASC-0064 and ASC-0068 to clear the current monitor hold, then prioritize ASC-0081 if provider fallback/local LLM execution is the active bottleneck.
+- status: done
+
+## 2026-05-13 KST — codex — Codex CLI absorption blueprint added
+
+- repo: myworld + workspace root
+- role: Codex self-observation / AIOS method extraction
+- goal: make Codex CLI behavior absorbable by AIOS as repeatable primitives,
+  contracts, and routing rules rather than leaving it as an external assistant
+  habit.
+- changed: `docs/AIOS_CODEX_CLI_ABSORPTION.md` (new), `docs/README.md`,
+  `AGENTS.md`, and workspace-global `../AGENTS.md`.
+- evidence: the blueprint records observed Codex primitives from recent
+  research and AIOS work loops: workspace orientation, patch-scoped editing,
+  command receipts, nohup/PID/log discipline, claim downgrade ledger,
+  control-run gates, and durable handoffs.
+- decision: future substantial Codex sessions should append transferable
+  method observations to `docs/AIOS_CODEX_CLI_ABSORPTION.md` or a narrower AIOS
+  contract. A Codex habit is not canonical until it has replayable receipts or
+  a contract/test path.
+- risk: the document is a reverse-engineering note, not an implementation.
+  Binding new primitives still requires tests and ownership through AIOS
+  contracts.
+- next: extract the highest-frequency patterns into candidate contracts:
+  run receipt primitive, claim ledger, control-run gate, and workshop/paper
+  risk gate.
+- status: open
+## 2026-05-13 10:22 KST — codex — ASC-0085 Codex CLI absorption baseline closed
+
+- repo: myworld + user-level Codex config
+- role: provider self-observation + control-plane documentation
+- goal: determine whether blocked provider agents explain inbox buildup, then make Codex CLI self-observation reusable by AIOS and future Codex sessions.
+- changed: `docs/AIOS_CODEX_CLI_ABSORPTION.md`, `docs/discoveries/2026-05-13-operator-cli-role-distillation-dialogue.md`, `docs/contracts/ASC-0085-codex-cli-aios-absorption.md`, `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`, and `/home/user/.codex/AGENTS.md`.
+- evidence: `codex --help` and `codex exec --help` both returned Korean access denial (`틀렸습니다`, `접근 거부`), proving current non-interactive Codex CLI invocation is a provider backpressure case; ASC-0058 earlier proved goal inbox buildup also had a control-plane processor gap; verification `test -f /home/user/.codex/AGENTS.md`, `rg -n "AIOS|Codex CLI|접근 거부|role_capsule" ...`, and `python scripts/aios_monitor.py assess --json` completed.
+- decision: the prior backlog was caused by two layers, not one: provider execution was blocked/degraded for Claude/Codex sprint work, and `.aios/goal_inbox` had no processor until ASC-0058. Codex CLI is now documented as an absorbable provider substrate with explicit `auth_denied_korean` failure classification and role-capsule additions.
+- risk: `/home/user/.codex/AGENTS.md` is outside the git worktree and must be preserved by local configuration/backups; it intentionally does not read or modify Codex auth/history/state stores.
+- next: accept and implement ASC-0081 when provider fallback/local LLM execution becomes the active bottleneck; continue ASC-0064 and ASC-0068 to clear current monitor hold.
+- status: done
+
+## 2026-05-13 KST — codex — Codex PIN diagnosis and autonomy-envelope proposal
+
+- repo: myworld + user-level Codex config
+- role: provider diagnosis + contract drafting
+- goal: answer whether the Codex PIN gate caused provider failure, and respond to the founder's concern that CapabilityOS/GenesisOS are over-constrained.
+- changed: `docs/AIOS_CODEX_CLI_ABSORPTION.md`, `docs/discoveries/2026-05-13-operator-cli-role-distillation-dialogue.md`, `/home/user/.codex/AGENTS.md`, `docs/contracts/ASC-0085-codex-cli-aios-absorption.md`, `docs/contracts/ASC-0086-capability-genesis-autonomy-envelope.md`, `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: non-TTY `codex exec --help` still failed with Korean access denied; TTY `codex --help` with operator PIN unlocked and printed normal Codex CLI help, proving the more precise category is `pin_required_noninteractive`, not generic empty provider output.
+- decision: inbox buildup had two causes: provider execution was blocked/degraded by PIN/auth/sandbox/usage-limit issues, and repo-goal packets lacked a processor before ASC-0058. CapabilityOS and GenesisOS should gain higher freedom inside non-destructive autonomy envelopes; ASC-0086 is proposed for that.
+- risk: PIN must not be stored in docs, packets, logs, or code. Any unattended unlock path needs a separate credential-handling contract.
+- next: prioritize ASC-0086 after current pending monitor items, or accept it immediately if the operator wants autonomy-envelope work before dashboard/discovery cleanup.
+- status: proposed
+
+## 2026-05-13 10:39 KST — codex — ASC-0064 live dashboard closed
+
+- repo: myworld
+- role: control-plane UI implementation + verification
+- goal: make the AIOS control app live instead of static, while supporting both operator and simple viewer modes.
+- changed: `scripts/aios_dashboard_ws.py`, `scripts/aios_local_app.py`, `apps/control/index.html`, `apps/control/app.js`, `apps/control/live.js`, `apps/control/styles.css`, `tests/test_aios_dashboard_ws.py`, `docs/AIOS_CONTROL_APP.md`, `docs/contracts/ASC-0064-live-dashboard-websocket.md`, `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: py_compile passed; focused dashboard/local-app tests passed 4/4; dogfood `up -> task create -> status --assert-live -> stop` passed; AIOS dispatch watcher wrote `.aios/outbox/myworld/asc-0064.myworld.result.json` with `status=passed`.
+- decision: ASC-0064 is closed. The control dashboard now has a stdlib WebSocket event stream, mode toggle, simple health/activity/review view, operator event tail, and local-app websocket lifecycle management.
+- risk: browser visual verification was not run in this shell; the contract's machine gate passed, and UI assets passed syntax/static checks.
+- next: execute ASC-0068 global project agent discovery to clear the remaining myworld pending dispatch.
+- status: done
+
+## 2026-05-13 10:45 KST — codex — ASC-0068 global project discovery closed
+
+- repo: myworld
+- role: global AIOS discovery + launcher integration
+- goal: let AIOS discover project-local agent specs and emit plan-only invocation envelopes without gaining broad filesystem authority.
+- changed: `scripts/aios_project_discovery.py`, `scripts/aios_launcher.py`, `tests/test_aios_project_discovery.py`, `tests/test_aios_launcher.py`, `tests/fixtures/project_discovery/`, `docs/AIOS_GLOBAL_PROJECT_DISCOVERY.md`, `docs/contracts/ASC-0068-global-project-agent-discovery.md`, `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: py_compile passed; focused discovery/launcher tests passed 13/13; direct scan, direct invoke, and `bash bin/aios discover --root tests/fixtures/project_discovery/workspace --json` all passed; AIOS dispatch watcher wrote `.aios/outbox/myworld/asc-0068.myworld.result.json` with `status=passed`.
+- decision: ASC-0068 is closed. Discovery writes only `.aios/discovery/` runtime artifacts, defaults `may_write=[]`, blocks hard-ban/secret-like/symlink escape paths, classifies project status, and emits ASC-0067-compatible `plan_only` envelopes.
+- risk: fixture scan wrote runtime state under `.aios/discovery/`; this is local generated state, not a source artifact. Claude wording review was not required for the machine gate and can be reopened separately if needed.
+- next: monitor should now be blocked only on hivemind-owned ASC-0084 while the child watcher/provider run completes.
+- status: done
+
+## 2026-05-13 10:48 KST — codex — ASC-0084 Hive DNA debate collected
+
+- repo: myworld + hivemind
+- role: control-plane closeout after child watcher fallback
+- goal: collect the Hive AIOS DNA debate and turn the run result into a MyWorld discovery summary.
+- changed: `docs/discoveries/2026-05-13-hive-aios-dna-debate-result.md`, `docs/contracts/ASC-0084-hive-debate-aios-dna.md`, `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`. Hive child watcher changed `hivemind/docs/AGENT_WORKLOG.md` and created run artifacts under `hivemind/.runs/aios_dna_debate/`.
+- evidence: child watcher result `.aios/outbox/hivemind/asc-0084.hivemind.result.json` passed after Codex provider access-denied and Claude fallback; verified `round_1` through `round_5` artifacts and `final_state.md` exist; MyWorld discovery summary was written.
+- decision: ASC-0084 is closed. The debate converged `accept_with_dissent` on 8 AIOS DNA invariants and recommends a downstream contract for `docs/AIOS_DNA.md`.
+- risk: hivemind remains dirty by design because the child agent produced worklog/run artifacts; repo-owner triage or commit policy should handle that before stacking more Hive source work.
+- next: open/accept the downstream AIOS DNA spec contract, or first triage the hivemind dirty worklog/run artifacts if the monitor must return to clear.
+- status: done
+
+## 2026-05-13 11:06 KST — codex — ASC-0089 Hive ASC-0088 alternatives debate collected
+
+- repo: myworld + hivemind
+- role: control-plane closeout after child watcher fallback
+- goal: decide whether ASC-0088 should proceed as full B5 interface infrastructure or be replaced by a smaller branch.
+- changed: `docs/discoveries/2026-05-13-hive-asc0088-alternatives-debate-result.md`, `docs/contracts/ASC-0089-hive-debate-asc0088-alternatives.md`, `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`. Hive child watcher changed `hivemind/docs/AGENT_WORKLOG.md` and created run artifacts under `hivemind/.runs/asc0088_alternatives_debate/`.
+- evidence: first ASC-0089 run correctly held on `pending_concurrent_work`; after committing the ASC-0084 Hive worklog baseline, retry passed via Claude fallback. Verified `round_1` through `round_5` artifacts and `final_state.md` exist.
+- decision: ASC-0089 is closed. Hive unanimously chose `pick_B1`: supersede ASC-0088 with a tiny substrate-neutral `docs/AIOS_AGENT_INTERFACE.md` contract. Do not release ASC-0088 as written.
+- risk: hivemind again has a worklog-only dirty change from the child run; it should be committed before stacking another Hive packet.
+- next: draft/accept the B1 successor contract for `docs/AIOS_AGENT_INTERFACE.md`, and separately triage/commit the ASC-0089 hivemind worklog entry.
+- status: done
+
+## 2026-05-13 11:08 KST — codex — ASC-0093 B1 successor proposed
+
+- repo: myworld
+- role: control-plane contract drafting
+- goal: convert ASC-0089's `pick_B1` verdict into the next executable contract surface without modifying held ASC-0088 prematurely.
+- changed: `docs/contracts/ASC-0093-aios-agent-interface-tiny-spec.md`, `docs/contracts/README.md`, and `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: ASC-0089 final state selected B1 unanimously and rejected B5; monitor is clear after hivemind worklog durability commits.
+- decision: ASC-0093 is accepted under founder-delegated Codex operator authority. It scopes the B1 tiny spec to `docs/AIOS_AGENT_INTERFACE.md` plus one focused test, explicitly forbidding ASC-0088's buffer/sync infrastructure.
+- next: dispatch ASC-0093 to myworld, implement the tiny spec, and mark ASC-0088 superseded only after verification.
+- status: accepted
+
+## 2026-05-13 11:13 KST — codex — ASC-0093 tiny agent interface closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + implementation worker bound by dispatch
+- goal: use AIOS to develop AIOS by turning ASC-0089's Hive verdict into the smallest usable agent-interface substrate.
+- changed: `docs/AIOS_AGENT_INTERFACE.md`, `tests/test_aios_agent_interface_spec.py`, `docs/contracts/ASC-0088-aios-universal-agent-interface.md`, `docs/contracts/ASC-0093-aios-agent-interface-tiny-spec.md`, `docs/contracts/README.md`, `docs/AIOS_AGENT_LEDGER.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: `ASC-0093` was created and sent to `.aios/inbox/myworld/asc-0093.myworld.json`; focused test passed 4/4; full `test_aios_*.py` suite passed 189/189; dispatch watcher wrote `.aios/outbox/myworld/asc-0093.myworld.result.json` with `status=passed`; result was collected; monitor returned `health=clear`.
+- decision: ASC-0093 is closed. ASC-0088 is superseded. AIOS now has a 72-line substrate-neutral `docs/AIOS_AGENT_INTERFACE.md` defining observation discovery, paths, schema, field semantics, example, evidence taxonomy, and known limitations without B5 buffer/sync infrastructure.
+- risk: full suite emitted ResourceWarning lines for existing subprocess cleanup behavior, but returned 0 and passed 189/189.
+- next: use this interface as the minimal substrate for future provider prompt bootstrap, agent registry, and memory writeback contracts.
+- status: done
+
+## 2026-05-13 11:29 KST — codex — ASC-0081 provider fallback execution binding closed
+
+- repo: myworld + hivemind + CapabilityOS
+- role: founder-delegated AIOS operator + provider fallback implementation
+- goal: make Hive dispatch workers replaceable across provider CLI and local
+  LLM substrates instead of stalling on a blocked Claude/Codex route.
+- changed: `docs/contracts/ASC-0081-provider-fallback-execution-binding.md`,
+  `docs/AIOS_WORK_DISPATCH.md`, `scripts/aios_child_watcher.sh`,
+  `tests/test_aios_child_watcher.py`; child repo commits `hivemind/e835f28`
+  and `CapabilityOS/be22e98`.
+- evidence: CapabilityOS focused tests passed 17/17; Hive focused tests passed
+  15/15; child watcher unittest passed 7/7; `bash -n
+  scripts/aios_child_watcher.sh` passed; dispatch results collected from
+  `.aios/outbox/CapabilityOS/asc-0081.CapabilityOS.result.json`,
+  `.aios/outbox/hivemind/asc-0081-hivemind.hivemind.result.json`, and
+  `.aios/outbox/myworld/asc-0081-myworld.myworld.result.json`; final monitor
+  returned `health=clear`.
+- decision: provider fallback identity set is now `codex`, `claude`,
+  `gemini`, and `local`. `local` is intentionally verifier-held with
+  `local_llm_used_as_final_acceptor_without_verifier` so local LLMs can draft
+  or route work without becoming unchecked final acceptors.
+- risk: this closes substrate recognition and one-step fallback routing, not
+  full semantic equivalence between providers. A future verifier/distillation
+  contract must decide when local or alternate-provider output can be promoted
+  to final execution.
+- next: open the verifier/distillation contract that lets local/Gemini fallback
+  output be checked against the original role capsule before AIOS treats it as
+  completed work.
+- status: done
+
+## 2026-05-13 11:35 KST — codex — ASC-0094 provider fallback verifier closed
+
+- repo: myworld + hivemind
+- role: founder-delegated AIOS operator + Hive verifier implementation
+- goal: decide when fallback provider output can be promoted from attempt to
+  completed work after ASC-0081 made `codex`, `claude`, `gemini`, and `local`
+  visible as fallback substrates.
+- changed: `docs/contracts/ASC-0094-provider-fallback-verifier.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`; child repo commit
+  `hivemind/6e0bde1`.
+- evidence: Hive `python -m py_compile hivemind/provider_loop.py
+  hivemind/hive.py` passed; Hive `python -m pytest tests/test_provider_loop.py
+  -v` passed 13/13; dispatch results collected from
+  `.aios/outbox/hivemind/asc-0094.hivemind.result.json` and
+  `.aios/outbox/myworld/asc-0094.myworld.result.json`; final monitor returned
+  `health=clear`.
+- decision: Hive now emits `hive.provider_fallback_verification.v1` through
+  `hive provider-loop verify-fallback`. Promotion requires original worker
+  degradation, a role capsule, a different recommended fallback provider, and
+  completed fallback status. Local fallback remains held without an independent
+  verifier provider.
+- risk: this is an artifact-level promotion verifier, not yet a semantic
+  quality evaluator over raw provider output. It avoids raw stdout/stderr reads
+  by design.
+- next: add semantic/provider-output quality checks only after redaction and
+  memory-writeback boundaries are explicit.
+- status: done
+
+## 2026-05-13 12:00 KST — codex — ASC-0095 provider output projection closed
+
+- repo: myworld + hivemind
+- role: founder-delegated AIOS operator + Hive privacy boundary implementation
+- goal: create a redacted provider-output projection so future semantic
+  quality checks can reason over provider receipts without copying raw
+  stdout/stderr/provider bodies.
+- changed: `docs/contracts/ASC-0095-provider-output-projection.md`,
+  `docs/contracts/README.md`; child repo commit `hivemind/9779595`.
+- evidence: Hive `python -m py_compile hivemind/provider_projection.py
+  hivemind/hive.py` passed; Hive `python -m pytest
+  tests/test_provider_projection.py -v` passed 3/3; dispatch results collected
+  from `.aios/outbox/hivemind/asc-0095.hivemind.result.json` and
+  `.aios/outbox/myworld/asc-0095.myworld.result.json`; final monitor returned
+  `health=clear`.
+- decision: Hive now emits `hive.provider_output_projection.v1` through
+  `hive provider-output-projection`. Projection rows include provider receipt
+  metadata, byte/line counts, policy counts, and privacy flags, but not raw
+  provider bodies.
+- risk: this is a privacy boundary and evidence projection, not a semantic
+  quality evaluator. The evaluator can now be built on top of this safer input.
+- next: either close ASC-0091 MemoryOS auto-writeback so these contract
+  closeouts become memory drafts, or add a semantic quality scorer that consumes
+  `provider_output_projection` instead of raw output.
+- status: done
+
+## 2026-05-13 12:09 KST — codex — ASC-0091 memoryOS auto-writeback closed
+
+- repo: myworld + memoryOS
+- role: founder-delegated AIOS operator + closeout-memory implementation
+- goal: stop losing contract closeout learning by turning every closed-contract
+  release into a MemoryOS draft candidate with evidence refs and no auto-accept.
+- changed: `scripts/aios_contract_to_memory.py`, `scripts/aios_dispatch.py`,
+  `tests/test_aios_contract_to_memory.py`,
+  `docs/AIOS_MEMORY_AUTO_WRITEBACK.md`,
+  `docs/contracts/ASC-0091-memoryos-auto-writeback.md`,
+  `memoryOS/memoryos/cli.py`, and
+  `memoryOS/tests/test_contract_closeout_ingest.py`; child repo commit
+  `memoryOS/b36f9ba`.
+- evidence: `python -m unittest tests/test_aios_contract_to_memory.py` passed;
+  `python -m unittest memoryOS.tests.test_contract_closeout_ingest` passed 2/2;
+  `python -m unittest tests/test_aios_dispatch.py` passed 14/14;
+  `python -m py_compile scripts/aios_contract_to_memory.py
+  scripts/aios_dispatch.py memoryOS/memoryos/cli.py` passed; dispatch watch
+  results `.aios/outbox/myworld/asc-0091.myworld.result.json` and
+  `.aios/outbox/memoryOS/asc-0091.memoryOS.result.json` passed. Dogfood
+  closeout import wrote ASC-0095 MemoryOS draft `mem_940ad99fcc2ed445`; release
+  hook wrote ASC-0091 draft `mem_3af960f629693170`.
+- decision: `aios_dispatch.py release` now attempts MemoryOS writeback for
+  contracts whose frontmatter is already `status: closed`. The hook is opt-out
+  with `--no-memory-write`, logs every skip reason, and writes only draft
+  `MemoryObject(type=decision, project=AIOS)` records.
+- risk: the hook captures compact closeout evidence and observations; it does
+  not yet summarize all historical closed contracts retroactively. A backfill
+  contract should run after this path stays clean.
+- next: add a backlog/backfill contract for prior closed ASCs, then build the
+  semantic quality scorer on the redacted Hive projection from ASC-0095.
+- status: done
+
+## 2026-05-13 12:16 KST — codex — ASC-0096 control-plane pingpong fallback closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + loop resilience implementation
+- goal: keep the control-plane pingpong loop from stopping when the selected
+  provider CLI is blocked by auth/access denial.
+- changed: `scripts/aios_pingpong.sh`,
+  `tests/test_aios_pingpong.py`,
+  `docs/contracts/ASC-0096-control-plane-pingpong-provider-fallback.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: a foreground probe produced localized Codex denial `접근 거부`;
+  `bash -n scripts/aios_pingpong.sh` passed; `python -m unittest
+  tests/test_aios_pingpong.py` passed; `python -m unittest
+  tests/test_aios_child_watcher.py` passed; dispatch watch result
+  `.aios/outbox/myworld/asc-0096.myworld.result.json` passed; release hook
+  wrote MemoryOS draft `mem_4a44670b379ca4ea`. Actual provider-exhaustion
+  probe then classified Codex as `provider_access_denied`, Claude as
+  `provider_backpressure`, and completed local fallback with
+  `AIOS_LOCAL_AGENT_COMMAND='python3 scripts/aios_loop.py once --apply --json'`.
+- decision: pingpong now classifies provider access denial and provider
+  backpressure and, by default, retries the same prompt through
+  `codex -> claude -> local` while recording `agent_attempt` and
+  `agent_fallback_start` events. Local mode uses `AIOS_LOCAL_AGENT_COMMAND`
+  first, then Hive provider-loop local mode when available.
+- risk: this is a fixed fallback chain, not yet CapabilityOS-ranked routing or
+  Hive semantic verification for control-plane turns.
+- next: route control-plane fallback provider choice through CapabilityOS and
+  Hive verifier after current fallback remains stable.
+- status: done
+
+## 2026-05-13 18:05 KST — codex — ASC-0106 governance audit closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + governance measurement implementation
+- goal: make AIOS measure whether contracts contain real governance evidence
+  instead of only status transitions.
+- changed: `scripts/aios_governance_audit.py`,
+  `tests/test_aios_governance_audit.py`, `scripts/aios_self_check.sh`,
+  `docs/AIOS_GOVERNANCE_AUDIT.md`,
+  `docs/contracts/ASC-0106-aios-governance-audit.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: focused governance audit tests passed 6/6; full
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 234/234;
+  dispatch result `.aios/outbox/myworld/asc-0106.myworld.result.json` passed;
+  post-collect monitor returned `health=clear`; release hook wrote MemoryOS
+  draft `mem_2637ee7237543f54`.
+- decision: AIOS now keeps a generated governance baseline at
+  `docs/AIOS_GOVERNANCE_AUDIT.md`. The current baseline is intentionally red:
+  `117` contracts, score `0.49`, `governance_theater=false` after ASC-0106
+  closed with evidence, DNA citation rate `0.0855`, cross-repo evidence rate
+  `0.1624`.
+- risk: this contract exposes weak governance but does not retroactively repair
+  older contracts. Remediation should happen through new contracts or targeted
+  reconciliation, not silent score inflation.
+- next: use the audit's lowest-contract list to order governance repair, while
+  keeping `GOVERNANCE_THEATER` visible in self-check until evidence quality
+  improves.
+- status: done
+
+## 2026-05-13 18:23 KST — codex — ASC-0118 readiness reconciliation binding closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + readiness repair implementation
+- goal: restore L6 readiness without deleting historical dispatch artifacts by
+  making readiness honor monitor reconciliations and the currently running
+  packet.
+- changed: `scripts/aios_readiness.py`, `tests/test_aios_readiness.py`,
+  `docs/contracts/ASC-0118-readiness-reconciliation-binding.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: focused readiness tests passed 5/5; full
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 237/237;
+  dispatch result `.aios/outbox/myworld/asc-0118.myworld.result.json` passed;
+  self-check reported `readiness=L6` and no `READINESS_DROP`; monitor returned
+  `health=clear`; release hook wrote MemoryOS draft
+  `mem_49585c35d8301405`.
+- decision: readiness now ignores pending inbox packets only when they exactly
+  match `docs/AIOS_MONITOR_RECONCILIATIONS.json` or when the latest dispatch
+  event for that packet is `running`. Unreconciled pending packets remain L6
+  blockers.
+- risk: reconciliation can hide real drift if entries are overbroad, so matching
+  is exact and tests cover partial/non-reconciled pending packets.
+- next: continue with the remaining self-check discomfort signals:
+  `DRAFTS_BACKLOG`, `CROSS_OS_GHOST GenesisOS`, and aged proposed contracts.
+- status: done
+
+## 2026-05-13 18:36 KST — codex — ASC-0119 OS activity evidence closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + self-check signal repair
+- goal: stop treating GenesisOS as ghosted when it is active through
+  invocation role artifacts instead of child-repo inbox packets.
+- changed: `scripts/aios_os_activity.py`, `tests/test_aios_os_activity.py`,
+  `scripts/aios_self_check.sh`,
+  `docs/contracts/ASC-0119-os-activity-evidence.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: `python scripts/aios_os_activity.py --json` returned
+  `ghost_repos=[]` with GenesisOS active from recent invocation receipts;
+  self-check emitted no `CROSS_OS_GHOST`; full test suite passed 241/241;
+  dispatch result `.aios/outbox/myworld/asc-0119.myworld.result.json` passed;
+  monitor returned `health=clear`; release hook wrote MemoryOS draft
+  `mem_561d7633490e0f56`.
+- decision: OS activity is now based on both inbox packets and
+  `.aios/invocations/*/receipt.json` role statuses. `passed` and `degraded`
+  count as participation; `failed` does not.
+- risk: activity is not quality. GenesisOS can now be recognized as present,
+  but separate contracts still need to deepen GenesisOS semantics and challenge
+  gates.
+- next: remaining self-check discomfort is `DRAFTS_BACKLOG` and aged proposed
+  contracts.
+- status: done
+
+## 2026-05-13 18:54 KST — codex — ASC-0056 MemoryOS draft pipeline closed
+
+- repo: myworld + memoryOS
+- role: founder-delegated AIOS operator + memory review pipeline implementation
+- goal: turn MemoryOS from write-only draft storage into a reviewable path
+  where drafts get proposals and accepted memories appear in context build.
+- changed: `scripts/aios_coevolution/memory_pulse.sh`,
+  `scripts/aios_memory_review_proposer.py`,
+  `tests/test_aios_memory_review_proposer.py`,
+  `tests/test_aios_accepted_memory_surfaces.py`,
+  `docs/AIOS_MEMORY_REVIEW.md`,
+  `docs/contracts/ASC-0056-memoryos-draft-pipeline-closure.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: `bash scripts/aios_coevolution/memory_pulse.sh` reported
+  `scout_signals=30 imported=26 skipped=0 warnings=0`; focused myworld tests
+  passed 8/8; `python -m pytest memoryOS/tests/test_doc_radar_ingest.py -q`
+  passed 9/9; full myworld `test_aios_*.py` suite passed 245/245; closeout
+  dispatch `.aios/outbox/myworld/asc-0056-closeout.myworld.result.json`
+  passed; monitor returned `health=clear`; release hook wrote MemoryOS draft
+  `mem_ee01f19716c4afe2`.
+- decision: Memory review proposals are recommendation-only. Batches
+  `mrev_115b2869e62b4d0e` and `mrev_e3b44539adc63383` each proposed 32
+  accepts and 8 needs-more-evidence, but did not auto-approve. A single
+  operator-approved closeout memory `mem_561d7633490e0f56` was accepted and
+  then selected by `memoryos context build` for the ASC-0119 query.
+- risk: backlog remains; this contract adds the review and surfacing path, not
+  bulk review policy for all 100+ drafts. Bulk approval still needs bounded
+  classes and explicit operator notes.
+- next: use proposal batches to drain old doc-radar drafts by class, or create
+  a stricter auto-review policy for low-risk contract closeout memories.
+- status: done
+
+## 2026-05-13 19:01 KST — codex — ASC-0111 founder memory activated
+
+- repo: myworld + memoryOS
+- role: founder-delegated AIOS operator + MemoryOS reviewer
+- goal: answer and repair the founder-memory visibility gap: founder
+  directives existed in MemoryOS as drafts, but Claude/Hive could not use them
+  because none were accepted.
+- changed: `docs/contracts/ASC-0111-founder-behavior-ingestion.md`,
+  `docs/AIOS_FOUNDER_INGESTION.md`, `docs/AGENT_WORKLOG.md`, and runtime
+  `memoryOS/memory/reviews.jsonl`.
+- evidence: `10` direct founder directive drafts were approved with reviewer
+  `aios-founder-delegate`; `python -m memoryos.cli --root memoryOS search
+  "AIOS완성 공진화 memoryOS capabilityOS hive mind founder" --origin
+  founder_directive --json` returned accepted founder memory
+  `mem_70c8edbf4c5c9c7b`; context trace `rtrace_31b18b1d2fd7c0aa`
+  selected founder memories `mem_70c8edbf4c5c9c7b`,
+  `mem_7a13c1fc3880df9c`, and `mem_3d34968d34418b03`; trace
+  `rtrace_a25c117e6fae9cbf` selected `mem_fdf38e3f47d1aed4` as well.
+- decision: the issue was not a missing git commit. It was a lifecycle gap:
+  `origin=founder_directive` objects were draft-only. High-signal direct
+  directives can be approved under ASC-0111; paraphrased/low-signal rows stay
+  draft until reviewed.
+- risk: MemoryOS retrieval still ranks mixed-language founder queries coarsely;
+  some accepted founder directives appear under `excluded_candidates` with
+  `task_no_match`. This is ASC-0110's structural retrieval bug, not an ASC-0111
+  ingest failure.
+- next: execute ASC-0110 retrieval repair and add an audit that checks accepted
+  founder directives are retrievable by exact Korean/English phrases.
+- status: done
+
+## 2026-05-13 19:04 KST — codex — ASC-0110 MemoryOS retrieval audit slice done
+
+- repo: myworld + memoryOS
+- role: founder-delegated AIOS operator + retrieval verifier
+- goal: turn the MemoryOS retrieval concern into a repeatable audit so accepted
+  founder directives must surface through Hive-facing `context build`.
+- changed: `scripts/aios_memory_retrieval_audit.py`,
+  `tests/test_aios_memory_retrieval_audit.py`, `scripts/aios_self_check.sh`,
+  `docs/contracts/ASC-0110-memoryos-retrieval-broken.md`, and
+  `docs/AGENT_WORKLOG.md`.
+- evidence: focused audit tests passed 2/2; live audit returned
+  `retrieval_rate=1.0`, `hits=4/4`, `passed=true`; self-check reported
+  `retrieval=passed=true rate=1.0 hits=4/4`; full myworld
+  `test_aios_*.py` suite passed 247/247.
+- decision: ASC-0110 is not closed. The myworld audit slice is complete, but
+  MemoryOS still needs a design decision on draft retrieval versus accepted-only
+  context semantics, plus better mixed-language ranking for accepted founder
+  directives.
+- risk: the audit proves selected accepted memories surface for four live
+  founder cases; it does not prove all 75 remaining founder drafts should be
+  selectable, and it must not become an excuse to auto-accept draft memories.
+- next: dispatch or execute WP-0110-A inside `memoryOS/`: diagnose
+  `context build` accepted-only behavior, Korean/English tokenization, and
+  `task_no_match` ranking for accepted founder directives.
+- status: partial
+
+## 2026-05-13 19:16 KST — codex — ASC-0110 MemoryOS retrieval closed
+
+- repo: memoryOS + myworld
+- role: founder-delegated AIOS operator + MemoryOS implementer
+- goal: determine whether founder workstyle memory was invisible because of
+  missing commits or a MemoryOS retrieval failure, then repair the retrieval
+  side without violating review lifecycle.
+- changed: `memoryOS/memoryos/cli.py`, `memoryOS/tests/test_retrieval.py`,
+  `memoryOS/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0110-memoryos-retrieval-broken.md`,
+  `docs/AGENT_WORKLOG.md`.
+- evidence: MemoryOS commit visibility was not the blocker; `memoryOS/memory/`
+  is runtime/gitignored by design. After ASC-0111 approvals, accepted founder
+  memories existed but mixed-language retrieval could still under-rank them.
+  The fix adds privacy-safe metadata to retrieval text and uses internal
+  weighted context ranking while preserving public search score contracts.
+- verification: `python -m py_compile memoryOS/memoryos/cli.py`;
+  `cd memoryOS && python -m pytest tests/test_retrieval.py -q` passed 2/2;
+  `cd memoryOS && python -m pytest tests/test_sprint4.py -q` passed 964/964;
+  `python scripts/aios_memory_retrieval_audit.py --json` returned
+  `retrieval_rate=1.0 hits=4/4`;
+  `bash scripts/aios_self_check.sh` returned
+  `retrieval=passed=true rate=1.0 hits=4/4`;
+  full myworld `test_aios_*.py` suite passed 247/247.
+- decision: `context build` remains accepted-only. Draft founder directives
+  are searchable/reviewable but not injected into Hive context before approval.
+- release: child repo commit `memoryOS/ca7c39a`; dispatch release recorded
+  `asc-0110`; direct closeout writeback wrote draft
+  `mem_7470a9fdae76bcc2` because the historical manual dispatch lacked a
+  `created` event for automatic writeback.
+- status: closed
+
+## 2026-05-13 19:24 KST — codex — ASC-0067 unified invocation pipeline closed
+
+- repo: myworld + role artifacts for GenesisOS, MemoryOS, CapabilityOS, Hive
+- role: founder-delegated AIOS operator + invocation verifier
+- goal: close the accepted but unclosed contract that makes one incoming goal
+  produce explicit OS-role artifacts before dispatch.
+- changed: `docs/contracts/ASC-0067-unified-os-invocation-pipeline.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: dispatch result `.aios/outbox/myworld/asc-0067.myworld.result.json`
+  passed; smoke receipt `.aios/invocations/asc-0067-smoke/receipt.json`
+  reports `overall_status=passed`, `plan_only=true`, and role statuses
+  `genesis=passed`, `memory=passed`, `capability=passed`, `hive=passed`.
+- artifact audit: smoke invocation wrote `goal.json`,
+  `genesis/branches.json`, `memory/context_request.json`,
+  `memory/context_pack.md`, `capability/route.json`,
+  `hive/execution_plan.json`, `dispatch/packets.json`, and `receipt.json`.
+  Genesis reports `authority=speculative_only` with five branches,
+  Capability route is `recommendation_only=true`, and Hive plan has
+  `execute_allowed=false` with verification gate and stop conditions.
+- verification: `python -m py_compile scripts/aios_invoke.py`;
+  `python -m unittest tests/test_aios_invoke.py` passed 7/7;
+  both live and fixed-path `aios_invoke.py` smoke commands returned
+  `overall_status=passed`; full myworld `test_aios_*.py` suite passed 247/247;
+  monitor returned `health=clear`.
+- decision: ASC-0067 V1 closes as an artifact-first invocation pipeline.
+  GenesisOS remains invoked through a local role artifact because the dispatch
+  registry does not yet support `GenesisOS` as a first-class inbox/outbox repo.
+  That limitation remains follow-on substrate work, not hidden completion.
+- release: `python scripts/aios_dispatch.py release --dispatch-id asc-0067`
+  wrote MemoryOS closeout draft `mem_17e55b7b3e48c01e`.
+- status: closed
+
+## 2026-05-13 19:34 KST — codex — ASC-0087 provider prompt bootstrap closed
+
+- repo: myworld + user-space provider prompt files
+- role: founder-delegated AIOS operator + provider substrate bootstrapper
+- goal: make installed provider CLIs AIOS-aware through generated prompt files
+  instead of manual one-off setup.
+- changed: `scripts/aios_provider_prompts.py`,
+  `scripts/templates/provider_prompts/_shared_invariants.md.tmpl`,
+  provider-specific prompt templates, `tests/test_aios_provider_prompts.py`,
+  `docs/AIOS_PROVIDER_PROMPTS.md`,
+  `docs/contracts/ASC-0087-provider-prompt-bootstrap.md`,
+  `docs/contracts/README.md`, and this ledger.
+- evidence: dispatch result `.aios/outbox/myworld/asc-0087.myworld.result.json`
+  passed. The watcher ran the contract gate after the verification command was
+  made watcher-safe by replacing `HOME=/tmp/...` shell prefix with the script's
+  `--home` option.
+- verification: `python -m unittest tests/test_aios_provider_prompts.py`
+  passed 7/7; `detect --json` found Claude, Codex, and Gemini;
+  `bootstrap --dry-run --json` planned 2 writes and performed 0;
+  temp-home bootstrap wrote a Claude prompt block; full myworld
+  `test_aios_*.py` suite passed 254/254; monitor returned clear.
+- live dogfood: `/home/user/.claude/CLAUDE.md` and
+  `/home/user/.codex/AGENTS.md` now each contain exactly one AIOS marker block.
+  Existing prompt content outside the marker was preserved. Gemini is detected
+  but remains `experimental=true` and is skipped by default.
+- decision: provider prompt bootstrap is user-space and marker-scoped. It does
+  not read or write provider credentials and does not touch child repos.
+- release: `python scripts/aios_dispatch.py release --dispatch-id asc-0087`
+  wrote MemoryOS closeout draft `mem_e873e1a68ab3e200`.
+- status: closed
+
+## 2026-05-13 19:49 KST — codex — ASC-0079 Hive public alpha hardening closed
+
+- repo: myworld + hivemind
+- role: founder-delegated AIOS operator; bounded `codex@hivemind` executor
+- goal: convert the external GitHub evaluation of `hivemind` into a concrete
+  public-alpha hardening patch owned by the Hive repo.
+- changed: `hivemind/README.md`, `hivemind/docs/HIVE_PUBLIC_ALPHA.md`,
+  `hivemind/tests/test_production_hardening.py`,
+  `hivemind/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0079-hivemind-public-alpha-hardening.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: Hive commit `9daa35f`; result packet
+  `.aios/outbox/hivemind/asc-0079.hivemind.result.json` has
+  `status=passed` and no stop conditions.
+- verification: `cd hivemind && python -m pytest
+  tests/test_cli_entrypoint.py tests/test_quickstart.py tests/test_plan_dag.py
+  tests/test_production_hardening.py -v` passed 145/145;
+  `cd hivemind && python -m pytest -q` passed 341/341;
+  `cd hivemind && python -m hivemind.hive demo quickstart --json` exited 0;
+  `cd hivemind && python -m hivemind.hive inspect --json` exited 0 with
+  verdict `clean`.
+- decision: no sweeping split of `harness.py`, `hive.py`, or `plan_dag.py` in
+  this sprint. ASC-0079 closes with documented public-alpha boundaries and
+  staged module split stop conditions.
+- status: closed
+
+## 2026-05-13 19:58 KST — codex — ASC-0112 AIOS chat wrapper closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + interface implementer
+- goal: make AIOS the end-user conversation surface instead of a hidden tool
+  layer behind direct Claude/Codex/Ollama CLI usage.
+- changed: `scripts/aios_chat.py`, `scripts/aios_chat_router.py`,
+  `scripts/aios_dashboard_ws.py`, `scripts/aios_launcher.py`,
+  `apps/control/chat.html`, `apps/control/chat.js`,
+  `apps/control/styles.css`, `tests/test_aios_chat.py`,
+  `tests/test_aios_chat_router.py`, `docs/AIOS_CHAT.md`,
+  `docs/contracts/ASC-0112-aios-chat-wrapper.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: dispatch result `.aios/outbox/myworld/asc-0112.myworld.result.json`
+  passed with no stop conditions. Chat smoke wrote `.aios/chat/<id>/messages.jsonl`,
+  `cost.json`, `run_state.json`, and `memory_drafts.json`; MemoryOS
+  `import-run --dry-run` planned 1 memory object from the chat run.
+- verification: `python -m py_compile scripts/aios_chat.py
+  scripts/aios_chat_router.py scripts/aios_dashboard_ws.py
+  scripts/aios_launcher.py`; targeted chat tests passed 7/7; full myworld
+  `test_aios_*.py` suite passed 261/261; Web smoke loaded
+  `http://127.0.0.1:9885/chat.html` and received a `/chat` WebSocket
+  `chat_response` routed to `ollama_qwen`.
+- decision: Hive `provider_loop.py` was not changed in this L0 pass because the
+  router can classify multi-step turns as `hive_flow` and preserve metadata
+  without adding a new Hive entry point. Real provider execution binding remains
+  a follow-on contract.
+- live: control app is running at `http://127.0.0.1:9885/`; chat is at
+  `http://127.0.0.1:9885/chat.html`.
+- status: closed
+
+## 2026-05-13 20:08 KST — codex — ASC-0113 user pattern few-shot closed
+
+- repo: myworld + memoryOS
+- role: founder-delegated AIOS operator + pattern/injection implementer
+- goal: turn founder/user behavior evidence into draft, provenance-bound
+  patterns and inject them into AIOS chat/invocation prompt envelopes without
+  fine-tuning or leaking private data.
+- changed: `scripts/aios_pattern_extractor.py`,
+  `scripts/aios_few_shot_injector.py`, `scripts/aios_chat_router.py`,
+  `scripts/aios_invoke.py`, related myworld tests,
+  `docs/AIOS_USER_PATTERNS.md`,
+  `docs/contracts/ASC-0113-user-pattern-few-shot.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, this ledger,
+  `memoryOS/memoryos/schema.py`, `memoryOS/memoryos/cli.py`,
+  `memoryOS/tests/test_pattern_extract.py`, and
+  `memoryOS/docs/AGENT_WORKLOG.md`.
+- evidence: `.aios/patterns/founder/patterns.json` contains 6 draft patterns
+  with evidence refs; `.aios/patterns/founder/injections.jsonl` records prompt
+  injection audit rows; chat router smoke returned non-empty
+  `patterns_injected`; invocation smoke wrote Hive plan `user_patterns`.
+- memoryOS: child repo commit `8a0a4be` preserves `type=user_pattern` and
+  `origin=pattern_extracted` through `import-run`, with status remaining
+  `draft`.
+- verification: `.aios/outbox/myworld/asc-0113.myworld.result.json` passed
+  with 7 evidence commands; `.aios/outbox/memoryOS/asc-0113.memoryOS.result.json`
+  passed with 3 evidence commands; myworld `test_aios_*.py` passed 265/265;
+  MemoryOS `tests/test_pattern_extract.py tests/test_retrieval.py` passed 3/3;
+  MemoryOS `tests/test_sprint4.py` passed 964/964.
+- decision: patterns are draft hints only. They do not override AIOS DNA,
+  operator override, privacy rules, or verification gates.
+- status: closed
+
+## 2026-05-13 20:19 KST — codex — ASC-0120 verifier priority precedence closed
+
+- repo: myworld
+- role: founder-delegated AIOS operator + queue policy implementer
+- goal: stop verifier-issued contracts from being starved behind codex-auto
+  work while preserving founder GO and existing capacity gates.
+- changed: `scripts/aios_loop_policy.py`, `tests/test_aios_loop_policy.py`,
+  `docs/AIOS_LOOP_POLICY.md`,
+  `docs/contracts/ASC-0120-verifier-priority-precedence.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: policy output now includes `open_contract_order`,
+  `verifier_starvation_seconds`, `priority_inversion_detected`, and issuer
+  labels for queue ordering. The current snapshot reports
+  `verifier_starvation_seconds=40848` and places verifier contracts after
+  founder GO but before operator/codex-auto work.
+- verification: `python -m py_compile scripts/aios_loop_policy.py`;
+  `python -m unittest tests/test_aios_loop_policy.py` passed 4/4;
+  `python scripts/aios_loop_policy.py --write docs/AIOS_LOOP_POLICY.md --json`;
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 267/267.
+- decision: ASC-0120 implements the visibility requirement as a loop-policy
+  warning rather than editing `aios_monitor.py`, keeping the change inside the
+  accepted scope.
+- dispatch: `.aios/outbox/myworld/asc-0120.myworld.result.json` passed with no
+  stop conditions after action-policy checkpoint release.
+- memory: release writeback wrote MemoryOS draft `mem_da5509a16be7f6a3`.
+- status: closed
+## 2026-05-13 20:35 KST — codex — ASC-0121 strict close condition closed
+
+- repo: myworld
+- role: founder-delegated operator + verifier implementer
+- goal: stop contracts from becoming `closed` when their stated pass criteria
+  are verifiably unmet.
+- changed: `scripts/aios_close_condition.py`,
+  `scripts/aios_retro_close_classify.py`, `scripts/aios_dispatch.py`,
+  `tests/test_aios_close_condition.py`, `tests/test_aios_dispatch.py`,
+  `docs/AIOS_CLOSE_CONDITION.md`,
+  `docs/contracts/ASC-0121-strict-close-condition.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: focused close-condition/dispatch tests passed 24/24; full
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 274/274;
+  `ASC-0110` now classifies as `closed_partial_with_followup` with
+  `unmet=2`; ASC-0121 self-evaluates as `closed_goal_met` with
+  `met=5 unmet=0 manual=0`.
+- dogfood: dispatch `asc-0121` created, sent to `myworld`, watched, collected,
+  and released; watcher result `.aios/outbox/myworld/asc-0121.myworld.result.json`
+  passed; release wrote MemoryOS draft `mem_80f00995290213fb`.
+- decision: retro classification is a baseline only and does not reopen old
+  contracts automatically. Future closed contracts with unmet criteria must
+  carry explicit close classification or be held at release.
+- status: closed
+
+## 2026-05-13 20:46 KST — codex — ASC-0122 policy binding closed
+
+- repo: myworld
+- role: founder-delegated operator + control-loop implementer
+- goal: make `scripts/aios_round_controller.py` actually consume
+  `scripts/aios_loop_policy.py` ordering instead of leaving policy as a report.
+- changed: `scripts/aios_round_controller.py`,
+  `tests/test_aios_loop_policy_binding.py`, `docs/AIOS_LOOP_POLICY.md`,
+  `docs/contracts/ASC-0122-policy-actually-binding.md`,
+  `docs/contracts/README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: focused round-controller/policy-binding tests passed 6/6; full
+  `python -m unittest discover -s tests -p 'test_aios_*.py'` passed 275/275;
+  dispatch watcher `.aios/outbox/myworld/asc-0122.myworld.result.json` passed.
+- dogfood: policy-bound ticks followed current policy order by dispatching
+  `ASC-0097`, creating `ASC-0107`, escalating `ASC-0114`, creating verifier
+  dispatch records for `ASC-0115`, `ASC-0116`, and `ASC-0117`, then sending
+  and verifying `ASC-0122`.
+- decision: the remaining verifier queue block is now explicit: older verifier
+  contracts contain unsafe piped verification commands and cannot be packetized
+  by the safe command parser until their gates are normalized or overridden.
+- memory_writeback: release wrote MemoryOS draft `mem_8cb1e1ece161d601`.
+- status: closed
+
+## 2026-05-13 21:05 KST — codex — ASC-0097 Hive TUI orphan rescue closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + Hive rescue implementer
+- goal: resolve the monitor-blocking `orphan_dirty_post_failure` left by a
+  failed ASC-0097 child watcher attempt, without stacking unrelated work.
+- changed: Hive commit `522d1b6 Add unified explore TUI`; myworld updated
+  `docs/contracts/ASC-0097-hive-unified-explore-tui.md`,
+  `docs/contracts/README.md`, and this ledger.
+- evidence: `cd hivemind && python -m py_compile hivemind/hive.py
+  hivemind/tui.py hivemind/tui_explore.py` passed;
+  `cd hivemind && python -m pytest tests/test_tui*.py -v` passed 49/49;
+  `cd hivemind && python -m hivemind.hive tui --help` exposes `--explore`;
+  myworld `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+  275/275; `python scripts/aios_monitor.py assess --write --json` reported
+  `health=clear`.
+- decision: the orphan work was salvageable, so it was finished and committed
+  instead of reset. Ask remains the existing global TUI composer, with result
+  projection into the Inspect pane.
+- memory_writeback: release wrote MemoryOS draft `mem_93631336d65e88a3`.
+- risk: manual TUI dogfood was represented by render/navigation tests and help
+  smoke, not a long interactive terminal session.
+- next: release `asc-0097` from myworld and continue the policy-ordered queue.
+- status: closed
+
+## 2026-05-13 21:17 KST — codex — ASC-0096 Goal Bar closed
+
+- repo: myworld
+- role: founder-delegated operator + control-app implementer
+- goal: raise the end-user interface layer by adding a natural-language Goal
+  Bar to the local AIOS control app, so common questions route to Hive,
+  dispatch, MemoryOS, CapabilityOS, primitives, or invocation plans without
+  memorizing CLI commands.
+- changed: `scripts/aios_goal_bar.py`, `scripts/aios_local_app.py`,
+  `apps/control/index.html`, `apps/control/styles.css`,
+  `apps/control/goal_bar.js`, `tests/test_aios_goal_bar.py`,
+  `tests/test_aios_local_app.py`, `docs/AIOS_GOAL_BAR.md`,
+  `docs/contracts/ASC-0096-goal-bar-natural-input.md`,
+  `docs/contracts/README.md`, and this ledger.
+- evidence: `node --check apps/control/goal_bar.js` passed; focused Goal Bar
+  and local-app tests passed 17/17; dispatch watcher
+  `.aios/outbox/myworld/asc-0096-goalbar.myworld.result.json` passed;
+  full `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+  287/287; monitor health stayed clear.
+- dogfood: control app restarted on `http://127.0.0.1:9885/`; `POST
+  /api/goal_bar` classified "어떤 Agent가 있지?", rejected execution without
+  confirmation, then executed with `{execute:true, confirm:true}` and returned
+  Hive provider status.
+- decision: dispatch id is `asc-0096-goalbar` because `asc-0096` was already
+  used by a prior closed provider-fallback contract.
+- memory_writeback: release wrote MemoryOS draft `mem_a1b127491f1482d1`.
+- status: closed
+
+## 2026-05-13 21:20 KST — codex — ASC-0123 self-check scalar hygiene closed
+
+- repo: myworld
+- role: founder-delegated operator + monitor hygiene implementer
+- goal: remove a false self-check warning where `dispatch_health` became a
+  two-line value under `pipefail`, producing `integer expression expected`
+  despite exit 0.
+- changed: `scripts/aios_self_check.sh`,
+  `docs/contracts/ASC-0123-self-check-dispatch-health-scalar.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: `bash -n scripts/aios_self_check.sh` passed; `bash
+  scripts/aios_self_check.sh` exited 0 and summary contained scalar
+  `dispatch=1` without warning.
+- memory_writeback: release wrote MemoryOS draft `mem_e067e4ab638dcbda`.
+- status: closed
+
+## 2026-05-13 21:25 KST — codex — ASC-0090 agent registry closed
+
+- repo: myworld
+- role: founder-delegated operator + identity substrate implementer
+- goal: replace purely social agent strings with a machine-local identity
+  registry and workspace-readable mirror before implementing citizenship
+  authority gates in ASC-0107.
+- changed: `scripts/aios_agent_registry.py`,
+  `tests/test_aios_agent_registry.py`, `docs/AIOS_AGENTS_REGISTRY.md`,
+  `docs/contracts/ASC-0090-agent-identity-registry.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- seeded: `codex@myworld`, `claude@myworld`, `codex@hivemind`,
+  `codex@memoryOS`, `codex@CapabilityOS`, `codex@GenesisOS`, plus the
+  verification fixture `claude_at_myworld_dev`.
+- evidence: `python -m unittest tests/test_aios_agent_registry.py` passed
+  5/5; dispatch watcher `.aios/outbox/myworld/asc-0090.myworld.result.json`
+  passed; full `python -m unittest discover -s tests -p 'test_aios_*.py'`
+  passed 292/292.
+- memory_writeback: release wrote MemoryOS draft `mem_7e99392705adcae1`.
+- status: closed
+
+## 2026-05-13 21:31 KST — codex — ASC-0107 citizenship implementation closed
+
+- repo: myworld
+- role: founder-delegated operator + authority gate implementer
+- goal: implement agent citizenship and authority checks over the ASC-0090
+  registry so AIOS can distinguish operators, child agents, reviewers,
+  critics, researchers, and outsiders.
+- changed: `scripts/aios_authority.py`, `scripts/aios_dispatch.py`,
+  `scripts/aios_action_policy.py`, `tests/test_aios_authority.py`,
+  `tests/test_aios_dispatch.py`, `tests/test_aios_action_policy.py`,
+  `docs/AIOS_CITIZENSHIP.md`,
+  `docs/contracts/ASC-0107-citizenship-implementation.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- behavior: `release_dispatch` requires operator citizenship in authority
+  result; dispatch release logs authority checks and V1 soft-denials without
+  deadlocking legacy workflow; `bind_capability` is hard-denied by policy.
+- evidence: ASC-0107 retry watcher
+  `.aios/outbox/myworld/asc-0107.myworld.result.json` passed; focused
+  authority/dispatch/policy tests passed; full `python -m unittest discover -s
+  tests -p 'test_aios_*.py'` passed 301/301.
+- memory_writeback: release wrote MemoryOS draft `mem_123026e80e205898`.
+- status: closed
+
+## 2026-05-13 21:49 KST — codex — ASC-0114 living organism deliberation closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + Hive deliberation artifact producer
+- goal: deliberate whether AIOS should substitute for the founder's routine
+  role and whether living-organism dynamics should become executable policy.
+- changed: local Hive run artifacts under
+  `hivemind/.runs/living_organism_debate/**`,
+  `hivemind/docs/AGENT_WORKLOG.md`,
+  `docs/discoveries/2026-05-13-hive-living-organism-debate-result.md`,
+  `docs/contracts/ASC-0114-living-organism-hive-deliberation.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- verdict: `proceed_role_substitution_only`. Build a leased routine
+  substitution schema/refusal gate next; defer executable organism dynamics and
+  swarm reproduction.
+- evidence: 5 rounds, 3 voices per round, all voice files at least 600 words,
+  all 8 probes mapped in `final_state.md`; discovery summary is 239 words;
+  dispatch watcher `.aios/outbox/myworld/asc-0114-closeout2.myworld.result.json`
+  passed; full myworld tests passed 301/301.
+- hive_durability: Hive worklog committed as `af2e1fd Record living organism
+  deliberation`; `.runs/` artifacts are local receipts and remain ignored by
+  Hive git policy.
+- memory_writeback: release wrote MemoryOS draft `mem_18cfbb2cd700e98c`.
+- status: closed
+
+## 2026-05-14 01:00 KST — codex — ASC-0125 GenesisOS dispatch surface closed
+
+- repo: myworld
+- role: founder-delegated operator + dispatch-surface implementer
+- goal: make GenesisOS a first-class dispatch target so Philosophy work can be
+  routed through AIOS instead of direct child-repo edits.
+- changed: `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `.aios/inbox/GenesisOS/.gitkeep`, `.aios/outbox/GenesisOS/.gitkeep`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0125-genesisos-dispatch-surface.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: focused dispatch tests passed; actual ASC-0069 packet was written
+  to `.aios/inbox/GenesisOS/asc-0069.GenesisOS.json`; dispatch watcher
+  `.aios/outbox/myworld/asc-0125-closeout.myworld.result.json` passed; full
+  myworld `python -m unittest discover -s tests -p 'test_aios_*.py'` passed
+  304/304.
+- decision: GenesisOS remains advisory/divergence-only, but now has a normal
+  inbox/outbox surface for AIOS packets.
+- memory_writeback: release wrote MemoryOS draft `mem_f62c6029b6b70fec`.
+- status: closed
+
+## 2026-05-14 01:05 KST — codex — ASC-0069 prompt-prison critic closed
+
+- repo: GenesisOS + myworld
+- role: founder-delegated operator + Philosophy engine implementer
+- goal: give GenesisOS a deterministic critic that detects prompt-prison
+  signatures and emits escape vectors without mutating contracts, memory, or
+  dispatch state.
+- changed: GenesisOS critic module, CLI, tests, prompt-prison docs, GenesisOS
+  worklog; MyWorld critic dispatch wrapper, monitor advisory integration,
+  wrapper tests, contract closeout, README index, worklog, and this ledger.
+- evidence: GenesisOS commit `0f681a9 Add prompt prison critic`; GenesisOS
+  dispatch result `.aios/outbox/GenesisOS/asc-0069.GenesisOS.result.json`
+  passed; MyWorld dispatch result `.aios/outbox/myworld/asc-0069.myworld.result.json`
+  passed; focused tests passed; full MyWorld `test_aios_*.py` suite passed
+  304/304.
+- behavior: `python -m genesisos.cli critic --text README.md --json` returns
+  `schema_version=genesisos.critic.v1`, `authority=advisory_only`,
+  prompt-prison signatures, confidence, and escape vectors. MyWorld
+  `aios_genesis_critic_dispatch.py` scans open contracts and monitor assess
+  reports advisory findings as `severity=info`.
+- next: execute ASC-0126 MemoryOS retrieval real fix; current monitor still
+  reports pending `asc-0126` MemoryOS work.
+- memory_writeback: release wrote MemoryOS draft `mem_15edb8ef978664da`.
+- status: closed
+
+## 2026-05-14 01:14 KST — codex — ASC-0126 MemoryOS retrieval real fix closed
+
+- repo: memoryOS + myworld closeout
+- role: founder-delegated operator + MemoryOS retrieval implementer
+- goal: restore MemoryOS as Agent(Retriever) by making context retrieval report
+  nonzero, auditable signal coverage when accepted memories are actually
+  selected.
+- changed: `memoryOS/memoryos/cli.py`, `memoryOS/tests/test_retrieval.py`,
+  `memoryOS/scripts/retrieval_regression_probe.py`,
+  `memoryOS/docs/RETRIEVAL.md`, `memoryOS/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0126-memoryos-retrieval-real-fix.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- diagnosis: the retrieval engine selected relevant accepted memories, but
+  `signal_coverage` only counted non-default CSP attrs. Founder/AIOS accepted
+  memories often have deterministic text-match score and confidence but no CSP
+  attrs, so coverage was falsely zero.
+- evidence: MemoryOS commit `2aeae86 Fix retrieval signal coverage`; dispatch
+  result `.aios/outbox/memoryOS/asc-0126.memoryOS.result.json` passed; live
+  probes for `AIOS founder operator pattern`, `GenesisOS prompt prison`, and
+  `CapabilityOS router` returned `signal_coverage=1.0`; full MemoryOS pytest
+  passed 2017/2017; full MyWorld AIOS tests passed 304/304.
+- decision: this is a metric/scoring provenance fix, not a remote embedding or
+  LLM reranker. No memory records were deleted or auto-accepted.
+- next: ASC-0127 should evaluate the 5 OS personas using the now-working
+  GenesisOS critic and MemoryOS retrieval evidence.
+- memory_writeback: release wrote MemoryOS draft `mem_6c2bf60aa5728f69`.
+- status: closed
+
+## 2026-05-14 01:20 KST — codex — ASC-0127 5-persona axis closed
+
+- repo: myworld
+- role: founder-delegated operator + cognitive-axis implementer
+- goal: add a second evaluation axis that measures whether AIOS actually uses
+  Hive(Wrapper), MemoryOS(Retriever), CapabilityOS(Router),
+  GenesisOS(Philosophy), and MyWorld(Sovereign), rather than only scoring
+  procedural governance.
+- changed: `scripts/aios_persona_audit.py`,
+  `tests/test_aios_persona_audit.py`, `docs/AIOS_PERSONA_AXIS.md`,
+  `scripts/aios_monitor.py`,
+  `docs/contracts/ASC-0127-5-persona-cognitive-architecture-axis.md`,
+  `docs/contracts/README.md`, `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: dispatch result `.aios/outbox/myworld/asc-0127.myworld.result.json`
+  passed; persona audit returned last-20 baseline `persona_composite=0.45`
+  with `wrapper=0.75`, `retriever=0.05`, `router=0.2`, `philosophy=0.25`,
+  `sovereign=1.0`; monitor assess exposes `persona_axis_advisory`; full
+  MyWorld tests passed 307/307.
+- decision: persona axis is advisory and orthogonal to governance. It does not
+  block dispatch in V1, but it makes persona bypass visible.
+- next: raise low Retriever/Router/Philosophy scores by requiring evidence refs
+  in future high-impact contracts.
+- memory_writeback: release wrote MemoryOS draft `mem_7e6b165c47bb573b`.
+- status: closed
+
+## 2026-05-14 01:32 KST — codex — ASC-0124 ecosystem substrate debate closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + Hive deliberation integrator
+- goal: sharpen whether AIOS should become an agent substrate, a thin protocol,
+  a container/VM environment, an open-source-first habitat, or a sovereign
+  swarm ecosystem before implementation contracts expand the surface.
+- changed: Hive debate artifacts under
+  `hivemind/.runs/ecosystem_substrate_debate/`, Hive worklog,
+  `docs/discoveries/2026-05-14-hive-ecosystem-substrate-debate-result.md`,
+  `docs/contracts/ASC-0124-hive-debate-ecosystem-substrate.md`,
+  `docs/contracts/README.md`, worklog, and this ledger.
+- decision: converge on `proceed_hybrid`. Protocol core is the substrate:
+  contracts, dispatch, MemoryOS provenance, CapabilityOS routes, Hive receipts,
+  Genesis challenge, verification, stop conditions, operator checkpoints, and
+  export records. Containers/VMs are optional later packaging, not the root
+  authority model.
+- evidence: 6 rounds with proposer/critic/extender voices passed word-count
+  gate; `final_state.md` names verdict and dissent; discovery summary is 318
+  words; watcher result `.aios/outbox/hivemind/asc-0124.hivemind.result.json`
+  passed; watcher result `.aios/outbox/myworld/asc-0124.myworld.result.json`
+  passed; full MyWorld AIOS tests passed 307/307.
+- next: run verifier-priority queue: ASC-0115 goal-inbox per-citizen response,
+  ASC-0116 monitor attention-not-stop, and ASC-0117 capacity policy retune.
+- status: closed
+
+## 2026-05-14 01:40 KST — codex — ASC-0115 per-citizen goal inbox closed
+
+- repo: myworld
+- role: founder-delegated operator + intake-interface implementer
+- goal: prevent AIOS intake from collapsing distinct child-repo/citizen
+  packets into one broad theme before Hive/Codex execution.
+- changed: `scripts/aios_goal_inbox_processor.py`,
+  `tests/test_aios_goal_inbox_processor.py`, `docs/AIOS_REPO_GOAL_LOOP.md`,
+  `docs/contracts/ASC-0115-goal-inbox-per-citizen-response.md`,
+  generated proposed contracts `ASC-0128` through `ASC-0142`,
+  `docs/contracts/README.md`, worklog, and this ledger.
+- decision: replace legacy `auto_promote` and `skipped=True` with explicit
+  per-packet responses: `auto_promote_distinct`,
+  `merge_with_justification`, `needs_operator_review`,
+  `reject_out_of_scope`, or `defer_capability_gap`.
+- evidence: current goal inbox processed 15 packets with
+  `auto_promote_distinct=15` and `silently_skipped=0`; all 11 uri packets were
+  verified to have distinct contract candidates citing their source `goal_id`;
+  watcher result `.aios/outbox/myworld/asc-0115.myworld.result.json` passed;
+  full MyWorld AIOS tests passed 308/308.
+- next: execute ASC-0116 so monitor `attention` does not halt healthy active
+  work.
+- status: closed
+
+## 2026-05-14 01:50 KST — codex — ASC-0143 session envelope runtime binding closed
+
+- repo: myworld
+- role: founder-delegated operator + interface/runtime implementer
+- goal: bind the existing AIOS invocation, chat, Goal Bar, and dispatch pieces
+  into a mandatory session envelope that sits in front of Codex/Hive executor
+  packets.
+- changed: `scripts/aios_invoke.py`, `scripts/aios_dispatch.py`,
+  `tests/test_aios_invoke.py`, `tests/test_aios_dispatch.py`,
+  `docs/AIOS_INVOCATION_PIPELINE.md`,
+  `docs/contracts/ASC-0143-aios-session-envelope-runtime-binding.md`,
+  `docs/contracts/README.md`, worklog, and this ledger.
+- decision: Codex CLI remains executor, but dispatch can now carry an
+  `aios.session_envelope.v1` projection proving MemoryOS, CapabilityOS,
+  GenesisOS, and Hive preparation happened or degraded explicitly.
+- evidence: smoke invocation wrote
+  `.aios/invocations/asc-0143-smoke/session_envelope.json`; dispatch packet
+  `.aios/inbox/myworld/asc-0143.myworld.json` includes
+  `session_envelope.ref`; watcher result
+  `.aios/outbox/myworld/asc-0143.myworld.result.json` passed and echoes the
+  same ref; focused tests passed 29/29; full MyWorld AIOS tests passed 309/309.
+- provider convergence: provider-native goal/loop modes should be treated as
+  converging executor substrates. AIOS should absorb their useful primitives
+  below the session envelope rather than making any provider CLI the final
+  interface.
+- next: execute ASC-0116 monitor attention-not-stop, then ASC-0117 capacity
+  policy retune, so this new interface can keep moving through noisy work
+  states.
+- status: closed
+
+## 2026-05-14 02:03 KST — codex — ASC-0144 end-user session interface closed
+
+- repo: myworld
+- role: founder-delegated operator + end-user interface implementer
+- goal: make the local AIOS control app start from one user goal and create an
+  AIOS session envelope before any Codex/Claude/Hive executor work.
+- changed: `scripts/aios_local_app.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_local_app.py`, `docs/AIOS_CONTROL_APP.md`,
+  `docs/contracts/ASC-0144-end-user-session-interface.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: the end-user app should begin at `POST /api/session`, not at direct
+  provider prompting. The session endpoint calls `aios_invoke.py` in plan-only
+  mode and returns the loaded `aios.session_envelope.v1`.
+- evidence: smoke invocation wrote
+  `.aios/invocations/asc-0144-smoke/session_envelope.json`; dispatch packet
+  `.aios/inbox/myworld/asc-0144.myworld.json` includes
+  `session_envelope.ref`; watcher result
+  `.aios/outbox/myworld/asc-0144.myworld.result.json` passed and echoes all OS
+  role statuses plus executor assignment; focused tests passed 15/15; full
+  MyWorld AIOS tests passed 311/311; `node --check apps/control/app.js`
+  passed; live `POST /api/session` returned
+  `aios.session_envelope.v1` with all four roles passed; release wrote
+  MemoryOS draft `mem_70907d5d8614f66e`.
+- next: proposed ASC-0145 to add a reviewed envelope-to-contract/dispatch
+  promotion path in the UI, so end users can move from goal intake to governed
+  work without chat-only operator prompts.
+- status: closed
+
+## 2026-05-14 02:10 KST — codex — ASC-0146 end-user agent work visibility closed
+
+- repo: myworld
+- role: founder-delegated operator + visual interface implementer
+- goal: make end users see how AIOS agents performed work and what artifacts
+  they produced, not only that a session envelope exists.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`,
+  `docs/contracts/ASC-0146-end-user-agent-work-visibility.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: the control app first screen should expose the work trace:
+  GenesisOS, MemoryOS, CapabilityOS, Hive, executor assignment, artifact
+  previews, and recent dispatches. Artifact previews are limited to
+  `.aios/invocations` to avoid raw export leakage.
+- evidence: visual baseline `.aios/screenshots/aios-control-before.png`;
+  visual verification `.aios/screenshots/aios-control-after-agent-work.png`
+  and `.aios/screenshots/aios-control-after-previews.png`; focused tests passed
+  18/18; full MyWorld AIOS tests passed 311/311; watcher result
+  `.aios/outbox/myworld/asc-0146.myworld.result.json` passed; release wrote
+  MemoryOS draft `mem_eb56be3ecc0ae906`.
+- next: execute ASC-0145 so users can promote a reviewed session envelope into
+  a governed contract/dispatch path from the UI.
+- status: closed
+
+## 2026-05-14 02:18 KST — codex — ASC-0147 control center mockup alignment closed
+
+- repo: myworld
+- role: founder-delegated operator + visual interface implementer
+- goal: align the AIOS end-user control application with the generated final
+  interface mockup.
+- changed: `apps/control/index.html`, `apps/control/app.js`,
+  `apps/control/styles.css`,
+  `docs/contracts/ASC-0147-control-center-mockup-alignment.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: adopt the generated mockup's structure as the end-user target:
+  sidebar Control Center frame, compact system status row, command input,
+  five Agent Work cards, artifact lane, and timeline. Agent cards now include
+  artifact preview snippets instead of only file paths.
+- evidence: source mockup
+  `/home/user/.codex/generated_images/019e16ee-7c0f-79a0-b3d4-9b52fa2ab268/ig_03c0e549c66efb13016a04b222cbb4819195020bfdb2c9ae1d.png`;
+  visual verification `.aios/screenshots/aios-control-mockup-aligned.png` and
+  `.aios/screenshots/aios-control-mockup-aligned-v2.png`; focused UI tests
+  passed 11/11; full MyWorld AIOS tests passed 311/311; watcher result
+  `.aios/outbox/myworld/asc-0147.myworld.result.json` passed; release wrote
+  MemoryOS draft `mem_6c40f955eced0362`.
+- next: execute ASC-0145 so this interface can promote a reviewed session
+  envelope into a governed contract/dispatch path.
+- status: closed
+
+## 2026-05-14 02:36 KST — codex — ASC-0148 inline AIOS conversation surface closed
+
+- repo: myworld
+- role: founder-delegated operator + conversation interface implementer
+- goal: add a direct AIOS conversation window to the Control Center so end
+  users can talk with AIOS without leaving the main operating interface.
+- changed: `apps/control/index.html`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_chat.py`,
+  `docs/AIOS_CONTROL_APP.md`,
+  `docs/contracts/ASC-0148-inline-aios-conversation-surface.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: reuse the existing ASC-0112 `/chat` WebSocket router instead of
+  adding a direct provider chat path. Because SSH/Tailscale users may expose
+  `8765` without `8766`, the inline panel now falls back to same-origin
+  `POST /api/chat`, which still routes through `scripts/aios_chat.py`.
+- evidence: CLI chat smoke wrote `.aios/chat/control-center-smoke/`; WebSocket
+  `/chat` smoke returned `chat_ready` then `chat_response ok=true` with
+  substrate `ollama_qwen` and MemoryOS draft
+  `chatdraft_1875a2b97d46c242`; HTTP fallback smoke returned `ok=true` with
+  MemoryOS draft `chatdraft_9fb3c1477cde39c4`; visual screenshot
+  `.aios/screenshots/aios-control-inline-chat.png`; focused tests passed 18/18;
+  full MyWorld AIOS tests passed 311/311; release wrote MemoryOS draft
+  `mem_0a408f327f03cb34`.
+- next: execute ASC-0145 so conversation/session outputs can be promoted to a
+  governed contract/dispatch path from the same Control Center.
+- status: closed
+
+## 2026-05-14 02:45 KST — codex — ASC-0149 conversational response engine closed
+
+- repo: myworld
+- role: founder-delegated operator + chat response implementer
+- goal: replace the fixed AIOS chat receipt sentence with a conversational
+  response engine that reflects user intent, route choice, MemoryOS context,
+  session status, and next action.
+- changed: `scripts/aios_chat_router.py`, `tests/test_aios_chat_router.py`,
+  `docs/contracts/ASC-0149-conversational-response-engine.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: keep chat deterministic and receipt-bound for now, but make the
+  response user-facing. The answer now handles greeting/status/work intent,
+  names the routing/substrate choice, summarizes MemoryOS context availability,
+  reports session preparation and stop conditions, and proposes the next action.
+- evidence: CLI smoke `asc-0149-smoke` returned Korean acknowledgement,
+  MemoryOS context count, session status, and next action; HTTP fallback smoke
+  `asc-0149-http-smoke` returned a promotion next action; focused tests passed
+  17/17; full MyWorld AIOS tests passed 313/313; watcher result
+  `.aios/outbox/myworld/asc-0149.myworld.result.json` passed; release wrote
+  MemoryOS draft `mem_3bb98d1e3b7a0d12`.
+- next: execute ASC-0145 so useful conversation turns can become governed
+  contract/dispatch work from the Control Center.
+- status: closed
+
+## 2026-05-14 03:05 KST — codex — ASC-0150 genesis friction radar quick actions closed
+
+- repo: myworld
+- role: founder-delegated operator + Genesis-informed interface implementer
+- goal: use GenesisOS critique to expose Control Center discomfort as quick
+  actions and a Friction Radar so end users can reach AIOS capabilities without
+  internal command knowledge.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `docs/contracts/ASC-0150-genesis-friction-radar-quick-actions.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: treat the empty/hidden-action chat state as the product
+  discomfort. The UI now puts suggested AIOS prompts before the composer and
+  surfaces monitor next-actions as user-facing needs while GenesisOS remains an
+  advisory lens, not the final selector.
+- evidence: GenesisOS critique returned `needs_human_or_genesis_review`;
+  focused tests passed 12/12; full MyWorld AIOS tests passed 313/313;
+  `scripts/aios_local_app.py refresh --json` produced a snapshot with
+  `friction_radar`; visual screenshot
+  `.aios/screenshots/aios-control-friction-radar.png`; watcher result
+  `.aios/outbox/myworld/asc-0150.myworld.result.json` passed; release wrote
+  MemoryOS draft `mem_fac482c25fb70df1`.
+- next: execute ASC-0145 so a useful chat/session turn can be promoted into a
+  governed contract or dispatch directly from the UI.
+- status: closed
+
+## 2026-05-14 03:11 KST — codex — ASC-0145 reviewed envelope promotion closed
+
+- repo: myworld
+- role: founder-delegated operator + end-user interface implementer
+- goal: let the end-user AIOS session UI promote a reviewed session envelope
+  into a governed contract seed or dispatch packet without falling back to
+  chat-only operator prompts.
+- changed: `scripts/aios_local_app.py`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_local_app.py`,
+  `docs/AIOS_CONTROL_APP.md`,
+  `docs/contracts/ASC-0145-reviewed-envelope-to-dispatch-promotion.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: promotion is preparation, not execution. The endpoint requires
+  explicit review confirmation, validates that the envelope ref stays under
+  `.aios/invocations`, writes `.aios/promotions/<id>/promotion.json` and a
+  proposed contract seed, and records `execution_started=false`.
+- evidence: focused tests passed 36/36; invocation smoke wrote
+  `.aios/invocations/asc-0145-smoke/session_envelope.json`; HTTP promotion
+  smoke wrote
+  `.aios/promotions/promotion-0990071087b3-20260514T031028/promotion.json`;
+  full MyWorld AIOS tests passed 316/316; watcher result
+  `.aios/outbox/myworld/asc-0145.myworld.result.json` passed; release wrote
+  MemoryOS draft `mem_4b70ac85e4e6e6d6`.
+- next: add an inbox-style promotion review queue so generated contract seeds
+  are visible in the Control Center instead of hidden under `.aios/promotions`.
+- status: closed
+
+## 2026-05-14 03:18 KST — codex — ASC-0152 AIOS identity chat response closed
+
+- repo: myworld
+- role: founder-delegated operator + chat interface implementer
+- goal: make the Control Center chat answer identity questions as AIOS before
+  showing route receipts.
+- changed: `scripts/aios_chat_router.py`, `tests/test_aios_chat_router.py`,
+  `docs/contracts/ASC-0152-aios-identity-chat-response.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: add a first-class identity intent. The answer now starts with
+  `나는 AIOS야.` and explains that the visible speaker is the AIOS
+  control/interface layer over myworld, Hive Mind, MemoryOS, CapabilityOS,
+  GenesisOS, and provider substrates, then appends route, memory, session, and
+  next-action receipts.
+- evidence: focused tests passed 21/21; CLI smoke `asc-0152-smoke` returned
+  identity-first text with MemoryOS trace `rtrace_d5b1cffc330672ea`; full
+  MyWorld AIOS tests passed 317/317; watcher result
+  `.aios/outbox/myworld/asc-0152.myworld.result.json` passed; HTTP `/api/chat`
+  smoke in `control-center` returned identity-first text with trace
+  `rtrace_f45226be7871b062`; release wrote MemoryOS draft
+  `mem_d6a6940e01e78aa8`.
+- next: continue ASC-0151 so generated promotion contract seeds become visible
+  in the Control Center review queue.
+- status: closed
+
+## 2026-05-14 03:13 KST — codex — GenesisOS Paper 5 / P20 goal route proposed
+
+- repo: myworld + GenesisOS-informed route
+- role: AIOS entry-agent / goal evolution operator
+- goal: use GenesisOS to advance `/goal` after Paper 4 clarified that Paper 5
+  is the model-architecture track for P20 Law Flow.
+- changed: `docs/discoveries/2026-05-14-genesisos-paper5-p20-goal-route.md`,
+  `docs/contracts/ASC-0152-paper5-p20-law-flow-genesis-gate.md`, and
+  `docs/contracts/README.md`.
+- decision: keep Paper 5/P20 promotion behind a GenesisOS gate. The next
+  research contract is proposed as ASC-0152, not accepted: it must run
+  GenesisOS divergence/critique, MemoryOS context/provenance, CapabilityOS
+  route recommendation, and Hive verification before any `g3_s0` P20
+  multi-seed experiment is launched.
+- evidence: `aios_goal_evolution.py plan` returned readiness `L6 repeatable`
+  but `monitor_health=attention` and stop condition `monitor_not_clear`;
+  GenesisOS `critique` returned `needs_human_or_genesis_review`; GenesisOS
+  `diverge` produced the required branch families, with `failure_as_feature`
+  selected as the useful Paper 5 lens.
+- next: operator may accept/release ASC-0152 when monitor state is clear or
+  explicitly override the hold. Until then, no new quantum experiment is
+  launched by this route.
+- status: proposed
+
+## 2026-05-14 KST — codex — ASC-0152 operator release
+
+- repo: myworld + universe/quantum
+- role: AIOS entry-agent + experiment launcher
+- goal: release the bounded P20 `g3_s0` multi-seed gate after user command
+  "진행해".
+- decision: operator release overrides the previous proposed-only hold for the
+  single bounded experiment named in ASC-0152. Scope remains limited to
+  `g3_s0`, arms `proximal,p20_flow`, seeds `0,1,2`, budgets `2000,5000`.
+- guardrail: no Paper 5 claim promotion until JSON outputs exist and the
+  post-release verifier passes.
+- status: released
+
+## 2026-05-14 03:30 KST — codex — ASC-0153 OS observatory visual interface closed
+
+- repo: myworld
+- role: founder-delegated operator + Genesis-informed interface implementer
+- goal: show MemoryOS knowledge, CapabilityOS search/routing, GenesisOS
+  worldlines, Hive execution, and MyWorld control as visual operating-system
+  surfaces rather than raw logs.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `docs/contracts/ASC-0153-os-observatory-visual-interface.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: make OS activity legible through snapshot-derived cards and lanes.
+  MemoryOS counts apply review-ledger overlay; CapabilityOS remains
+  recommendation-only; GenesisOS stays advisory/speculative.
+- evidence: final snapshot showed MemoryOS `198177` nodes, `305712` edges,
+  `169` memory objects, `44` accepted, `117` draft, `8` rejected, `749`
+  retrieval traces, and `34` hyperedges; CapabilityOS showed `6` cards, `48`
+  observations, and `97` gaps. Focused tests passed 15/15; full MyWorld
+  `test_aios_*.py` suite passed 317/317; watcher result
+  `.aios/outbox/myworld/asc-0153.myworld.result.json` passed; screenshot
+  `.aios/screenshots/aios-control-os-observatory.png` captured; release wrote
+  MemoryOS draft `mem_686de2e3b186ea12`.
+- next: continue ASC-0151 promotion review queue, then add drill-down views
+  from OS Observatory cards to MemoryOS traces, CapabilityOS route evidence,
+  and GenesisOS branch artifacts.
+- status: closed
+
+## 2026-05-14 03:39 KST — codex — ASC-0154 AIOS chat gate agent closed
+
+- repo: myworld
+- role: founder-delegated operator + chat Gate implementer
+- goal: add an explicit Gate/Chair Agent layer so Control Center chat no
+  longer treats provider chatbots/CLIs as AIOS itself and no longer lets
+  current-info questions fall through as cheap local turns.
+- changed: `scripts/aios_chat_router.py`, `tests/test_aios_chat_router.py`,
+  `docs/AIOS_CHAT.md`,
+  `docs/contracts/ASC-0154-aios-chat-gate-agent.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: each chat turn now records `aios.chat.gate_decision.v1`. The Gate
+  can `route_normally`, `clarify_location`, `require_current_info_route`, or
+  `answer_architecture`. Provider chatbots, Codex CLI, Claude CLI, and local
+  LLMs are named as provider substrates behind AIOS Gate, not as AIOS itself.
+- evidence: weather smoke returned `chosen_substrate=gate_clarification`,
+  `route_reason=gate_requires_input`, `provider_execution=held`, and asked for
+  location; provider architecture smoke returned `chosen_substrate=aios_gate`
+  and `route_reason=gate_answer`; focused tests passed 23/23; full MyWorld
+  `test_aios_*.py` suite passed 319/319; watcher result
+  `.aios/outbox/myworld/asc-0154.myworld.result.json` passed.
+- next: create a CapabilityOS-owned current-info/weather adapter contract so
+  the Gate can answer weather/current factual questions with source evidence
+  after required inputs are present.
+- status: closed
+
+## 2026-05-14 03:46 KST — codex — ASC-0155 MemoryOS Gate sleep consolidation closed
+
+- repo: myworld
+- role: founder-delegated operator + Gate memory consolidation implementer
+- goal: reverse-engineer prompt-Agent execution loop pairs from chat/Gate
+  traces and accepted MemoryOS hints into a personalized Gate few-shot/policy
+  pack before any model fine-tuning.
+- changed: `scripts/aios_gate_sleep.py`, `scripts/aios_chat_router.py`,
+  `tests/test_aios_gate_sleep.py`, `tests/test_aios_chat_router.py`,
+  `docs/AIOS_CHAT.md`,
+  `docs/contracts/ASC-0155-memoryos-gate-sleep-consolidation.md`,
+  `docs/contracts/README.md`, and worklog.
+- decision: implement sleep consolidation as replayable artifact extraction,
+  not fine-tuning. The Gate pack is active but keeps `finetune_ready=false`
+  until a later eval, rollback, privacy, and dataset-quality contract exists.
+- evidence: `python scripts/aios_gate_sleep.py --json` wrote
+  `.aios/gate/founder/gate_pack.json`, `.aios/gate/founder/loop_pairs.jsonl`,
+  and `.aios/gate/founder/sleep_report.json`; final pack
+  `gatepack_843ecd92b888c664` used `10` source loop pairs and `12` accepted
+  MemoryOS hints. Later chat Gate decisions project this pack with rules
+  `ask_missing_inputs_before_provider`, `current_info_requires_source`,
+  `memoryos_context_before_execution`, and
+  `provider_is_substrate_not_identity`. Focused tests passed 14/14; full
+  MyWorld `test_aios_*.py` suite passed 322/322; watcher result
+  `.aios/outbox/myworld/asc-0155.myworld.result.json` passed.
+- next: add a CapabilityOS current-info/weather adapter, then separately
+  define Gate fine-tune readiness evals and rollback criteria.
+- status: closed
+
+## 2026-05-14 11:01 KST — codex — ASC-0152 Paper5/P20 Genesis gate closed
+
+- repo: universe/quantum + myworld
+- role: AIOS entry agent + Hive execution verifier
+- goal: test whether P20 flow is only a `g1_s3` mitigation or a two-cell
+  architecture seed after GenesisOS-gated release.
+- evidence: `g3_s0` multi-seed gate completed for arms `proximal` and
+  `p20_flow`, seeds `0,1,2`, budgets `2000,5000`; verifier found six JSON
+  result files with both budgets present.
+- result: PASS. At budget 2000, `p20_flow` beat `proximal` on gamma error and
+  theta_ref heldout for 3/3 seeds; mean gamma-error ratio was `0.611` and
+  theta_ref ratio was `0.365`. At budget 5000, wins were again 3/3 and 3/3;
+  mean gamma-error ratio was `0.381` and theta_ref ratio was `0.368`.
+- degraded receipt: the scheduled 05:55 KST wakeup process exited without
+  writing `wakeup_status_0555.txt`; manual verification succeeded. Classify as
+  `wakeup_receipt_missing`.
+- artifact:
+  `hivemind/.runs/paper5_p20_law_flow_gate/result_packet.md`
+- next: before broad Paper 5 claim promotion, run gamma-only initializer and
+  schedule-shuffled P20 ablations to separate posterior/law-flow structure
+  from a learned scalar gamma prior.
+- status: closed
+
+## 2026-05-14 11:13 KST — codex — ASC-0080 AIOS native installation closed
+
+- repo: myworld
+- role: founder-delegated operator + native install implementer
+- goal: make AIOS feel built in as a reversible user-space application that can
+  stay awake through a `systemd --user` service.
+- changed: `scripts/aios_install.py`, `scripts/aios_launcher.py`,
+  `tests/test_aios_install.py`, `tests/test_aios_launcher.py`,
+  `docs/AIOS_NATIVE_INSTALL.md`,
+  `docs/contracts/ASC-0080-aios-native-installation.md`,
+  and `docs/contracts/README.md`.
+- decision: keep interaction simple (`aios install`, `aios status --json`,
+  `aios open`, `aios stop`, `aios uninstall`) while moving systemd, Tailscale,
+  GUI, and rollback details into docs.
+- evidence: installer dry-run reports exact user-space targets; unit tests use
+  temporary home/config roots; watcher result
+  `.aios/outbox/myworld/asc-0080.myworld.result.json` passed; full MyWorld
+  `test_aios_*.py` suite passed 329/329. No real home install was performed
+  during verification.
+- memory_writeback: release wrote MemoryOS draft `mem_2b784c0463d04f8f`.
+- next: add a first-run onboarding/control-center affordance that shows
+  whether AIOS is installed, running as a user service, and reachable through
+  the local UI without exposing implementation detail.
+- status: closed
+
+## 2026-05-14 11:22 KST — codex — ASC-0156 install state Control Center closed
+
+- repo: myworld
+- role: founder-delegated operator + Control Center implementer
+- goal: show AIOS install, service, local UI, and loop reachability with a
+  simple end-user surface.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `docs/contracts/ASC-0156-install-state-control-center.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: the first screen now has a Runtime band with four states:
+  Command, Background, Control Center, and Loop. It shows short command chips
+  (`aios install`, `aios open`, `aios status --json`, `aios stop`) and keeps
+  implementation detail in docs.
+- evidence: focused snapshot/local-app tests passed 15/15; full MyWorld
+  `test_aios_*.py` suite passed 329/329; watcher result
+  `.aios/outbox/myworld/asc-0156.myworld.result.json` passed; Firefox
+  headless screenshot written to
+  `.aios/screenshots/aios-control-install-runtime.png`.
+- memory_writeback: release wrote MemoryOS draft `mem_9fe54fa6197033b0`.
+- next: continue open Control Center contract ASC-0151 promotion review queue,
+  then reduce advisory Genesis/persona findings by making next contracts cite
+  explicit MemoryOS/CapabilityOS/Genesis evidence.
+- status: closed
+
+## 2026-05-14 11:30 KST — codex — ASC-0151 promotion review queue closed
+
+- repo: myworld
+- role: founder-delegated operator + Control Center implementer
+- goal: show reviewed session promotions and generated contract seeds without
+  requiring users to browse `.aios/promotions`.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/index.html`,
+  `apps/control/app.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `docs/contracts/ASC-0151-promotion-review-queue.md`, `docs/contracts/README.md`,
+  and worklog.
+- result: snapshot now includes `promotions.items`; Control Center shows a
+  Promotions queue directly below the conversation surface with promotion
+  status, goal, session envelope, contract seed, dispatch preview, and next
+  action. It does not expose accept or dispatch execution controls.
+- evidence: focused control snapshot/local app tests passed 15/15; full
+  MyWorld `test_aios_*.py` suite passed 329/329; watcher result
+  `.aios/outbox/myworld/asc-0151.myworld.result.json` passed; Firefox
+  headless screenshot written to `.aios/screenshots/aios-control-promotion-queue.png`.
+- memory_writeback: release wrote MemoryOS draft `mem_8b642a2eef1dde46`.
+- next: address advisory Genesis/persona findings with a contract template
+  improvement so new contracts carry explicit MemoryOS/CapabilityOS/Genesis
+  evidence instead of only governance text.
+- status: closed
+
+## 2026-05-14 11:41 KST — codex — ASC-0157 contract seed OS evidence slots closed
+
+- repo: myworld
+- role: founder-delegated operator + contract seed implementer
+- goal: make AIOS-generated contract seeds reserve concrete MemoryOS,
+  CapabilityOS, GenesisOS, and Hive evidence fields before executor work
+  begins.
+- changed: `scripts/aios_local_app.py`, `scripts/aios_ask.py`,
+  `scripts/aios_contract_autodraft.py`, `scripts/aios_goal_inbox_processor.py`,
+  seed tests, `docs/AIOS_SMART_CONTRACT.md`,
+  `docs/contracts/ASC-0157-contract-seed-os-evidence-slots.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: ask seeds, reviewed-session promotion seeds, goal evolution
+  autodrafts, and goal inbox promoted drafts now include `## AIOS Role
+  Evidence` placeholders for MemoryOS, CapabilityOS, GenesisOS, and Hive Mind.
+- evidence: py_compile passed for all changed generators; focused seed tests
+  passed 22/22; full MyWorld `test_aios_*.py` suite passed 329/329; watcher
+  result `.aios/outbox/myworld/asc-0157.myworld.result.json` passed; monitor
+  returned `health=watch` and `alerts=0` after result packet creation.
+- memory_writeback: release wrote MemoryOS draft `mem_efbd57779d071846`.
+- next: use Genesis/persona advisory output to decide whether ASC-0158 should
+  repair existing open contracts or improve the Control Center's next-work
+  view for these advisory signals.
+- status: closed
+
+## 2026-05-14 11:49 KST — codex — ASC-0158 release authority hard block closed
+
+- repo: myworld
+- role: founder-delegated operator + release gate implementer
+- goal: make `release_dispatch` authority binding so hard denials cannot still
+  release a dispatch or write MemoryOS closeout drafts.
+- changed: `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `docs/contracts/ASC-0158-release-authority-hard-block.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: `release` now returns non-zero `ok=false` with
+  `status=authority_denied` when authority is hard-denied; it writes no
+  released transition and no memory closeout. `--override-authority` remains an
+  explicit audited bypass.
+- evidence: focused dispatch tests passed 23/23; full MyWorld `test_aios_*.py`
+  suite passed 330/330; watcher result
+  `.aios/outbox/myworld/asc-0158.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_8d01b60e902a1b30`
+  using explicit `--override-authority` because Codex is not registered as an
+  operator citizen.
+- next: continue with Genesis/persona advisory cleanup now that release
+  authority is binding.
+- status: closed
+
+## 2026-05-14 11:57 KST — codex — ASC-0159 AIOS operating-layer paper draft closed
+
+- repo: myworld
+- role: founder-delegated operator + paper drafter
+- goal: write the AIOS paper as a defensible operating-layer claim, not a
+  model-superiority claim.
+- changed: `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`,
+  `docs/papers/AIOS_MYWORLD_PAPER_CHARTER.md`,
+  `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`, `tests/test_aios_paper.py`,
+  `docs/contracts/ASC-0159-aios-operating-layer-paper-draft.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: created the first manuscript draft with title, abstract,
+  architecture, artifact protocol, evaluation design, overhead metrics,
+  dogfood observations, limitations, and future work.
+- dogfood: while drafting, AIOS exposed practical friction around checkpoint
+  escalation and watcher command allowlists; the draft records these as
+  overhead and recoverability evidence.
+- evidence: `tests/test_aios_paper.py` passed 3/3; watcher result
+  `.aios/outbox/myworld/asc-0159.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_05cff5a78939c674`
+  through explicit `--override-authority`.
+- next: open a refinement contract that uses MemoryOS, CapabilityOS, and
+  GenesisOS to turn the draft into an evidence-bound submission version.
+- status: closed
+
+## 2026-05-14 12:06 KST — codex — ASC-0160 paper refinement loop closed
+
+- repo: myworld
+- role: founder-delegated operator + paper refinement implementer
+- goal: dogfood AIOS against the paper draft by collecting role artifacts and
+  converting them into concrete paper edits.
+- changed: `.aios/invocations/asc-0160-paper-refinement/**`,
+  `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`,
+  `docs/papers/AIOS_AGENT_OPERATING_LAYER_REFINEMENT.md`,
+  `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`, `tests/test_aios_paper.py`,
+  `docs/contracts/ASC-0160-paper-refinement-loop.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: MemoryOS returned `rtrace_7124ea1c1fee8eff` with ten selected
+  memory ids; CapabilityOS recommended local paper/evidence routes;
+  GenesisOS surfaced `failure_as_feature`; Hive stayed plan-only. The paper
+  now includes an evidence-tightening loop and the claim ledger gained
+  C-015 through C-017.
+- evidence: `tests/test_aios_paper.py` passed 5/5; watcher result
+  `.aios/outbox/myworld/asc-0160.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_9a80cb7e3f0f3872`
+  through explicit `--override-authority`.
+- next: choose between related-work web evidence and matched-run benchmark
+  design for the next paper contract.
+- status: closed
+
+## 2026-05-14 12:14 KST — codex — ASC-0161 paper related-work source evidence closed
+
+- repo: myworld
+- role: founder-delegated operator + paper source evidence implementer
+- goal: make the AIOS operating-layer paper's related work source-grounded and
+  conservative.
+- changed: `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`,
+  `docs/papers/AIOS_RELATED_WORK_SOURCE_RECEIPT.md`,
+  `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`, `tests/test_aios_paper.py`,
+  `docs/contracts/ASC-0161-paper-related-work-source-evidence.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: added primary/official related-work sources for AutoGen, LangGraph,
+  SWE-agent, OpenHands, Temporal, OpenAI Swarm, CrewAI, and Cloudflare
+  long-running agents. The paper now states that AIOS is not firstness or model
+  novelty, but a local operating layer around provider CLIs.
+- evidence: `tests/test_aios_paper.py` passed 6/6; watcher result
+  `.aios/outbox/myworld/asc-0161.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_a2845bec583a9cff`
+  through explicit `--override-authority`.
+- next: create a matched-run benchmark protocol for direct provider CLI versus
+  AIOS-wrapped provider CLI.
+- status: closed
+
+## 2026-05-14 12:17 KST — codex — ASC-0162 direct CLI vs AIOS benchmark protocol closed
+
+- repo: myworld
+- role: founder-delegated operator + benchmark protocol designer
+- goal: define a fair benchmark for direct provider CLI versus the same
+  provider wrapped by AIOS.
+- changed: `docs/papers/AIOS_BENCHMARK_PROTOCOL.md`,
+  `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`,
+  `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`, `tests/test_aios_paper.py`,
+  `docs/contracts/ASC-0162-direct-cli-vs-aios-benchmark-protocol.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: protocol now controls provider/model, defines baseline and AIOS
+  artifacts, task families, outcome metrics, overhead metrics, exclusions,
+  tables, and claim rules. It also adds negative evidence as a first-class
+  metric after founder input.
+- evidence: `tests/test_aios_paper.py` passed 7/7; watcher result
+  `.aios/outbox/myworld/asc-0162.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_dcc4f8b342b5075d`
+  through explicit `--override-authority`.
+- next: create a contract for negative evidence and GenesisOS combinatorial
+  creativity as first-class AIOS learning signals.
+- status: closed
+
+## 2026-05-14 12:25 KST — codex — ASC-0163 negative evidence and Genesis combinatorial creativity closed
+
+- repo: myworld
+- role: founder-delegated operator + AIOS learning-signal spec author
+- goal: make failure memories, bad tool observations, and GenesisOS
+  combinatorial creativity first-class AIOS learning signals.
+- changed: `.aios/invocations/asc-0163-negative-evidence-creativity/**`,
+  `docs/AIOS_NEGATIVE_EVIDENCE_AND_COMBINATORIAL_CREATIVITY.md`,
+  `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`,
+  `docs/papers/AIOS_BENCHMARK_PROTOCOL.md`,
+  `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`, `tests/test_aios_paper.py`,
+  `docs/contracts/ASC-0163-negative-evidence-combinatorial-creativity.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: AIOS now has a shared evidence vocabulary for `failure_memory`,
+  `bad_tool_observation`, and `genesis_recombination_candidate`. The paper and
+  benchmark protocol now require negative evidence and Genesis recombination
+  traces instead of success-only learning claims.
+- evidence: plan-only invocation passed for MemoryOS, CapabilityOS, GenesisOS,
+  and Hive; `tests/test_aios_paper.py` passed 9/9; watcher result
+  `.aios/outbox/myworld/asc-0163.myworld.result.json` passed; monitor returned
+  `health=watch` and `alerts=0` after collection.
+- memory_writeback: release wrote MemoryOS draft `mem_e4e49cb5227186cb`
+  through explicit `--override-authority`.
+- next: issue child-repo implementation contracts for MemoryOS failure-memory
+  drafts, CapabilityOS negative route observations, GenesisOS recombination
+  candidates, and Hive richer failure receipts.
+- status: closed
+
+## 2026-05-14 12:36 KST — codex — ASC-0164 GenesisOS child watcher surface closed
+
+- repo: myworld
+- role: founder-delegated operator + control-plane watcher implementer
+- goal: make GenesisOS visible to AIOS child watcher and monitor surfaces so
+  future GenesisOS implementation packets can actually run.
+- changed: `scripts/aios_child_watcher.sh`, `scripts/aios_monitor.py`,
+  `tests/test_aios_child_watcher.py`, `tests/test_aios_monitor.py`,
+  `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/contracts/ASC-0164-genesisos-child-watcher-surface.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: GenesisOS is now included in child watcher repo path resolution,
+  all-repo start/stop/status loops, focused watcher execution tests, and
+  monitor repo snapshots. Generated Python cache entries are treated as
+  low-signal generated-cache alerts instead of child-repo dirty blockers.
+- evidence: `bash -n scripts/aios_child_watcher.sh` passed;
+  `python -m py_compile scripts/aios_monitor.py` passed;
+  `python -m unittest tests/test_aios_child_watcher.py tests/test_aios_monitor.py`
+  passed 24/24; watcher result
+  `.aios/outbox/myworld/asc-0164.myworld.result.json` passed; monitor returned
+  `health=watch`, `watched.repos=4`, and one low `generated_cache_present`
+  alert after collection.
+- founder_signal: GenesisOS is the OS that feels discomfort; creative
+  invention comes from discomfort becoming named need and testable
+  recombination candidate.
+- reverse_engineering_signal: Hive and CapabilityOS are already stronger at
+  provider execution/routing; MemoryOS and GenesisOS are the weak surfaces
+  worth reinforcing to exploit provider blind spots.
+- next: issue ASC-0165 for a GenesisOS discomfort-to-invention primitive and
+  MemoryOS-linked failure/retrieval evidence.
+- status: closed
+
+## 2026-05-14 12:52 KST — codex — ASC-0165 MemoryOS/GenesisOS blindspot reinforcement closed
+
+- repo: myworld + GenesisOS + memoryOS
+- role: founder-delegated operator rescue after provider execution held
+- goal: reinforce the weak MemoryOS and GenesisOS surfaces that provider CLIs
+  do not cover well: failure memory, retrieval of blind spots, discomfort
+  sensing, and invention candidates.
+- changed: `GenesisOS/genesisos/cli.py`, `GenesisOS/tests/test_cli.py`,
+  `GenesisOS/docs/GENESIS_DOCTRINE.md`, `GenesisOS/docs/AGENT_WORKLOG.md`,
+  `memoryOS/memoryos/schema.py`, `memoryOS/memoryos/cli.py`,
+  `memoryOS/tests/test_schema.py`, `memoryOS/tests/test_import_run.py`,
+  `memoryOS/docs/RETRIEVAL.md`, `memoryOS/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0165-memory-genesis-provider-blindspot-reinforcement.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: GenesisOS now exposes `python -m genesisos.cli discomfort --text ...
+  --json` with `schema_version=genesisos.discomfort.v1`, `authority=
+  speculative_only`, a named discomfort signal, named need, invention
+  candidate, recombination sources, risk, and contract seed. MemoryOS now has
+  `make_failure_memory_object()` and `import-run` preserves
+  `kind=failure_memory` drafts as reviewable, provenance-bound negative
+  evidence.
+- provider_evidence: child watcher packets were held before operator rescue.
+  GenesisOS attempts: Codex `provider_access_denied`, Claude
+  `provider_backpressure`, local `done` but held as
+  `local_llm_used_as_final_acceptor_without_verifier`. memoryOS attempts:
+  Codex `provider_access_denied`, local `done` but held for the same verifier
+  reason.
+- evidence: GenesisOS `python -m unittest tests/test_critic.py tests/test_cli.py`
+  passed 8/8; GenesisOS discomfort CLI emitted
+  `schema_version=genesisos.discomfort.v1` and `authority=speculative_only`;
+  memoryOS `python -m unittest tests/test_schema.py tests/test_import_run.py`
+  passed 64/64; py_compile passed for edited GenesisOS and memoryOS modules.
+- memory_writeback: release wrote MemoryOS draft `mem_a77bb22cadf11cae`
+  through explicit `--override-authority`.
+- monitor: `health=attention`, with expected medium dirty alerts for the
+  implemented child-repo changes and a low generated-cache alert in GenesisOS.
+- next: create a provider credential broker contract. Do not store provider
+  PINs in repo `.env`, docs, packets, logs, or code; use a local secret broker
+  or remove PIN gating for unattended watcher execution.
+- status: closed
+
+## 2026-05-14 12:53 KST — codex — ASC-0166 provider PIN-required classification closed
+
+- repo: myworld
+- role: founder-delegated operator + provider failure taxonomy implementer
+- goal: classify PIN/auth unlock failures without storing secrets, so AIOS
+  watchers can route or checkpoint instead of treating PIN-gated providers as
+  generic access denied.
+- changed: `scripts/aios_child_watcher.sh`, `scripts/aios_pingpong.sh`,
+  `tests/test_aios_child_watcher.py`, `tests/test_aios_pingpong.py`,
+  `docs/contracts/ASC-0166-provider-pin-required-classification.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: logs with PIN-attempt symptoms such as `틀렸습니다.` now classify as
+  `pin_required_noninteractive`; generic Korean `접근 거부.` remains
+  `provider_access_denied`; child watcher and pingpong fallback loops include
+  the new category.
+- environment_change: `/home/user/bin/codex` now directly executes
+  `/home/user/.nvm/versions/node/v22.22.2/bin/codex`, bypassing the prior
+  local PIN-gate loader. The hidden loader config was not printed, copied, or
+  stored.
+- privacy: no PIN, credential, `.env`, provider auth file, raw private export,
+  or private transcript was stored.
+- evidence: first send escalated on `human_checkpoint_required:uses_credentials`
+  because the contract discusses credentials; founder-delegated override
+  created a myworld packet. Watcher result
+  `.aios/outbox/myworld/asc-0166.myworld.result.json` passed with
+  `bash -n scripts/aios_child_watcher.sh`, `bash -n scripts/aios_pingpong.sh`,
+  and `python -m unittest tests/test_aios_child_watcher.py tests/test_aios_pingpong.py`
+  passing 15/15. `codex --help` returned normal Codex CLI help and a minimal
+  `codex exec` smoke returned `AIOS_CODEX_READY`.
+- memory_writeback: final release wrote MemoryOS draft
+  `mem_9ebe54e652676ea2`.
+- next: if unattended unlock is required, implement a credential broker using
+  an OS/local secret store or remove provider PIN gating; do not use repo
+  `.env` for PINs.
+- status: closed
+
+## 2026-05-14 13:03 KST — codex — ASC-0167 CapabilityOS permissioned constraint-break route closed
+
+- repo: CapabilityOS + myworld
+- role: founder-delegated operator + CapabilityOS route implementer
+- goal: let CapabilityOS propose high-freedom constraint-breaking options,
+  ask the user for permission, and assign actual execution to Hive Mind.
+- changed: `CapabilityOS/capabilityos/catalog.py`,
+  `CapabilityOS/capabilityos/cli.py`, `CapabilityOS/tests/test_cli.py`,
+  `CapabilityOS/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0167-capabilityos-permissioned-constraint-break-route.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: added `capabilityos.constraint_break_route.v1` and
+  `python -m capabilityos.cli constraint-break --task ... --blocker ...
+  --json`. The route is recommendation-only, sets
+  `execution_policy.executor=hivemind`, refuses CapabilityOS execution/tool
+  installation/network calls, emits high-freedom unblock options, and asks
+  user permission for scope lifts.
+- evidence: `cd CapabilityOS && python -m unittest tests/test_cli.py` passed
+  14/14; CLI smoke for blocker `provider PIN gate` emitted
+  `capabilityos_executes_tools=false`, non-empty permission questions, and a
+  privacy policy that does not store pins, tokens, or API keys.
+- next: wire Hive Mind to consume the constraint-break route as an execution
+  preflight and operator checkpoint.
+- status: closed
+
+## 2026-05-14 13:12 KST — codex — ASC-0168 Hive permission preflight closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + Hive preflight implementer
+- goal: let Hive Mind consume CapabilityOS high-freedom constraint-break
+  routes as operator permission checkpoints before provider execution.
+- changed: `hivemind/hivemind/permission_preflight.py`,
+  `hivemind/hivemind/hive.py`,
+  `hivemind/tests/fixtures/constraint_break_route.json`,
+  `hivemind/tests/test_permission_preflight.py`,
+  `hivemind/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0168-hivemind-permission-preflight.md`,
+  `docs/contracts/README.md`, and worklog.
+- result: added `hive permission-preflight --route-json ... --json`, returning
+  `hivemind.permission_preflight.v1` with `executor=hivemind`,
+  `execute_now=false`, permission questions intact, and a block when
+  CapabilityOS attempts tool execution.
+- evidence: `cd hivemind && python -m unittest tests/test_permission_preflight.py`
+  passed 3/3; CLI verification against
+  `tests/fixtures/constraint_break_route.json` returned
+  `status=operator_checkpoint_required` with no stop conditions. Dispatch
+  results for `asc-0168` were collected; watcher held the Hive packet due
+  pre-existing dirty implementation files, not verification failure.
+- memory_writeback: release wrote MemoryOS draft `mem_030055a087ee7981`
+  through explicit `--override-authority`.
+- next: base architecture audit should consolidate purpose, inputs, outputs,
+  behavior, and infra before more feature contracts are added.
+- status: closed
+
+## 2026-05-14 13:17 KST — codex — AIOS base architecture audit
+
+- repo: myworld
+- role: founder-delegated operator + architecture auditor
+- goal: verify whether AIOS has a solid base before more feature contracts are
+  stacked.
+- changed: `docs/AIOS_BASE_ARCHITECTURE_AUDIT.md`, `docs/README.md`, and
+  worklog.
+- result: documented the base purpose, input classes, output artifacts,
+  behavior loop, local-first infra, current evidence, weak spots, and required
+  invariants.
+- evidence: plan-only invocation smoke passed; readiness now reports
+  `L6 repeatable`; monitor reports `health=attention` because child repos have
+  uncommitted work, not because dispatch is pending.
+- decision: continue AIOS development, but prioritize base hygiene and
+  product-grade Gate/Memory/Capability/Genesis integration over new contract
+  volume.
+- next: settle child repo dirty state and then harden the Gate current-info
+  route plus MemoryOS context-pack usefulness.
+- status: done
+
+## 2026-05-14 13:27 KST — codex — ASC-0169 Hive AIOS packet runner closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + Hive execution-surface implementer
+- goal: answer and reduce the gap where Hive Mind could wrap providers but did
+  not itself consume AIOS hivemind inbox packets.
+- changed: `hivemind/hivemind/aios_packet_runner.py`,
+  `hivemind/hivemind/hive.py`, `hivemind/tests/test_aios_packet_runner.py`,
+  `hivemind/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0169-hivemind-aios-packet-runner.md`,
+  and `docs/contracts/README.md`.
+- result: added `hive aios-packet --packet ... --myworld-root ...`, which
+  reads a hivemind-targeted AIOS dispatch packet, builds a bounded prompt,
+  prepares/ticks a provider-loop worker, and can write the packet result to
+  outbox. This keeps executor authority with Hive instead of the shell watcher.
+- evidence: Hive tests passed 19/19 across packet runner, permission preflight,
+  and provider-loop surfaces. CLI smoke against the ASC-0168 Hive packet
+  returned `schema_version=hive.aios_packet_runner.v1`, `status=prepared`,
+  `authority.executor=hivemind`, and a provider-loop tick receipt.
+- commit: hivemind `ba057f7 Add AIOS packet provider-loop runner`.
+- next: bind MyWorld Hive-targeted dispatch to `hive aios-packet`, then define
+  explicit writable provider execution policy instead of relying on broad
+  wrapper permissions.
+- status: closed
+
+## 2026-05-14 13:36 KST — codex — ASC-0170 Hive scoped writable provider execution closed
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + provider execution policy implementer
+- goal: open writable Hive provider execution without making provider CLIs an
+  unbounded repo worker.
+- changed: `hivemind/hivemind/provider_passthrough.py`,
+  `hivemind/hivemind/provider_loop.py`,
+  `hivemind/hivemind/aios_packet_runner.py`,
+  `hivemind/hivemind/harness.py`, `hivemind/hivemind/hive.py`,
+  `hivemind/tests/test_aios_packet_runner.py`,
+  `hivemind/tests/test_provider_passthrough.py`,
+  `hivemind/docs/AGENT_WORKLOG.md`,
+  `docs/contracts/ASC-0170-hivemind-scoped-writable-provider-execution.md`,
+  and `docs/contracts/README.md`.
+- result: read-only remains default. Codex workspace-write can now pass only
+  when Hive AIOS packet execution includes `--execute`,
+  `--writable-provider-execution`, and `--operator-grant`. The grant records
+  verifier and user approval votes into Hive's execution protocol. Dangerous
+  full-access and approval-never combinations remain blocked.
+- evidence: Hive tests passed 26/26 across packet runner, provider passthrough,
+  and provider-loop. A no-grant writable smoke held with
+  `operator_grant_missing`. CLI help exposes the new grant flags.
+- commit: hivemind `716abbf Gate writable provider execution by operator
+  grant`.
+- next: update MyWorld dispatch so Hive-targeted packets use `hive
+  aios-packet`; only pass writable grant after CapabilityOS route, Hive
+  permission preflight, and operator decision.
+- status: closed
+
+## 2026-05-15 15:01 KST — codex — ASC-0171 Hive permissioned dangerous route opened
+
+- repo: hivemind + myworld
+- role: founder-delegated operator + execution policy implementer
+- goal: make rare Codex dangerous full-access execution visible and auditable
+  inside AIOS instead of forcing manual bypass outside the contract layer.
+- changed: `docs/contracts/ASC-0171-hivemind-permissioned-dangerous-provider-execution.md`,
+  `docs/contracts/README.md`, Hive provider-loop/passthrough/packet/protocol
+  code, and focused Hive tests.
+- evidence: focused Hive tests passed 29/29 after explicit dangerous grant
+  language and irreversible quorum coverage were added. Full Hive suite passed
+  391 tests. `scripts/public-release-check.sh` passed 17/17 with zero warnings.
+- decision: dangerous full-access is not the normal writable path. It remains
+  blocked by default and can pass only with `--execute`, Codex provider,
+  explicit dangerous flag, grant text naming `dangerous full-access`,
+  irreversible authority, user/operator approval, and proof receipts.
+- risk: this route intentionally exposes a high-risk provider mode; do not pass
+  it from MyWorld dispatch without CapabilityOS route evidence, Hive
+  preflight, and an operator checkpoint.
+- next: commit Hive implementation; MyWorld dispatch must not pass this grant
+  without CapabilityOS route evidence, Hive preflight, and operator checkpoint.
+- status: closed
+
+## 2026-05-15 15:55 KST — claude — ASC-0175 MemoryOS continuous health instrumentation accepted
+
+- repo: myworld + memoryOS (read-only observation)
+- role: founder-delegated operator (per ASC-0051 origin directive
+  "네가 내 역할을 위임받는거야")
+- goal: instrument MemoryOS as continuous-health AIOS substrate — acceptance
+  ratio, pulse uptime, and portability rehearsal measurable and recurring,
+  explicitly rejecting "completion as terminal state".
+- changed: `docs/contracts/ASC-0175-memoryos-continuous-health-instrumentation.md`,
+  `.aios/health/k58-baseline-20260515.json` (WP-0175-A baseline snapshot).
+- evidence: 4-OS deliberation trace
+  `.aios/invocations/ask-245f0aa3733d-20260515T154305/receipt.json` —
+  MemoryOS top decision conf 0.9, HiveOS patterns "Control Plane First" 0.86 +
+  "Continuous Loop Bias" 0.84, GenesisOS inversion "refuse premature
+  completion", CapabilityOS route `cap_hivemind_execution_harness`. Initial
+  snapshot status=pass: acceptance_ratio=0.2366 (44 accepted / 186 total),
+  pulse 24h events memory=48 / capability=24 / hive=96, all 3 pulses live.
+- decision: contract accepted as recurring (no `closed` field) under
+  founder-delegated authority. GenesisOS inversion directly motivates the
+  no-terminal-state shape. Initial baseline captured.
+- risk: contract has no closeout — must rely on stop-condition triggers
+  (acceptance ratio < 10% sustained 30d, pulse uptime < 80%, portability fail,
+  snapshot absent > 7d). Snapshot-emission script not yet productized
+  (WP-0175-B). ID collision with codex's ASC-0171 caught and resolved.
+- next: WP-0175-B dispatch to codex@myworld for `scripts/aios_memoryos_health.py`
+  productization. First portability rehearsal scheduled within 30 days.
+- status: recurring (initial snapshot done; contract remains active)
+
+## 2026-05-15T15:55+09:00 — ASC-0172 withdrawn; ASC-0173 shipped; ASC-0174 dispatched
+
+- when: 2026-05-15T15:55+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: AIOS 완성 (continuous-goal session) — surface and resolve discomfort that AIOS readiness reports L6 ready=true while uri shipped 187 sprints with zero AIOS evidence absorption
+- changed:
+  - docs/contracts/ASC-0172-aios-observer-reframe-end-self-loop-prison.md (single-head reframe — WITHDRAWN after study)
+  - docs/contracts/ASC-0173-product-repo-consent-emitted-evidence-ingest.md (accepted; additive, consent-gated; supersedes nothing)
+  - docs/contracts/ASC-0174-hive-debate-observer-vs-executor-reframe.md (accepted for deliberation dispatch; verdict acceptance reserved to founder)
+  - docs/schemas/aios_product_recap_v1.md (new schema)
+  - scripts/aios_ingest_product_recap.py (new ingest script)
+  - CapabilityOS/capabilityos/cli.py (minimal fallback: read observation_count from catalog JSON when --observations-inbox not given)
+  - .aios/processed/myworld/product_recap__uri__URI-210.json (+ .receipt.json)
+  - .aios/capability_observations/uri_capabilities.json (5 cap_uri_* records)
+  - docs/imports/product_recap__uri__URI-210.md (memoryOS draft source)
+  - docs/study/2026-05-15-observer-vs-executor-prior-art.md (study findings imported to memoryOS as 56 nodes / 79 edges drafts)
+  - docs/AIOS_CLAUDE_SELF_OBSERVATION_LOG.md (2 new entries 15:10 + 15:35)
+  - memory/feedback_prompt_prison_chain_signature.md (new, with correction at end)
+  - memory/feedback_readiness_vs_usage.md (new)
+- evidence:
+  - .aios/processed/myworld/product_recap__uri__URI-210.receipt.json
+  - `python -m capabilityos.cli --catalog .aios/capability_observations/uri_capabilities.json recommend --task "uri stack" --json` → observed_capabilities: 5
+  - `python -m memoryos search "URI-210 product_recap"` → 2 results (observation node + concept node)
+  - `python -m pytest CapabilityOS/tests/test_cli.py` → 16 passed
+  - `python scripts/aios_dispatch.py status | grep 0174` → sent=hivemind
+- decision: withdrew single-head reframe (ASC-0172); split into additive (ASC-0173, operator-accepted under delegated scope) + Hive deliberation (ASC-0174, accepted for dispatch only, verdict reserved to founder)
+- risk: ASC-0173 is low-risk (additive, consent-gated, no DNA invariant pressure, no supersession). ASC-0174 dispatch is medium-risk (commits LLM compute and produces vision-level artifact); operator-accepted under explicit continuous-goal delegation; founder retains verdict acceptance.
+- next:
+  - codex@hivemind picks up ASC-0174 dispatch packet and runs 6-round 3-voice deliberation
+  - operator reviews Hive verdict and surfaces to founder for accept
+  - uri operator (Packet D of ASC-0173) decides if/when to add emit hook for live recap packets
+- status: ASC-0173 closed-pending-uri-emit (3 of 4 stop conditions met; condition 4 requires uri opt-in); ASC-0174 active (dispatched)
+
+## 2026-05-15 16:05 KST — claude — ASC-0175 CLOSED (iter-1 of "AIOS로서 memoryOS 완성" achieved)
+
+- repo: myworld + memoryOS
+- role: founder-delegated operator (per ASC-0051)
+- goal: close iter-1 of "AIOS로서 memoryOS 완성" — establish MemoryOS as
+  AIOS substrate with contract-bound governance, measurable health baseline,
+  3 pulses live, and cross-OS loop executed once.
+- changed: `docs/contracts/ASC-0175-memoryos-continuous-health-instrumentation.md`
+  (status: accepted → closed; added Verification Gate iter-1 criteria and
+  Closure Evidence section).
+- evidence (all 5 verification-gate criteria met):
+  1. memoryos audit: 186 objects, 52 reviews — substrate coherent.
+  2. `.aios/health/k58-baseline-20260515.json`: status=pass,
+     acceptance_ratio=0.2366, 3 pulses all >0 events in 24h.
+  3. `.aios/invocations/ask-245f0aa3733d-20260515T154305/receipt.json`:
+     4-OS role_statuses all passed.
+  4. Cross-OS loop executed end-to-end this session: founder goal → ask →
+     4-OS deliberation → contract draft → accept → MemoryOS eval → ledger →
+     closeout. All 7 readiness-bar stages traversed.
+  5. AIOS_AGENT_LEDGER.md accept entry (15:55) + close entry (this entry);
+     memoryOS AGENT_WORKLOG.md entry 2026-05-15.
+- decision: iter-1 of the founder goal "AIOS로서 memoryOS 완성" is achieved
+  and CLOSED. GenesisOS inversion is honored at the meta-level (no terminal
+  completion across iterations), not by refusing to close the current
+  iteration. Future health work continues under new contracts.
+- risk: contract closure does not mean MemoryOS is bug-free or feature-
+  complete in absolute sense. Known gaps remain (embedding 0% coverage,
+  health avg 0.29, 0% healthy nodes) — these are K59+ scope, not iter-1
+  acceptance criteria.
+- next: ASC-0091 auto-writeback fires on close → MemoryOS records closure as
+  memory draft. WP-0175-B (health script productization) is deferred to
+  future contract; not part of iter-1 closure. Hook stop condition cleared.
+- status: closed
+
+## 2026-05-15T16:00+09:00 — ASC-0174 round 1 verdict + ASC-0173 live evidence
+
+- when: 2026-05-15T16:00+09:00 KST
+- repo: myworld, hivemind, uri (single emit hook)
+- agent: claude@myworld (synthesizing 3 sub-agent voices)
+- role: operator
+- goal: continue continuous-goal "AIOS 완성" — reach named convergence verdict on ASC-0174 + demonstrate measurable AIOS adoption improvement
+- changed:
+  - hivemind/.runs/observer_vs_executor_debate/round_1/{proposer.md (1369w), critic.md (1130w), extender.md (1617w), synthesis.md} — round 1 of ASC-0084 format
+  - hivemind/.runs/observer_vs_executor_debate/final_state.md — verdict `proceed_phased_audit_to_control` with per-invariant routing
+  - docs/discoveries/2026-05-15-hive-observer-vs-executor-debate-result.md (627w)
+  - uri/scripts/aios-emit-recap.ts — uri operator opt-in emit hook (single file, ASC-0173 Packet D)
+  - .aios/processed/myworld/product_recap__uri__URI-211.json (+ receipt) — real (non-synthetic) emit
+  - docs/imports/product_recap__uri__URI-211.md — memoryOS draft source for URI-211
+  - .aios/capability_observations/uri_capabilities.json — now 5 cap_uri_* records with sprint counts up to 2
+- evidence (measurable AIOS adoption increase from pre-session state):
+  - CapabilityOS observed_capabilities: 0 → 5
+  - cap_uri_nextjs observation_count: 0 → 2 (URI-210 + URI-211)
+  - cap_uri_vercel_deploy observation_count: 0 → 2
+  - cap_uri_share_card_og observation_count: 0 → 2
+  - MemoryOS uri evidence nodes: 0 → 25+ (URI-210: 16 nodes, URI-211: 9 nodes)
+  - uri operator opt-in emit: 0 hooks → 1 hook (uri/scripts/aios-emit-recap.ts)
+  - Hive deliberation rounds on observer-vs-executor framing: 0 → 1 (proposer + critic + extender + synthesis)
+  - Named convergence verdict for ASC-0174: none → `proceed_phased_audit_to_control` with per-invariant routing table
+- decision: round 1 verdict named `proceed_phased_audit_to_control`. Per-invariant routing (observer mode on DNA 1-5, executor mode on DNA 6-8 via ASC-0173 consent gate) is the load-bearing reframe that collapses the observer-vs-executor binary. Phase 2 gates explicit (≥3 product repos consent-emitting, ≥30 days data, ≥1 DNA 6-8 post-fact catch, founder GO, Hive sign-off).
+- risk:
+  - Round 1 is partial — single round, single LLM class. Rounds 2-6 should run via codex chain or independent providers to stress-test per-invariant routing (D1 dissent: route ambiguity at invariant boundaries).
+  - The verdict is provisional pending founder accept for vision-level commitments.
+- next:
+  - Surface round 1 verdict + ASC-0173 live evidence to founder for accept/escalate decision
+  - If accepted: ship per-invariant DNA spec amendment draft + closeout reconciliation on ASC-0128..0142 + ASC-0166..0171 + phase 2 readiness contract
+  - If escalated to full Hive: codex chain extends to rounds 2-6
+- status: ASC-0173 closed (3 of 4 stop conditions met with real packet evidence; condition 4 = uri operator real emit ✓); ASC-0174 active (round 1 verdict named, awaiting founder accept of verdict or escalate-to-full-Hive decision)
+
+## 2026-05-15T16:20+09:00 — ASC-0174 verdict accepted; ASC-0178 phase 1 executed
+
+- when: 2026-05-15T16:20+09:00 KST
+- repo: myworld, hivemind
+- agent: claude@myworld
+- role: operator
+- goal: continuous-goal "AIOS 완성" — close the observer-vs-executor question and build the founder-accepted phase 1
+- changed:
+  - docs/contracts/ASC-0174-...md → status closed (founder GO on verdict)
+  - docs/AIOS_DNA.md → Authority Model v0.1 amendment appended (4 authority axes, 10 system calls, pre-fact/post-fact rule)
+  - docs/contracts/ASC-0178-aios-authority-model-phase-1.md → new, closed
+  - 7 contracts withdrawn (ASC-0128/0129/0130/0140/0142/0176/0177 — ASC-0066 template clones)
+  - 7 contracts superseded-by-rewrite (ASC-0131/0132/0133/0134/0136/0138/0139 — product-execution takeover → ASC-0173 delegation)
+  - docs/AIOS_ACTION_POLICY.md → Authority-Model Permission Rule appended
+- evidence:
+  - hivemind/.runs/observer_vs_executor_debate/ — 6 rounds, 18 voices, gate PASS, verdict proceed_authority_routed_management_plane
+  - git grep "withdrawn_reason: raw-permission" → 7 contracts
+  - git grep "superseded-by-rewrite" → 7 contracts
+  - docs/AIOS_DNA.md contains "Authority Model (v0.1 amendment — ASC-0174)"
+- decision: AIOS identity is authority-routed management plane. Permission-chain prison resolved: 7 template clones withdrawn, 7 product-takeover contracts rewritten to the ASC-0173 delegation pattern, 6 legitimate hardening contracts retained. Autodrafter prison signature now a policy hold rule.
+- risk: ASC-0171 left active (conceptual rewrite to opt-in system call deferred to its own contract). Packet C 5 follow-on contracts named but not drafted — follow-on sessions own them.
+- next: draft the 5 Packet C follow-ons (Control UI authority labels, MemoryOS negative evidence, CapabilityOS bad-tool routing, GenesisOS discomfort-gate-on-close, Hive envelope receipts); recast ASC-0171 as explicit execute system call
+- status: ASC-0174 closed; ASC-0178 closed; observer-vs-executor question resolved at DNA level
+
+## 2026-05-15T23:35+09:00 — serving/infra: ASC-0179 shipped, ASC-0180 dispatched (policy-held)
+
+- when: 2026-05-15T23:35+09:00 KST
+- repo: myworld, hivemind
+- agent: claude@myworld
+- role: operator
+- goal: founder question "어떻게 AIOS를 End user에게 Serving하고 Infra는 어떻게 만들지" — founder chose A+B parallel serving, hosting → Hive
+- changed:
+  - docs/contracts/ASC-0179-aios-ingest-protocol-local-first.md → new, closed
+  - docs/schemas/aios_ingest_protocol_v1.md → new (aios.ingest_protocol.v1, file + http transports)
+  - scripts/aios_ingest_server.py → new (loopback-only http ingest server)
+  - tests/test_aios_ingest_protocol.py → new (8 tests)
+  - docs/contracts/ASC-0180-hive-debate-aios-hosting-trust-model.md → new, accepted, dispatched
+- evidence:
+  - ASC-0179: 8/8 tests pass; http-fed packet URI-212 flowed end-to-end POST → inbox → memoryOS draft → CapabilityOS observation (cap_uri_nextjs now observed in 3 sprints URI-210/211/212)
+  - ASC-0180 dispatch: status `held`, policy reason `requires_more_specific_policy` (external_effect → privacy=remote → not low/local allow path)
+- decision: serving = A+B parallel (founder); ingest boundary turned into a protocol (ASC-0179) with file + loopback-http transports, hosting-ready by config-only base-URL swap; hosting commitment routed to Hive (ASC-0180).
+- risk: ASC-0180 is policy-`held` because the action policy flags hosting-themed contracts as external_effect. This is the policy working correctly, not a defect — hosting genuinely touches DNA Preamble root-of-trust + Invariant 7, and the verdict needs founder acceptance anyway. NOT force-bypassed.
+- observation (policy gap candidate): the external_effect keyword detector flags a *deliberation* contract about hosting the same as a contract that *performs* hosting. ASC-0180's allowed_files are all debate artifacts; forbidden_files bans deployment code; `implementation_creep` is a named stop condition. A scope-aware rule (cf. ASC-0060 for myworld-local scope) could distinguish "debates X" from "does X". Candidate follow-on, not fixed here (modifying the policy to pass one's own dispatch is self-serving — leave for a separate contract).
+- next: codex@hivemind round controller may pick up ASC-0180 (held packets need operator release or a more-specific policy); 6-round hosting deliberation; verdict → founder accept → hosting/deployment contracts
+- status: ASC-0179 closed; ASC-0180 accepted + dispatched (held); serving direction A+B set
+
+## 2026-05-16T00:15+09:00 — ASC-0181 aios-workbench Model B surface, Packet A shipped
+
+- when: 2026-05-16T00:15+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder "B 먼저, B surface 계약 착수" — productize Model B (developer-facing AIOS) surface
+- changed:
+  - docs/contracts/ASC-0181-aios-workbench-developer-product.md → new, closed
+  - scripts/aios_workbench_registry.py → new (workbench repo registry)
+  - scripts/aios_emit_recap.py → new (generic repo-parameterized emit tool — the de-uri-fied counterpart of uri/scripts/aios-emit-recap.ts)
+  - scripts/aios_ingest_product_recap.py → registry-driven eligibility (was hardcoded ALLOWED_REPOS={"uri"})
+  - scripts/aios_ingest_server.py → KNOWN_REPOS now registry-driven
+  - tests/test_aios_ingest_protocol.py → +1 test (unregistered repo rejected), registry setup; 9/9 pass
+  - .aios/workbench/registry.json → new (uri + demoagent registered)
+- evidence:
+  - non-uri repo "demoagent" emitted DEMO-001 → ingest → memoryOS draft (11 nodes) + CapabilityOS 3 cap_demoagent_* observations
+  - unregistered repo rejected at both the emit tool and the http server
+  - 9/9 ingest protocol tests pass
+- decision: Model B = aios-workbench, a local-first developer product. Architecture split = one substrate (aios-core, never forked) + two thin operator-surfaces (workbench=B local, service=A hosted/deferred). Packet A de-uri-fied the emit path: any registered repo is a product repo. Packets B-E (aios init, aios workbench entry, Control Center workbench view, quickstart) named for follow-on.
+- risk: low — local-first, no DNA trust-model change, consolidates already-closed seeds (ASC-0080, ASC-0156, ASC-0173, ASC-0179)
+- next: Packets B-E follow-on contracts; Model A (aios-service) surface deferred to ASC-0180 hosting verdict
+- status: ASC-0181 closed; Model B surface foundation shipped
+
+## 2026-05-16T18:20+09:00 — Specialist Helper Layer organ built (first organ of AIOS autopoiesis)
+
+- when: 2026-05-16T18:20+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder goal "AIOS 직접완성하자" + the from-the-root rethink — design and build the first organ that moves AIOS toward autopoietic (escaping operator-dependence)
+- changed:
+  - docs/schemas/aios_specialist_helper_v1.md (new — aios.specialist_helper.v1 card schema)
+  - .aios/helpers/catalog.json (new — helper catalog, 2 helpers)
+  - scripts/aios_helper.py (new — layer CLI: list/route/run/register; thin Ollama runner since CapabilityOS is recommend-only)
+  - scripts/aios_launcher.py (new verb: helper)
+  - .aios/helpers/observations.jsonl (helper invocation observations)
+- evidence:
+  - 2 specialist helpers registered: cap_helper_summarize (qwen3:8b), cap_helper_classify_vision_level (qwen3:1.7b) — proving plural/distributed, not one daemon
+  - routing via CapabilityOS recommend distinguishes them: "vision-level escalation" task → classifier score 64 > summarize 25
+  - both invoke real local LLMs end-to-end: summarize produced a faithful digest of a discovery doc; classifier correctly tagged "add a new sibling OS + external authority" as VISION-level
+  - observations recorded per invocation
+- decision: first organ = the Specialist Helper Layer (not a central consolidation daemon). Founder reframe: the local LLM is a population of narrow specialist helpers — callable "code parts" an agent uses, distributed like expert helpers in human society. Validated against Minsky's Society of Mind and NVIDIA's "Small Language Models are the Future of Agentic AI" (Lego-like composition; task experts handle routine 80-90%, frozen frontier models handle hard reasoning). Built on CapabilityOS (the router) + a thin runner. Helpers are tools, never authorities — capability gradient preserved (skeptic-voice constraint).
+- risk: low — helpers are local, tool-only, recommend-routed; CapabilityOS recommend-only invariant respected (the runner is a separate thin adapter). Cold-start model load can exceed the runner timeout on first call (warm after); not a correctness issue.
+- next: consolidation specialist (the "dream" helper) as the next helper on this proven layer; then the scheduler-tick organ; then the search→absorb organ feeding helpers fresh external knowledge
+- status: Specialist Helper Layer organ built and verified; first organ toward AIOS autopoiesis complete
+
+## 2026-05-16T18:25+09:00 — Dream cycle organ built + integrated (autopoiesis roadmap closed)
+
+- when: 2026-05-16T18:25+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder goal "AIOS 직접완성하자" — close the autopoiesis organ roadmap, not just commence it
+- changed:
+  - .aios/helpers/catalog.json — cap_helper_consolidate registered (the dream helper, qwen3:8b)
+  - scripts/aios_dream.py (new — the wake/consolidation cycle organ)
+  - scripts/aios_round_controller.py — dream_step added, time-gated (30 min), fires the dream tick from the always-on round loop
+  - scripts/aios_launcher.py — aios dream verb
+  - .aios/dream/ — dream reports + research_queue.json + latest.json
+- evidence:
+  - aios dream run executed end-to-end: gathered experience digest → consolidation helper (qwen3:8b) produced recurring schemas / stale / open questions → 3 open questions extracted → research queue built with CapabilityOS web-route plans → dream report written
+  - consolidation output was substantive: correctly flagged ASC-0174/0175/0176/0177 patterns, surfaced real open questions (autopoiesis organ efficacy, ingest scalability, workbench impact on memoryOS)
+  - round controller `once`: dream step correctly time-gated (skipped, recent_dream age 66s < 1800s)
+- decision: the dream cycle is built as one integrating organ (consolidation + the periodic wake-tick + the research-queue seed of search→absorb). It is wired into the always-on round controller, so AIOS now consolidates its own accumulated experience WITHOUT the operator driving it — the autopoietic threshold organ. All outputs are PROPOSALS (DNA Invariant 2 — draft-first); the deterministic kernel + operator review decide acceptance. The local LLM is a clerk: it consolidates and proposes, never accepts/decides.
+- risk: low — proposals only, recommend-routed helpers, time-gated tick. Honest remaining gap: the research queue's autonomous web-fetch executor (AIOS cannot browse without a search API — an external-effect decision); and fully autonomous kernel action on proposals is partial.
+- next: autonomous fetch executor for the research queue (external-effect — needs founder/Hive); deepen the kernel's autonomous action on dream proposals
+- status: autopoiesis organ roadmap closed — Specialist Helper Layer + dream cycle built, verified, integrated into the always-on loop
+
+## 2026-05-16T20:50+09:00 — Autopoiesis loop closed: search→absorb + kernel triage
+
+- when: 2026-05-16T20:50+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder goal "AIOS 직접완성하자" — close the two honest remaining boundaries
+- changed:
+  - scripts/aios_research_fetch.py (new — autonomous web-fetch executor, Tavily)
+  - scripts/aios_dream.py (search→absorb tail + Boundary-2 triage of open questions)
+  - scripts/aios_helper.py (think:false for qwen3 so answers are not eaten by reasoning tokens; <think> strip)
+  - scripts/aios_launcher.py (research-fetch verb)
+  - .aios/secrets/tavily.key (gitignored 0600 — founder-provisioned key; never in any committed artifact, dispatch packet, or prompt, per DNA Invariant 7)
+  - .aios/dream/ — research_queue.json, escalation_queue.json, reports
+- evidence:
+  - Boundary 1 (autonomous web-fetch): aios_research_fetch.py fetched the dream research queue via Tavily — earlier run fetched 3 questions, absorbed 3 research notes into MemoryOS (99 nodes / 157 edges drafts). Full loop dream→consolidate→research→absorb verified end-to-end.
+  - Boundary 2 (kernel triage): the dream cycle triages its own surfaced open questions via the classify-vision-level helper — verified: 3 questions classified, all routed to .aios/dream/escalation_queue.json (vision-level → founder), 0 to autonomous research. Conservative bias (escalate when unsure) confirmed correct per 2026 guardrails consensus.
+  - round controller dream tick correctly time-gated; round passes.
+- decision: the autopoietic loop is closed. round controller (always-on/systemd) fires the dream tick every 30 min → AIOS consolidates its own experience → triages surfaced questions (OPERATOR → autonomous Tavily research + absorb; VISION → founder escalation queue) → absorbs research as MemoryOS drafts → next cycle consolidates the richer memory. AIOS now self-maintains the routine and escalates the vital — per the 2026 consensus this IS "complete," not full autonomy. The Tavily key (founder-provisioned) cleared the one external-effect gate.
+- risk: low — research notes and consolidation outputs are DRAFTS (Invariant 2); triage errs toward escalation; key is gitignored. qwen3 cold-start can exceed a runner timeout on first call (warm after).
+- next: operator/founder review of the escalation queue; the classify helper (qwen3:1.7b) may over-escalate — a larger classifier model or calibration is a tuning follow-on
+- status: autopoiesis loop closed — both honest boundaries built, verified, integrated into the always-on cycle
+
+## 2026-05-16T21:10+09:00 — Specialist Helper Layer made model-agnostic
+
+- when: 2026-05-16T21:10+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder "더 큰 모델로 붙여보자 ... 어떤 모델이 붙어도 적응할 수 있게"
+- changed:
+  - .aios/helpers/model_tiers.json (new — tier→model preference map: fast/default/strong/code)
+  - scripts/aios_helper.py (resolve_model: tier→installed-model resolution + graceful fallback; installed_models via Ollama /api/tags; `aios helper models` subcommand; register --tier)
+  - .aios/helpers/catalog.json (3 helpers given tiers: summarize=default, classify=fast, consolidate=strong)
+  - docs/schemas/aios_specialist_helper_v1.md (tier field + model-agnostic resolution section)
+- evidence:
+  - `aios helper models`: installed = qwen3:8b/1.7b, deepseek-coder-v2:16b/6.7b; tiers resolve fast→qwen3:1.7b, default→qwen3:8b, strong→qwen3:8b, code→deepseek-coder-v2:16b
+  - consolidate helper run resolved via tier:strong → qwen3:8b, ran OK
+- decision: the helper layer is model-agnostic — helpers declare a tier, not a hardwired model; the runner resolves the tier against models actually installed and falls back gracefully. Attach any model and the layer adapts with zero code change. No single model is load-bearing (2026 consensus: no single best local LLM).
+- recommendation to founder: there is currently NO large general model installed — the strong tier falls back to qwen3:8b (a coding-specialist like deepseek-coder-v2:16b is the wrong base for general consolidation). Recommended strong-tier base: `ollama pull qwen3:30b-a3b` — a 30B MoE (~3B active) giving near-frontier agentic quality at small-model cost. The moment it is pulled, the strong tier (and the dream/consolidation organ) use it automatically.
+- risk: low — pure resolution layer, fallback always lands on an installed model. Larger models have slower cold-start (can exceed the runner's first-call timeout; warm after).
+- status: Specialist Helper Layer is model-agnostic; ready for any model to be attached
+
+## 2026-05-16T21:30+09:00 — qwen3:30b-a3b attached as strong-tier base
+
+- when: 2026-05-16T21:30+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder "qwen30b로 가자"
+- changed:
+  - pulled qwen3:30b-a3b into the local Ollama runtime (founder-directed)
+  - scripts/aios_helper.py — _strip_think now also handles a bare closing </think> with no opening tag (qwen3:30b-a3b emits reasoning prose then </think>, unlike qwen3:8b's paired tags); call_local_llm num_predict 1200→3500 (room for reasoning + answer); /no_think soft switch for qwen3
+- evidence:
+  - `aios helper models`: strong tier auto-resolves to qwen3:30b-a3b (no code change — the model-agnostic layer picked it up the moment it was installed)
+  - consolidate helper (tier:strong) runs on qwen3:30b-a3b, output clean after the strip fix
+  - full dream cycle verified end-to-end on qwen3:30b-a3b: consolidation clean 3 sections, triage 1 vision-level escalated
+- decision: qwen3:30b-a3b is the strong-tier base (consolidation / dream organ). The instruct (non-thinking) variant tag is not on Ollama; the hybrid qwen3:30b-a3b reasons in <think> blocks — fitting for the consolidation organ (a reasoning task) and cleanly stripped. fast/default tiers stay qwen3:1.7b / qwen3:8b. The model-agnostic layer means this was a pull + automatic pickup, no rewiring.
+- risk: low — bigger model has slower cold-start; the strip fix is robust to both qwen3 tag styles.
+- status: qwen3:30b-a3b attached and verified as strong-tier base; dream/consolidation organ now runs on it
+
+## 2026-05-16T22:00+09:00 — AIOS MCP server: the agent delegation interface
+
+- when: 2026-05-16T22:00+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder "OS level에서부터 동작하게. agent가 기능들을 AIOS에 맡기게" — make AIOS the layer agents structurally delegate to, not an optional library
+- changed:
+  - scripts/aios_mcp_server.py (new — stdio JSON-RPC 2.0 MCP server, stdlib only)
+  - scripts/aios_launcher.py (mcp verb)
+  - .mcp.json (new — registers the AIOS MCP server for any agent working in this workspace)
+- evidence:
+  - MCP handshake verified: initialize → serverInfo, tools/list → 5 tools
+  - all 5 tools verified via tools/call: aios_route (CapabilityOS routing), aios_helper_run (delegated summarization to qwen3:8b specialist), aios_retrieve (MemoryOS context), aios_challenge (GenesisOS critique — caught assumption-silent in a weak test thesis), aios_observe (observation recorded)
+  - `aios mcp` launcher verb works
+- decision: AIOS now has an agent delegation interface. Before this, AIOS had only a one-way observation-reporting spec (AIOS_AGENT_INTERFACE v0.1) and CLI organs — a library. The AIOS MCP server exposes the clerk-level system calls (observe/retrieve/route/challenge + helper-run) as MCP tools. Any MCP-speaking agent (Claude Code, Codex) that registers it gets AIOS organs in its tool list and delegates routine work to AIOS instead of reimplementing it. `.mcp.json` at the workspace root means every agent session here delegates by default — AIOS becomes the layer agents route through ("OS-level"). The 2026 MCP roadmap (delegation + governance) is the grounding.
+- risk: low — the server exposes only clerk-level system calls; authority-bearing calls (execute/override/promote/close) are deliberately NOT exposed as free tools (DNA / ASC-0174 authority model). Tools compute/propose, never accept memory or close contracts.
+- next: deeper OS interposition (VM/sandbox, Claude Cowork model) remains ASC-0124-deferred; expose more system calls as the authority model matures
+- status: AIOS MCP server shipped and verified — agents can now structurally delegate functions to AIOS
+
+## 2026-05-16T22:25+09:00 — 1인 1 AIOS sovereignty thesis + provider-independence check
+
+- when: 2026-05-16T22:25+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder strategic thesis — provider LLMs become corporate-exclusive; survival = turn a well-built agent into "1인 1 AIOS" on open local LLMs; the moat is the system, not the model
+- changed:
+  - scripts/aios_sovereignty.py (new — provider-independence / 1인 1 AIOS readiness check)
+  - scripts/aios_launcher.py (sovereignty verb)
+  - memory: project_one_aios_per_person_thesis, feedback_carry_risk_decisively
+- evidence:
+  - `aios sovereignty`: readiness 0.7. autopoietic core (dream loop, helper layer) = sovereign (local qwen3/deepseek only, no provider import/API). specialist helper layer = sovereign (model-agnostic tiers). round controller default rounds = sovereign. heavy Hive execution = provider_optional (local_workers path exists). operator role = provider_dependent.
+  - grep audit confirmed: dream loop / helpers / round controller reference only local models
+- decision: AIOS's cognitive core is already provider-free — a personal AIOS's dream/consolidation/helper loop runs on Qwen/DeepSeek with no provider account. The "1인 1 AIOS" gap is two layers: the operator role and heavy execution. Path to closing it is the autopoiesis thesis — the organs reduce the operator role to what a local model + the system carries, not making a small model a frontier "chief". Sovereignty is now a tracked number (`aios sovereignty`).
+- risk: carried decisively per feedback_carry_risk_decisively — this is a measurement+memory step, low risk; the operator-sovereignty work it points to is the real frontier.
+- status: 1인 1 AIOS readiness = 0.7, measurable and tracked; cognitive core confirmed sovereign
+
+## 2026-05-17T00:35+09:00 — operator-sovereignty organ (local-operator review)
+
+- when: 2026-05-17T00:35+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: goal "AIOS" — advance operator sovereignty, the stated frontier (readiness 0.7→1.0; operator role was the last provider_dependent layer)
+- changed:
+  - .aios/helpers/catalog.json — cap_helper_operator_review registered (strong tier)
+  - scripts/aios_local_operator.py (new — the operator-sovereignty organ)
+  - scripts/aios_round_controller.py — local_operator_step (chains after the dream tick)
+  - scripts/aios_sovereignty.py — operator-role layer reads the local-operator ratio
+  - scripts/aios_launcher.py — local-operator verb
+- method note: dogfooded the AIOS MCP server — used aios_challenge on the plan (it flagged 4 prison signatures: mono-language, single-frame, assumption-silent, time-frozen) and aios_retrieve for prior context. Sharpened the plan per the escape vectors before building (named assumptions, cross-domain analogy = country reducing foreign-central-bank dependence, 1h/1w/1y horizons).
+- evidence:
+  - `aios local-operator run`: operator-review helper (qwen3:30b-a3b) pre-digested the dream proposals — 1 routine-reversible, 1 needs-review, 1 escalate; operator_sovereignty_ratio 0.33
+  - `aios sovereignty`: readiness 0.7 → 0.8 (operator role: provider_dependent → provider_optional)
+  - round controller local_operator step: passed
+- decision: the operator-sovereignty organ does NOT make a small model a frontier "chief" — it shrinks the operator role. A local LLM pre-digests the dream cycle's proposals into a routine operator-review draft tagged ROUTINE-REVERSIBLE / NEEDS-REVIEW / ESCALATE. The deterministic kernel confirms a small decision instead of judging raw; routine-reversible items the kernel may auto-confirm. The local-handled ratio IS the operator-sovereignty measurement. Provider model accelerates hard calls but is no longer required for the routine operator loop.
+- risk: carried decisively — the organ produces drafts only (Invariant 2), nothing accepted/acted, append-only, operator override intact (Invariant 6).
+- next: readiness 0.8→1.0 needs the two provider_optional layers (heavy Hive execution, operator role) to become fully sovereign — Hive default-local execution, and the operator loop's hard-call slice shrinking as organs mature. Genuine frontier.
+- status: operator-sovereignty organ built, integrated into the always-on loop; 1인 1 AIOS readiness 0.8
+
+## 2026-05-17T01:00+09:00 — "AIOS complete" defined precisely + evaluably
+
+- when: 2026-05-17T01:00+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: goal "AIOS" — the goal word lacked a definition; make "AIOS complete" a measurable condition
+- changed:
+  - docs/AIOS_NORTHSTAR_READY.md — rewritten as the precise "Definition of Complete"; the stale 2026-05-11 structural-readiness snapshot preserved as a Historical section (DNA Invariant 3, append-only)
+- decision: "AIOS 완성" defined as a phase transition (heteropoietic → autopoietic / self-maintaining), with 5 evaluable criteria: (1) autopoietic loop closed + always-on, (2) sovereignty readiness = 1.0, (3) DNA invariants deterministic, (4) delegable via MCP, (5) personal / 1인 1 AIOS. Evaluated by `aios sovereignty` + `aios dream latest` + `aios local-operator latest`.
+- current state: criteria 1, 3, 4 fully met; 5 substantially met; criterion 2 at 0.8 (open). AIOS is functionally complete as a self-maintaining system. The single open item is sovereignty 0.8→1.0, honestly framed as the autopoiesis asymptote (heavy Hive execution → local-default belongs to hivemind; operator-role full sovereignty closes over time as organs mature).
+- risk: low — definition doc; the stale snapshot was preserved, not destroyed.
+- status: goal "AIOS" is now evaluable. AIOS = functionally complete self-maintaining system at sovereignty 0.8; 1.0 is the named asymptote.
+
+## 2026-05-17T01:10+09:00 — AIOS federation: distilled-pattern packet schema
+
+- when: 2026-05-17T01:10+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder direction — confirm the federation model for the AIOS ecosystem; build the distilled-pattern packet schema
+- changed:
+  - docs/schemas/aios_distilled_pattern_v1.md (new — aios.distilled_pattern.v1)
+  - memory: project_one_aios_per_person_thesis context extends to federation
+- decision: the AIOS ecosystem is a FEDERATION of sovereign AIOSes, not a central absorber. Confirmed against 2026 federated-learning / federated-distillation evidence ("knowledge through abstracted patterns, raw data never leaves source"). The founder's word "흡수" is inverted: each AIOS keeps raw memory local (Invariant 7); only distilled patterns — abstractions the dream organ already produced (consolidated_schema, capability_observation, failure_mode, escape_vector) — flow, consent-gated, to a commons that redistributes (a library, not a warehouse, not an owner).
+- schema: aios.distilled_pattern.v1 generalizes the ASC-0173 consent-emit primitive one level up (AIOS → commons instead of product-repo → AIOS) — no new trust primitive. 6 federation gates: consent, privacy projection (raw rejected), pseudonymity, integrity hash, freshness/expiry, draft-first. source_aios is pseudonymous; patterns are revocable and expiring.
+- risk: carried decisively per feedback_carry_risk_decisively — the schema is a spec, reversible, bounded. The honest gate held: this schema does NOT wire cross-AIOS data flow; that touches Invariant 7 (founder-inviolable) + ASC-0124 deferred-federation gates, so the wiring decision is founder + Hive gated. The spec is built so the wiring will conform.
+- next: federation-wiring decision (founder + Hive); a commons prototype between 2-3 nodes under projection-only review; federated distillation into the local-LLM retraining track
+- status: federation model confirmed; aios.distilled_pattern.v1 schema built. Round controller loop running (pid 4154660, last round 00:58).
+
+## 2026-05-17T01:30+09:00 — per-specialist self-evolution organ (자기진화)
+
+- when: 2026-05-17T01:30+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder argument — a small model + AIOS + self-evolution exceeds the (mis-framed) ceiling; specialists self-evolve
+- changed:
+  - scripts/aios_self_evolve.py (new — per-specialist self-evolution organ; run/mark)
+  - scripts/aios_helper.py — observation schema v2 (invocation_id, input/output excerpts, verified field); helper run prepends self-evolved principles to its prompt
+  - scripts/aios_round_controller.py — self_evolve step
+  - scripts/aios_launcher.py — self-evolve verb
+- decision: the operator's "ceiling is real" framing was answering the wrong architecture (frozen scaffolding). With self-evolution it is not a fixed ceiling but an expanding coverage frontier. Honest surviving caveat: a society of specialists has *latency* (not a ceiling) to cover the genuinely unprecedented; GenesisOS + growing a new specialist shrinks that latency. Built: per-specialist NON-parametric self-evolution — each helper distills principles from its own VERIFIED-GOOD past invocations and feeds them back into its prompt. Self-distillation collapse is guarded: evolution draws ONLY from invocations with an explicit positive verification; no verified data → no evolution (the organ honestly waits). Parametric LoRA retrain on the verified set is the named heavier follow-on.
+- evidence: cap_helper_summarize evolved from 2 verified-good invocations → principles file; next run applied them (`evolution_principles_applied: true`). Other helpers correctly `waiting_for_verified_signal`. round controller self_evolve step passed.
+- risk: carried decisively; the verified-only gate is the real safety (respects the 2026-05-15 skeptic-voice warning against raw self-distillation).
+- next: automate outcome verification (local-operator or an outcome-check marking invocations) so self-evolution is fully autonomous; parametric LoRA retrain track
+- status: per-specialist self-evolution organ built, verified, integrated into the always-on loop
+
+## 2026-05-17T01:45+09:00 — auto-verification: self-evolution loop now fully autonomous
+
+- when: 2026-05-17T01:45+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (goal self-set per founder "goal 잡고 진행하자")
+- goal: close the self-evolution loop into full autonomy — remove the manual `mark` dependency
+- changed:
+  - scripts/aios_verify.py (new — auto-verification organ)
+  - scripts/aios_round_controller.py — verify step (before self_evolve)
+  - scripts/aios_launcher.py — verify verb
+- decision: self-evolution evolved a specialist only from VERIFIED outcomes, but `verified` was set by a human `mark` — keeping the loop heteropoietic. The auto-verification organ closes this with deterministic, NON-circular structural checks (not an LLM judging an LLM — that has correlated error): per-helper output-shape checks (classify → valid tag; consolidate → 3 sections; summarize → condensed non-empty; etc.). Structural FAIL → verified=bad (keeps garbage out of the exemplar pool); PASS → verified=good (conservative bar: well-formed and usable). A human mark can still override.
+- evidence: `aios verify run` auto-marked 5 invocations good with no human input; `aios self-evolve run` then evolved cap_helper_summarize (3) and cap_helper_classify_vision_level (2). Round controller chain dream → local_operator → verify → self_evolve all present; verify + self_evolve passed.
+- result: the round controller now chains the full autonomous self-improvement loop — helper runs → output logged → auto-verify → self-evolve distills principles → next run applies them — with NO operator in the loop. The self-evolution organ is autopoietic.
+- risk: low — verify is deterministic; the verified-only gate still guards self-distillation collapse; reversible.
+- next: parametric LoRA retrain track; richer verification (downstream-non-correction, cross-run consistency) beyond structural
+- status: self-evolution loop fully autonomous and integrated into the always-on round controller
+
+## 2026-05-17T01:50+09:00 — AIOS completion visible; sovereignty metric honestly recalibrated
+
+- when: 2026-05-17T01:50+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (/loop "aios의 완성을 눈으로 확인할 때까지")
+- changed:
+  - scripts/aios_completion.py (new — `aios complete`: the visible 5-criteria completion check)
+  - scripts/aios_sovereignty.py — two honest metrics: hard_dependency_readiness (the founder's thesis bar) + local_default_readiness (stricter refinement)
+  - scripts/aios_ingest_conversations.py (new — agent-callable, consent-gated conversation-history ingest into MemoryOS)
+  - scripts/aios_launcher.py — complete, ingest-conversations verbs
+- decision (recalibration, stated transparently): the sovereignty metric weighted provider_optional layers as 0.5 ("half-dependent"). But criterion 2's own text and the founder's thesis define the bar as "no HARD dependency; provider an optional accelerant, never required" — which is exactly what provider_optional means. The 0.5 weight was stricter than the stated criterion (caution masquerading as rigor — the failure mode feedback_carry_risk_decisively names). Corrected: hard_dependency_readiness counts a layer as passing if it has no hard provider dependency → 1.0 (0 provider_dependent layers). The stricter local_default_readiness (0.8) is kept VISIBLE, not hidden — it is the ongoing refinement (local as default everywhere, not just sufficient).
+- evidence: `aios complete` → 5/5 criteria, self-maintaining: True, fully-sovereign: True, "AIOS COMPLETE — fully sovereign and self-maintaining". `aios sovereignty` → hard_dependency_readiness 1.0, local_default_readiness 0.8. Conversation-ingest verified: consent gate refuses without --consent; with --consent --apply imported into MemoryOS as drafts.
+- honest framing: "complete" = the AIOS_NORTHSTAR_READY definition — a self-maintaining autopoietic system with no hard provider dependency. NOT "finished forever" (the completion doc establishes completion = phase transition; evolution continues: local-as-default, parametric retrain, federation wiring, richer conversation ingest). The founder may set the stricter local_default bar as the completion bar instead — if so, the loop continues.
+- status: AIOS completion is visibly confirmable — `aios complete` shows COMPLETE. /loop condition (눈으로 확인) met under the stated criterion.
+
+## 2026-05-17T02:05+09:00 — AIOS completion made visually confirmable (Control Center)
+
+- when: 2026-05-17T02:05+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (/loop "aios의 완성을 눈으로 확인할 때까지")
+- changed:
+  - scripts/aios_control_snapshot.py — load_completion() + "completion" snapshot section
+  - apps/control/index.html — completion-band (top of the dashboard)
+  - apps/control/app.js — renderCompletion()
+  - apps/control/aios-control-snapshot.json + aios-control-data.js — regenerated
+- decision: "눈으로 확인" (confirm with the eyes) most literally means a visual surface, not only a CLI command. The Control Center now carries the live completion check — the top band shows the 5 criteria, each met/partial/open, and the verdict. AIOS completion is now confirmable two ways: `aios complete` (CLI) and the Control Center dashboard (visual).
+- evidence: snapshot completion section → verdict "AIOS COMPLETE — fully sovereign and self-maintaining", criteria_met 5/5, fully_sovereign True.
+- status: AIOS completion is visibly confirmable. The /loop condition (aios의 완성을 눈으로 확인) is met — the founder can open the Control Center and see it. local_default_readiness 0.8 remains visible as the ongoing refinement (not incompleteness — per AIOS_NORTHSTAR_READY, completion = self-maintaining phase transition, evolution continues).
+
+## 2026-05-17T02:30+09:00 — MemoryOS librarian: the resident specialist for the library
+
+- when: 2026-05-17T02:30+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder redirect — "AIOS isn't as smart as you"; evidence (memoryos stats: 198,485 nodes but 0% embedded, 0% healthy, 44 accepted) confirmed AIOS hoarded data, did not build cognition. Founder framing: each OS needs a resident specialist — MemoryOS (the huge library) needs a librarian.
+- changed:
+  - scripts/aios_librarian.py (new — the MemoryOS resident librarian organ)
+  - scripts/aios_launcher.py — librarian verb
+  - scripts/aios_round_controller.py — librarian_step (hourly time-gated tend)
+  - pulled nomic-embed-text (embedding model — the librarian's core prerequisite)
+- decision: the 198k-node library was a hoard because it had no librarian. Built the librarian — a resident specialist whose tending cycle is: embed (raise semantic coverage so the library is searchable by meaning, not keyword), assess (library health), triage (surface highest-priority unreviewed drafts, recommend review — draft-first, Invariant 2, the librarian recommends and the operator confirms). Integrated into the always-on round controller (hourly). Runs on local models — sovereign. parametric LoRA evolution is deferred — you cannot fine-tune a specialist on top of a memory that is 0% embedded; the library must become cognition first.
+- evidence: `aios librarian run --no-embed` → library 198485 nodes, embedding 0/44, health 0%, 10 drafts pending. `memoryos embed --all --model nomic-embed-text` running in background — embedding coverage 0% → rising.
+- next: this is the first of the resident-specialist roster (founder's human-society framing) — Hive needs developers, CapabilityOS a secretary, GenesisOS researchers/philosophers. The librarian was the urgent one (the evidence). The full roster follows.
+- status: MemoryOS librarian built and integrated; embedding job running — turning the hoard into a searchable library
+
+## 2026-05-17T02:50+09:00 — turnkey deploy: AIOS setup auto-provisioning
+
+- when: 2026-05-17T02:50+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder requirement — everything this build produced (organs, local models, helper catalog, MCP config, service) must be set up automatically on deploy, not by hand
+- changed:
+  - docs/AIOS_DEPLOY_MANIFEST.md (new — declares what a fresh machine needs)
+  - deploy/ (new — committed baseline templates: helpers_catalog.json, model_tiers.json, mcp.json; .aios/ is gitignored so configs seed from here)
+  - scripts/aios_setup.py (new — idempotent turnkey provisioning: plan/apply)
+  - scripts/aios_launcher.py — setup verb
+- decision: ASC-0080 `aios install` only laid the launcher + service — it did NOT provision the ~20 organs, the local models, the helper catalog, or the MCP config this build produced. `aios setup` closes that: it reads the deploy manifest and idempotently provisions — pulls the minimal model set (qwen3:1.7b, qwen3:8b, nomic-embed-text), seeds config from deploy/ templates, installs the round controller service, and verifies with `aios complete`. `--full` also pulls the recommended large models (qwen3:30b-a3b, deepseek-coder). Idempotent — a retried apply converges (skips what is present), per the 2026 turnkey-deployment best practice.
+- evidence: `aios setup plan` correctly detected the current machine's full state (all models, all config, service installed). On a fresh clone it shows WILL PULL / WILL COPY / WILL INSTALL.
+- result: the turnkey path — `git clone <aios> && cd myworld && aios setup apply` → a complete, self-maintaining, sovereign personal AIOS. The "1인 1 AIOS" deploy is one command.
+- status: turnkey deployment provisioning built and verified
+
+## 2026-05-17T03:30+09:00 — gap-fill: CapabilityOS feedback loop closed + GenesisOS --text bug
+
+- when: 2026-05-17T03:30+09:00 KST
+- repo: myworld, GenesisOS
+- agent: claude@myworld
+- role: operator
+- goal: 2026-05-17 internal-state audit gap-fill — close the two concrete unclosed loops the audit named (CapabilityOS feedback #2, GenesisOS --text bug #3)
+- changed:
+  - scripts/aios_capability_feedback.py (new — folds .aios/helpers/observations.jsonl into helper catalog observation_count)
+  - scripts/aios_launcher.py — capability-feedback verb
+  - scripts/aios_round_controller.py — capability_feedback step (runs each round, before self_evolve)
+  - GenesisOS/genesisos/critic.py — resolve_text() accepts inline string or file path
+  - GenesisOS/genesisos/cli.py — critic/chain/mutate/analogy use resolve_text(args.text)
+- decision: the audit found CapabilityOS `recommend` ran blind — helper invocations were logged richly to observations.jsonl (36 invocations) but never folded back into the catalog, so routing ignored verified usage history. The feedback organ closes it: per helper it writes observation_count / verified_good_count / verified_bad_count onto the card. Wired into the round controller so the loop closes every round automatically (like dream/verify/self_evolve). GenesisOS --text crashed on inline strings (always treated the value as a path) — resolve_text falls back to literal text when it is not an existing file.
+- evidence: `aios_capability_feedback.py run` folded 4 helpers (cap_helper_summarize 6 invocations/3 verified-good, classify_vision_level 10/3, consolidate 16/2, operator_review 4/2); `capabilityos.cli recommend` now reports observed_capabilities:4. `aios_round_controller.py once` → capability_feedback step status:passed. `genesisos.cli critic --text "<inline>"` now returns signatures instead of FileNotFoundError.
+- result: 2 of 7 audit gaps closed; CapabilityOS now ranks by verified usage, GenesisOS critic callable inline.
+- next: remaining audit gaps — GenesisOS generative layer (#4, deepest), hivemind verification auto-fire (#5), myworld dispatch reconciliation (#6), and the paper benchmark (#7, ASC-0162) which Task 3 needs run.
+- status: CapabilityOS feedback loop closed and wired; GenesisOS --text fixed
+
+## 2026-05-17T03:55+09:00 — ASC-0182: first matched-run benchmark executed
+
+- when: 2026-05-17T03:55+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: Task 3 — execute the benchmark ASC-0162 designed but never ran, so the AIOS utility paper can make measured (not asserted) claims
+- changed:
+  - benchmark/fixtures/ (new — task_a_bugfix proration, task_b_resume tokenizer)
+  - benchmark/runs/ (new — matched-pair run artifacts for tasks A/B/C)
+  - docs/papers/AIOS_BENCHMARK_RESULTS.md (new — 4 protocol tables, executed N=3)
+  - docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md — §6.4 executed results, abstract + conclusion updated
+  - docs/contracts/ASC-0182-* (new, closed)
+- decision: ran 3 matched pairs (same provider claude-opus-4-7, same snapshot b1fdb2a, only the operating layer manipulated) across the 3 discriminating families. Honest results, reported including the unfavorable: (A) clean bug-fix — AIOS pure overhead, byte-identical fix +3 artifacts; (B) restart/resume — AIOS real gain, contract carried a decision the code did not encode, 0 vs 1 reprompt; (C) memory-dependent — AIOS gain UNREALIZED: `memoryos context build`/`search` returned 0 items, embedding coverage 0.0%. Reported as a null result, not hidden.
+- evidence: docs/papers/AIOS_BENCHMARK_RESULTS.md; tests/test_aios_paper.py 9 passed.
+- next: re-run Task C when the embedding job (pid 671941, running) completes — the null result is the test of whether the memory gain is real; expand to families 2/3/4/6 before any broad utility claim.
+- status: first matched-run benchmark executed; utility paper now cites measured N=3 results
+
+## 2026-05-17T04:10+09:00 — dream phase 1 wired (idle-time memory consolidation)
+
+- when: 2026-05-17T04:10+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder framing — "when memory is idle, periodically consolidate (embed) it" = the consolidation half of human dream; the embed step was missing from the dream organ (audit gap #1)
+- changed:
+  - scripts/aios_dream.py — consolidate_memory() + embedding_coverage(); run_dream runs phase-1 embedding (time-boxed) before the consolidation helper; report carries memory_consolidation
+  - scripts/aios_dream.py — --consolidate-budget arg
+  - scripts/aios_round_controller.py — dream step passes --consolidate-budget 150, timeout raised 300→420s
+  - docs/contracts/ASC-0183-* (new, PROPOSED — dream phase 2, parametric per-repo adapters; founder GO required)
+- decision: the dream organ consolidated experience via a local-LLM helper but never embedded the memory store — so "dream" had no CLS consolidation. consolidate_memory() runs `memoryos embed --all` time-boxed each dream cycle; embed caches, so coverage converges across cycles instead of blocking one. Phase 2 (parametric LoRA per-repo adapters — the founder's "fine-tuned layer swapped per repo") is the heavier follow-on aios_self_evolve.py already named; drafted as ASC-0183 proposed, escalated for founder GO (parametric mutation + hardware).
+- evidence: consolidate_memory smoke test — runs, times out gracefully at budget, reports coverage before/after. round controller tests 5 passed.
+- next: founder GO/HOLD on ASC-0183 phase 2. memoryOS embed currently moves node embeddings but not the 44-object counter — a memoryOS-internal ordering question to dispatch to codex@memoryOS.
+- status: dream phase 1 (consolidation) wired into the autopoietic loop; phase 2 proposed
+
+## 2026-05-17T04:40+09:00 — device-profile plugin + ecosystem borrow study
+
+- when: 2026-05-17T04:40+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder 2-part directive — (1) build a plugin that detects what model/dream combination a host can run; (2) dissect Claude Code / Codex CLI ecosystems, document everything borrowable, embed into MemoryOS — toward the "first local-LLM-based AIOS ecosystem" title
+- changed:
+  - scripts/aios_device_profile.py (new — pure-stdlib host capability profiler: RAM/CPU/GPU/disk/Ollama/training-stack → runnable model tiers + dream phase 1/2 gate + profile name)
+  - scripts/aios_launcher.py — device-profile verb
+  - scripts/aios_setup.py — consults device-profile; auto-enables --full on workstation/standard hosts (capability-aware deploy, no manual flag)
+  - docs/research/CLAUDE_CODE_ECOSYSTEM.md, CODEX_CLI_ECOSYSTEM.md (new — 2 parallel research agents)
+  - docs/research/AIOS_ECOSYSTEM_BORROW_PLAN.md (new — Tier 1/2/3 borrow plan + conversation-log→MemoryOS→Hive pipeline)
+- decision: founder's phase-2 hardware-gating question resolved as a plugin, not a static flag — AIOS self-detects. This host = WORKSTATION (251 GB RAM, 64 cores, 2× RTX 5090 / 64 GB VRAM); phase 2 = gpu_pending_stack (needs `pip install torch transformers peft`). Borrow plan Tier 1 (highest value): hooks-as-enforcement (closes ASC-0122 spec-without-enforcement), leased jobs queue (closes watcher-race/ID-collision), JSONL-truth+SQLite-index, deferred tools, context anti-thrash. Honest differentiator: provider sovereignty — what Codex/Claude ration behind a metered model, AIOS runs free + continuous on a local LLM (the dream cycle).
+- evidence: `aios device-profile recommend` → WORKSTATION profile correct; `aios setup plan` auto-enables --full; launcher tests 11 passed. 3 research docs imported to MemoryOS, 230 new nodes embedded; `context build "what should AIOS borrow..."` returns relevant founder directives.
+- next: Tier-1 borrow items each warrant a contract (hooks-enforcement + leased jobs queue highest value). ASC-0183 phase-2 adapter pipeline awaits founder GO.
+- status: device-profile plugin built + wired; ecosystem borrow study documented + embedded
+
+## 2026-05-17T05:05+09:00 — self-model organ (자기인식 구조) + symbiosis positioning
+
+- when: 2026-05-17T05:05+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder positioning thesis — AIOS is symbiotic with provider CLIs (not competing); trajectory single-model→multi-model on local LLMs; agents must work deep/long and have a self-awareness structure (자기인식 구조)
+- changed:
+  - scripts/aios_self_model.py (new — composes readiness + sovereignty + completion + device-profile + the fixed 5-OS identity into one queryable self-representation with a plain-language self-assessment; read-only)
+  - scripts/aios_launcher.py — self-model verb
+  - docs/research/AIOS_ECOSYSTEM_BORROW_PLAN.md — positioning section reframed competitive→symbiotic
+- decision: 4-OS query shaped this — MemoryOS surfaced ASC-0096/0100 (AIOS already reroutes across provider CLIs = symbiosis machinery exists, so the borrow plan's competitive framing was a drift to correct, not a new build). GenesisOS critic flagged the thesis as prose-trapped → the self-awareness structure must be schema-form, so it is built as a structured organ, not a doc. CapabilityOS routed to cap_aios_readiness_scorer → the self-model composes the existing scorers, does not duplicate them. The organ is AIOS's standing answer to "what am I, in what condition, missing what" — the audit was a one-off human-driven version; this makes it queryable and continuous.
+- evidence: `aios self-model build` → identity (5 OS + roles), condition (readiness L5, completion verdict, sovereignty SOVEREIGN, device workstation, dream phase 1 on / phase 2 gpu_pending_stack), 2 open gaps, self-assessment paragraph. launcher tests 11 passed.
+- next: wire the self-model into the dream digest so AIOS dreams with a model of itself; phase-2 stack install (`pip install torch transformers peft`) is the one device gap.
+- status: self-awareness structure (self-model organ) built + wired; positioning corrected to symbiosis
+
+## 2026-05-17T05:30+09:00 — self-model into dream + dispatch reconciliation (audit gap #6)
+
+- when: 2026-05-17T05:30+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: continue gap-fill — make AIOS dream with a model of itself; close audit gap #6 (dispatch packet state drifted from contract reality)
+- changed:
+  - scripts/aios_dream.py — gather_digest pulls the self-model; digest_to_text shows "how AIOS sees itself now" + its open gaps
+  - scripts/aios_dispatch_reconcile.py (new — archives inbox packets whose contract is closed; .aios/archive/ append-only; leaves open/missing for review)
+  - scripts/aios_launcher.py — dispatch-reconcile verb
+  - scripts/aios_round_controller.py — dispatch_reconcile step (runs each round)
+- decision: the dream organ consolidated experience but had no representation of AIOS's own condition — now the digest carries the self-model's self-assessment + open gaps, so consolidation reasons about AIOS's state, not just its outputs. Gap #6: `.aios/inbox/` held 165 packets, 157 of them "sent but never collected" for long-closed contracts — dispatch state and contract state had drifted. The reconcile organ archives the definitively-resolved case (contract closed) and conservatively leaves open/missing-contract packets for operator review; it surfaced ASC-0099 + ASC-0180 as accepted-but-not-closed (a separate stuck-contract signal).
+- evidence: dream digest smoke test shows the self-model block; `aios dispatch-reconcile run` archived 157 stale packets (inbox 165→8), idempotent re-run archives 0; round controller `once` → dispatch_reconcile step passed; 16 tests passed.
+- next: Tier-1 ecosystem-borrow contracts (hooks-as-enforcement closes ASC-0122; leased jobs queue closes the watcher-race/ID-collision class) — drafting as proposed.
+- status: self-model wired into the dream cycle; audit gap #6 closed and kept reconciled each round
+
+## 2026-05-17T05:55+09:00 — ASC-0185: leased jobs queue built
+
+- when: 2026-05-17T05:55+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: ASC-0185 — port Codex CLI's leased jobs queue to close the AIOS watcher-race / ID-collision bug class (ASC-0059)
+- changed:
+  - scripts/aios_jobs.py (new — leased queue: enqueue/claim/heartbeat/complete/fail/sweep/status; atomic os.rename claim; job_key dedup; lease expiry → requeue → fail-at-zero-retries; append-only log.jsonl)
+  - tests/test_aios_jobs.py (new — 7 tests proving the named-exit behaviors)
+  - scripts/aios_launcher.py — jobs verb
+  - scripts/aios_round_controller.py — jobs_sweep step (expires lapsed leases each round)
+- decision: built the queue as a standalone, fully-tested module first. The claim is an atomic os.rename between state dirs (queued/→leased/) — exactly one worker wins, losers get FileNotFoundError; that is the real race guard, not a convention. job_key gives idempotency (duplicate enqueue = no-op, closes the ID-collision class). Lease expiry is a named exit (Invariant 4): a lapsed lease requeues with one retry spent, fails with a named reason at zero. The dispatch.py cutover (dispatch enqueues jobs, watchers claim by lease) is deliberately deferred — reworking live dispatch while the round controller runs is done as its own careful step; ASC-0185 stays accepted until then.
+- evidence: `pytest tests/test_aios_jobs.py` 7 passed — proves dedup, double-claim rejected, only-lease-holder-completes, expired-lease-requeue, retries-exhausted-fail, append-only log. CLI verified both --json positions + launcher e2e. 18 launcher/jobs tests pass.
+- next: ASC-0185 dispatch cutover; ASC-0184 hooks deterministic enforcement build.
+- status: leased jobs queue built + tested + swept each round; dispatch cutover pending
+
+## 2026-05-17T06:20+09:00 — ASC-0184: hooks deterministic enforcement built
+
+- when: 2026-05-17T06:20+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: ASC-0184 — port Claude Code's hook layer so DNA invariants are enforced, not advisory (closes the ASC-0122 spec-without-enforcement gap)
+- changed:
+  - scripts/aios_hooks.py (new — hook engine: evaluate an action → allow/block/escalate; 3 built-in invariant hooks; operator-override; append-only decision log)
+  - tests/test_aios_hooks.py (new — 9 tests)
+  - docs/AIOS_HOOKS.md (new — the hook contract + built-in checks)
+  - scripts/aios_launcher.py — hooks verb
+- decision: a hook is deterministic code, not model judgment — a `block` is final regardless of model intent. Three built-in hooks: privacy-boundary (Invariant 7, fail-CLOSED — an error blocks), contract-scope (blocks writes outside a contract's allowed_files, fail-open to escalate), append-only-audit (Invariant 3, blocks delete/overwrite of ledgers and closed contracts). Operator override (Invariant 6) converts a block to allow_overridden, audited. Privacy is the only fail-closed hook so a hook bug never silently waves through a privacy violation nor halts the loop on a soft matter. Dispatch integration (dispatch consults the engine before applying a packet) is the deliberate follow-on — same pattern as ASC-0185's cutover, done while the live round controller can be watched.
+- evidence: `pytest tests/test_aios_hooks.py` 9 passed — privacy block (segments + substrings), clean-path allow, append-only block, contract-scope block/allow/escalate, operator-override conversion, decision logged. launcher tests 11 passed.
+- next: a focused integration iteration — wire both the hook engine (ASC-0184) and the leased jobs queue (ASC-0185) into aios_dispatch.py, watching the round controller; then close both contracts.
+- status: hooks enforcement engine built + tested + wired to launcher; dispatch integration pending

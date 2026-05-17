@@ -1,0 +1,57 @@
+{
+  "schema_version": "aios.production_praxis.v1",
+  "task": "Bind ASC-0101 production praxis gate into AIOS dispatch so non-trivial work cannot skip MemoryOS, CapabilityOS, GenesisOS, Hive, and specialist assignment.",
+  "memory_context": {
+    "status": "used",
+    "evidence_refs": [
+      "aios://memory/mem_5012d57c2c4acbf6",
+      "docs/contracts/ASC-0101-aios-production-praxis-gate.md",
+      "docs/AIOS_PRODUCTION_PRAXIS.md"
+    ]
+  },
+  "capability_routes": {
+    "status": "used",
+    "routes": [
+      "aios://capability/cap_memoryos_context_build",
+      "aios://capability/cap_capabilityos_recommendation",
+      "aios://capability/cap_hivemind_execution_harness"
+    ]
+  },
+  "external_resource_check": {
+    "status": "optional_with_reason",
+    "reason": "This dispatch binding is local deterministic control-plane behavior; no current external API behavior is required."
+  },
+  "genesis_reframe": {
+    "status": "used",
+    "frictions": [
+      "Agents skip OS roles when the runtime lets them send production work without a praxis envelope.",
+      "The founder should not have to remind agents to use MemoryOS, CapabilityOS, GenesisOS, Hive, plugins, or specialist strengths."
+    ],
+    "alternative_frames": [
+      "Praxis gate as production preflight",
+      "Dispatch packet as OS-role contract, not just a work ticket"
+    ]
+  },
+  "hive_execution_plan": {
+    "status": "planned",
+    "verification_gate": "python -m unittest tests/test_aios_dispatch.py tests/test_aios_work_praxis.py"
+  },
+  "specialist_assignment": [
+    {
+      "agent": "codex",
+      "strength": "code, tests, CLI contracts",
+      "job": "Implement dispatch --praxis validation and packet enrichment."
+    },
+    {
+      "agent": "claude",
+      "strength": "architecture and lifecycle critique",
+      "job": "Review whether praxis gate placement respects AIOS control-plane boundaries."
+    },
+    {
+      "agent": "local-llm",
+      "strength": "cheap bounded extraction",
+      "job": "May draft envelope text only; cannot accept final work."
+    }
+  ],
+  "stop_conditions": []
+}

@@ -1,18 +1,18 @@
 ---
 contract_id: ASC-0078
 slug: aios-work-visibility-layer
-status: accepted
+status: closed
 goal: Make AIOS work inspectable while it runs by exposing contracts, active packets, command summaries, changed files, receipts, and next actions through one redacted work-view surface.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by founder observation that AIOS hides the actual work content from the operator.
-closed:
+closed: 2026-05-13 KST by codex@myworld
 acceptance_authority: founder/operator approval in chat
 origin: founder said "AIOS를 쓰면 작업 내용을 볼 수가 없구나" after contract execution moved into AIOS artifacts.
 depends_on:
-  - ASC-0069 contract-closeout-reconciliation
+  - ASC-0076 contract-closeout-reconciliation
 ---
 
-# ASC-0071 AIOS Work Visibility Layer
+# ASC-0078 AIOS Work Visibility Layer
 
 ## Why Now
 
@@ -36,7 +36,7 @@ allowed_files:
 - `scripts/aios_work_view.py`
 - `tests/test_aios_work_view.py`
 - `docs/AIOS_WORK_VISIBILITY.md`
-- `docs/contracts/ASC-0071-aios-work-visibility-layer.md`
+- `docs/contracts/ASC-0078-aios-work-visibility-layer.md`
 - `docs/contracts/README.md`
 - `docs/AIOS_CONTRACT_EXECUTION_ORDER.md`
 - `docs/AIOS_AGENT_LEDGER.md`
@@ -137,27 +137,27 @@ Pass criteria:
 
 ## Work Packets
 
-### WP-0071-A — codex@myworld implements work visibility CLI
+### WP-0078-A — codex@myworld implements work visibility CLI
 
 - target_agent: codex
 - target_repo: myworld
 - status: accepted
-- depends_on: ASC-0069 classification matrix
+- depends_on: ASC-0076 classification matrix
 - brief: |
     Implement a read-only work visibility CLI and tests. It must make current
     AIOS work understandable without exposing secrets or raw provider output.
-- return_to: `.aios/outbox/myworld/asc-0071.myworld.result.json`
+- return_to: `.aios/outbox/myworld/asc-0078.myworld.result.json`
 - result: pending
 
-### WP-0071-B — claude@myworld reviews operator UX semantics
+### WP-0078-B — claude@myworld reviews operator UX semantics
 
 - target_agent: claude
 - target_repo: myworld
 - status: proposed
-- depends_on: WP-0071-A
+- depends_on: WP-0078-A
 - brief: |
     Review whether the work view tells a human what is happening, what changed,
     what is blocked, and what comes next without requiring knowledge of AIOS
     internals.
-- return_to: `.aios/outbox/myworld/asc-0071.claude-review.result.json`
+- return_to: `.aios/outbox/myworld/asc-0078.claude-review.result.json`
 - result: pending

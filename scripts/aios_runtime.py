@@ -240,6 +240,36 @@ def submit_goal(root: Path, args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def sprint_loop(root: Path, args: argparse.Namespace) -> dict[str, Any]:
+    command = [
+        sys.executable,
+        "scripts/aios_sprint_loop.py",
+        "--root",
+        root.as_posix(),
+        *args.args,
+    ]
+    step = json_command(root, "sprint_loop", command, timeout=args.timeout)
+    parsed = step.get("parsed") or {}
+    primitive_events.emit(
+        "aios.runtime.sprint_loop",
+        "aios-runtime",
+        {
+            "status": step.get("status"),
+            "sprint_status": parsed.get("status"),
+            "sprint_file": parsed.get("sprint_file"),
+            "next_task": parsed.get("next_task") or parsed.get("task"),
+        },
+        root=root,
+    )
+    return {
+        "schema_version": "aios.runtime.sprint_loop.v1",
+        "generated_at": now_iso(),
+        "root": root.as_posix(),
+        "status": step.get("status"),
+        "step": step,
+    }
+
+
 def emit(payload: dict[str, Any], as_json: bool) -> None:
     if as_json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
@@ -272,6 +302,11 @@ def build_parser() -> argparse.ArgumentParser:
     submit.add_argument("--summary", default="")
     submit.add_argument("--priority", default="")
     submit.add_argument("--json", action="store_true")
+
+    sprint = sub.add_parser("sprint-loop")
+    sprint.add_argument("--timeout", type=int, default=1200)
+    sprint.add_argument("--json", action="store_true")
+    sprint.add_argument("args", nargs=argparse.REMAINDER)
     return parser
 
 
@@ -287,6 +322,10 @@ def main(argv: list[str] | None = None) -> int:
         payload = run_loop(root, max_rounds=args.max_rounds, interval_seconds=args.interval_seconds, execute_children=args.execute_children)
     elif args.cmd == "submit-goal":
         payload = submit_goal(root, args)
+    elif args.cmd == "sprint-loop":
+        if "--json" in args.args:
+            args.json = True
+        payload = sprint_loop(root, args)
     else:
         parser.error(f"unknown command: {args.cmd}")
     emit(payload, getattr(args, "json", False))

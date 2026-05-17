@@ -107,6 +107,31 @@ class AiosRuntimeTest(unittest.TestCase):
             self.assertEqual(payload["schema_version"], "aios.runtime.submit_goal.v1")
             self.assertEqual(payload["status"], "passed")
 
+    def test_sprint_loop_delegates_to_sprint_loop_cli(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            (root / "scripts").mkdir()
+            (root / "scripts" / "aios_runtime.py").write_text(SCRIPT.read_text(encoding="utf-8"), encoding="utf-8")
+            (root / "scripts" / "aios_sprint_loop.py").write_text(
+                "#!/usr/bin/env python3\nimport json\nprint(json.dumps({'schema_version':'aios.sprint_loop.v1','status':'stop','sprint_file':'current.md'}))\n",
+                encoding="utf-8",
+            )
+            result = self.run_runtime(
+                "--root",
+                root.as_posix(),
+                "sprint-loop",
+                "status",
+                "--sprint-file",
+                "current.md",
+                "--json",
+                cwd=ROOT,
+            )
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["schema_version"], "aios.runtime.sprint_loop.v1")
+            self.assertEqual(payload["status"], "passed")
+            events_path = root / ".aios" / "primitives" / "events.jsonl"
+            self.assertIn("aios.runtime.sprint_loop", events_path.read_text(encoding="utf-8"))
+
     def test_step_surfaces_subprocess_failure(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

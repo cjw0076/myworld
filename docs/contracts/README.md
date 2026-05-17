@@ -24,6 +24,11 @@ Each contract file should contain at minimum:
 6. **Receipts** — once executed, link to receipts/traces/observations in each OS, not paste them.
 7. **Work Packets** — every dispatch issued under this contract. See section below.
 
+Generated contract seeds should also include `## AIOS Role Evidence` with
+MemoryOS, CapabilityOS, GenesisOS, and Hive Mind placeholders. Proposals may
+leave those fields as `pending_or_not_required`; accepted contracts should
+either fill them or explicitly say why that OS has no role.
+
 ## Work Packets
 
 A work packet is a single, durable dispatch from the control plane to one specific agent (e.g. `codex@hivemind`, `codex@memoryOS`, `claude@myworld` for review). Every dispatch lives as an entry in the `## Work Packets` section of the contract that authorized it — never in chat alone.
@@ -81,6 +86,35 @@ Default acceptance is a frontmatter status flip in the contract file:
 Do not write proposal-time ledger entries. Write one ledger entry only when the
 accepted snapshot or closeout is ready, so the ledger records a stable contract
 decision rather than draft churn.
+
+## DNA Citation Requirement
+
+New contracts that cross from `myworld` into a child repo, or that introduce
+authority, execution, dispatch, provider, capability, privacy, credential, or
+external-action behavior, must cite at least one relevant AIOS DNA invariant
+from `../AIOS_DNA.md`.
+
+The citation can use `Invariant N` or `DNA Invariant N`. Existing contracts are
+not retroactively blocked; they are surfaced as a baseline by:
+
+```bash
+python scripts/aios_dna_lint.py docs/contracts/ASC-0091-memoryos-auto-writeback.md --json
+```
+
+Missing citations are governance evidence, not automatic failure, unless a
+new contract explicitly makes the DNA lint a blocking verification gate.
+
+## Governance Audit
+
+Contract governance quality is measured by:
+
+```bash
+python scripts/aios_governance_audit.py --write docs/AIOS_GOVERNANCE_AUDIT.md --json
+```
+
+The generated report at `../AIOS_GOVERNANCE_AUDIT.md` records the current
+baseline, lowest-scoring contracts, and whether the recent contract stream is
+in a `governance_theater` state.
 
 ## Index
 
@@ -141,4 +175,94 @@ decision rather than draft churn.
 | ASC-0053 | hive-provider-loop-runner | closed | Add a Hive-owned provider loop runner for Claude CLI, Codex CLI, and local LLM workers with shared tick/status/stop receipts. |
 | ASC-0054 | global-aios-launcher | closed | Add a thin global `aios` launcher candidate that resolves the active MyWorld control plane while keeping AIOS state workspace-local. |
 | ASC-0055 | absorb-ollama-qwen25-7b | closed | Demonstrate provider absorption by adding recommendation-only CapabilityOS and Hive declarations for Ollama Qwen 2.5 7B. |
+| ASC-0056 | memoryos-draft-pipeline-closure | closed | Close MemoryOS draft pipeline gaps: pulse ingest, review proposals, and accepted-memory context surfacing. |
+| ASC-0057 | pulse-heartbeat-persistence | closed | Keep MemoryOS, CapabilityOS, and Hive co-evolution pulse monitors alive from each round-controller tick. |
+| ASC-0058 | goal-inbox-processor | closed | Process repo-originated goal/friction packets into proposed contracts, operator queue notes, or capability gaps. |
+| ASC-0059 | watcher-race-resolution | closed | Detect related dirty work before child-agent spawn and surface orphan work left after failed watcher attempts. |
+| ASC-0060 | action-policy-scope-aware | closed | Stop myworld-only operator-script dispatches from false-escalating as private remote data while preserving raw/private path checkpoints. |
+| ASC-0061 | dispatch-escalate-recovery | closed | Make operator release of an escalated dispatch write an audited override inbox packet instead of leaving the dispatch stuck. |
 | ASC-0062 | peer-share-privacy-projection | closed | Define and verify the first Sovereign Swarm privacy projection layer before peer identity or remote sync exists. |
+| ASC-0063 | uri-content-relevance-filter | closed | Filter Uri-originated markdown so AIOS absorbs cross-OS-relevant insights without ingesting product-internal noise. |
+| ASC-0064 | live-dashboard-websocket | closed | Add a local WebSocket stream and simple/operator modes to the AIOS control dashboard. |
+| ASC-0065 | genesisos-bootstrap | closed | Create GenesisOS as the AIOS divergence layer that generates non-obvious candidate directions before verification. |
+| ASC-0066 | provider-backpressure-role-distillation | closed | Classify provider rate limits and failures, then preserve role capsules for fallback providers instead of stalling. |
+| ASC-0067 | unified-os-invocation-pipeline | closed | Route one incoming goal through GenesisOS, MemoryOS, CapabilityOS, Hive, and MyWorld as explicit role artifacts before dispatch. |
+| ASC-0068 | global-project-agent-discovery | closed | Discover project-local agent specifications across a workspace and emit ASC-0067-compatible invocation envelopes under strict authority boundaries. |
+| ASC-0069 | genesis-prompt-prison-critic | closed | Add a deterministic GenesisOS critic that detects prompt-prison signatures and surfaces escape vectors. |
+| ASC-0070 | genesis-assumption-mutator | closed | Generate deterministic GenesisOS assumption mutation seeds for operator review without mutating source records. |
+| ASC-0071 | genesis-multi-universe-branches | closed | Fork, list, and explicitly collapse speculative GenesisOS branches before contract convergence. |
+| ASC-0072 | genesis-multi-modal-reasoning | closed | Translate contract text into deterministic non-language modalities for advisory prompt-prison escape. |
+| ASC-0073 | genesis-cross-domain-analogy | closed | Match AIOS problems against curated distant-domain patterns and write advisory analogy artifacts. |
+| ASC-0074 | genesis-pre-close-challenge | closed | Run GenesisOS challenge reports before in-registry accepted contract releases and soft-block high-risk closeouts unless explicitly overridden. |
+| ASC-0075 | genesis-seed-library | closed | Preserve speculative GenesisOS seeds in an append-only library with MyWorld operator capture receipts. |
+| ASC-0076 | contract-closeout-reconciliation | closed | Reconcile accepted-but-unclosed contracts from ASC-0056 through ASC-0068 into an explicit execution queue. |
+| ASC-0077 | genesisos-semantic-alignment-kernel | closed | Extend GenesisOS into a shared-meaning kernel that normalizes local/project/agent language onto canonical AIOS terms. |
+| ASC-0078 | aios-work-visibility-layer | closed | Expose current AIOS work, blocked dispatches, changed files, receipts, and next actions through one redacted work-view surface. |
+| ASC-0079 | hivemind-public-alpha-hardening | closed | Convert external GitHub evaluation of hivemind into a bounded public-alpha hardening packet owned by the Hive repo. |
+| ASC-0080 | aios-native-installation | closed | Make AIOS feel built-in through a reversible user-space global command, user service, and optional desktop entry. |
+| ASC-0081 | provider-fallback-execution-binding | closed | Bind provider backpressure role capsules to a verified fallback execution path for Claude, Codex, Gemini, or local LLM workers. |
+| ASC-0082 | product-repo-sprint-driver | proposed | Turn product-repo goals into AIOS-owned sprint packets with Genesis, MemoryOS, CapabilityOS, Hive, verification, and feedback. |
+| ASC-0083 | research-to-sprint-context-primitive | proposed | Convert public research receipts into sprint context, MemoryOS drafts, CapabilityOS route notes, and Hive execution hints. |
+| ASC-0084 | hive-debate-aios-dna | closed | Run a long-round Hive Mind deliberation on the proposed AIOS DNA before writing the DNA spec. |
+| ASC-0085 | codex-cli-aios-absorption | closed | Record Codex CLI self-observation and install global Codex guidance so AIOS can absorb Codex as a provider substrate. |
+| ASC-0086 | capability-genesis-autonomy-envelope | proposed | Give CapabilityOS and GenesisOS higher freedom inside explicit non-destructive autonomy envelopes. |
+| ASC-0087 | provider-prompt-bootstrap | closed | Bootstrap provider-specific AIOS prompt files with marker-scoped safe merge and user-space templates. |
+| ASC-0089 | hive-debate-asc0088-alternatives | closed | Use Hive deliberation to choose the correct AIOS Universal Agent Interface shape before releasing ASC-0088. |
+| ASC-0090 | agent-identity-registry | closed | Replace ad-hoc agent strings with a stable per-agent identity registry. |
+| ASC-0091 | memoryos-auto-writeback | closed | Generate MemoryOS drafts automatically from contract closeouts. |
+| ASC-0093 | aios-agent-interface-tiny-spec | closed | Supersede held ASC-0088 with the Hive-selected B1 tiny substrate-neutral agent interface spec. |
+| ASC-0094 | provider-fallback-verifier | closed | Add a Hive-owned verifier that decides whether fallback provider output can be promoted from draft/attempt to completed work. |
+| ASC-0095 | provider-output-projection | closed | Add a redacted Hive provider-output projection receipt so future semantic quality checks can reason over provider results without raw output bodies. |
+| ASC-0096 | control-plane-pingpong-provider-fallback | closed | Prevent myworld pingpong from stopping on provider access denial by falling back to the paired provider with event receipts. |
+| ASC-0096 | goal-bar-natural-input | closed | Add a natural-language Goal Bar to the control app that classifies common AIOS questions, shows the routed command, and executes locally only after confirmation. |
+| ASC-0097 | hive-unified-explore-tui | closed | Add a unified Hive TUI explore screen for Agents, Runs, Inspect, Events, and Ask without adding dependencies. |
+| ASC-0105 | aios-dna-canonical-spec | closed | Convert ASC-0084 Hive verdict into the canonical AIOS DNA specification at docs/AIOS_DNA.md. |
+| ASC-0106 | aios-governance-audit | closed | Measure whether closed AIOS contracts carry real verification, DNA, Hive, dogfood, and cross-OS evidence. |
+| ASC-0107 | citizenship-implementation | closed | Implement agent citizenship classes and V1 authority checks over the ASC-0090 registry. |
+| ASC-0109 | end-user-ask-surface | closed | Raise the AIOS control app from operator dashboard to end-user intake with plan-only ask artifacts and contract seeds. |
+| ASC-0110 | memoryos-retrieval-broken | closed | Repair MemoryOS founder/context retrieval so accepted memories surface reliably while drafts remain review candidates. |
+| ASC-0111 | founder-behavior-ingestion | closed | Capture founder directives, reframes, and decision patterns as first-class MemoryOS draft memories with explicit review. |
+| ASC-0112 | aios-chat-wrapper | closed | Add the persistent AIOS chat surface with router-first substrate selection, history, cost, MemoryOS-compatible drafts, CLI, launcher, and WebSocket chat. |
+| ASC-0113 | user-pattern-few-shot | closed | Extract draft founder/user behavior patterns and inject provenance-bound few-shot hints into chat and invocation plans. |
+| ASC-0114 | living-organism-hive-deliberation | closed | Run Hive deliberation on founder role substitution and converge on leased routine substitution only. |
+| ASC-0115 | goal-inbox-per-citizen-response | closed | Stop goal-inbox processing from silently collapsing citizen packets into one generic theme. |
+| ASC-0118 | readiness-reconciliation-binding | closed | Bind readiness L6 pending-packet checks to monitor reconciliations and current running packets. |
+| ASC-0119 | os-activity-evidence | closed | Count invocation role artifacts as OS activity so self-check does not ghost GenesisOS when it is active through `aios_invoke`. |
+| ASC-0120 | verifier-priority-precedence | closed | Prioritize verifier-issued accepted contracts over codex-auto work after the verifier wait threshold while keeping founder GO highest. |
+| ASC-0121 | strict-close-condition | closed | Forbid contract closure when stated goal is verifiably unmet by adding a close-condition evaluator, strict release classifications, and a retro close baseline. |
+| ASC-0122 | policy-actually-binding | closed | Make the round controller consume loop-policy ordering before dispatch and record policy-followed or explicit skip reasons. |
+| ASC-0123 | self-check-dispatch-health-scalar | closed | Keep AIOS self-check output machine-scalar by preventing dispatch health from emitting multi-line values under pipefail. |
+| ASC-0124 | hive-debate-ecosystem-substrate | closed | Debate the ecosystem substrate choices for AIOS and converge on protocol-core substrate with optional packaging. |
+| ASC-0125 | genesisos-dispatch-surface | closed | Add GenesisOS to the dispatch repo surface so Philosophy work can receive first-class packets. |
+| ASC-0126 | memoryos-retrieval-real-fix | closed | Fix MemoryOS retrieval signal coverage so Agent(Retriever) returns relevant accepted memories. |
+| ASC-0127 | 5-persona-cognitive-architecture-axis | closed | Evaluate AIOS as Hive/Memory/Capability/Genesis/MyWorld cognitive personas rather than pure governance paperwork. |
+| ASC-0143 | aios-session-envelope-runtime-binding | closed | Bind AIOS invocation artifacts into a session envelope that dispatch packets and watcher results must cite before Codex execution. |
+| ASC-0144 | end-user-session-interface | closed | Make the local AIOS control app start from an end-user goal and create a plan-only AIOS session envelope before any executor work. |
+| ASC-0145 | reviewed-envelope-to-dispatch-promotion | closed | Let the end-user AIOS session UI promote a reviewed session envelope into a governed contract seed or dispatch packet without chat-only operator prompts. |
+| ASC-0146 | end-user-agent-work-visibility | closed | Make the end-user control app show how AIOS agents performed work and what artifacts they produced. |
+| ASC-0147 | control-center-mockup-alignment | closed | Align the AIOS end-user control application with the generated final interface mockup. |
+| ASC-0148 | inline-aios-conversation-surface | closed | Add a direct AIOS conversation window to the Control Center. |
+| ASC-0149 | conversational-response-engine | closed | Replace the fixed AIOS chat receipt sentence with conversational responses that reflect intent, route, MemoryOS context, session status, and next action. |
+| ASC-0150 | genesis-friction-radar-quick-actions | closed | Use GenesisOS critique to expose Control Center discomfort as quick actions and a Friction Radar so end users can reach AIOS capabilities without internal command knowledge. |
+| ASC-0151 | promotion-review-queue | closed | Show reviewed session promotions and generated contract seeds in the Control Center so users do not have to search `.aios/promotions`. |
+| ASC-0152 | aios-identity-chat-response | closed | Make the Control Center chat answer identity questions as AIOS before showing route receipts. |
+| ASC-0152 | paper5-p20-law-flow-genesis-gate | closed | Turn the Paper 4/P20 result into a bounded Paper 5 architecture gate using GenesisOS divergence before any claim promotion or new experiment launch. |
+| ASC-0153 | os-observatory-visual-interface | closed | Show MemoryOS, CapabilityOS, GenesisOS, Hive Mind, and MyWorld operating activity as visual OS surfaces in the Control Center instead of raw logs. |
+| ASC-0154 | aios-chat-gate-agent | closed | Add an explicit AIOS Gate/Chair Agent layer to chat so provider chatbots and CLIs are routed as substrates and current-info questions are held for source-aware routing. |
+| ASC-0155 | memoryos-gate-sleep-consolidation | closed | Reverse-engineer prompt-Agent execution loop pairs from AIOS/MemoryOS traces and consolidate them into a personalized Gate few-shot/policy pack before any fine-tuning. |
+| ASC-0156 | install-state-control-center | closed | Show AIOS install, service, local UI, and loop reachability in the Control Center with simple end-user wording. |
+| ASC-0157 | contract-seed-os-evidence-slots | closed | Make AIOS-generated contract seeds carry explicit MemoryOS, CapabilityOS, GenesisOS, and Hive evidence slots by default. |
+| ASC-0158 | release-authority-hard-block | closed | Prevent AIOS dispatch release from proceeding when authority verification returns a hard denial. |
+| ASC-0159 | aios-operating-layer-paper-draft | closed | Draft the AIOS paper around provider CLI wrapped by a contract-bound operating layer, including evaluation axes and refinement loop. |
+| ASC-0160 | paper-refinement-loop | closed | Refine the AIOS operating-layer paper through AIOS role artifacts, reviewer attacks, and evidence tightening. |
+| ASC-0161 | paper-related-work-source-evidence | closed | Add source-grounded related work evidence to the AIOS operating-layer paper. |
+| ASC-0162 | direct-cli-vs-aios-benchmark-protocol | closed | Define the matched-run benchmark protocol for direct provider CLI versus AIOS-wrapped provider CLI. |
+| ASC-0163 | negative-evidence-combinatorial-creativity | closed | Make negative evidence and GenesisOS combinatorial creativity first-class AIOS learning signals. |
+| ASC-0164 | genesisos-child-watcher-surface | closed | Make GenesisOS visible to the AIOS child watcher and monitor surfaces so GenesisOS implementation packets can actually run. |
+| ASC-0165 | memory-genesis-provider-blindspot-reinforcement | closed | Reinforce MemoryOS and GenesisOS where provider CLIs are weakest: failure memory, retrieval of blind spots, discomfort sensing, and invention candidates. |
+| ASC-0166 | provider-pin-required-classification | closed | Classify provider PIN/auth unlock failures without storing secrets, so AIOS watchers can route or checkpoint instead of treating PIN-gated providers as generic access denied. |
+| ASC-0167 | capabilityos-permissioned-constraint-break-route | closed | Add a CapabilityOS route that proposes high-freedom constraint-breaking options, asks the user for permission, and assigns actual execution to Hive Mind. |
+| ASC-0168 | hivemind-permission-preflight | closed | Let Hive Mind consume CapabilityOS constraint-break routes as operator permission preflights before execution. |
+| ASC-0169 | hivemind-aios-packet-runner | closed | Let Hive Mind consume AIOS hivemind inbox packets through its own provider-loop runner instead of relying only on the MyWorld shell child watcher. |
+| ASC-0170 | hivemind-scoped-writable-provider-execution | closed | Open Hive Mind writable provider execution only behind AIOS packet scope, explicit execution request, and operator grant. |
+| ASC-0171 | hivemind-permissioned-dangerous-provider-execution | closed | Allow Hive Mind to represent Codex dangerous full-access provider execution only as an explicit AIOS danger route with operator grant, irreversible authority, and proof receipts. |

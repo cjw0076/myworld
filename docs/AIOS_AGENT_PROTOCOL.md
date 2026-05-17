@@ -4,6 +4,11 @@ Agents should leave records that another agent can evaluate without reading the
 entire conversation. Use durable files, bounded summaries, and explicit
 handoffs.
 
+Protocol records implement `docs/AIOS_DNA.md`, especially Invariant 3 (no
+record destroyed), Invariant 4 (named exits), and Invariant 5 (provenance
+chain). When an agent creates a cross-repo or authority-bearing contract, cite
+the relevant DNA invariant in the contract body.
+
 ## Required Log Fields
 
 `when`, `repo`, and `agent` are necessary but not sufficient. Each meaningful

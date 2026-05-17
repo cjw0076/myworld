@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0089
 slug: hive-debate-asc0088-alternatives
-status: accepted
+status: closed
 goal: Hive deliberation on ASC-0088 alternatives (B1 tiny spec / B2 HTTP / B3 library / B4 augment ASC-0087 / B5 full spec) to choose the right shape for AIOS Universal Agent Interface, since claude's auto-accept of B5 was founder-flagged as prompt-prison.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude acting operator
+closed: 2026-05-13 KST by codex@myworld after hivemind fallback completion
 acceptance_authority: founder directive 2026-05-13 KST "hive 사용해서 토론해봐" — explicitly route ASC-0088 alternative selection through Hive instead of operator decision.
 origin: ASC-0088 was auto-accepted by claude → founder corrected ("AIOS처럼 동작해") → claude held ASC-0088 + surfaced 5 branches → founder directs Hive deliberation.
 ---
@@ -124,7 +125,16 @@ Pass criteria:
 
 ## Receipts
 
-Pending.
+- hive result packet: `.aios/outbox/hivemind/asc-0089.hivemind.result.json`
+  with `status=passed`, `fallback_used=true`, and final agent `claude`.
+- archived first held result:
+  `.aios/logs/asc-0089.hivemind.held-before-baseline-commit.result.json`
+  after the initial run correctly stopped on `pending_concurrent_work`.
+- hive artifacts:
+  `hivemind/.runs/asc0088_alternatives_debate/round_1/` through `round_5/`
+  plus `final_state.md`.
+- myworld summary:
+  `docs/discoveries/2026-05-13-hive-asc0088-alternatives-debate-result.md`
 
 ## Work Packets
 
@@ -132,6 +142,8 @@ Pending.
 
 - target_agent: codex
 - target_repo: hivemind
+- status: done
+- closed: 2026-05-13 KST
 - depends_on: none (ASC-0084 in-flight provides format reference)
 - brief: |
     Run a 5+ round adversarial Hive deliberation on ASC-0088
@@ -143,17 +155,18 @@ Pending.
 
     After round 5+, write final_state.md with verdict + dissent notes.
     Rotate substrates if multiple available.
-- result: pending
+- result: `.aios/outbox/hivemind/asc-0089.hivemind.result.json`
 
 ### WP-0089-B — claude@myworld writes summary + acts on verdict
 
 - target_agent: claude
 - target_repo: myworld
-- status: pending
+- status: done
+- closed: 2026-05-13 KST
 - depends_on: WP-0089-A
 - brief: |
     Read final_state.md. Write discovery summary. Then:
     - if pick_B5: flip ASC-0088 status held → accepted, codex resumes
     - if pick_B4 or others: supersede ASC-0088 with new contract
     - if escalate: surface to founder
-- result: pending
+- result: `docs/discoveries/2026-05-13-hive-asc0088-alternatives-debate-result.md`

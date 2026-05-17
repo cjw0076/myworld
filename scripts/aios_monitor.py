@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 
-REPOS = ("hivemind", "memoryOS", "CapabilityOS")
+REPOS = ("hivemind", "memoryOS", "CapabilityOS", "GenesisOS")
 STATE_LOG = Path(".aios/state/dispatches.jsonl")
 MONITOR_LOG = Path(".aios/state/monitor.jsonl")
 MONITOR_LATEST = Path(".aios/state/monitor.latest.json")
@@ -73,6 +73,12 @@ ALERT_RULES = {
         "owner": "alert_repo",
         "action": "clean_generated_cache_or_ignore_with_contract",
         "reason": "Generated cache artifacts are visible in repo status and may leak into durable records.",
+    },
+    "orphan_dirty_post_failure": {
+        "severity": "high",
+        "owner": "alert_repo",
+        "action": "commit_orphan_work_or_reset",
+        "reason": "A child watcher result detected work left in a dirty repo after a failed agent attempt.",
     },
 }
 
@@ -256,14 +262,40 @@ def git_status(root: Path, repo: str) -> dict[str, Any]:
     )
     entries = [line for line in result.stdout.splitlines() if line.strip()]
     generated = [line for line in entries if "__pycache__" in line or line.endswith(".pyc")]
+    non_generated = [line for line in entries if line not in generated]
     return {
         "repo": repo,
         "exists": True,
         "returncode": result.returncode,
-        "dirty": bool(entries),
+        "dirty": bool(non_generated),
         "entries": entries,
+        "non_generated_entries": non_generated,
         "generated_cache_entries": generated,
     }
+
+
+def orphan_result_packets(root: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    outbox = root / ".aios" / "outbox"
+    if not outbox.exists():
+        return rows
+    for path in sorted(outbox.glob("*/*.result.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not payload.get("orphan_work_detected"):
+            continue
+        rows.append(
+            {
+                "repo": str(payload.get("target_repo") or path.parent.name),
+                "dispatch_id": payload.get("dispatch_id"),
+                "contract_id": payload.get("contract_id"),
+                "result": path.relative_to(root).as_posix(),
+                "orphan_work_files": payload.get("orphan_work_files") or [],
+            }
+        )
+    return rows
 
 
 def contract_rows(root: Path) -> list[dict[str, Any]]:
@@ -285,6 +317,7 @@ def contract_rows(root: Path) -> list[dict[str, Any]]:
 def snapshot(root: Path) -> dict[str, Any]:
     dispatches, alerts = dispatch_summary(root)
     repos = [git_status(root, repo) for repo in REPOS]
+    repo_by_name = {repo["repo"]: repo for repo in repos}
     for repo in repos:
         if repo["dirty"]:
             alerts.append({"code": "repo_dirty", "repo": repo["repo"], "entries": repo["entries"]})
@@ -296,6 +329,10 @@ def snapshot(root: Path) -> dict[str, Any]:
                     "entries": repo["generated_cache_entries"],
                 }
             )
+    for result in orphan_result_packets(root):
+        repo = str(result.get("repo") or "")
+        if repo_by_name.get(repo, {}).get("dirty"):
+            alerts.append({"code": "orphan_dirty_post_failure", **result})
     reconciliations = load_reconciliations(root)
     alerts, reconciliations_applied = reconcile_alerts(alerts, reconciliations)
     return {
@@ -381,9 +418,89 @@ def prioritized_actions(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
-def assess_snapshot(data: dict[str, Any]) -> dict[str, Any]:
+def genesis_critic_advisory(root: Path | None) -> list[dict[str, Any]]:
+    if root is None:
+        return []
+    if not (root / "GenesisOS").exists() or not (root / "docs" / "contracts").exists():
+        return []
+    try:
+        from aios_genesis_critic_dispatch import build_report
+
+        report = build_report(root, limit=25)
+    except Exception as exc:  # pragma: no cover - monitor must not fail on advisory import drift.
+        return [
+            {
+                "code": "genesis_critic_unavailable",
+                "severity": "info",
+                "owner": "GenesisOS",
+                "action": "review_genesis_critic_wrapper",
+                "reason": f"GenesisOS critic advisory could not run: {exc}",
+                "alert": {"code": "genesis_critic_unavailable"},
+            }
+        ]
+    if int(report.get("flagged_count") or 0) <= 0:
+        return []
+    return [
+        {
+            "code": "genesis_prompt_prison_advisory",
+            "severity": "info",
+            "owner": "GenesisOS",
+            "action": "review_prompt_prison_escape_vectors",
+            "reason": "GenesisOS critic found advisory prompt-prison signatures in open contracts.",
+            "alert": {
+                "code": "genesis_prompt_prison_advisory",
+                "flagged_count": report.get("flagged_count"),
+                "scanned_count": report.get("scanned_count"),
+                "report_schema_version": report.get("schema_version"),
+                "sample": report.get("flagged", [])[:3],
+            },
+        }
+    ]
+
+
+def persona_axis_report(root: Path | None) -> dict[str, Any] | None:
+    if root is None or not (root / "docs" / "contracts").exists():
+        return None
+    try:
+        from aios_persona_audit import build_report
+
+        return build_report(root, window=20)
+    except Exception as exc:  # pragma: no cover - advisory axis must not break monitor.
+        return {
+            "schema_version": "aios.persona_audit.unavailable.v1",
+            "authority": "advisory_only",
+            "error": str(exc),
+            "scores": {"persona_composite": 0.0},
+        }
+
+
+def persona_axis_advisory(report: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not report:
+        return []
+    composite = (report.get("scores") or {}).get("persona_composite", 0.0)
+    return [
+        {
+            "code": "persona_axis_advisory",
+            "severity": "info",
+            "owner": "myworld",
+            "action": "review_5_persona_axis",
+            "reason": "AIOS 5-persona cognitive architecture score is advisory and orthogonal to governance.",
+            "alert": {
+                "code": "persona_axis_advisory",
+                "persona_composite": composite,
+                "contracts_scored": report.get("contracts_scored"),
+                "report_schema_version": report.get("schema_version"),
+            },
+        }
+    ]
+
+
+def assess_snapshot(data: dict[str, Any], root: Path | None = None) -> dict[str, Any]:
     findings = [assess_alert(alert) for alert in data.get("alerts", [])]
-    return {
+    findings.extend(genesis_critic_advisory(root))
+    persona_report = persona_axis_report(root)
+    findings.extend(persona_axis_advisory(persona_report))
+    payload = {
         "schema_version": "aios.monitor.assessment.v1",
         "generated_at": now_iso(),
         "snapshot_generated_at": data.get("generated_at"),
@@ -398,6 +515,19 @@ def assess_snapshot(data: dict[str, Any]) -> dict[str, Any]:
         "findings": findings,
         "next_actions": prioritized_actions(findings),
     }
+    if persona_report is not None:
+        payload["persona_axis"] = persona_report
+    return payload
+
+
+def payload_has_key(value: Any, key: str) -> bool:
+    if isinstance(value, dict):
+        if key in value:
+            return True
+        return any(payload_has_key(child, key) for child in value.values())
+    if isinstance(value, list):
+        return any(payload_has_key(child, key) for child in value)
+    return False
 
 
 def write_snapshot(root: Path, data: dict[str, Any]) -> None:
@@ -479,7 +609,7 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 def cmd_assess(args: argparse.Namespace) -> int:
     root = Path.cwd().resolve()
     data = snapshot(root)
-    assessment = assess_snapshot(data)
+    assessment = assess_snapshot(data, root=root)
     if args.write:
         write_snapshot(root, data)
         write_assessment(root, assessment)
@@ -493,6 +623,10 @@ def cmd_assess(args: argparse.Namespace) -> int:
         for action in assessment["next_actions"]:
             print(f"- {action['severity']} {action['owner']}: {action['action']}")
     if args.fail_on_blocked and assessment["health"] == "blocked":
+        return 1
+    missing = [key for key in args.require_key if not payload_has_key(assessment, key)]
+    if missing:
+        print(f"missing required keys: {', '.join(missing)}", file=sys.stderr)
         return 1
     return 0
 
@@ -514,7 +648,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 append_monitor_event(root, "sidecar_stop", "stopped", stop_path.as_posix())
                 return 0
             data = snapshot(root)
-            assessment = assess_snapshot(data)
+            assessment = assess_snapshot(data, root=root)
             write_snapshot(root, data)
             write_assessment(root, assessment)
             completed += 1
@@ -628,6 +762,7 @@ def build_parser() -> argparse.ArgumentParser:
     assess.add_argument("--json", action="store_true")
     assess.add_argument("--write", action="store_true", help="append snapshot and assessment to .aios/state")
     assess.add_argument("--fail-on-blocked", action="store_true")
+    assess.add_argument("--require-key", action="append", default=[], help="key that must appear anywhere in assessment JSON")
     assess.set_defaults(func=cmd_assess)
     run = sub.add_parser("run", help="run the sidecar monitor loop in the foreground")
     run.add_argument("--interval", type=int, default=int(os.environ.get("AIOS_MONITOR_INTERVAL", "30")))
