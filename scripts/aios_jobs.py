@@ -133,9 +133,60 @@ def claim(root: Path, worker: str, kind: str | None = None) -> dict[str, Any]:
     return {"status": "empty"}
 
 
-def _find_leased(root: Path, job_id: str) -> Path | None:
-    p = jobs_root(root) / "leased" / f"{job_id}.json"
-    return p if p.exists() else None
+def claim_key(root: Path, worker: str, job_key: str) -> dict[str, Any]:
+    """Claim a *specific* queued job by job_key — the watcher path: a watcher
+    that has selected an inbox packet leases exactly that job. Atomic rename;
+    a second watcher claiming the same key loses. Distinguishes the cases a
+    watcher must act on differently:
+      claimed     — leased to this worker, process it
+      unavailable — already leased/done/failed elsewhere, skip
+      absent      — no job for this key (legacy packet), process via file-drop
+    """
+    _ensure(root)
+    jr = jobs_root(root)
+    for f in sorted((jr / "queued").glob("*.json")):
+        try:
+            rec = json.loads(f.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        if rec.get("job_key") != job_key:
+            continue
+        dest = jr / "leased" / f.name
+        try:
+            os.rename(f, dest)  # atomic — the claim
+        except (FileNotFoundError, OSError):
+            return {"status": "unavailable", "reason": "lost the race"}
+        rec["state"] = "leased"
+        rec["ownership_token"] = worker
+        rec["lease_until"] = time.time() + LEASE_SECONDS
+        rec["provenance"]["claimed_at"] = now_iso()
+        rec["provenance"]["claimed_by"] = worker
+        dest.write_text(json.dumps(rec, indent=2, ensure_ascii=False), encoding="utf-8")
+        _log(root, "claim", rec)
+        return {"status": "claimed", "job": rec}
+    # not queued — already taken, or never enqueued
+    for state in ("leased", "done", "failed"):
+        for f in (jr / state).glob("*.json"):
+            try:
+                if json.loads(f.read_text(encoding="utf-8")).get("job_key") == job_key:
+                    return {"status": "unavailable", "state": state}
+            except (ValueError, OSError):
+                continue
+    return {"status": "absent"}
+
+
+def _find_leased(root: Path, ident: str) -> Path | None:
+    """Locate a leased job by job_id (filename) or, as a fallback, job_key."""
+    p = jobs_root(root) / "leased" / f"{ident}.json"
+    if p.exists():
+        return p
+    for f in (jobs_root(root) / "leased").glob("*.json"):
+        try:
+            if json.loads(f.read_text(encoding="utf-8")).get("job_key") == ident:
+                return f
+        except (ValueError, OSError):
+            continue
+    return None
 
 
 def _guard(root: Path, job_id: str, worker: str) -> tuple[Path, dict[str, Any]] | dict[str, Any]:
@@ -249,6 +300,10 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--worker", required=True)
     c.add_argument("--kind", default=None)
 
+    ck = add("claim-key")
+    ck.add_argument("--worker", required=True)
+    ck.add_argument("--job-key", required=True)
+
     for name in ("heartbeat", "complete"):
         s = add(name)
         s.add_argument("--job", required=True)
@@ -269,6 +324,8 @@ def main(argv: list[str] | None = None) -> int:
         result = enqueue(root, args.kind, args.job_key, args.contract, args.repo, args.retries)
     elif args.cmd == "claim":
         result = claim(root, args.worker, args.kind)
+    elif args.cmd == "claim-key":
+        result = claim_key(root, args.worker, args.job_key)
     elif args.cmd == "heartbeat":
         result = heartbeat(root, args.job, args.worker)
     elif args.cmd == "complete":

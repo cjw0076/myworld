@@ -1,10 +1,12 @@
 ---
 contract_id: ASC-0185
 slug: leased-jobs-queue
-status: accepted
+status: closed
 goal: Replace bare file-drop dispatch with a leased jobs queue — kind + job_key + lease_until + retry_remaining + ownership_token — so concurrent watchers cannot double-claim work or collide on IDs.
 created: 2026-05-17 05:35 KST
 accepted: 2026-05-17 05:40 KST
+closed: 2026-05-17 16:55 KST
+close_evidence: scripts/aios_jobs.py (queue + claim_key for the watcher path); aios_dispatch.py cmd_send enqueues a leased job per send; aios_child_watcher.sh run_once claims the job by lease before processing a packet and completes/fails it after. tests/test_aios_jobs.py 11 passed — duplicate job_key no-op, double-claim rejected (claim_key 2nd → unavailable), expired lease re-queued, retries-exhausted fail. End-to-end: enqueue → claim (claimed) → 2nd claim (unavailable) → complete (done). 50 watcher/dispatch/jobs tests pass. Named exit met.
 acceptance_authority: claude@myworld operator — Tier-1 borrow item closing a known bug class; no escalation rule triggered (no new OS, no privacy-boundary change, no external authority).
 proposed_by: claude@myworld
 origin: AIOS_ECOSYSTEM_BORROW_PLAN.md Tier 1. The 2026-05-17 ecosystem study found Codex CLI's leased jobs queue. It is a turnkey fix for the AIOS watcher-race / ID-collision bug class (ASC-0059 watcher-race-resolution; the claude+codex autodraft ID-collision pattern).

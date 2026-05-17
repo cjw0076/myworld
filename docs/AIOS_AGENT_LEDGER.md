@@ -5305,3 +5305,20 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: install.sh ran end-to-end into ~/aios — 4 repos cloned, `aios device-profile` worked via the installed command; idempotent re-run updated (no failure); uninstall.sh removed the command cleanly. Test clone removed after verification.
 - next: pip/pipx packaging refactor (named follow-on); ASC-0185 child-watcher claim-by-lease migration.
 - status: AIOS installable with one command — curl|sh installer shipped
+
+## 2026-05-17T16:55+09:00 — ASC-0185 closed: watcher claims by lease
+
+- when: 2026-05-17T16:55+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: complete ASC-0185 — migrate the child watcher to claim dispatch jobs by lease (the last named-exit item)
+- changed:
+  - scripts/aios_jobs.py — claim_key() (claim a specific job by job_key, the watcher path); _find_leased() now resolves by job_id OR job_key so complete/fail accept either
+  - scripts/aios_child_watcher.sh — run_once() claims the job by lease before processing a packet (claimed→process, unavailable→skip as double-claim guard, absent→legacy file-drop path) and completes/fails the lease after
+  - tests/test_aios_jobs.py — 4 claim_key tests
+  - docs/contracts/ASC-0185-* → closed
+- decision: the watcher selects a packet by file scan, so the queue needed claim-by-key (claim() pops an arbitrary job; claim_key() leases the specific one). claim_key distinguishes claimed / unavailable / absent so the watcher skips a double-claim but still processes a legacy packet that predates the queue — the migration adds the lease guard without stranding old work. A failed run fails the lease with a named reason rather than silently completing it.
+- evidence: end-to-end — enqueue → claim_key (claimed) → 2nd claim_key (unavailable, double-claim rejected) → complete (done); watcher bash syntax ok; 50 watcher/dispatch/jobs tests pass.
+- next: pip/pipx packaging refactor; audit gaps #4 (GenesisOS generative layer) and #5 (hivemind verification auto-fire).
+- status: ASC-0185 closed — dispatch is now a leased jobs queue end to end

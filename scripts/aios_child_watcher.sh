@@ -815,8 +815,43 @@ run_once() {
     echo "no pending packet for $repo"
     return 0
   fi
-  echo "running packet for $repo: $packet"
-  run_packet "$repo" "$packet"
+
+  # ASC-0185 — claim the dispatch job by lease before processing this packet.
+  # The packet filename is "<dispatch_id>.<repo>.json"; the job_key dispatch
+  # enqueued is "<dispatch_id>.<repo>" — the basename without .json.
+  #   claimed     -> this watcher holds the lease, process it
+  #   unavailable -> another watcher holds it, skip (the double-claim guard)
+  #   absent      -> no job (legacy packet) -> process via the file-drop path
+  local worker job_key claim_json claim_status
+  worker="watcher-${repo}-$$"
+  job_key="$(basename "$packet" .json)"
+  claim_json="$(python3 "$ROOT/scripts/aios_jobs.py" --root "$ROOT" --json claim-key \
+      --worker "$worker" --job-key "$job_key" 2>/dev/null || echo '{}')"
+  claim_status="$(printf '%s' "$claim_json" | python3 -c 'import sys, json
+try:
+    print(json.load(sys.stdin).get("status", "absent"))
+except Exception:
+    print("absent")' 2>/dev/null || echo absent)"
+  if [[ "$claim_status" == "unavailable" ]]; then
+    echo "packet $job_key already leased by another watcher — skipping"
+    return 0
+  fi
+
+  echo "running packet for $repo: $packet (job lease: $claim_status)"
+  local rc=0
+  run_packet "$repo" "$packet" || rc=$?
+
+  # release the lease — complete on success, fail (with a named reason) otherwise.
+  if [[ "$claim_status" == "claimed" ]]; then
+    if [[ "$rc" -eq 0 ]]; then
+      python3 "$ROOT/scripts/aios_jobs.py" --root "$ROOT" complete \
+        --job "$job_key" --worker "$worker" >/dev/null 2>&1 || true
+    else
+      python3 "$ROOT/scripts/aios_jobs.py" --root "$ROOT" fail \
+        --job "$job_key" --worker "$worker" --reason "watcher run rc=$rc" >/dev/null 2>&1 || true
+    fi
+  fi
+  return "$rc"
 }
 
 run_loop() {

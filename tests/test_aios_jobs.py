@@ -77,6 +77,38 @@ def test_retries_exhausted_fails_with_named_reason(tmp_path):
     assert "lease expired" in json.loads(failed.read_text())["fail_reason"]
 
 
+def test_claim_key_claims_the_specific_job(tmp_path):
+    jobs.enqueue(tmp_path, "dispatch", "asc-7.hivemind")
+    jobs.enqueue(tmp_path, "dispatch", "asc-8.memoryOS")
+    r = jobs.claim_key(tmp_path, worker="watcher-A", job_key="asc-8.memoryOS")
+    assert r["status"] == "claimed"
+    assert r["job"]["job_key"] == "asc-8.memoryOS"
+    # the other job is untouched
+    assert jobs.status(tmp_path)["counts"]["queued"] == 1
+
+
+def test_claim_key_second_claim_is_unavailable(tmp_path):
+    jobs.enqueue(tmp_path, "dispatch", "asc-9.hivemind")
+    first = jobs.claim_key(tmp_path, worker="watcher-A", job_key="asc-9.hivemind")
+    assert first["status"] == "claimed"
+    second = jobs.claim_key(tmp_path, worker="watcher-B", job_key="asc-9.hivemind")
+    assert second["status"] == "unavailable"
+
+
+def test_claim_key_absent_when_no_job(tmp_path):
+    r = jobs.claim_key(tmp_path, worker="watcher-A", job_key="never-enqueued")
+    assert r["status"] == "absent"
+
+
+def test_complete_by_job_key(tmp_path):
+    jobs.enqueue(tmp_path, "dispatch", "asc-10.uri")
+    jobs.claim_key(tmp_path, worker="watcher-A", job_key="asc-10.uri")
+    # complete accepts the job_key via the _find_leased fallback
+    done = jobs.complete(tmp_path, "asc-10.uri", worker="watcher-A")
+    assert done["status"] == "done"
+    assert jobs.status(tmp_path)["counts"]["done"] == 1
+
+
 def test_log_is_append_only(tmp_path):
     jobs.enqueue(tmp_path, "dispatch", "key-6")
     claimed = jobs.claim(tmp_path, worker="worker-A")
