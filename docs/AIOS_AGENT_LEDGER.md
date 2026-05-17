@@ -5367,3 +5367,19 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: 37 loop_policy/round_controller/dispatch tests pass; new test proves 20 accepted + 0 in-flight → accept_now (not gridlocked).
 - next: all 4 self-model-surfaced stuck contracts resolved (ASC-0099/0116/0117 closed; ASC-0180 founder-gated by design). Remaining: audit gaps #4 (GenesisOS generative) / #5 (hivemind verification) — child-repo domains.
 - status: ASC-0117 closed — contract issuance no longer gridlocks against execution capacity
+
+## 2026-05-17T18:55+09:00 — audit gaps #4/#5 contracted (ASC-0190 dispatched, ASC-0191 proposed)
+
+- when: 2026-05-17T18:55+09:00 KST
+- repo: myworld → hivemind
+- agent: claude@myworld
+- role: operator
+- goal: route the last two audit gaps (#4 GenesisOS generative, #5 hivemind verification auto-fire) — child-repo domains — through proper contract→dispatch
+- changed:
+  - docs/contracts/ASC-0190-hivemind-verification-autofire.md (new — accepted; verification must auto-fire at run completion, no more verdict=not_run)
+  - docs/contracts/ASC-0191-genesisos-generative-divergence.md (new — proposed; back the divergence slots with a local-LLM helper)
+  - dispatched ASC-0190 to .aios/inbox/hivemind/
+- decision: gap #5 (hivemind verification auto-fire) is an operator-level wiring fix in hivemind — accepted and dispatched to codex@hivemind. gap #4 (GenesisOS generative) revisits `no_remote_llm_v1`, a deliberate GenesisOS design choice that v1 be non-generative — so ASC-0191 is drafted `proposed` and escalated for founder GO, not dispatched. The contract keeps doctrine: a *local* helper (not remote), advisory-only, heuristic fallback when no model is present.
+- evidence: `aios_dispatch.py send` → packet at .aios/inbox/hivemind/asc-0190.hivemind.json; the ASC-0184 hook preflight ran and allowed it, the ASC-0185 job enqueue produced 1 queued job — both Tier-1 integrations verified in a real dispatch.
+- next: founder GO/HOLD on ASC-0191; codex@hivemind picks up ASC-0190 when a watcher runs.
+- status: audit gap #5 contracted + dispatched; gap #4 contracted, awaiting founder GO
