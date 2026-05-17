@@ -17,7 +17,7 @@ SCRIPT = ROOT / "scripts" / "aios_persona_audit.py"
 def write_contract(root: Path, name: str, body: str, *, accepted: str = "codex@myworld operator") -> None:
     path = root / "docs" / "contracts" / name
     path.parent.mkdir(parents=True, exist_ok=True)
-    contract_id = name.split("-", 1)[0]
+    contract_id = "-".join(name.split("-")[:2])
     path.write_text(
         "\n".join(
             [
@@ -58,6 +58,21 @@ class PersonaAuditTest(unittest.TestCase):
         self.assertEqual(1.0, report["scores"]["sovereign_score"])
         self.assertEqual(1.0, report["scores"]["persona_composite"])
 
+    def test_retriever_signal_accepts_markdown_backticked_coverage(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_contract(
+                root,
+                "ASC-0003-backtick.md",
+                "Claude Codex providers. retrieval_trace: `rtrace_backtick123`. "
+                "signal_coverage: `1.0`. CapabilityOS recommend top route followed. "
+                "GenesisOS critic alternatives. Founder approved.",
+            )
+
+            report = build_report(root, window=20)
+
+        self.assertEqual(1.0, report["scores"]["retriever_score"])
+
     def test_bypassed_personas_score_zero_except_sovereign(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -70,6 +85,12 @@ class PersonaAuditTest(unittest.TestCase):
         self.assertEqual(0.0, report["scores"]["router_score"])
         self.assertEqual(0.0, report["scores"]["philosophy_score"])
         self.assertEqual(1.0, report["scores"]["sovereign_score"])
+        weak = {row["score_key"] for row in report["weak_personas"]}
+        self.assertIn("retriever_score", weak)
+        self.assertIn("philosophy_score", weak)
+        self.assertEqual("ASC-0002", report["contract_gaps"][0]["contract_id"])
+        self.assertIn("retriever_score", report["contract_gaps"][0]["missing_personas"])
+        self.assertTrue(report["contract_gaps"][0]["recommendations"])
 
     def test_cli_assert_keys(self) -> None:
         result = subprocess.run(

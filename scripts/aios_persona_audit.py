@@ -21,6 +21,14 @@ PERSONA_KEYS = (
     "sovereign_score",
 )
 
+PERSONA_RECOMMENDATIONS = {
+    "wrapper_score": "Name the provider/CLI/local-LLM route, fallback, or explicit single-provider justification.",
+    "retriever_score": "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution.",
+    "router_score": "Cite a CapabilityOS recommendation, selected route, fallback, or documented deviation.",
+    "philosophy_score": "Cite GenesisOS critic output, alternatives, branches, or escape vectors before convergence.",
+    "sovereign_score": "Keep founder/operator authority and override path explicit for vision or authority decisions.",
+}
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
@@ -72,7 +80,7 @@ def score_contract(path: Path, frontmatter: dict[str, str], body: str, root: Pat
     providers = provider_mentions(text)
     wrapper = len(providers) >= 2 or mentions(lower, "single-provider", "single provider justified")
     retriever = bool(re.search(r"rtrace_[a-z0-9]+", text)) and bool(
-        re.search(r"signal_coverage\s*(=|>|:)\s*(0\.[1-9]|1\.0|1|positive)", lower)
+        re.search(r"signal_coverage\s*(=|>|:)\s*`?(0\.[1-9]|1\.0|1|positive)`?", lower)
     )
     router = mentions(lower, "capabilityos") and mentions(lower, "recommend", "route", "routing") and mentions(
         lower, "top route", "deviation", "follow", "fallback"
@@ -120,6 +128,28 @@ def build_report(root: Path, *, window: int = 20) -> dict[str, Any]:
         for key in PERSONA_KEYS
     }
     scores["persona_composite"] = mean([scores[key] for key in PERSONA_KEYS])
+    weak_personas = [
+        {
+            "score_key": key,
+            "score": scores[key],
+            "recommendation": PERSONA_RECOMMENDATIONS[key],
+        }
+        for key in PERSONA_KEYS
+        if float(scores[key]) < 0.5
+    ]
+    contract_gaps: list[dict[str, Any]] = []
+    for row in rows:
+        missing = [key for key in PERSONA_KEYS if float(row["scores"][key]) == 0.0]
+        if not missing:
+            continue
+        contract_gaps.append(
+            {
+                "contract_id": row["contract_id"],
+                "path": row["path"],
+                "missing_personas": missing,
+                "recommendations": [PERSONA_RECOMMENDATIONS[key] for key in missing],
+            }
+        )
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now_iso(),
@@ -127,6 +157,8 @@ def build_report(root: Path, *, window: int = 20) -> dict[str, Any]:
         "window": window,
         "contracts_scored": len(rows),
         "scores": scores,
+        "weak_personas": weak_personas,
+        "contract_gaps": contract_gaps[:10],
         "per_contract": rows,
         "relationship_to_governance_axis": "orthogonal_advisory_axis",
     }

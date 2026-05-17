@@ -626,6 +626,77 @@ class AiosDispatchTest(unittest.TestCase):
             data = json.loads((root / result_payload["result"]).read_text(encoding="utf-8"))
             self.assertEqual(data["session_envelope"]["ref"], ".aios/invocations/test-envelope/session_envelope.json")
 
+    def test_session_envelope_required_contract_blocks_missing_envelope(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(
+                ACCEPTED_MYWORLD_CONTRACT.replace("closed:\n", "closed:\nsession_envelope_required: true\n").format(root=root.as_posix()),
+                encoding="utf-8",
+            )
+            self.run_cli(root, "create", contract.as_posix())
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["status"], "held")
+            self.assertEqual(payload["reason"], "session_envelope_required_missing")
+            self.assertFalse((root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").exists())
+
+    def test_memory_retrieval_required_envelope_attaches_trace_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(
+                ACCEPTED_MYWORLD_CONTRACT.replace(
+                    "closed:\n",
+                    "closed:\nsession_envelope_required: true\nmemory_retrieval_required: true\n",
+                ).format(root=root.as_posix()),
+                encoding="utf-8",
+            )
+            invocation = root / ".aios" / "invocations" / "trace-envelope"
+            context = invocation / "memory" / "context_pack.md"
+            context.parent.mkdir(parents=True)
+            context.write_text(
+                "\n".join(
+                    [
+                        "# Context pack",
+                        "- selected_memory_ids: [\"mem_a\"]",
+                        "- trace_id: rtrace_required123",
+                        "- signal_coverage: 1.0",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            envelope_path = invocation / "session_envelope.json"
+            envelope_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.session_envelope.v1",
+                        "envelope_id": "se-trace",
+                        "invocation_id": "trace-envelope",
+                        "goal_hash": "tracehash",
+                        "required_before_execution": True,
+                        "role_statuses": {"genesis": "passed", "memory": "passed", "capability": "passed", "hive": "passed"},
+                        "role_artifacts": {"memory_context_pack": ".aios/invocations/trace-envelope/memory/context_pack.md"},
+                        "executor_assignment": {"default_executor": "codex", "requires_dispatch_packet": True},
+                        "degraded_roles": [],
+                        "failed_roles": [],
+                        "degraded_receipt": {"status": "not_needed", "stop_conditions_triggered": []},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex", "--session-envelope", envelope_path.as_posix())
+
+            packet = json.loads((root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").read_text(encoding="utf-8"))
+            self.assertEqual(packet["session_envelope"]["memory_context"]["retrieval_trace"], "rtrace_required123")
+            self.assertEqual(packet["session_envelope"]["memory_context"]["signal_coverage"], "1.0")
+
     def test_invalid_praxis_blocks_send(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

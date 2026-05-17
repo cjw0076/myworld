@@ -358,11 +358,86 @@ def contract_requires_praxis(contract: Contract) -> bool:
     return False
 
 
+def contract_requires_session_envelope(contract: Contract) -> bool:
+    value = contract.frontmatter.get("session_envelope_required", "").strip().lower()
+    if value in {"true", "yes", "1"}:
+        return True
+    if value in {"false", "no", "0"}:
+        return False
+    return False
+
+
+def contract_requires_memory_retrieval(contract: Contract) -> bool:
+    value = contract.frontmatter.get("memory_retrieval_required", "").strip().lower()
+    if value in {"true", "yes", "1"}:
+        return True
+    if value in {"false", "no", "0"}:
+        return False
+    return False
+
+
 def load_praxis_payload(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("praxis file must contain a JSON object")
     return payload
+
+
+def positive_signal_coverage(value: str) -> bool:
+    raw = value.strip().lower()
+    if raw in {"positive", "true", "passed"}:
+        return True
+    try:
+        return float(raw) > 0.0
+    except ValueError:
+        return False
+
+
+def validate_session_envelope_for_dispatch(root: Path, payload: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    roles = payload.get("role_statuses") if isinstance(payload.get("role_statuses"), dict) else {}
+    degraded = [role for role, status in roles.items() if status != "passed"]
+    if degraded:
+        errors.append(f"session_envelope_role_degraded:{','.join(sorted(degraded))}")
+    return errors
+
+
+def extract_memory_retrieval_evidence(root: Path, payload: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
+    artifacts = payload.get("role_artifacts") if isinstance(payload.get("role_artifacts"), dict) else {}
+    ref = str(artifacts.get("memory_context_pack") or "").strip()
+    evidence = {
+        "context_pack": ref,
+        "retrieval_trace": "",
+        "signal_coverage": "",
+    }
+    errors: list[str] = []
+    if not ref:
+        return evidence, ["memory_context_pack_missing"]
+    path = Path(ref)
+    if not path.is_absolute():
+        path = root / path
+    try:
+        path.resolve().relative_to((root / ".aios" / "invocations").resolve())
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return evidence, ["memory_context_pack_outside_invocations"]
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return evidence, [f"memory_context_pack_unreadable:{exc.__class__.__name__}"]
+    trace = re.search(r"\btrace_id:\s*(rtrace_[A-Za-z0-9]+)", text)
+    coverage = re.search(r"\bsignal_coverage:\s*([A-Za-z0-9_.+-]+)", text)
+    if trace:
+        evidence["retrieval_trace"] = trace.group(1)
+    else:
+        errors.append("retrieval_trace_missing")
+    if coverage:
+        evidence["signal_coverage"] = coverage.group(1)
+        if not positive_signal_coverage(coverage.group(1)):
+            errors.append("signal_coverage_not_positive")
+    else:
+        errors.append("signal_coverage_missing")
+    return evidence, errors
 
 
 def load_session_envelope(root: Path, path_text: str) -> tuple[str, dict[str, Any]]:
@@ -627,6 +702,7 @@ def build_packet(
             "hive_gate_missing",
         ]
     if session_envelope is not None:
+        memory_evidence, _ = extract_memory_retrieval_evidence(repo_root(), session_envelope)
         packet["session_envelope"] = {
             "ref": session_envelope_ref,
             "schema_version": session_envelope.get("schema_version"),
@@ -638,6 +714,7 @@ def build_packet(
             "failed_roles": session_envelope.get("failed_roles"),
             "executor_assignment": session_envelope.get("executor_assignment"),
             "degraded_receipt": session_envelope.get("degraded_receipt"),
+            "memory_context": memory_evidence,
         }
         packet["stop_conditions"] = [
             *packet["stop_conditions"],
@@ -704,6 +781,10 @@ def cmd_send(args: argparse.Namespace) -> int:
         blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "praxis_required_missing", ["praxis_required_missing"])
         print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
         return 1
+    if contract_requires_session_envelope(contract) and not getattr(args, "session_envelope", None):
+        blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "session_envelope_required_missing", ["session_envelope_required_missing"])
+        print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+        return 1
     if getattr(args, "session_envelope", None):
         try:
             session_envelope_ref, session_envelope_payload = load_session_envelope(root, args.session_envelope)
@@ -711,6 +792,17 @@ def cmd_send(args: argparse.Namespace) -> int:
             blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "session_envelope_invalid", [str(exc)])
             print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
             return 1
+        envelope_errors = validate_session_envelope_for_dispatch(root, session_envelope_payload)
+        if envelope_errors:
+            blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "session_envelope_role_degraded", envelope_errors)
+            print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+            return 1
+        if contract_requires_memory_retrieval(contract):
+            _memory_evidence, memory_errors = extract_memory_retrieval_evidence(root, session_envelope_payload)
+            if memory_errors:
+                blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "memory_retrieval_required_missing", memory_errors)
+                print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+                return 1
     # ASC-0184 — deterministic enforcement preflight: refuse to dispatch a
     # contract whose declared scope would cross a privacy/audit boundary.
     blocking = hook_preflight(root, contract)

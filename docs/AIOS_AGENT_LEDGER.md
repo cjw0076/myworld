@@ -5672,3 +5672,40 @@ For repo-local implementation details, also update that repo's own worklog.
   condition, then decide whether ASC-0194 needs a final quality-focused
   MemoryOS pass or can close as a bounded alpha.
 - status: MyWorld hook upgraded from timeout-degraded to named-stop evidence
+
+## 2026-05-18T01:22+09:00 — ASC-0197 closed: dispatch requires MemoryOS retrieval evidence when declared
+
+- when: 2026-05-18T01:22+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: dispatch gate implementation, MemoryOS retriever evidence binding
+- goal: stop AIOS from claiming MemoryOS usage while dispatching work without a
+  concrete `rtrace_...` and positive `signal_coverage`.
+- changed:
+  - `scripts/aios_dispatch.py` adds `session_envelope_required` and
+    `memory_retrieval_required` frontmatter gates.
+  - `tests/test_aios_dispatch.py` covers missing-envelope blocking and
+    retrieval trace evidence attachment.
+  - `docs/contracts/ASC-0197-dispatch-memory-retrieval-gate.md` records the
+    closed contract with real MemoryOS trace evidence.
+- MemoryOS evidence: invocation
+  `.aios/invocations/inv-454672af7ad3-20260518T012019/` produced
+  context pack trace `rtrace_b70da6ffc87b1f90` with `signal_coverage: 1.0` and
+  ten selected accepted memory ids.
+- CapabilityOS evidence: the invocation route selected
+  `cap_memoryos_context_build` as top recommendation and remained
+  `recommendation_only`.
+- GenesisOS evidence: the invocation produced the advisory branch set at
+  `.aios/invocations/inv-454672af7ad3-20260518T012019/genesis/branches.json`.
+- evidence: `python -m py_compile scripts/aios_dispatch.py` passed;
+  `python -m unittest tests.test_aios_dispatch -v` passed 26/26; `python -m
+  py_compile scripts/aios_persona_audit.py` passed; `python -m unittest
+  tests.test_aios_persona_audit -v` passed 4/4; `git diff --check --
+  scripts/aios_dispatch.py tests/test_aios_dispatch.py` passed. Persona audit
+  recheck now scores ASC-0197 with `retriever_score=1.0`, raising the window
+  retriever score from 0.0 to 0.05.
+- next: make the Control Center show whether a dispatch packet is backed by a
+  session envelope and MemoryOS trace, so the end user can see retrieval
+  evidence before worker execution.
+- status: ASC-0197 closed; future memory-required dispatches fail closed
+  without rtrace evidence
