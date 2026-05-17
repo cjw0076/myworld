@@ -5400,3 +5400,20 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: cap_helper_classify_chat_intent on qwen3:8b — '버그 고쳐줄래'→multi_step, 'refactor'→multi_step, '오늘 날씨'→current_info, '이게 무슨 뜻'→cheap_single_turn (4/4). 35 chat_router tests pass.
 - next: ASC-0192 follow-on — tier-2 quality gate, route against CapabilityOS live, multi-agent roster UI.
 - status: chat task-classification fixed (two-tier); interface multi-agent UI is the named follow-on
+
+## 2026-05-17T22:45+09:00 — ASC-0193: chat tier-2 quality gate implemented
+
+- when: 2026-05-17T22:45+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: implement the tier-2 quality gate (ASC-0193) — escalate an inadequate cheap-routed chat turn once to a stronger model
+- changed:
+  - scripts/aios_chat_router.py — tier-2 gate: gate_deterministic_signal, gate_llm_judge, tier2_eligible, run_tier2_quality_gate, _ollama_generate; wired into route_turn after generation; envelope carries quality_gate; escalations recorded to .aios/chat/<id>/quality_gate.jsonl
+  - tests/test_aios_chat_router.py — 5 tier-2 tests
+  - docs/research/LLM_QUALITY_GATE_SOTA.md (new — external SOTA study, founder directive "항상 외부 지식")
+  - docs/contracts/ASC-0193-* — accepted
+- decision: built with external knowledge per founder directive. The SOTA research (LLM_QUALITY_GATE_SOTA.md) directly shaped the implementation: the judge is pointwise (no position bias), criterion-rubric, with an explicit verbosity-bias counter and **default-FAIL** (the judge must justify ADEQUATE — counters small-model leniency; drafter and judge share the qwen3 family so self-preference is mitigated by the stricter default). Deterministic signals run first and can escalate without spending the judge (cost). Exactly one escalation hop — structurally no loop — the strong answer is final (named exit, Invariant 4). The judge runs selectively (cheap route + non-trivial intent only) to keep the gate near-free on the common path.
+- evidence: 40 chat_router tests pass (5 new tier-2: refusal/short/trivial-multi_step flagged, real answer passes, eligibility correct). Envelope verified to carry quality_gate; a cheap_single_turn correctly reports verdict=skipped.
+- next: a live escalation smoke (weak response → strong-model regen) as final close-evidence; ASC-0193 follow-on items (CapabilityOS-live routing, multi-agent UI) per ASC-0192.
+- status: tier-2 quality gate implemented + tested; live-escalation demo is the remaining close-evidence

@@ -1,9 +1,11 @@
 ---
 contract_id: ASC-0193
 slug: chat-tier2-quality-gate
-status: proposed
+status: accepted
 goal: Design and build the tier-2 quality gate for the chat router — a post-generation check that escalates a misrouted or under-delivered turn to a stronger chair, once, with a named exit.
 created: 2026-05-17 22:15 KST
+accepted: 2026-05-17 22:20 KST
+acceptance_authority: founder — "구현 들어가자".
 proposed_by: claude@myworld
 origin: ASC-0192 follow-on. Founder: "tier 2 품질 게이트부터 설계하자." Tier-1 (classify_intent) routes a turn; nothing yet catches a successful-but-weak response from a cheap route.
 ---

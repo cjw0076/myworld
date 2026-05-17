@@ -86,6 +86,31 @@ class AiosChatRouterTest(unittest.TestCase):
             encoding="utf-8",
         )
 
+    def write_memory_review_gap(self, root: Path) -> None:
+        result = root / ".aios" / "outbox" / "memoryOS" / "mdrev-gap.memoryOS.result.json"
+        result.parent.mkdir(parents=True)
+        result.write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.dispatch.result.v1",
+                    "status": "passed",
+                    "dispatch_id": "mdrev-gap",
+                    "target_repo": "memoryOS",
+                    "executed_at": "2026-05-17T00:00:00+09:00",
+                    "review_request": {
+                        "request_id": "mdrev-gap",
+                        "source_artifact": ".aios/chat/demo/memory_drafts.json",
+                        "draft_id": "demo:1",
+                        "draft_type": "genesis_friction_signal",
+                        "review_decision": "needs_more_evidence",
+                        "memory_object_id": "mem_gap",
+                        "review_id": "review_gap",
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
     def test_cheap_turn_routes_local_and_persists_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -164,6 +189,13 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertIn("speculative signal", payload["response"])
             self.assertIn("chatdraft_", payload["memory_draft"]["id"])
             self.assertTrue(payload["memory_draft"]["extra_draft_ids"])
+            self.assertIn("friction_contract_seed", payload["artifact_paths"])
+            self.assertIn("friction_contract_seed.md", payload["operating_receipt"]["next_step"])
+            seed_text = (root / payload["artifact_paths"]["friction_contract_seed"]).read_text(encoding="utf-8")
+            self.assertIn("status: proposed", seed_text)
+            self.assertIn("origin: AIOS chat GenesisOS friction", seed_text)
+            self.assertIn("This file is not execution authority", seed_text)
+            self.assertIn("genesis_branches", seed_text)
             drafts = json.loads((root / ".aios" / "chat" / "genesis-question-test" / "memory_drafts.json").read_text(encoding="utf-8"))
             self.assertEqual(drafts["memory_drafts"][1]["type"], "genesis_friction_signal")
             self.assertEqual(drafts["memory_drafts"][1]["origin"], "aios_chat_genesis")
@@ -218,6 +250,20 @@ class AiosChatRouterTest(unittest.TestCase):
             gate_path = root / payload["artifact_paths"]["gate_decision"]
             self.assertTrue(gate_path.exists())
 
+    def test_aios_self_diagnosis_now_is_not_current_info_hold(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            payload = self.run_router(
+                root,
+                "AIOS 완성을 위해 지금 가장 불편한 점과 다음 필요성을 하나만 골라줘",
+                "self-diagnosis-test",
+            )
+
+            self.assertNotEqual(payload["intent"], "current_info")
+            self.assertNotEqual(payload["chosen_substrate"], "capability_route_required")
+            self.assertNotEqual(payload["gate_decision"]["decision"], "require_current_info_route")
+            self.assertNotIn("외부 근거 route가 필요", payload["response"])
+
     def test_provider_chatbot_question_answers_gate_architecture(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -239,6 +285,22 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertIn("CapabilityOS", payload["response"])
             self.assertIn("GenesisOS", payload["response"])
             self.assertIn("Hive", payload["response"])
+
+    def test_korean_gate_question_does_not_fall_through_to_generic_provider(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            payload = self.run_router(
+                root,
+                "AIOS에는 너처럼 routing 해주는 Gate Agent가 있나, 아니면 시스템 답변밖에 못하나?",
+                "korean-gate-question-test",
+                env={"AIOS_LOCAL_AGENT_COMMAND": "printf 'provider should not be used for this gate question'"},
+            )
+
+            self.assertEqual(payload["gate_decision"]["decision"], "answer_architecture")
+            self.assertEqual(payload["chosen_substrate"], "aios_gate")
+            self.assertEqual(payload["provider_turn"], None)
+            self.assertNotIn("provider should not be used", payload["response"])
+            self.assertIn("Gate/Chair Agent", payload["response"])
 
     def test_gate_architecture_answer_explains_internal_chair_runtime(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -271,6 +333,21 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertIn("continuous coevolution", payload["response"])
             self.assertIn("자동 승인되지는 않아", payload["response"])
 
+    def test_memory_question_projects_memory_review_gap(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install_fake_memoryos(root)
+            self.write_memory_review_gap(root)
+
+            payload = self.run_router(root, "나에 대한 기억은?", "memory-review-gap-test")
+
+            self.assertEqual(payload["memory_context"]["memory_review_gap_count"], 1)
+            self.assertEqual(payload["memory_context"]["memory_review_gaps"][0]["draft_id"], "demo:1")
+            self.assertIn("needs_more_evidence", payload["response"])
+            self.assertIn("보강 증거", payload["response"])
+            self.assertIn("MemoryOS returned 2 relevant context item(s)", payload["operating_receipt"]["memory_summary"])
+            self.assertIn("review gap", payload["operating_receipt"]["memory_summary"])
+
     def test_negative_evidence_question_surfaces_failure_memories(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -286,6 +363,13 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertIn("pin_required_noninteractive", payload["response"])
             self.assertIn("schema-critical JSON", payload["response"])
             self.assertIn("fallback", payload["response"])
+            self.assertIn("chatdraft_", payload["memory_draft"]["extra_draft_ids"][0])
+            drafts = json.loads((root / ".aios" / "chat" / "negative-memory-test" / "memory_drafts.json").read_text(encoding="utf-8"))
+            negative_drafts = [item for item in drafts["memory_drafts"] if item["type"] == "negative_evidence_signal"]
+            self.assertEqual(negative_drafts[0]["origin"], "aios_chat_negative_evidence")
+            self.assertEqual(negative_drafts[0]["status"], "draft")
+            self.assertIn("pin_required_noninteractive", negative_drafts[0]["content"])
+            self.assertEqual(negative_drafts[0]["provenance"]["memory_trace_id"], "rtrace_negative_memory")
 
     def test_negative_evidence_demotes_bad_capability_provider_candidate(self) -> None:
         module = self.load_router_module()
@@ -338,6 +422,73 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertTrue(payload["gate_chair_status"]["executed"])
             chair_rows = (root / ".aios" / "chat" / "gate-chair-test" / "gate_chair_turns.jsonl").read_text(encoding="utf-8")
             self.assertIn("aios.chat.gate_chair_turn.v1", chair_rows)
+
+    def test_gate_chair_prompt_redacts_private_context_and_stays_compact(self) -> None:
+        module = self.load_router_module()
+        memory = {
+            "trace_id": "rtrace_private",
+            "context_items": 12,
+            "selected_memory_ids": [f"mem_{idx}" for idx in range(12)],
+            "selected_memories": [
+                {
+                    "id": f"mem_{idx}",
+                    "type": "decision",
+                    "content": "Founder email cjw070690@example.com and pin q1q1e3e3 must not leave AIOS. " * 8,
+                    "confidence": 0.9,
+                    "raw_refs": ["docs/private.md:1", "token=abc123"],
+                }
+                for idx in range(8)
+            ],
+            "negative_evidence": [
+                {
+                    "id": "neg_1",
+                    "type": "provider_failure",
+                    "failure_class": "provider_access_denied",
+                    "content": "Gemini key AIzaSyDgWUyl84mX7OH8RF4khA-i76L1Zmp0ylw failed.",
+                    "raw_refs": ["secret/api_key=demo"],
+                }
+            ],
+            "memory_review_gaps": [],
+        }
+
+        prompt = module.gate_chair_prompt(
+            "나에 대한 기억은? cjw070690@example.com",
+            "MemoryOS가 기억을 찾았어. q1q1e3e3",
+            memory,
+            {"decision": "route_normally", "input_class": "cheap_single_turn", "route": "standard_chat_router"},
+            {"schema_version": "aios.chat.genesis_friction.v1", "authority": "speculative_only", "frictions": []},
+        )
+        payload = json.loads(prompt)
+
+        self.assertLess(len(prompt), 5000)
+        self.assertNotIn("cjw070690@example.com", prompt)
+        self.assertNotIn("q1q1e3e3", prompt)
+        self.assertNotIn("AIzaSyDgWUyl84mX7OH8RF4khA-i76L1Zmp0ylw", prompt)
+        self.assertIn("[REDACTED_PRIVATE]", prompt)
+        self.assertEqual(len(payload["memory_context"]["selected_memories"]), 5)
+        self.assertEqual(len(payload["memory_context"]["selected_memory_ids"]), 8)
+
+    def test_gate_chair_output_is_redacted_before_persistence(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install_fake_memoryos(root)
+
+            payload = self.run_router(
+                root,
+                "나에 대한 기억은?",
+                "gate-chair-output-redaction-test",
+                env={"AIOS_GATE_AGENT_COMMAND": "printf 'private email cjw070690@example.com and pin q1q1e3e3'"},
+            )
+
+            self.assertNotIn("cjw070690@example.com", payload["response"])
+            self.assertNotIn("q1q1e3e3", payload["response"])
+            self.assertIn("[REDACTED_PRIVATE]", payload["response"])
+            messages = (root / payload["artifact_paths"]["messages"]).read_text(encoding="utf-8")
+            turns = (root / payload["artifact_paths"]["gate_chair_turns"]).read_text(encoding="utf-8")
+            self.assertNotIn("cjw070690@example.com", messages)
+            self.assertNotIn("q1q1e3e3", messages)
+            self.assertNotIn("cjw070690@example.com", turns)
+            self.assertNotIn("q1q1e3e3", turns)
 
     def test_gate_chair_force_internal_overrides_configured_command(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -458,6 +609,179 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertEqual(payload["gate_chair_status"]["mode"], "claude")
             self.assertEqual(payload["gate_chair_status"]["model"], "chair-test-model")
             self.assertIn("configured claude chair", payload["response"])
+
+    def test_active_gate_chair_runtime_demotes_after_repeated_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            config = root / ".aios" / "gate" / "founder" / "chair_runtime.json"
+            config.parent.mkdir(parents=True)
+            config.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate.chair_runtime.v1",
+                        "status": "active",
+                        "mode": "claude",
+                        "model": "chair-test-model",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            report = root / ".aios" / "evals" / "gate_chair" / "eval-demote" / "report.json"
+            report.parent.mkdir(parents=True)
+            report.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate_chair_eval.v1",
+                        "eval_id": "eval-demote",
+                        "promotion_ready": False,
+                        "modes": [
+                            {
+                                "mode": "current",
+                                "runs": [
+                                    {
+                                        "prompt_preview": "나에 대한 기억은?",
+                                        "gate_chair_status": {
+                                            "status": "gate_chair_timeout",
+                                            "mode": "claude",
+                                            "model": "chair-test-model",
+                                        },
+                                    },
+                                    {
+                                        "prompt_preview": "provider 실패 기억은?",
+                                        "gate_chair_status": {
+                                            "status": "provider_access_denied",
+                                            "mode": "claude",
+                                            "model": "chair-test-model",
+                                        },
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            write_executable(
+                bin_dir / "claude",
+                "#!/usr/bin/env bash\n"
+                "printf 'external chair should be demoted'\n",
+            )
+
+            payload = self.run_router(
+                root,
+                "AIOS에는 gate 역할의 Agent가 있나?",
+                "gate-chair-demotion-test",
+                env={"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+            )
+
+            self.assertEqual(payload["chosen_substrate"], "aios_gate")
+            self.assertEqual(payload["gate_chair_status"]["mode"], "internal_evidence_synthesizer")
+            self.assertEqual(payload["gate_chair_status"]["model"], "deterministic")
+            self.assertEqual(payload["gate_chair_status"]["status"], "success")
+            self.assertNotIn("external chair should be demoted", payload["response"])
+            self.assertIn("demote", payload["response"])
+
+    def test_gate_chair_recovery_eval_clears_prior_demotion(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            config = root / ".aios" / "gate" / "founder" / "chair_runtime.json"
+            config.parent.mkdir(parents=True)
+            config.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate.chair_runtime.v1",
+                        "status": "active",
+                        "mode": "claude",
+                        "model": "chair-test-model",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            failure = root / ".aios" / "evals" / "gate_chair" / "eval-old-fail" / "report.json"
+            failure.parent.mkdir(parents=True)
+            failure.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate_chair_eval.v1",
+                        "eval_id": "eval-old-fail",
+                        "promotion_ready": False,
+                        "modes": [
+                            {
+                                "mode": "current",
+                                "runs": [
+                                    {
+                                        "gate_chair_status": {
+                                            "status": "gate_chair_timeout",
+                                            "mode": "claude",
+                                            "model": "chair-test-model",
+                                        }
+                                    },
+                                    {
+                                        "gate_chair_status": {
+                                            "status": "provider_access_denied",
+                                            "mode": "claude",
+                                            "model": "chair-test-model",
+                                        }
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            recovery = root / ".aios" / "evals" / "gate_chair" / "eval-new-recovery" / "report.json"
+            recovery.parent.mkdir(parents=True)
+            recovery.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate_chair_eval.v1",
+                        "eval_id": "eval-new-recovery",
+                        "promotion_ready": True,
+                        "scores": {"internal": 1.0, "current": 1.0},
+                        "modes": [
+                            {
+                                "mode": "current",
+                                "average_score": 1.0,
+                                "runtime_modes": ["claude"],
+                                "runtime_models": ["chair-test-model"],
+                                "runs": [
+                                    {
+                                        "ok": True,
+                                        "gate_chair_status": {
+                                            "status": "success",
+                                            "mode": "claude",
+                                            "model": "chair-test-model",
+                                        },
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            write_executable(
+                bin_dir / "claude",
+                "#!/usr/bin/env bash\n"
+                "printf 'recovered external chair'\n",
+            )
+
+            payload = self.run_router(
+                root,
+                "AIOS에는 gate 역할의 Agent가 있나?",
+                "gate-chair-recovery-test",
+                env={"PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+            )
+
+            self.assertEqual(payload["chosen_substrate"], "aios_gate")
+            self.assertEqual(payload["gate_chair_status"]["mode"], "claude")
+            self.assertEqual(payload["gate_chair_status"]["model"], "chair-test-model")
+            self.assertIn("recovered external chair", payload["response"])
 
     def test_gate_chair_candidate_override_summary_names_candidate_path(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -645,6 +969,78 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertIn("local receipts", payload["response"])
             self.assertIn("provider_backpressure", payload["response"])
 
+    def test_gate_chair_eval_timeout_becomes_local_negative_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install_fake_memoryos(root)
+            report = root / ".aios" / "evals" / "gate_chair" / "eval-demo" / "report.json"
+            report.parent.mkdir(parents=True)
+            report.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.gate_chair_eval.v1",
+                        "eval_id": "eval-demo",
+                        "promotion_ready": False,
+                        "modes": [
+                            {
+                                "mode": "current",
+                                "runs": [
+                                    {
+                                        "prompt_preview": "나에 대한 기억은?",
+                                        "gate_chair_status": {
+                                            "status": "gate_chair_timeout",
+                                            "mode": "claude",
+                                            "model": "claude-opus-4-6",
+                                        },
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            payload = self.run_router(root, "provider 실패 기억은?", "negative-gate-chair-eval-test")
+
+            self.assertEqual(payload["provider_turn"], None)
+            self.assertEqual(payload["memory_context"]["negative_evidence_source"], "aios_receipts")
+            self.assertEqual(payload["memory_context"]["negative_evidence"][0]["failure_class"], "gate_chair_timeout")
+            self.assertIn("gate_chair_timeout", payload["response"])
+            self.assertIn("claude", payload["response"])
+
+    def test_gate_chair_chat_timeout_becomes_local_negative_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            self.install_fake_memoryos(root)
+            turns = root / ".aios" / "chat" / "control-center" / "gate_chair_turns.jsonl"
+            turns.parent.mkdir(parents=True)
+            turns.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.chat.gate_chair_turn.v1",
+                        "turn_id": "gatechair_demo",
+                        "executed": False,
+                        "chair_meta": {
+                            "status": "gate_chair_timeout",
+                            "meta": {"mode": "claude", "model": "claude-opus-4-6"},
+                        },
+                        "prompt_preview": "나에 대한 기억은?",
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            payload = self.run_router(root, "provider 실패 기억은?", "negative-chat-turn-test")
+
+            self.assertEqual(payload["provider_turn"], None)
+            self.assertEqual(payload["memory_context"]["negative_evidence_source"], "aios_receipts")
+            self.assertEqual(payload["memory_context"]["negative_evidence"][0]["failure_class"], "gate_chair_timeout")
+            self.assertIn("Gate Chair chat turn", payload["memory_context"]["negative_evidence"][0]["content"])
+            self.assertIn("claude", payload["response"])
+
     def test_chat_turn_executes_local_provider_when_configured(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
@@ -656,6 +1052,8 @@ class AiosChatRouterTest(unittest.TestCase):
             )
 
             self.assertIn("local answer from provider", payload["response"])
+            self.assertNotIn("받았어. 이 대화 턴을 AIOS 라우터로 처리했어.", payload["response"])
+            self.assertNotIn("\n---\n", payload["response"])
             self.assertIn("provider_turns", payload["artifact_paths"])
             self.assertTrue((root / ".aios" / "chat" / "local-provider-test" / "provider_turns.jsonl").exists())
 
@@ -691,6 +1089,48 @@ class AiosChatRouterTest(unittest.TestCase):
             self.assertEqual(projection["source_pair_count"], 3)
             self.assertIn("current_info_requires_source", projection["rules_applied"])
             self.assertFalse(projection["finetune_ready"])
+
+
+class Tier2QualityGateTest(unittest.TestCase):
+    """ASC-0193 — tier-2 quality gate deterministic signals + eligibility."""
+
+    @staticmethod
+    def _module():
+        scripts_dir = (ROOT / "scripts").as_posix()
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        spec = importlib.util.spec_from_file_location("aios_chat_router_t2", SCRIPT)
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        spec.loader.exec_module(module)
+        return module
+
+    def test_deterministic_signal_flags_refusal(self) -> None:
+        m = self._module()
+        self.assertIsNotNone(
+            m.gate_deterministic_signal("fix the bug", "multi_step", "I can't help with that."))
+
+    def test_deterministic_signal_flags_too_short(self) -> None:
+        m = self._module()
+        self.assertIsNotNone(m.gate_deterministic_signal("explain X", "single_turn", "ok"))
+
+    def test_deterministic_signal_flags_trivial_multi_step(self) -> None:
+        m = self._module()
+        self.assertIsNotNone(
+            m.gate_deterministic_signal("implement the feature", "multi_step", "Done."))
+
+    def test_deterministic_signal_passes_real_answer(self) -> None:
+        m = self._module()
+        good = ("Here is the fix: the off-by-one is in unused_days; it should add 1 "
+                "so the upgrade day itself is counted. I changed the return statement "
+                "and the four failing tests now pass.")
+        self.assertIsNone(m.gate_deterministic_signal("fix the bug", "multi_step", good))
+
+    def test_eligibility_cheap_route_nontrivial_intent(self) -> None:
+        m = self._module()
+        self.assertTrue(m.tier2_eligible("ollama_qwen", "multi_step"))
+        self.assertFalse(m.tier2_eligible("claude", "multi_step"))
+        self.assertFalse(m.tier2_eligible("ollama_qwen", "cheap_single_turn"))
 
 
 if __name__ == "__main__":

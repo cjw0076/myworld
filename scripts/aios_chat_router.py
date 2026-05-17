@@ -1458,6 +1458,136 @@ def _command_exists(name: str) -> bool:
     return shutil.which(name) is not None
 
 
+# ===== ASC-0193 — tier-2 quality gate ======================================
+# After a cheap chair answers a turn, a gate checks the response is adequate
+# and, if not, escalates ONCE to a stronger model. Named exit: every turn
+# ends pass / escalated_pass / escalated_degraded.
+
+TIER2_CHEAP_ROUTES = {"local_llm", "ollama_qwen", "aios_gate"}
+TIER2_ELIGIBLE_INTENTS = {"multi_step", "current_info"}
+TIER2_ESCALATION_MODEL = "qwen3:30b-a3b"
+TIER2_JUDGE_MODEL = "qwen3:8b"
+REFUSAL_MARKERS = (
+    "i can't", "i cannot", "i'm unable", "i am unable", "unable to help",
+    "i don't have access", "you should ask", "제가 답변", "할 수 없습니다",
+    "할 수 없어", "확인이 필요", "도움을 드릴 수 없", "답변할 수 없",
+)
+
+
+def _ollama_bin(root: Path) -> str:
+    local = root / "hivemind" / ".local" / "ollama" / "bin" / "ollama"
+    return str(local) if local.exists() else "ollama"
+
+
+def _ollama_generate(root: Path, model: str, prompt: str, timeout: int) -> tuple[bool, str]:
+    """Run one local generation; (ok, sanitized_text). Never raises."""
+    obin = _ollama_bin(root)
+    if obin == "ollama" and not _command_exists("ollama"):
+        return False, ""
+    try:
+        proc = subprocess.run([obin, "run", model, prompt],
+                              capture_output=True, text=True, timeout=timeout)
+    except (OSError, subprocess.TimeoutExpired):
+        return False, ""
+    text = sanitize_provider_text(proc.stdout or "", max_lines=120, max_chars=8000)
+    return (bool(text), text)
+
+
+def gate_deterministic_signal(message: str, intent: str, response: str) -> str | None:
+    """A fast deterministic adequacy check — returns an inadequacy reason or
+    None. Cheap signals that reliably mark a bad answer."""
+    text = (response or "").strip()
+    low = text.lower()
+    if len(text) < 12:
+        return "response too short to be a real answer"
+    if any(marker in low for marker in REFUSAL_MARKERS):
+        return "response refuses or defers the request"
+    if intent == "multi_step" and len(text) < 120:
+        return "multi_step turn answered in a trivial response"
+    if len(message) > 20 and message.strip().lower() in low and len(text) < len(message) * 2:
+        return "response largely restates the question"
+    return None
+
+
+def gate_llm_judge(root: Path, message: str, response: str) -> tuple[bool, str]:
+    """LLM judge — does the response adequately satisfy the turn?
+    Returns (adequate, reason).
+
+    Design follows docs/research/LLM_QUALITY_GATE_SOTA.md: pointwise (no
+    position bias), criterion rubric, an explicit verbosity-bias counter, and
+    **default-FAIL** — the judge must affirmatively justify ADEQUATE, which
+    counters small-model leniency/sycophancy. The drafter and judge share a
+    model family (qwen3) so self-preference is a known risk; default-FAIL is
+    the stricter-threshold mitigation.
+
+    Two distinct fallbacks: a judge that is *unavailable* fails OPEN
+    (adequate=True — a judge bug must not block a turn); a judge that *ran but
+    was ambiguous* fails toward INADEQUATE (the leniency counter)."""
+    prompt = (
+        "You are a strict answer-quality judge. Score the ASSISTANT RESPONSE "
+        "against the USER TURN. Every criterion must pass:\n"
+        "- answers_question: directly addresses what the user asked\n"
+        "- not_refusal_or_hedge: does not refuse, defer, or hedge vaguely\n"
+        "- appropriate_completeness: complete enough for the turn — penalize "
+        "unnecessary verbosity, reward concise + correct\n"
+        "- grounded: makes no unsupported claim it cannot back\n"
+        "Default to INADEQUATE. Reply ADEQUATE only if EVERY criterion passes.\n"
+        "Reply with exactly one line: `ADEQUATE` or `INADEQUATE: <short reason>`.\n\n"
+        f"USER TURN:\n{message[:1500]}\n\nASSISTANT RESPONSE:\n{response[:3000]}\n"
+    )
+    ok, text = _ollama_generate(root, TIER2_JUDGE_MODEL, prompt, timeout=60)
+    if not ok:
+        return True, "judge unavailable — fail-open"
+    low = text.lower()
+    if "inadequate" in low:
+        reason = text.split(":", 1)[1].strip()[:200] if ":" in text else "judged inadequate"
+        return False, reason or "judged inadequate"
+    if re.search(r"\badequate\b", low):
+        return True, ""
+    return False, "judge verdict ambiguous — default-fail"
+
+
+def tier2_eligible(substrate: str, intent: str) -> bool:
+    """The judge runs only where a misroute is both likely and costly — a
+    cheap route on a non-trivial intent. Keeps the gate near-free on the
+    common path (RouteLLM: most turns need no escalation)."""
+    return substrate in TIER2_CHEAP_ROUTES and intent in TIER2_ELIGIBLE_INTENTS
+
+
+def run_tier2_quality_gate(root: Path, message: str, intent: str, substrate: str,
+                           response: str, chair_prompt: str) -> dict[str, Any]:
+    """Post-generation quality gate. Escalates an inadequate cheap-routed turn
+    ONCE to a stronger model. Returns a verdict record; if it escalated, the
+    record carries `escalated_response`."""
+    record: dict[str, Any] = {"schema": "aios.chat.quality_gate.v1",
+                              "verdict": "pass", "escalated": False}
+    if not tier2_eligible(substrate, intent):
+        record["verdict"] = "skipped"
+        record["reason"] = "route not escalation-eligible"
+        return record
+
+    reason = gate_deterministic_signal(message, intent, response)
+    if reason is None:
+        adequate, judge_reason = gate_llm_judge(root, message, response)
+        if adequate:
+            return record
+        reason = f"judge: {judge_reason}"
+
+    # escalate once — regenerate with the strong tier
+    record["reason"] = reason
+    ok, escalated = _ollama_generate(root, TIER2_ESCALATION_MODEL, chair_prompt, timeout=120)
+    if not ok or not escalated:
+        record["verdict"] = "escalated_degraded"
+        record["escalation_failed"] = True
+        return record
+    still_bad = gate_deterministic_signal(message, intent, escalated)
+    record["escalated"] = True
+    record["escalated_response"] = escalated
+    record["escalated_model"] = TIER2_ESCALATION_MODEL
+    record["verdict"] = "escalated_degraded" if still_bad else "escalated_pass"
+    return record
+
+
 def chair_provider_command(substrate: str, prompt: str, config: dict[str, Any] | None = None) -> tuple[list[str] | None, dict[str, Any]]:
     config = config or {}
     if substrate == "claude":
@@ -2254,6 +2384,27 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
             if chair_executed:
                 response = chair_output
 
+    # ASC-0193 — tier-2 quality gate: escalate an inadequate cheap turn once.
+    quality_gate: dict[str, Any] = {"verdict": "skipped", "escalated": False}
+    try:
+        escalation_prompt = gate_chair_prompt(clean_message, base_response, memory, gate, genesis)
+        quality_gate = run_tier2_quality_gate(
+            root, clean_message, intent, substrate, response, escalation_prompt)
+        if quality_gate.get("escalated") and quality_gate.get("escalated_response"):
+            response = quality_gate["escalated_response"]
+        if quality_gate.get("verdict") not in {"skipped", "pass"}:
+            append_jsonl(chat_dir / "quality_gate.jsonl", {
+                "schema": "aios.chat.quality_gate.v1",
+                "created_at": now_iso(),
+                "intent": intent,
+                "original_substrate": substrate,
+                "verdict": quality_gate.get("verdict"),
+                "reason": quality_gate.get("reason"),
+                "escalated_model": quality_gate.get("escalated_model"),
+            })
+    except Exception:  # noqa: BLE001 — the gate must never break a turn
+        quality_gate = {"verdict": "error", "escalated": False}
+
     response = redact_private_text(response, max_lines=120, max_chars=8000)
     turn_id = stable_id(f"{conversation_id}:{len(history)}:{clean_message}:{now_iso()}")
     created_at = now_iso()
@@ -2352,6 +2503,12 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
         "chosen_substrate": substrate,
         "intent": intent,
         "route_reason": reason,
+        "quality_gate": {
+            "verdict": quality_gate.get("verdict"),
+            "escalated": bool(quality_gate.get("escalated")),
+            "reason": quality_gate.get("reason"),
+            "escalated_model": quality_gate.get("escalated_model"),
+        },
         "gate_decision": gate,
         "genesis_friction": genesis,
         "operator_override": override,
