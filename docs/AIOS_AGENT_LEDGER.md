@@ -5651,3 +5651,24 @@ For repo-local implementation details, also update that repo's own worklog.
   quality-focused pass on meaningful queryable-surface metrics.
 - status: ASC-0196 closed; graph-control caller no longer hangs on large
   ledger smoke
+
+## 2026-05-18T01:17+09:00 — ASC-0194 hook rechecked after ASC-0196
+
+- when: 2026-05-18T01:17+09:00 KST
+- repo: myworld -> memoryOS
+- agent: codex@myworld
+- role: post-close integration smoke
+- goal: prove MyWorld's dream hook now receives a MemoryOS-owned named stop
+  instead of caller-side graph-control timeout degradation.
+- evidence: direct MyWorld hook call
+  `run_memory_graph_control(root, timeout_seconds=70)` returned
+  `status=ok`, `persisted=true`, `report_id=graphctlrun_120c7fbf808dd749`,
+  `bound_ratio=1.0`, and `stop_conditions=["budget_exhausted"]`.
+- decision: keep ASC-0194 open for graph-quality semantics. The operating
+  layer is now repeatable and bounded; the next question is whether the
+  queryable-surface metrics are meaningful enough to close the full Graph
+  Control Model contract.
+- next: make Control Center show the latest graph-control run status and stop
+  condition, then decide whether ASC-0194 needs a final quality-focused
+  MemoryOS pass or can close as a bounded alpha.
+- status: MyWorld hook upgraded from timeout-degraded to named-stop evidence

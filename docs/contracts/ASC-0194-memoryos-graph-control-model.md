@@ -137,6 +137,11 @@ contract.
   `reason=graph_control_timeout`, `timeout_seconds=60`. The next rounds
   skipped dream as `recent_dream`, proving the persistent loop continues
   instead of hanging on MemoryOS graph-control.
+- after ASC-0196, direct MyWorld hook recheck
+  `run_memory_graph_control(root, timeout_seconds=70)` returned `status=ok`,
+  `persisted=true`, `report_id=graphctlrun_120c7fbf808dd749`, and
+  `stop_conditions=["budget_exhausted"]`. This upgrades the caller behavior
+  from timeout degradation to a MemoryOS-owned named stop.
 
 ### Remaining close condition
 
