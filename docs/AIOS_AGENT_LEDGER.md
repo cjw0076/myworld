@@ -5288,3 +5288,20 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: smoke — clean contract preflight → allow, allowed_files ['dain/private.md'] → block ('dain' gated segment); enqueue_dispatch_job → 1 job, duplicate job_key deduped to no-op. tests: 40 passed (dispatch 24 + hooks 9 + jobs 7).
 - next: ASC-0185 child-watcher claim-by-lease migration (its own focused effort).
 - status: ASC-0184 closed — DNA invariants now enforced at dispatch; ASC-0185 dispatch-enqueue integrated, watcher migration pending
+
+## 2026-05-17T12:55+09:00 — ASC-0189: AIOS installable packaging
+
+- when: 2026-05-17T12:55+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder directive — package AIOS (npm/sh-style) so a fresh machine can install it
+- changed:
+  - install.sh (new — curl|sh one-command installer: prereq check, clone/update 4 AIOS repos from cjw0076, install the `aios` shim, PATH check; idempotent)
+  - uninstall.sh (new — removes the command, keeps data unless --purge)
+  - docs/AIOS_INSTALL.md, README.md (new)
+  - docs/contracts/ASC-0189-* → closed
+- decision: AIOS scripts cross-import by bare module name and assume the repo layout, so a clean `pip install` would need a packaging refactor — that is a named follow-on, not faked. The honest, working distribution path is the sh installer: it reuses the existing bin/aios launcher entry as the single source of truth (the installed shim just execs it), so there is no duplicated launch logic. GenesisOS has no public remote — the installer notes and skips it rather than failing.
+- evidence: install.sh ran end-to-end into ~/aios — 4 repos cloned, `aios device-profile` worked via the installed command; idempotent re-run updated (no failure); uninstall.sh removed the command cleanly. Test clone removed after verification.
+- next: pip/pipx packaging refactor (named follow-on); ASC-0185 child-watcher claim-by-lease migration.
+- status: AIOS installable with one command — curl|sh installer shipped
