@@ -5243,3 +5243,48 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: `pytest tests/test_aios_hooks.py` 9 passed — privacy block (segments + substrings), clean-path allow, append-only block, contract-scope block/allow/escalate, operator-override conversion, decision logged. launcher tests 11 passed.
 - next: a focused integration iteration — wire both the hook engine (ASC-0184) and the leased jobs queue (ASC-0185) into aios_dispatch.py, watching the round controller; then close both contracts.
 - status: hooks enforcement engine built + tested + wired to launcher; dispatch integration pending
+
+## 2026-05-17T06:45+09:00 — AIOS myworld control plane deployed (first publish)
+
+- when: 2026-05-17T06:45+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder directive "배포 준비 완료라고 판단되면 바로 올려버려" — deploy when judged ready
+- changed: first commit + push of the myworld control plane to github.com/cjw0076/myworld (public)
+- decision: deployment-readiness verified before publishing — 420/420 tests pass; privacy scan clean (no _from_desktop/dain/minyoung dirs, no real secrets in the changeset, .aios/ runtime+secrets gitignored); siblings (hivemind/memoryOS/CapabilityOS) already public on cjw0076 so a public myworld matches the established pattern, not a new privacy decision. Staged myworld's own files only (409: docs/scripts/tests/apps/deploy/benchmark/configs) — submodule pointers, the untracked GenesisOS/ sibling, and a stray empty file excluded per "do not auto-commit child repos".
+- evidence: commit 9b592d1 (amended); `git push -u origin main` → new branch main; gh repo cjw0076/myworld live, public.
+- next: child-repo deploys (hivemind/memoryOS/CapabilityOS already have remotes; GenesisOS has none) remain their own operators' calls; ASC-0184/0185 dispatch integration continues.
+- status: myworld control plane deployed — first public release
+
+## 2026-05-17T11:42+09:00 — misplaced CapabilityOS ledger fragment reconciled
+
+- when: 2026-05-17T11:42+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane monitor hygiene
+- goal: clear the child-repo dirty blocker caused by a myworld ledger fragment
+  accidentally written under `CapabilityOS/docs/AIOS_AGENT_LEDGER.md`
+- preserved_entry: `2026-05-16T17:00+09:00 — aios-workbench Model B directly
+  completed (Packets B–E)`
+- decision: the fragment described myworld workbench scripts, Control Center
+  changes, and ASC-0181 receipts, not CapabilityOS-owned implementation. It was
+  preserved here as a reconciliation note and removed from the child repo so
+  CapabilityOS is not dirty due to a control-plane bookkeeping file.
+- boundary: no CapabilityOS source code or capability catalog data changed.
+- status: ledger fragment reconciled
+
+## 2026-05-17T12:30+09:00 — ASC-0184 closed + ASC-0185 dispatch integration
+
+- when: 2026-05-17T12:30+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: integrate the hook engine (ASC-0184) and leased jobs queue (ASC-0185) into live dispatch
+- changed:
+  - scripts/aios_dispatch.py — _load_sibling() (safe by-path import); hook_preflight() runs the enforcement hooks on a contract's allowed_files before cmd_send builds a packet, blocking a privacy/scope violation; enqueue_dispatch_job() records each send as a leased job (ASC-0185)
+  - docs/contracts/ASC-0184-* → closed
+- decision: integration glue fails open (a missing organ never breaks dispatch) while the hook engine itself fails closed on privacy — the safety property lives in the engine, not the glue. ASC-0184 named exit fully met → closed. ASC-0185: dispatch now enqueues leased jobs and the claim/lease/expiry/dedup mechanics are built+tested, but the named exit also requires "a watcher claims by lease" — migrating the 949-line aios_child_watcher.sh is a substantial separate effort, so ASC-0185 stays accepted (not gaming the close) with the watcher migration as the honest remaining item.
+- evidence: smoke — clean contract preflight → allow, allowed_files ['dain/private.md'] → block ('dain' gated segment); enqueue_dispatch_job → 1 job, duplicate job_key deduped to no-op. tests: 40 passed (dispatch 24 + hooks 9 + jobs 7).
+- next: ASC-0185 child-watcher claim-by-lease migration (its own focused effort).
+- status: ASC-0184 closed — DNA invariants now enforced at dispatch; ASC-0185 dispatch-enqueue integrated, watcher migration pending

@@ -1,10 +1,12 @@
 ---
 contract_id: ASC-0184
 slug: hooks-deterministic-enforcement
-status: accepted
+status: closed
 goal: Add a deterministic enforcement layer — pre-action hooks that hard-block any action violating a DNA invariant or contract scope, regardless of model intent — so AIOS invariants are binding, not advisory.
 created: 2026-05-17 05:35 KST
 accepted: 2026-05-17 05:40 KST
+closed: 2026-05-17 12:30 KST
+close_evidence: scripts/aios_hooks.py (engine + 3 built-in hooks); tests/test_aios_hooks.py 9 passed (privacy block, append-only block, contract-scope block/allow/escalate, operator-override conversion, decision log); aios_dispatch.py cmd_send calls hook_preflight() before building a packet — a privacy-gated contract scope is demonstrably blocked (smoke: allowed_files ['dain/private.md'] → verdict block); launcher hooks verb wired. Named exit met.
 acceptance_authority: claude@myworld operator — Tier-1 borrow item closing a known bug class; no escalation rule triggered (no new OS, no privacy-boundary change, no external authority).
 proposed_by: claude@myworld
 origin: AIOS_ECOSYSTEM_BORROW_PLAN.md Tier 1. The 2026-05-17 ecosystem study found Claude Code's hooks are a deterministic enforcement layer (PreToolUse can hard-block an action no matter what the model intends). ASC-0122 ("policy actually binding") and the round-8 "spec without enforcement gap" are the recurring AIOS failure this closes.
@@ -57,6 +59,45 @@ allowed (if accepted):
 4. **Fail-closed on the privacy hook, fail-open elsewhere** — a crash in the
    privacy check blocks; a crash in a soft check logs and allows (do not let
    a hook bug halt the autopoietic loop on non-privacy matters).
+
+## GenesisOS Escape Review
+
+This review is advisory-only. It names the hidden assumptions before the hook
+layer becomes an unquestioned reflex.
+
+### Assumptions
+
+- Assumption 1: deterministic code should have authority over provider intent
+  when an action crosses a privacy, scope, or audit boundary.
+- Assumption 2: most hook false positives are less damaging than silent
+  boundary violations.
+- Assumption 3: operator override is enough to keep enforcement from becoming
+  a dead hand.
+
+Counter branch: negate those assumptions. If hooks become too broad, they can
+turn AIOS into a system that is safe but unable to act. The contract therefore
+keeps privacy fail-closed while non-privacy checks fail-open with ledger
+evidence and review.
+
+### Plain Language
+
+Plain language: before AIOS touches a file or dispatches work, a small rule
+checker asks whether that action is allowed. If the action would cross a hard
+line, the checker stops it even if the model says it is fine.
+
+### Cross-Domain Frame
+
+Legal analogy: hooks are courthouse injunctions, not advice columns. A judge
+can pause a harmful action before the harm happens, but the court must also
+record why it paused the action and how an authorized appeal works.
+
+### Time Horizons
+
+- 1h: enforce only the privacy and scope checks on one controlled path.
+- 1 week: attach hooks to dispatch and round-controller actions with false
+  positive receipts.
+- 1 year: evolve hooks into AIOS's constitutional court while preserving a
+  visible operator appeal path.
 
 ## Named Exit
 

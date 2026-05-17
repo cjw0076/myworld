@@ -60,6 +60,44 @@ allowed (if accepted):
    for that repo's specialist calls. Operator override always reverts to the
    bare base model. (Invariant 6.)
 
+## GenesisOS Escape Review
+
+This section is advisory-only and exists to keep the contract from becoming a
+jargon loop.
+
+### Assumptions
+
+- Assumption 1: a repo-specific adapter can improve local style without
+  corrupting the base model.
+- Assumption 2: verified-good invocations are enough signal for a small adapter.
+- Assumption 3: per-repo isolation is cheaper than one global personality.
+
+Counter branch: negate those assumptions. If a repo adapter merely memorizes
+old decisions, then the useful output is not a model layer but a better
+retrieval and verifier loop. If the verified set is small, the right next step
+is dataset quality scoring, not training.
+
+### Plain Language
+
+Plain language: when AIOS is idle, it studies only work that was already
+verified as good. It may create a small removable training layer for each repo.
+That layer is a draft until tests prove it helps, and the operator can turn it
+off.
+
+### Cross-Domain Frame
+
+Biology analogy: this is closer to sleep replay than to rewriting DNA. The
+organism keeps its body, rehearses useful movements, and refuses a rehearsal
+that makes tomorrow's motion worse.
+
+### Time Horizons
+
+- 1h: produce only a trainer-ready verified dataset and do not train.
+- 1 week: run one tiny adapter experiment on a small local model with a held-out
+  no-regression check.
+- 1 year: decide whether adapters remain local private organs or become an
+  installable AIOS capability with explicit hardware and rollback contracts.
+
 ## Open questions for founder
 
 - Hardware: QLoRA on qwen3:8b needs a GPU or a long CPU run. Acceptable to

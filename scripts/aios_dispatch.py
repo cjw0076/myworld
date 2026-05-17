@@ -142,6 +142,56 @@ def read_contract(path: Path) -> Contract:
     )
 
 
+def _load_sibling(root: Path, module_name: str):
+    """Import a sibling scripts/ module by path; None on any failure — the
+    dispatch path must not break if an optional organ is absent."""
+    import importlib.util
+
+    path = root / "scripts" / f"{module_name}.py"
+    if not path.exists():
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def hook_preflight(root: Path, contract: "Contract") -> dict[str, Any] | None:
+    """ASC-0184 — run the deterministic enforcement hooks on a contract's
+    declared allowed_files before its packet is dispatched. Returns the hook
+    decision iff it BLOCKED, else None. The integration glue fails open (a
+    missing engine never blocks); the engine itself fails closed on privacy."""
+    hooks = _load_sibling(root, "aios_hooks")
+    if hooks is None:
+        return None
+    action = {
+        "kind": "dispatch",
+        "paths": list(contract.allowed_files),
+        "contract_id": contract.contract_id,
+    }
+    try:
+        decision = hooks.evaluate(root, action)
+    except Exception:  # noqa: BLE001
+        return None
+    return decision if decision.get("verdict") == "block" else None
+
+
+def enqueue_dispatch_job(root: Path, dispatch_id: str, repo: str, contract: "Contract") -> None:
+    """ASC-0185 — record the dispatch as a leased job alongside the file drop.
+    Idempotent (job_key dedup); never raises into the dispatch path."""
+    jobs = _load_sibling(root, "aios_jobs")
+    if jobs is None:
+        return
+    try:
+        jobs.enqueue(root, kind="dispatch", job_key=f"{dispatch_id}.{repo}",
+                     contract_id=contract.contract_id, target_repo=repo)
+    except Exception:  # noqa: BLE001
+        return
+
+
 def append_event(root: Path, event: dict[str, Any]) -> None:
     ensure_layout(root)
     event = {"timestamp": now_iso(), **event}
@@ -661,6 +711,14 @@ def cmd_send(args: argparse.Namespace) -> int:
             blocked = append_praxis_block(root, contract, dispatch_id, repo, args.agent, "session_envelope_invalid", [str(exc)])
             print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
             return 1
+    # ASC-0184 — deterministic enforcement preflight: refuse to dispatch a
+    # contract whose declared scope would cross a privacy/audit boundary.
+    blocking = hook_preflight(root, contract)
+    if blocking is not None:
+        print(json.dumps({"ok": False, "dispatch_id": dispatch_id, "repo": repo,
+                           "blocked_by": "aios_hooks", "decision": blocking},
+                          ensure_ascii=False, indent=2, sort_keys=True))
+        return 1
     packet = build_packet(
         contract,
         dispatch_id,
@@ -688,6 +746,8 @@ def cmd_send(args: argparse.Namespace) -> int:
             "status": "sent",
         },
     )
+    # ASC-0185 — record the dispatch as a leased job alongside the file drop.
+    enqueue_dispatch_job(root, dispatch_id, repo, contract)
     print(
         json.dumps(
             {

@@ -56,6 +56,45 @@ allowed (if accepted):
    place (Invariant 3); the queue file is the index, the log is the truth
    (the JSONL-truth pattern from the same borrow plan).
 
+## GenesisOS Escape Review
+
+This review is advisory-only. It prevents the queue design from assuming that
+more machinery is automatically better.
+
+### Assumptions
+
+- Assumption 1: the current file-drop dispatch is simple but too weak for
+  concurrent watchers.
+- Assumption 2: leasing is enough to prevent double-claims without introducing
+  a database dependency.
+- Assumption 3: append-only provenance can explain retries better than mutable
+  status files.
+
+Counter branch: negate those assumptions. If the main problem is not
+concurrency but unclear ownership, a leased queue alone will not fix it. The
+contract must therefore make ownership visible in receipts and not only in
+internal state.
+
+### Plain Language
+
+Plain language: every unit of work gets a claim ticket. A worker may run the
+job only while it holds the ticket. If the worker disappears, the ticket
+expires and the job can be claimed again without guessing.
+
+### Cross-Domain Frame
+
+Market analogy: this is a trading floor with numbered orders, not a pile of
+papers on a desk. A trader can reserve an order for a short time, but the
+reservation expires and the audit log remains the source of truth.
+
+### Time Horizons
+
+- 1h: model the job schema and prove duplicate `job_key` insertion is a no-op.
+- 1 week: migrate dispatch and child watchers to claim by lease with expiry
+  receipts.
+- 1 year: support distributed AIOS installations where jobs can move across
+  machines without losing provenance.
+
 ## Named Exit
 
 Closed when: dispatch enqueues leased jobs, a watcher claims by lease, a
