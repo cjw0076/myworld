@@ -57,6 +57,26 @@ PROVIDER_ALIASES = {
     "codex": ("codex", "openai codex"),
     "gemini": ("gemini", "google gemini"),
 }
+GATE_CHAIR_DEMOTION_STATUSES = {
+    "gate_chair_timeout",
+    "gate_chair_exception",
+    "provider_access_denied",
+    "provider_backpressure",
+    "pin_required_noninteractive",
+    "empty_output",
+    "provider_execution_failed",
+}
+PRIVATE_TEXT_RE = re.compile(
+    r"("
+    r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}"
+    r"|q1q1e3e3"
+    r"|AIza[0-9A-Za-z_-]+"
+    r"|sk-[A-Za-z0-9_-]+"
+    r"|api[_ -]?key[=:]\S+"
+    r"|token[=:]\S+"
+    r")",
+    re.IGNORECASE,
+)
 
 
 def now_iso() -> str:
@@ -70,6 +90,11 @@ def canonical_json(data: Any) -> str:
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(canonical_json(data) + "\n", encoding="utf-8")
+
+
+def write_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
 
 
 def append_jsonl(path: Path, data: dict[str, Any]) -> None:
@@ -131,7 +156,13 @@ def estimate_tokens(text: str) -> int:
     return max(1, (len(text) + 3) // 4)
 
 
-def classify_intent(message: str) -> str:
+# ASC-0192 — intent classes, ordered so `cheap_single_turn` is matched before
+# `single_turn` (the latter is a substring of the former).
+HELPER_INTENTS = ("multi_step", "current_info", "cheap_single_turn", "single_turn")
+INTENT_HELPER = "cap_helper_classify_chat_intent"
+
+
+def _classify_intent_keyword(message: str) -> str:
     lower = message.lower()
     if any(
         word in lower
@@ -162,28 +193,82 @@ def classify_intent(message: str) -> str:
     return "single_turn"
 
 
+def _classify_intent_llm(message: str) -> str | None:
+    """Tier-1 of two-tier routing (ASC-0192) — a local-LLM pre-router. Returns
+    None on any failure (no model, error, unparseable) so the keyword
+    heuristic can take over; the layer degrades, it does not break."""
+    try:
+        root = Path(__file__).resolve().parents[1]
+        helper = root / "scripts" / "aios_helper.py"
+        if not helper.exists():
+            return None
+        proc = subprocess.run(
+            [sys.executable, helper.as_posix(), "--root", root.as_posix(), "run",
+             "--helper", INTENT_HELPER, "--input", message[:2000], "--json"],
+            capture_output=True, text=True, timeout=60,
+        )
+        result = str(json.loads(proc.stdout).get("result", "")).strip().lower()
+    except Exception:  # noqa: BLE001
+        return None
+    for intent in HELPER_INTENTS:  # cheap_single_turn before single_turn
+        if intent in result:
+            return intent
+    return None
+
+
+def _is_cheap(message: str) -> bool:
+    """The cheap/single split is a cost tier, not an intent — a deterministic
+    length/keyword signal decides it more reliably than a model."""
+    lower = message.lower()
+    return len(message) <= 160 or any(
+        word in lower for word in ("summarize", "explain", "status", "what is", "어떤", "요약"))
+
+
+def classify_intent(message: str) -> str:
+    """Two-tier routing (ASC-0192): a local-LLM pre-router classifies the
+    turn's *intent*; the keyword heuristic is the fallback when no local model
+    is available or the model errs. Keyword matching alone misclassified
+    turns phrased outside its hardcoded vocabulary — the founder's "작업 분류가
+    매끄럽지 않다".
+
+    The model is used for what it is good at (intent: build-work vs live-info
+    vs conversational); the cheap/single cost tier is decided by a
+    deterministic signal, because that boundary is a cost property, not a
+    semantic one, and the model is unreliable on it."""
+    llm = _classify_intent_llm(message)
+    if llm:
+        if llm == "single_turn" and _is_cheap(message):
+            return "cheap_single_turn"
+        return llm
+    return _classify_intent_keyword(message)
+
+
 def wants_current_info(message: str) -> bool:
     lower = message.lower()
     compact = re.sub(r"\s+", "", lower)
-    return any(
-        token in lower
-        for token in (
-            "weather",
-            "today's weather",
-            "current weather",
-            "latest",
-            "current",
-            "right now",
-            "stock price",
-            "exchange rate",
-            "오늘 날씨",
-            "현재 날씨",
-            "최신",
-            "지금",
-            "주가",
-            "환율",
-        )
-    ) or any(token in compact for token in ("오늘날씨", "현재날씨", "지금날씨"))
+    current_domains = (
+        "weather",
+        "today's weather",
+        "current weather",
+        "breaking news",
+        "stock price",
+        "exchange rate",
+        "오늘 날씨",
+        "현재 날씨",
+        "주가",
+        "환율",
+    )
+    if any(token in lower for token in current_domains):
+        return True
+    if any(token in compact for token in ("오늘날씨", "현재날씨", "지금날씨")):
+        return True
+    if "최신" in lower:
+        return True
+    if "latest" in lower and any(token in lower for token in ("news", "price", "release", "version", "weather", "market")):
+        return True
+    if "current" in lower and any(token in lower for token in ("news", "price", "weather", "exchange rate", "market")):
+        return True
+    return False
 
 
 def weather_location(message: str) -> str | None:
@@ -208,10 +293,22 @@ def weather_location(message: str) -> str | None:
 
 def wants_provider_gate(message: str) -> bool:
     lower = message.lower()
+    compact = re.sub(r"\s+", "", lower)
     return (
-        ("chatbot" in lower or "provider" in lower or "provided" in lower or "cli" in lower)
-        and ("aios" in lower or "gate" in lower or "agent" in lower or "연결" in lower or "역할" in lower)
-    ) or ("gate 역할" in lower) or ("codex(cli)" in lower)
+        ("chatbot" in lower or "provider" in lower or "provided" in lower or "cli" in lower or "chatbot" in compact)
+        and (
+            "aios" in lower
+            or "gate" in lower
+            or "agent" in lower
+            or "게이트" in lower
+            or "라우팅" in lower
+            or "연결" in lower
+            or "역할" in lower
+        )
+    ) or ("gate 역할" in lower) or ("게이트 역할" in lower) or ("codex(cli)" in lower) or (
+        "aios" in lower
+        and any(token in lower for token in ("gate agent", "gate 역할", "게이트", "라우팅", "시스템 답변", "system response"))
+    )
 
 
 def build_gate_decision(message: str, override: str | None) -> dict[str, Any]:
@@ -670,6 +767,61 @@ def local_negative_evidence(root: Path, limit: int = 5) -> list[dict[str, Any]]:
             }
         )
 
+    eval_root = root / ".aios" / "evals" / "gate_chair"
+    if eval_root.exists():
+        report_files = sorted(eval_root.glob("*/report.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for path in report_files[:80]:
+            payload = read_json(path)
+            if not isinstance(payload, dict) or payload.get("schema_version") != "aios.gate_chair_eval.v1":
+                continue
+            for mode in payload.get("modes") or []:
+                if not isinstance(mode, dict):
+                    continue
+                for run in mode.get("runs") or []:
+                    if not isinstance(run, dict):
+                        continue
+                    chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+                    status = str(chair.get("status") or "")
+                    if not status or status in {"success", "not_attempted"}:
+                        continue
+                    provider = str(chair.get("mode") or mode.get("mode") or "gate_chair")
+                    model = str(chair.get("model") or "unknown")
+                    prompt = str(run.get("prompt_preview") or "unknown prompt")
+                    add(
+                        status,
+                        f"Gate Chair eval {payload.get('eval_id') or path.parent.name} recorded {status} for {provider} model={model} on prompt `{prompt}`; keep this runtime as candidate until it beats the internal baseline without timeout.",
+                        path,
+                        0.72,
+                    )
+                    if len(rows) >= limit:
+                        return rows
+
+    chat_root = root / ".aios" / "chat"
+    if chat_root.exists():
+        turn_files = sorted(chat_root.glob("*/gate_chair_turns.jsonl"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for path in turn_files[:120]:
+            for row in reversed(read_jsonl(path)[-80:]):
+                if row.get("schema_version") != "aios.chat.gate_chair_turn.v1":
+                    continue
+                if row.get("executed") is True:
+                    continue
+                meta = row.get("chair_meta") if isinstance(row.get("chair_meta"), dict) else {}
+                status = str(meta.get("status") or "")
+                if not status or status in {"success", "not_attempted"}:
+                    continue
+                provider_meta = meta.get("meta") if isinstance(meta.get("meta"), dict) else {}
+                provider = str(provider_meta.get("mode") or "gate_chair")
+                model = str(provider_meta.get("model") or "unknown")
+                turn_id = str(row.get("turn_id") or "unknown_turn")
+                add(
+                    status,
+                    f"Gate Chair chat turn {turn_id} recorded {status} for {provider} model={model}; demote this runtime until a successful eval or live turn proves recovery.",
+                    path,
+                    0.7,
+                )
+                if len(rows) >= limit:
+                    return rows
+
     outbox = root / ".aios" / "outbox"
     if outbox.exists():
         result_files = sorted(outbox.glob("*/*.result.json"), key=lambda path: path.stat().st_mtime, reverse=True)
@@ -723,12 +875,144 @@ def local_negative_evidence(root: Path, limit: int = 5) -> list[dict[str, Any]]:
     return rows
 
 
+def wants_memory_review_gap_projection(message: str) -> bool:
+    lower = message.lower()
+    compact = re.sub(r"\s+", "", lower)
+    return (
+        wants_action(message)
+        or wants_genesis_friction_question(message)
+        or wants_memory_question(message)
+        or any(token in lower for token in ("evidence", "review", "draft", "증거", "리뷰", "검토", "초안"))
+        or any(token in compact for token in ("추가증거", "기억검토", "초안검토"))
+    )
+
+
+def local_memory_review_gaps(root: Path, limit: int = 3) -> list[dict[str, Any]]:
+    outbox = root / ".aios" / "outbox" / "memoryOS"
+    if not outbox.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for path in sorted(outbox.glob("mdrev-*.memoryOS.result.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:80]:
+        payload = read_json(path)
+        if not isinstance(payload, dict):
+            continue
+        review = payload.get("review_request") if isinstance(payload.get("review_request"), dict) else {}
+        decision = str(review.get("review_decision") or "")
+        if decision != "needs_more_evidence":
+            continue
+        draft_id = str(review.get("draft_id") or payload.get("dispatch_id") or path.stem)
+        if draft_id in seen:
+            continue
+        seen.add(draft_id)
+        rows.append(
+            {
+                "id": f"mrgap_{stable_id(draft_id + path.as_posix())}",
+                "type": "memory_review_gap",
+                "review_decision": decision,
+                "draft_id": draft_id,
+                "draft_type": review.get("draft_type"),
+                "source_artifact": review.get("source_artifact"),
+                "memory_object_id": review.get("memory_object_id"),
+                "review_id": review.get("review_id"),
+                "content": "MemoryOS kept this draft as needs_more_evidence; require a corroborating artifact, operator review note, or repeated future turns before treating it as durable memory.",
+                "raw_refs": [relative(path, root)],
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
+def attach_memory_review_gaps(root: Path, message: str, memory: dict[str, Any]) -> dict[str, Any]:
+    if not wants_memory_review_gap_projection(message):
+        return memory
+    gaps = local_memory_review_gaps(root)
+    if not gaps:
+        return memory
+    return {
+        **memory,
+        "memory_review_gaps": gaps,
+        "memory_review_gap_count": len(gaps),
+        "memory_review_gap_source": "memoryos_review_receipts",
+    }
+
+
 def sanitize_provider_text(text: str, *, max_lines: int = 80, max_chars: int = 8000) -> str:
     lines = [line.rstrip() for line in str(text).splitlines() if line.strip() or line == ""]
     clipped = "\n".join(lines[:max_lines])
     if len(clipped) > max_chars:
         return clipped[:max_chars] + " ..."
     return clipped
+
+
+def redact_private_text(text: Any, *, max_lines: int = 8, max_chars: int = 600) -> str:
+    clipped = sanitize_provider_text(str(text or ""), max_lines=max_lines, max_chars=max_chars)
+    return PRIVATE_TEXT_RE.sub("[REDACTED_PRIVATE]", clipped)
+
+
+def compact_chair_item(item: dict[str, Any], *, max_content_chars: int = 240) -> dict[str, Any]:
+    raw_refs = [redact_private_text(ref, max_lines=1, max_chars=120) for ref in (item.get("raw_refs") or [])[:2]]
+    return {
+        "id": redact_private_text(item.get("id"), max_lines=1, max_chars=80),
+        "type": redact_private_text(item.get("type"), max_lines=1, max_chars=80),
+        "content": redact_private_text(item.get("content"), max_lines=2, max_chars=max_content_chars),
+        "confidence": item.get("confidence"),
+        "failure_class": redact_private_text(item.get("failure_class"), max_lines=1, max_chars=80) if item.get("failure_class") else None,
+        "raw_refs": raw_refs,
+    }
+
+
+def compact_chair_frictions(genesis: dict[str, Any] | None, limit: int = 3) -> dict[str, Any]:
+    if not isinstance(genesis, dict):
+        return {}
+    frictions = []
+    for item in (genesis.get("frictions") or [])[:limit]:
+        if not isinstance(item, dict):
+            continue
+        frictions.append(
+            {
+                "branch_id": redact_private_text(item.get("branch_id"), max_lines=1, max_chars=100),
+                "type": redact_private_text(item.get("type"), max_lines=1, max_chars=80),
+                "discomfort": redact_private_text(item.get("discomfort"), max_lines=1, max_chars=180),
+                "need": redact_private_text(item.get("need"), max_lines=1, max_chars=180),
+            }
+        )
+    return {
+        "schema_version": genesis.get("schema_version"),
+        "authority": genesis.get("authority"),
+        "branch_count": genesis.get("branch_count"),
+        "frictions": frictions,
+    }
+
+
+def redact_execution_meta(value: Any) -> Any:
+    if isinstance(value, dict):
+        redacted: dict[str, Any] = {}
+        for key, item in value.items():
+            key_text = str(key)
+            if key_text == "command":
+                if isinstance(item, list) and item:
+                    executable = str(item[0])
+                    if executable in {"/bin/bash", "bash"} and len(item) >= 2:
+                        redacted[key_text] = [executable, str(item[1]), "[REDACTED_COMMAND]"]
+                    else:
+                        redacted[key_text] = [executable, "[REDACTED_COMMAND_ARGS]"]
+                elif item is None:
+                    redacted[key_text] = None
+                else:
+                    redacted[key_text] = "[REDACTED_COMMAND]"
+                continue
+            if key_text in {"raw_stderr", "stdout_preview", "stderr_preview", "reason"}:
+                redacted[key_text] = redact_private_text(item, max_lines=4, max_chars=600)
+                continue
+            redacted[key_text] = redact_execution_meta(item)
+        return redacted
+    if isinstance(value, list):
+        return [redact_execution_meta(item) for item in value]
+    if isinstance(value, str):
+        return redact_private_text(value, max_lines=4, max_chars=600)
+    return value
 
 
 def strip_terminal_punctuation(value: Any) -> str:
@@ -758,33 +1042,53 @@ def _provider_prompt_payload(message: str, injection: dict[str, Any], memory: di
             prefix.append("Negative evidence excerpts:")
             for item in negative[:3]:
                 prefix.append(f"- {item.get('id')}: {item.get('content')}")
+        gaps = [item for item in (memory.get("memory_review_gaps") or []) if isinstance(item, dict)]
+        if gaps:
+            prefix.append("MemoryOS review gaps:")
+            for item in gaps[:3]:
+                prefix.append(f"- {item.get('draft_id')}: {item.get('content')}")
     return "\n".join(prefix) + "\n\nUser message:\n" + message
 
 
 def gate_chair_prompt(message: str, base_response: str, memory: dict[str, Any], gate: dict[str, Any], genesis: dict[str, Any] | None = None) -> str:
+    selected = [item for item in (memory.get("selected_memories") or []) if isinstance(item, dict)]
+    negative = [item for item in (memory.get("negative_evidence") or []) if isinstance(item, dict)]
+    gaps = [item for item in (memory.get("memory_review_gaps") or []) if isinstance(item, dict)]
+    compact_genesis = compact_chair_frictions(genesis)
     payload = {
         "role": "AIOS Gate Chair",
         "instruction": (
             "Answer naturally as the AIOS conversation gate. Use only the provided "
             "MemoryOS/CapabilityOS/GenesisOS/Gate evidence. Do not invent private "
-            "facts, secrets, current facts, or execution results. Keep the answer concise."
+            "facts, secrets, current facts, or execution results. Keep the answer under "
+            "1200 characters unless the user asks for detail. Do not repeat route receipts. "
+            "Do not claim the provider invocation layer is missing; if this prompt reached "
+            "a provider-backed Chair, that is already evidence that provider invocation exists. "
+            "If runtime quality is weak, say the Chair quality loop needs improvement."
         ),
-        "user_message": message,
-        "deterministic_fallback": base_response,
+        "user_message": redact_private_text(message, max_lines=4, max_chars=1000),
+        "deterministic_fallback": redact_private_text(base_response, max_lines=12, max_chars=1600),
         "gate_decision": {
             "decision": gate.get("decision"),
             "input_class": gate.get("input_class"),
             "route": gate.get("route"),
-            "capability_route_audit": gate.get("capability_route_audit"),
-            "genesis_friction": gate.get("genesis_friction"),
+            "capability_route_audit": {
+                "skipped_provider_candidates": (gate.get("capability_route_audit") or {}).get("skipped_provider_candidates", [])
+                if isinstance(gate.get("capability_route_audit"), dict)
+                else [],
+            },
+            "genesis_friction": compact_genesis,
         },
         "memory_context": {
             "trace_id": memory.get("trace_id"),
-            "selected_memories": memory.get("selected_memories") or [],
-            "negative_evidence": memory.get("negative_evidence") or [],
+            "context_items": memory.get("context_items"),
+            "selected_memory_ids": (memory.get("selected_memory_ids") or [])[:8],
+            "selected_memories": [compact_chair_item(item) for item in selected[:5]],
+            "negative_evidence": [compact_chair_item(item) for item in negative[:3]],
+            "memory_review_gaps": [compact_chair_item(item, max_content_chars=220) for item in gaps[:3]],
             "negative_evidence_source": memory.get("negative_evidence_source"),
         },
-        "genesis_context": genesis or {},
+        "genesis_context": compact_genesis,
     }
     return canonical_json(payload)
 
@@ -820,6 +1124,137 @@ def gate_chair_allowed(root: Path, message: str, gate: dict[str, Any], memory: d
     )
 
 
+def gate_chair_demotion_threshold() -> int:
+    try:
+        return max(1, int(os.environ.get("AIOS_GATE_CHAIR_DEMOTION_THRESHOLD", "2")))
+    except ValueError:
+        return 2
+
+
+def gate_chair_report_recovers_runtime(root: Path, report: dict[str, Any], mode: str, model: str, ref: Path | str) -> dict[str, Any] | None:
+    if not report.get("promotion_ready"):
+        return None
+    scores = report.get("scores") if isinstance(report.get("scores"), dict) else {}
+    try:
+        if float(scores.get("current", 0.0)) < float(scores.get("internal", 0.0)):
+            return None
+    except (TypeError, ValueError):
+        return None
+    for mode_report in report.get("modes") or []:
+        if not isinstance(mode_report, dict) or mode_report.get("mode") != "current":
+            continue
+        runtime_modes = {str(item) for item in mode_report.get("runtime_modes") or []}
+        if mode not in runtime_modes:
+            continue
+        runtime_models = {str(item) for item in mode_report.get("runtime_models") or []}
+        if model and model not in runtime_models:
+            continue
+        failed = False
+        for run in mode_report.get("runs") or []:
+            if not isinstance(run, dict):
+                continue
+            chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+            status = str(chair.get("status") or "")
+            if run.get("ok") is False or (status and status not in {"success", "not_attempted"}):
+                failed = True
+                break
+        if failed:
+            continue
+        return {
+            "recovery_reason": "fresh_eval_beat_internal_baseline",
+            "recovery_ref": relative(ref, root) if isinstance(ref, Path) else str(ref),
+            "recovery_current_score": scores.get("current"),
+            "recovery_internal_score": scores.get("internal"),
+        }
+    return None
+
+
+def gate_chair_runtime_demotion(root: Path | None, mode: str, model: str = "") -> dict[str, Any] | None:
+    if root is None or mode in {"", "internal_evidence_synthesizer"}:
+        return None
+    if os.environ.get("AIOS_GATE_CHAIR_RUNTIME_PATH", "").strip():
+        return None
+    enabled = os.environ.get("AIOS_GATE_CHAIR_DEMOTION_ENABLED", "1").strip().lower()
+    if enabled in {"0", "false", "no", "off"}:
+        return None
+
+    threshold = gate_chair_demotion_threshold()
+    failures: list[dict[str, str]] = []
+
+    def add_failure(status: str, provider: str, found_model: str, ref: Path | str) -> None:
+        if len(failures) >= threshold:
+            return
+        if status not in GATE_CHAIR_DEMOTION_STATUSES:
+            return
+        if provider != mode:
+            return
+        if model and found_model not in {"", "unknown", model}:
+            return
+        ref_text = relative(ref, root) if isinstance(ref, Path) else str(ref)
+        failures.append({"status": status, "ref": ref_text, "model": found_model or model or "unknown"})
+
+    eval_root = root / ".aios" / "evals" / "gate_chair"
+    if eval_root.exists():
+        report_files = sorted(eval_root.glob("*/report.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for path in report_files[:80]:
+            payload = read_json(path)
+            if not isinstance(payload, dict) or payload.get("schema_version") != "aios.gate_chair_eval.v1":
+                continue
+            if gate_chair_report_recovers_runtime(root, payload, mode, model, path):
+                return None
+            for mode_report in payload.get("modes") or []:
+                if not isinstance(mode_report, dict):
+                    continue
+                for run in mode_report.get("runs") or []:
+                    if not isinstance(run, dict):
+                        continue
+                    chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+                    add_failure(
+                        str(chair.get("status") or ""),
+                        str(chair.get("mode") or mode_report.get("mode") or ""),
+                        str(chair.get("model") or "unknown"),
+                        path,
+                    )
+                    if len(failures) >= threshold:
+                        break
+                if len(failures) >= threshold:
+                    break
+            if len(failures) >= threshold:
+                break
+
+    chat_root = root / ".aios" / "chat"
+    if len(failures) < threshold and chat_root.exists():
+        turn_files = sorted(chat_root.glob("*/gate_chair_turns.jsonl"), key=lambda path: path.stat().st_mtime, reverse=True)
+        for path in turn_files[:120]:
+            for row in reversed(read_jsonl(path)[-80:]):
+                if row.get("schema_version") != "aios.chat.gate_chair_turn.v1":
+                    continue
+                meta = row.get("chair_meta") if isinstance(row.get("chair_meta"), dict) else {}
+                provider_meta = meta.get("meta") if isinstance(meta.get("meta"), dict) else {}
+                add_failure(
+                    str(meta.get("status") or ""),
+                    str(provider_meta.get("mode") or ""),
+                    str(provider_meta.get("model") or "unknown"),
+                    path,
+                )
+                if len(failures) >= threshold:
+                    break
+            if len(failures) >= threshold:
+                break
+
+    if len(failures) < threshold:
+        return None
+    return {
+        "fallback_reason": "active_runtime_demoted_by_negative_evidence",
+        "requested_mode": mode,
+        "requested_model": model,
+        "failure_count": len(failures),
+        "failure_threshold": threshold,
+        "failure_statuses": [item["status"] for item in failures],
+        "failure_refs": list(dict.fromkeys(item["ref"] for item in failures)),
+    }
+
+
 def gate_chair_command(prompt: str, root: Path | None = None) -> tuple[list[str] | None, dict[str, Any]]:
     forced = os.environ.get("AIOS_GATE_CHAIR_FORCE_INTERNAL", "").strip().lower()
     if forced in {"1", "true", "yes", "on"}:
@@ -836,6 +1271,15 @@ def gate_chair_command(prompt: str, root: Path | None = None) -> tuple[list[str]
             }
         if mode == "ollama":
             model = str(config.get("model") or os.environ.get("AIOS_GATE_OLLAMA_MODEL") or os.environ.get("AIOS_OLLAMA_MODEL") or "qwen2.5:7b")
+            demotion = gate_chair_runtime_demotion(root, mode, model)
+            if demotion:
+                return None, {
+                    "status": "configured",
+                    "mode": "internal_evidence_synthesizer",
+                    "model": "deterministic",
+                    "source": "chair_runtime_config",
+                    **demotion,
+                }
             if _command_exists("ollama"):
                 return ["ollama", "run", model, prompt], {
                     "status": "configured",
@@ -852,6 +1296,19 @@ def gate_chair_command(prompt: str, root: Path | None = None) -> tuple[list[str]
                 "fallback_reason": "ollama_command_missing",
             }
         if mode in PROVIDER_CHAIR_MODES:
+            if mode == "claude":
+                model = str(config.get("model") or os.environ.get("AIOS_CLAUDE_MODEL", "claude-opus-4-6"))
+            else:
+                model = str(config.get("model") or "")
+            demotion = gate_chair_runtime_demotion(root, mode, model)
+            if demotion:
+                return None, {
+                    "status": "configured",
+                    "mode": "internal_evidence_synthesizer",
+                    "model": "deterministic",
+                    "source": "chair_runtime_config",
+                    **demotion,
+                }
             command, provider_meta = chair_provider_command(mode, prompt, config)
             if command:
                 return command, {
@@ -891,10 +1348,27 @@ def gate_chair_runtime_summary(root: Path | None = None) -> str:
             return f"{runtime_label} ({runtime_kind})이 internal_evidence_synthesizer를 명시해서 deterministic Chair를 사용 중이야."
         if mode == "ollama":
             model = str(config.get("model") or "qwen2.5:7b")
+            demotion = gate_chair_runtime_demotion(root, mode, model)
+            if demotion:
+                return (
+                    f"{runtime_label} ({runtime_kind})은 Ollama Chair model={model}를 지정했지만, "
+                    f"최근 실패 {demotion['failure_count']}건 때문에 effective runtime은 internal_evidence_synthesizer로 demote됐어."
+                )
             if _command_exists("ollama"):
                 return f"{runtime_label} ({runtime_kind})이 local Ollama Chair model={model}를 지정했어."
             return f"{runtime_label} ({runtime_kind})은 Ollama Chair model={model}를 요청하지만, 이 머신에는 ollama command가 없어 internal fallback 중이야."
         if mode in PROVIDER_CHAIR_MODES:
+            if mode == "claude":
+                configured_model = str(config.get("model") or os.environ.get("AIOS_CLAUDE_MODEL", "claude-opus-4-6"))
+            else:
+                configured_model = str(config.get("model") or "")
+            demotion = gate_chair_runtime_demotion(root, mode, configured_model)
+            if demotion:
+                model = f" model={configured_model}" if configured_model else ""
+                return (
+                    f"{runtime_label} ({runtime_kind})은 {mode} provider Chair{model}를 지정했지만, "
+                    f"최근 실패 {demotion['failure_count']}건 때문에 effective runtime은 internal_evidence_synthesizer로 demote됐어."
+                )
             command, meta = chair_provider_command(mode, "", config)
             if command:
                 model = f" model={meta.get('model')}" if meta.get("model") else ""
@@ -1222,13 +1696,18 @@ def describe_memory(memory: dict[str, Any]) -> str:
         return "MemoryOS context is unavailable for this turn, so I will keep the answer provisional."
     count = int(memory.get("context_items") or 0)
     trace = memory.get("trace_id")
+    gap_count = int(memory.get("memory_review_gap_count") or 0)
     if count:
         negative_count = int(memory.get("negative_evidence_count") or 0)
         source = memory.get("negative_evidence_source")
         if negative_count and source == "aios_receipts":
             return f"MemoryOS returned {count} relevant context item(s){f' via {trace}' if trace else ''}; AIOS also found {negative_count} local negative evidence receipt(s)."
+        if gap_count:
+            return f"MemoryOS returned {count} relevant context item(s){f' via {trace}' if trace else ''}; AIOS also found {gap_count} MemoryOS review gap(s) needing evidence."
         negative = f", including {negative_count} negative evidence item(s)" if negative_count else ""
         return f"MemoryOS returned {count} relevant context item(s){negative}{f' via {trace}' if trace else ''}."
+    if gap_count:
+        return f"MemoryOS returned no selected context{f' via {trace}' if trace else ''}; AIOS found {gap_count} review gap(s) that still need evidence."
     return f"MemoryOS returned no selected context{f' via {trace}' if trace else ''}."
 
 
@@ -1265,6 +1744,14 @@ def memory_answer(memory: dict[str, Any]) -> list[str]:
         ref = f" [{refs[0]}]" if refs else ""
         lines.append(f"- {content}{ref}")
     lines.append("이 기억들은 아직 대화 답변에 쓰기 위한 context이고, 새 기억으로 자동 승인되지는 않아.")
+    gaps = [item for item in (memory.get("memory_review_gaps") or []) if isinstance(item, dict)]
+    if gaps:
+        lines.append("그리고 MemoryOS가 아직 durable memory로 받지 않은 초안도 있어.")
+        for item in gaps[:3]:
+            refs = item.get("raw_refs") or []
+            ref = f" [{refs[0]}]" if refs else ""
+            lines.append(f"- {item.get('draft_id')}: needs_more_evidence -> {item.get('content')}{ref}")
+        lines.append("이런 초안은 보강 증거가 붙기 전까지 기억으로 확정하면 안 돼.")
     return lines
 
 
@@ -1310,6 +1797,93 @@ def genesis_friction_answer(genesis: dict[str, Any] | None) -> list[str]:
         lines.append(f"- {branch}: {discomfort} -> {need}")
     lines.append("이건 실행 명령이 아니라, 다음 contract나 Hive 작업으로 승격하기 전의 speculative signal이야.")
     return lines
+
+
+def memory_review_gap_lines(memory: dict[str, Any]) -> list[str]:
+    gaps = [item for item in (memory.get("memory_review_gaps") or []) if isinstance(item, dict)]
+    if not gaps:
+        return []
+    lines = ["MemoryOS review gap도 같이 봐야 해. 최근 비슷한 draft가 `needs_more_evidence`로 남았어."]
+    for item in gaps[:3]:
+        refs = item.get("raw_refs") or []
+        ref = f" [{refs[0]}]" if refs else ""
+        lines.append(f"- {item.get('draft_id')}: {item.get('content')}{ref}")
+    lines.append("그래서 비슷한 내용을 승격하려면 먼저 보강 증거를 붙여야 해.")
+    return lines
+
+
+def render_friction_contract_seed(
+    message: str,
+    conversation_id: str,
+    genesis: dict[str, Any],
+    artifact_refs: dict[str, str | None],
+) -> str | None:
+    frictions = [item for item in genesis.get("frictions") or [] if isinstance(item, dict)]
+    if not frictions:
+        return None
+    first = frictions[0]
+    seed = str(first.get("contract_seed") or "").strip()
+    goal = seed or f"Promote GenesisOS friction into an AIOS work contract: {message}"
+    slug = slugify(goal)
+    discomfort = strip_terminal_punctuation(first.get("discomfort"))
+    need = strip_terminal_punctuation(first.get("need"))
+    evidence_lines = []
+    for label, ref in artifact_refs.items():
+        if isinstance(ref, str) and ref:
+            evidence_lines.append(f"- {label}: `{ref}`")
+    evidence = "\n".join(evidence_lines) or "- pending: `no_artifact_ref_available`"
+    return f"""---
+contract_id: ASC-XXXX
+slug: {slug}
+status: proposed
+origin: AIOS chat GenesisOS friction
+authority: speculative_only
+conversation_id: {conversation_id}
+created: {now_iso()}
+accepted:
+closed:
+---
+
+# ASC-XXXX {slug.replace("-", " ").title()}
+
+## Why Now
+
+AIOS chat asked GenesisOS for discomfort/need and produced a speculative
+contract seed. This file is not execution authority; it is a reviewable bridge
+from conversation to a governed AIOS contract.
+
+- user_message: `{message}`
+- first_discomfort: `{discomfort}`
+- first_need: `{need}`
+- genesis_authority: `{genesis.get("authority", "speculative_only")}`
+
+## Proposed Goal
+
+{goal}
+
+## Required AIOS Route
+
+- MemoryOS: review the related `genesis_friction_signal` memory draft before
+  accepting it as durable memory.
+- CapabilityOS: recommend concrete tools/routes only after operator accepts
+  this contract.
+- GenesisOS: keep branch authority advisory; do not select final truth.
+- Hive Mind: execute only after this seed is assigned an ASC id, scoped, and
+  accepted.
+- MyWorld: decide whether this is noise, a discovery, or an executable contract.
+
+## Evidence
+
+{evidence}
+
+## Stop Conditions
+
+- This seed is treated as execution authority before operator acceptance.
+- Scope expands beyond the eventual accepted contract.
+- Private data, secrets, provider PINs, raw exports, or private history are
+  copied into the contract body.
+- MemoryOS review is skipped while claiming durable founder memory.
+"""
 
 
 def rank_memory_for_answer(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1404,6 +1978,7 @@ def assistant_text(
         lines.extend(negative_evidence_answer(memory))
     elif wants_genesis_friction_question(message):
         lines.extend(genesis_friction_answer(genesis))
+        lines.extend(memory_review_gap_lines(memory))
     elif wants_memory_question(message):
         lines.extend(memory_answer(memory))
     elif wants_greeting(message):
@@ -1416,6 +1991,7 @@ def assistant_text(
             first = frictions[0]
             lines.append(f"GenesisOS가 먼저 건드린 불편함은 이거야: {strip_terminal_punctuation(first.get('discomfort'))}.")
             lines.append(f"그래서 필요한 다음 질문은: {strip_terminal_punctuation(first.get('need'))}.")
+        lines.extend(memory_review_gap_lines(memory))
     elif wants_status(message):
         lines.append("현재 AIOS 상태를 대화 턴으로 정리할게.")
     else:
@@ -1451,6 +2027,7 @@ def write_memory_draft(
     message: str,
     response: str,
     conversation_id: str,
+    memory: dict[str, Any] | None = None,
     genesis: dict[str, Any] | None = None,
     genesis_ref: str | None = None,
 ) -> dict[str, Any]:
@@ -1513,6 +2090,33 @@ def write_memory_draft(
             }
             drafts.append(friction_draft)
             extra_ids.append(f"chatdraft_{turn_id}_genesis")
+        negative = [item for item in ((memory or {}).get("negative_evidence") or []) if isinstance(item, dict)]
+        if negative:
+            negative_lines = []
+            refs: list[str] = ["messages.jsonl", "gate_decisions"]
+            for item in negative[:5]:
+                failure_class = str(item.get("failure_class") or item.get("type") or "negative_evidence")
+                content = sanitize_provider_text(str(item.get("content") or ""), max_lines=1, max_chars=260)
+                negative_lines.append(f"- {failure_class}: {content}")
+                refs.extend(str(ref) for ref in (item.get("raw_refs") or [])[:2])
+            negative_draft = {
+                "type": "negative_evidence_signal",
+                "origin": "aios_chat_negative_evidence",
+                "status": "draft",
+                "project": "AIOS",
+                "confidence": 0.68,
+                "conversation_id": conversation_id,
+                "content": "AIOS projected negative provider/tool evidence for review:\n" + "\n".join(negative_lines),
+                "raw_refs": list(dict.fromkeys(refs)),
+                "provenance": {
+                    "source": "aios_chat",
+                    "memory_trace_id": (memory or {}).get("trace_id"),
+                    "negative_evidence_source": (memory or {}).get("negative_evidence_source"),
+                    "created_at": now_iso(),
+                },
+            }
+            drafts.append(negative_draft)
+            extra_ids.append(f"chatdraft_{turn_id}_negative")
     write_json(path, payload)
     return {"id": f"chatdraft_{turn_id}", "extra_draft_ids": extra_ids, **draft}
 
@@ -1560,7 +2164,7 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
         gate["gate_pack"] = projection
     if genesis:
         gate["genesis_friction"] = genesis
-    memory = memory_context(root, clean_message)
+    memory = attach_memory_review_gaps(root, clean_message, memory_context(root, clean_message))
     substrate, intent, reason, route_audit = choose_substrate(clean_message, override, capability_payload, gate, memory)
     if route_audit:
         gate["capability_route_audit"] = route_audit
@@ -1595,15 +2199,15 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
             "turn_id": provider_turn_id,
             "substrate": substrate,
             "executed": executed,
-            "provider_meta": provider_meta,
-            "prompt_preview": provider_prompt[:200],
-            "raw_output_preview": (provider_output or "")[:200],
+            "provider_meta": redact_execution_meta(provider_meta),
+            "prompt_preview": redact_private_text(provider_prompt, max_lines=4, max_chars=200),
+            "raw_output_preview": redact_private_text(provider_output, max_lines=4, max_chars=200),
             "created_at": now_iso(),
         }
         append_jsonl(chat_dir / "provider_turns.jsonl", provider_payload)
         provider_turn_path = f".aios/chat/{slugify(conversation_id)}/provider_turns.jsonl"
         if executed:
-            response = f"{provider_output}\n\n---\n{base_response}"
+            response = provider_output
             stop_conditions = stop_conditions[:]
         else:
             if provider_meta.get("status") in {
@@ -1633,9 +2237,9 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
                 "schema_version": "aios.chat.gate_chair_turn.v1",
                 "turn_id": chair_turn_id,
                 "executed": chair_executed,
-                "chair_meta": chair_meta,
-                "prompt_preview": chair_prompt[:200],
-                "raw_output_preview": (chair_output or "")[:200],
+                "chair_meta": redact_execution_meta(chair_meta),
+                "prompt_preview": redact_private_text(chair_prompt, max_lines=4, max_chars=200),
+                "raw_output_preview": redact_private_text(chair_output, max_lines=4, max_chars=200),
                 "created_at": now_iso(),
             }
             append_jsonl(chat_dir / "gate_chair_turns.jsonl", chair_payload)
@@ -1650,6 +2254,7 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
             if chair_executed:
                 response = chair_output
 
+    response = redact_private_text(response, max_lines=120, max_chars=8000)
     turn_id = stable_id(f"{conversation_id}:{len(history)}:{clean_message}:{now_iso()}")
     created_at = now_iso()
     gate = {**gate, "turn_id": turn_id, "created_at": created_at}
@@ -1710,12 +2315,30 @@ def route_turn(root: Path, message: str, conversation_id: str) -> dict[str, Any]
         artifact_paths["provider_turns"] = provider_turn_path
     if gate_chair_turn_path:
         artifact_paths["gate_chair_turns"] = gate_chair_turn_path
+    if genesis and (wants_genesis_friction_question(clean_message) or wants_action(clean_message)):
+        friction_seed = render_friction_contract_seed(
+            clean_message,
+            slugify(conversation_id),
+            genesis,
+            {
+                "messages": artifact_paths.get("messages"),
+                "gate_decision": artifact_paths.get("gate_decision"),
+                "genesis_branches": artifact_paths.get("genesis_branches"),
+                "memory_context_pack": artifact_paths.get("memory_context_pack"),
+            },
+        )
+        if friction_seed:
+            seed_path = chat_dir / "friction_contract_seed.md"
+            write_text(seed_path, friction_seed)
+            artifact_paths["friction_contract_seed"] = relative(seed_path, root)
+            receipt["next_step"] = f"Review `{artifact_paths['friction_contract_seed']}` and promote it only through an accepted ASC contract."
     draft = write_memory_draft(
         chat_dir,
         turn_id,
         clean_message,
         response,
         conversation_id,
+        memory=memory,
         genesis=genesis,
         genesis_ref=artifact_paths.get("genesis_branches"),
     )

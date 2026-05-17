@@ -5383,3 +5383,20 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: `aios_dispatch.py send` → packet at .aios/inbox/hivemind/asc-0190.hivemind.json; the ASC-0184 hook preflight ran and allowed it, the ASC-0185 job enqueue produced 1 queued job — both Tier-1 integrations verified in a real dispatch.
 - next: founder GO/HOLD on ASC-0191; codex@hivemind picks up ASC-0190 when a watcher runs.
 - status: audit gap #5 contracted + dispatched; gap #4 contracted, awaiting founder GO
+
+## 2026-05-17T22:00+09:00 — ASC-0192: chat interface two-tier routing (tier-1)
+
+- when: 2026-05-17T22:00+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: founder — the AIOS chat interface's answer quality and task classification are rough; study agent-multiplexer OSS and fix
+- changed:
+  - scripts/aios_chat_router.py — classify_intent is now two-tier: a local-LLM pre-router for intent + a deterministic length signal for the cheap/single cost tier; keyword heuristic kept as fallback
+  - .aios/helpers/catalog.json + deploy/helpers_catalog.json — new helper cap_helper_classify_chat_intent (qwen3:8b)
+  - docs/research/AGENT_MULTIPLEXER_LANDSCAPE.md (new — OSS study)
+  - docs/contracts/ASC-0192-* (new, accepted)
+- decision: classify_intent was pure keyword matching — the founder's "작업 분류가 매끄럽지 않다". Diagnosis confirmed it is the same keyword/template anti-pattern the audit found in GenesisOS. Fixed with two-tier routing (the LLM-router field's answer, per the multiplexer research). Honest finding mid-build: qwen3:1.7b classifies poorly (1/5); qwen3:8b classifies well (6/6) — the helper was stuck at the fast tier via a nested `helper` object the runner reads, fixed to default tier. Second honest finding: the model is unreliable on cheap_single_turn vs single_turn because that is a *cost* boundary, not an intent — so the LLM decides intent and a deterministic length signal decides the cost tier. Multiplexer research: the OSS tools isolate+present but do not classify; routing is AIOS's contribution.
+- evidence: cap_helper_classify_chat_intent on qwen3:8b — '버그 고쳐줄래'→multi_step, 'refactor'→multi_step, '오늘 날씨'→current_info, '이게 무슨 뜻'→cheap_single_turn (4/4). 35 chat_router tests pass.
+- next: ASC-0192 follow-on — tier-2 quality gate, route against CapabilityOS live, multi-agent roster UI.
+- status: chat task-classification fixed (two-tier); interface multi-agent UI is the named follow-on

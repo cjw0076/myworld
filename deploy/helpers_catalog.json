@@ -181,6 +181,55 @@
         "role_prompt": "You are the operator-review specialist inside AIOS. You are given the AIOS dream cycle's proposals (recurring schemas, stale flags, open questions). For EACH proposal output one line: '<proposal> => <routine action> [TAG]' where TAG is one of ROUTINE-REVERSIBLE (low-risk, reversible, the kernel may auto-confirm), NEEDS-REVIEW (operator should look), or ESCALATE (vision-level, founder). Be terse. You do not decide or accept anything — you pre-digest so the decision left is small. No preamble.",
         "boundary": "tool_only — computes/proposes, never an authority"
       }
+    },
+    {
+      "id": "cap_helper_classify_chat_intent",
+      "name": "Chat Intent Classifier",
+      "kind": "skill",
+      "description": "Cheap local pre-router: classifies a chat turn into one of multi_step / current_info / cheap_single_turn / single_turn. A fast triage tool that replaces brittle keyword matching; never the answer itself.",
+      "domains": [
+        "classify",
+        "triage",
+        "chat",
+        "intent",
+        "router",
+        "prefilter",
+        "helper",
+        "helper",
+        "specialist"
+      ],
+      "actions": [
+        "classify",
+        "triage"
+      ],
+      "inputs": [
+        "text"
+      ],
+      "outputs": [
+        "text"
+      ],
+      "risk": "low",
+      "cost": "free",
+      "latency": "medium",
+      "privacy": "local",
+      "requires_network": false,
+      "executes_tools": false,
+      "status": "active",
+      "confidence": 0.6,
+      "evidence_refs": [
+        "docs/schemas/aios_specialist_helper_v1.md"
+      ],
+      "helper": {
+        "schema": "aios.specialist_helper.v1",
+        "tier": "default",
+        "model": "qwen3:8b",
+        "specialty": "chat turn intent classification",
+        "role_prompt": "Classify the chat message into ONE intent class. Reply with ONLY one token: multi_step | current_info | cheap_single_turn | single_turn.\n- multi_step: user wants code written/fixed/refactored, a contract, any build/work task.\n- current_info: needs live external data (weather, news, prices).\n- cheap_single_turn: a short question, definition, status, explanation.\n- single_turn: a longer single-answer question.\nOutput exactly one token, no other text.",
+        "boundary": "tool_only — computes/proposes, never an authority"
+      },
+      "tier": "default",
+      "model": "qwen3:8b",
+      "role_prompt": "Classify the chat message into ONE intent class. Reply with ONLY one token: multi_step | current_info | cheap_single_turn | single_turn.\n- multi_step: user wants code written/fixed/refactored, a contract, any build/work task.\n- current_info: needs live external data (weather, news, prices).\n- cheap_single_turn: a short question, definition, status, explanation.\n- single_turn: a longer single-answer question.\nOutput exactly one token, no other text."
     }
   ]
 }
