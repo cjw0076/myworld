@@ -174,5 +174,30 @@ esac
             self.assertIn("latest_next=open_next_contract", status.stdout)
 
 
+class BuildRecommendedNextHoldTest(unittest.TestCase):
+    """ASC-0116 — dispatch holds only on a genuinely BROKEN monitor state,
+    not on every non-clear health (busy/stale must not freeze the loop)."""
+
+    @staticmethod
+    def _recommend(health: str) -> dict:
+        import importlib.util
+
+        sys.path.insert(0, str(SCRIPT.parent))
+        spec = importlib.util.spec_from_file_location("aios_round_controller", SCRIPT)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        steps = {"monitor": {"parsed": {"health": health, "findings": []}}}
+        return mod.build_recommended_next(steps, {"repos": {}}, [])
+
+    def test_blocked_holds_dispatch(self) -> None:
+        self.assertEqual(self._recommend("blocked")["action"], "hold_for_monitor")
+
+    def test_attention_does_not_hold(self) -> None:
+        self.assertNotEqual(self._recommend("attention").get("action"), "hold_for_monitor")
+
+    def test_watch_does_not_hold(self) -> None:
+        self.assertNotEqual(self._recommend("watch").get("action"), "hold_for_monitor")
+
+
 if __name__ == "__main__":
     unittest.main()

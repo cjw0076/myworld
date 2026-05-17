@@ -1,7 +1,8 @@
 ---
 contract_id: ASC-0116
 slug: monitor-attention-not-stop
-status: accepted
+status: closed
+closed: 2026-05-17 KST — operator reconciliation. The load-bearing fix landed in aios_round_controller.py build_recommended_next: it held dispatch on every non-clear health (watch/attention/blocked); it now holds ONLY on `blocked` — the monitor's real-failure tier. `watch`/`attention` (busy: a repo dirty because an agent works; stale: decisions awaiting review) no longer freeze the dispatch chain. The monitor already grades severity into the three tiers the fix relies on. tests/test_aios_round_controller.py +3, 8 passed. Named exit "round controller halts only on broken" met.
 goal: Stop round_controller from blocking dispatch when monitor health=attention is caused by codex's own active work (e.g. memoryOS dirty during ASC-0111 implementation). Distinguish "attention because something is broken" from "attention because someone is working" so AIOS doesn't self-throttle while working.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier

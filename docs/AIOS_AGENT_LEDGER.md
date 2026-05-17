@@ -5335,3 +5335,19 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: aios_self_model surfaced the 4; per-contract grep for the implementation signature in each scope file.
 - next: ASC-0116/0117 need a review pass — both predate ~5 days of round-controller evolution and may be partly superseded; not a silent close.
 - status: ASC-0099 closed; ASC-0116/0117 honestly left open with assessment; ASC-0180 founder-gated
+
+## 2026-05-17T17:40+09:00 — ASC-0116 closed: round controller holds only on broken
+
+- when: 2026-05-17T17:40+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: implement + close ASC-0116 — round controller self-throttled on any non-clear monitor health
+- changed:
+  - scripts/aios_round_controller.py — build_recommended_next holds dispatch only on health == "blocked" (was: any health not in {None, clear})
+  - tests/test_aios_round_controller.py — +3 tests (blocked holds; attention/watch do not)
+  - docs/contracts/ASC-0116-* → closed
+- decision: the monitor already grades findings into watch/attention/blocked by worst severity — `blocked` is the real-failure tier (failed verification gate, dispatch failure, schema corruption). The round controller was over-holding: it froze the dispatch chain on `watch` and `attention` too, which mean busy (a repo dirty because an agent is working) or stale (decisions awaiting review). One-line condition fix ends the self-referential gridlock the contract diagnosed. The contract's broader scope (monitor-side busy/stale sub-classification) is unnecessary once the controller only holds on blocked — the severity tiers already exist.
+- evidence: tests/test_aios_round_controller.py 8 passed (3 new ASC-0116 cases).
+- next: ASC-0117 (capacity policy accepted-waiting vs in-progress) review.
+- status: ASC-0116 closed — AIOS no longer self-throttles dispatch while its own agents work

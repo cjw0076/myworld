@@ -427,7 +427,14 @@ def execute_pending_children(root: Path, child_status: dict[str, Any]) -> list[d
 
 def build_recommended_next(steps: dict[str, Any], child_status: dict[str, Any], child_executions: list[dict[str, Any]]) -> dict[str, Any]:
     monitor = ((steps.get("monitor") or {}).get("parsed") or {})
-    if monitor.get("health") not in (None, "clear"):
+    # ASC-0116 — hold dispatch only on a genuinely BROKEN state, not on every
+    # non-clear health. The monitor grades severity into watch / attention /
+    # blocked; `blocked` is the real-failure tier (failed verification gate,
+    # dispatch failure, schema corruption). `watch` and `attention` mean
+    # busy-or-stale (a repo dirty because an agent is working, decisions
+    # awaiting review) — those must not freeze the dispatch chain, or AIOS
+    # self-throttles while it works (the self-referential gridlock).
+    if monitor.get("health") == "blocked":
         return {"action": "hold_for_monitor", "reason": monitor.get("health")}
 
     goal = ((steps.get("goal_evolution") or {}).get("parsed") or {})
