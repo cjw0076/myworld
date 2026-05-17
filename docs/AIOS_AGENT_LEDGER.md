@@ -5618,3 +5618,36 @@ For repo-local implementation details, also update that repo's own worklog.
   to closed.
 - status: ASC-0194 myworld wiring complete; ASC-0194 remains accepted pending
   large-ledger repeatability
+
+## 2026-05-18T01:14+09:00 — ASC-0196 closed: MemoryOS graph-control budgeted partial runs
+
+- when: 2026-05-18T01:14+09:00 KST
+- repo: myworld -> memoryOS
+- agent: codex@myworld supervising; codex@memoryOS via child watcher
+- role: dispatch execution, large-ledger smoke verification, closeout
+- goal: make MemoryOS graph-control return a parseable named result inside the
+  AIOS dream-loop budget instead of hanging or producing empty output.
+- changed:
+  - memoryOS commit `17fed4d Bound graph control runs`
+  - `docs/contracts/ASC-0196-memoryos-graph-control-incremental-budget.md`
+    moved from `accepted` to `closed`
+  - `.aios/outbox/memoryOS/asc-0196.memoryOS.result.json`
+- decision: close ASC-0196 as a budgeted repeatability slice. The graph-control
+  path now has work-item budgeting plus command-local timeout fallback and
+  persists `budget_exhausted` GraphControlRun rows with ASC-0194/ASC-0196
+  provenance. This does not close the broader ASC-0194 model-quality condition.
+- evidence: worker and supervisor both passed
+  `python -m pytest tests/test_graph_control.py tests/test_embed.py
+  tests/test_schema.py -q` (81/81, 5 subtests), `python -m py_compile
+  memoryos/cli.py memoryos/store.py memoryos/schema.py`, and `git diff
+  --check`. Supervisor large-ledger smoke
+  `timeout 75s python -m memoryos --root . memory graph-control run --persist
+  --project AIOS --limit 10 --json` exited 0 with parseable JSON,
+  `status=budget_exhausted`, `report_id=graphctlrun_1f3d12e2d888f365`,
+  `stop_conditions=["budget_exhausted"]`.
+- next: refresh MyWorld dream-controller evidence so `memory_graph_control`
+  moves from caller-side timeout degradation to MemoryOS-side
+  `budget_exhausted`; then decide whether ASC-0194 can close or needs another
+  quality-focused pass on meaningful queryable-surface metrics.
+- status: ASC-0196 closed; graph-control caller no longer hangs on large
+  ledger smoke
