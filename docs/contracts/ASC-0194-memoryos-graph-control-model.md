@@ -1,10 +1,12 @@
 ---
 contract_id: ASC-0194
 slug: memoryos-graph-control-model
-status: proposed
+status: accepted
 goal: Build the Graph Control Model — a dream-cycle organ that actively governs memoryOS's unbounded knowledge graph (score → merge → invalidate → consolidate → community-layer → decay → bound-check) so the graph stays coherent and bounded as it grows.
 created: 2026-05-17 23:30 KST
 revised: 2026-05-18 00:10 KST
+accepted: 2026-05-18 KST
+acceptance_authority: founder GO — "memoryOS로 dispatch, control model 지금 진행, GFM은 downstream".
 proposed_by: claude@myworld
 escalation: VISION-LEVEL — founder GO requested. This sets memory's core construction method and is the spine of the "memory design decides the next paradigm" thesis.
 origin: Founder — "GoEN was unfinished research; for constructing memory nothing beats a graph network; the LLM successor is LGM and it comes down to how well memory is designed." Founder reframe — "mitigation alone won't solve it; we need a model to control the ever-growing graph." External study: docs/research/LGM_AND_MEMORY_GRAPH_CONTROL.md.
@@ -87,8 +89,8 @@ index bloat · semantic drift · temporal obsolescence · duplicate
 proliferation · memory poisoning — any one detected halts auto-consolidation
 and surfaces to the operator.
 
-## Open question for founder
+## Founder resolution
 
-This is the spine of AIOS's memory design. GO to dispatch to memoryOS? And:
-confirm the correction — build the **control model now**, treat a Graph
-Foundation Model as the downstream long-horizon step (not this contract).
+GO (2026-05-18). Dispatch to memoryOS; build the control model now; a Graph
+Foundation Model is the downstream long-horizon step, out of scope for this
+contract.

@@ -5417,3 +5417,104 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: 40 chat_router tests pass (5 new tier-2: refusal/short/trivial-multi_step flagged, real answer passes, eligibility correct). Envelope verified to carry quality_gate; a cheap_single_turn correctly reports verdict=skipped.
 - next: a live escalation smoke (weak response → strong-model regen) as final close-evidence; ASC-0193 follow-on items (CapabilityOS-live routing, multi-agent UI) per ASC-0192.
 - status: tier-2 quality gate implemented + tested; live-escalation demo is the remaining close-evidence
+
+## 2026-05-17T23:00+09:00 — ASC-0190 closed: Hive provider-loop verification auto-fires
+
+- when: 2026-05-17T23:00+09:00 KST
+- repo: myworld -> hivemind
+- agent: codex@myworld acting operator; codex@hivemind implementation result
+- role: verification, child-repo triage, contract closeout
+- goal: close the monitor blocker where `hivemind` remained dirty after
+  ASC-0190-r2 passed, and confirm the audit gap #5 requirement is actually
+  satisfied rather than only documented.
+- changed:
+  - hivemind commit `df897d6 Close ASC-0190 provider verification auto-fire`
+    captured the child-owned implementation.
+  - `docs/contracts/ASC-0190-hivemind-verification-autofire.md` moved from
+    `accepted` to `closed` with close evidence.
+- decision: the dirty child repo was not orphaned failure residue. It matched
+  ASC-0190, had a passed `asc-0190-r2` outbox result, and passed both focused
+  and full hivemind test gates. Committing it was the correct owner-triage
+  action to unblock the AIOS monitor without reverting or stacking new work.
+- evidence: `cd hivemind && python -m pytest tests/test_provider_loop.py tests/test_aios_packet_runner.py tests/test_run_validation.py -q`
+  passed 30/30; `cd hivemind && python -m pytest -q` passed 404/404;
+  `cd hivemind && git diff --check` passed before commit; `python scripts/aios_local_app.py status --json`
+  reported `monitor_health: clear` after the child commit.
+- next: continue with the next non-clear readiness gap: GenesisOS generative
+  divergence remains proposed in ASC-0191, while ASC-0193 still wants a live
+  escalation smoke before close.
+- status: ASC-0190 closed; monitor dirty blocker cleared
+
+## 2026-05-17T23:08+09:00 — ASC-0193 closed: chat tier-2 quality gate live-smoked
+
+- when: 2026-05-17T23:08+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: live verification, dogfood, quality closeout
+- goal: prove the chat router can catch a weak cheap-routed answer and
+  escalate once to a stronger local chair, while preserving a visible
+  `quality_gate` envelope.
+- changed:
+  - `docs/contracts/ASC-0193-chat-tier2-quality-gate.md` moved from
+    `accepted` to `closed`.
+  - `scripts/aios_chat_router.py` gained stronger provider-output
+    sanitization after dogfood exposed ANSI cursor-control and thinking-block
+    leakage from local model output.
+  - `tests/test_aios_chat_router.py` gained sanitizer regression tests.
+- decision: the named exit is satisfied by a live cheap-route smoke, not only
+  by mocks. `AIOS_LOCAL_AGENT_COMMAND="printf 'Done.'"` intentionally produced
+  an inadequate cheap response; the tier-2 gate escalated once to
+  `qwen3:30b-a3b` and returned `quality_gate.verdict=escalated_pass`.
+- evidence: conversation `asc-0193-live-smoke-clean-v2` produced
+  `.aios/chat/asc-0193-live-smoke-clean-v2/messages.jsonl` and
+  `.aios/chat/asc-0193-live-smoke-clean-v2/quality_gate.jsonl`; invocation
+  receipt `.aios/invocations/chat-11e6bc95360fd969/receipt.json`; tier-2
+  focused tests passed 7/7.
+- next: the next weak axis is still GenesisOS generative divergence
+  (ASC-0191 proposed) and the persona audit's retriever/router/philosophy
+  score gaps.
+- status: ASC-0193 closed; quality gate is live-smoked and visible in the chat
+  envelope
+
+## 2026-05-17T23:18+09:00 — ASC-0191 closed: GenesisOS local generative divergence
+
+- when: 2026-05-17T23:18+09:00 KST
+- repo: myworld -> GenesisOS
+- agent: codex@myworld acting operator; codex@GenesisOS implementation
+- role: GenesisOS local-helper implementation and contract closeout
+- goal: turn GenesisOS from a deterministic divergence scaffold into an
+  advisory local-generative divergence layer without granting execution,
+  memory, tool-routing, or truth-selection authority.
+- changed:
+  - GenesisOS commit `5a935b1 Add local generative divergence helper`.
+  - `docs/contracts/ASC-0191-genesisos-generative-divergence.md` moved from
+    `proposed` to `closed` with explicit local-only GO resolution.
+- decision: accept only the local-helper version of the vision-adjacent change.
+  Remote generation remains out of scope. Deterministic GenesisOS behavior is
+  still the default; generation is opt-in via `--generated` or helper env.
+- evidence: `GENESISOS_OLLAMA_MODEL=qwen3:8b python -m genesisos.cli diverge --goal "AIOS agents keep converging on contracts and dashboards instead of inventing a new interaction ritual" --generated --json`
+  produced five generated branch augmentations; `cd GenesisOS && python -m
+  pytest tests -q` passed 55/55; `cd GenesisOS && git diff --check` passed
+  before commit.
+- next: refresh the persona audit and Control Center snapshot so the
+  philosophy/generative axis sees ASC-0191 as closed evidence; remaining weak
+  axes are MemoryOS retrieval signal coverage and CapabilityOS route evidence
+  coverage in new contracts.
+- status: ASC-0191 closed; GenesisOS has optional local generative divergence
+
+## 2026-05-18T00:20+09:00 — ASC-0194 accepted + dispatched: memoryOS Graph Control Model
+
+- when: 2026-05-18T00:20+09:00 KST
+- repo: myworld → memoryOS
+- agent: claude@myworld
+- role: operator
+- goal: founder GO — build the Graph Control Model now, dispatch to memoryOS; a Graph Foundation Model is downstream
+- changed:
+  - docs/contracts/ASC-0194-memoryos-graph-control-model.md — accepted; founder resolution recorded
+  - docs/research/LGM_AND_MEMORY_GRAPH_CONTROL.md (new — external study)
+  - .claude memory: project_lgm_memory_thesis
+  - dispatched ASC-0194 to .aios/inbox/memoryOS/
+- decision: the founder reframe (mitigation insufficient; need a control model for the unbounded graph) + the LGM thesis was studied externally. The study's load-bearing correction — "LGM" → Graph Foundation Model; a GFM *consumes* a governed graph, it does not fix an ungoverned one — was accepted by the founder: build the control model now, GFM downstream. ASC-0194 reframed from "graph-network memory / STDP mitigation" into the Graph Control Model: a 7-step dream-cycle organ (score → merge → invalidate → consolidate → community-layer → decay → bound-check) with the bound ratio metric and SSGM failure modes as named stop conditions. Dispatched to codex@memoryOS for implementation.
+- evidence: `aios_dispatch.py send` → packet .aios/inbox/memoryOS/asc-0194.memoryOS.json; ASC-0184 hook preflight allowed it, ASC-0185 enqueued a leased job (queued:1).
+- next: codex@memoryOS implements when a watcher runs; operator collects + verifies the result. The control model's round-controller wiring (dream-cycle stage) is the myworld-side follow-on.
+- status: Graph Control Model contracted, accepted, dispatched to memoryOS
