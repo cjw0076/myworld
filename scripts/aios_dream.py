@@ -131,13 +131,29 @@ def digest_to_text(digest: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def call_consolidation_helper(root: Path, digest_text: str) -> tuple[bool, str]:
-    proc = subprocess.run(
-        [sys.executable, (root / "scripts" / "aios_helper.py").as_posix(),
-         "--root", root.as_posix(), "run", "--helper", CONSOLIDATE_HELPER,
-         "--input", digest_text, "--json"],
-        cwd=root, capture_output=True, text=True,
-    )
+def call_consolidation_helper(root: Path, digest_text: str, *, timeout_seconds: int = 180) -> tuple[bool, str]:
+    command = [
+        sys.executable,
+        (root / "scripts" / "aios_helper.py").as_posix(),
+        "--root",
+        root.as_posix(),
+        "run",
+        "--helper",
+        CONSOLIDATE_HELPER,
+        "--input",
+        digest_text,
+        "--json",
+    ]
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=max(1, int(timeout_seconds)),
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"consolidation helper timed out after {timeout_seconds}s"
     if proc.returncode != 0:
         return False, (proc.stderr or proc.stdout or "consolidation helper failed").strip()
     try:
@@ -197,7 +213,7 @@ def web_plan_for(root: Path, question: str) -> dict[str, Any]:
 CLASSIFY_HELPER = "cap_helper_classify_vision_level"
 
 
-def triage_questions(root: Path, questions: list[str]) -> dict[str, Any]:
+def triage_questions(root: Path, questions: list[str], *, timeout_seconds: int = 60) -> dict[str, Any]:
     """Boundary 2 — the kernel decides which surfaced questions it pursues
     autonomously vs escalates. Each open question is classified VISION vs
     OPERATOR via the classify helper (a pre-filter). VISION → escalate to
@@ -206,12 +222,16 @@ def triage_questions(root: Path, questions: list[str]) -> dict[str, Any]:
     operator_qs: list[str] = []
     vision_qs: list[dict[str, str]] = []
     for q in questions:
-        proc = subprocess.run(
-            [sys.executable, (root / "scripts" / "aios_helper.py").as_posix(),
-             "--root", root.as_posix(), "run", "--helper", CLASSIFY_HELPER,
-             "--input", q, "--json"],
-            cwd=root, capture_output=True, text=True,
-        )
+        try:
+            proc = subprocess.run(
+                [sys.executable, (root / "scripts" / "aios_helper.py").as_posix(),
+                 "--root", root.as_posix(), "run", "--helper", CLASSIFY_HELPER,
+                 "--input", q, "--json"],
+                cwd=root, capture_output=True, text=True, timeout=max(1, int(timeout_seconds)),
+            )
+        except subprocess.TimeoutExpired:
+            vision_qs.append({"question": q, "classifier_reason": "classifier_timeout"})
+            continue
         verdict = "OPERATOR"
         reason = ""
         if proc.returncode == 0:
@@ -268,13 +288,16 @@ def run_research_and_absorb(root: Path) -> dict[str, Any]:
             "boundary": "research notes imported as MemoryOS DRAFTS — review required"}
 
 
-def embedding_coverage(root: Path) -> dict[str, Any]:
+def embedding_coverage(root: Path, *, timeout_seconds: int = 15) -> dict[str, Any]:
     """Read MemoryOS embedding coverage — the dream phase-1 progress signal."""
     memoryos = root / "memoryOS"
-    proc = subprocess.run(
-        [sys.executable, "-m", "memoryos", "--root", ".", "stats", "--json"],
-        cwd=memoryos, capture_output=True, text=True,
-    )
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "memoryos", "--root", ".", "stats", "--json"],
+            cwd=memoryos, capture_output=True, text=True, timeout=max(1, int(timeout_seconds)),
+        )
+    except subprocess.TimeoutExpired:
+        return {"status": "unavailable", "reason": "stats_timeout", "timeout_seconds": timeout_seconds}
     try:
         return json.loads(proc.stdout).get("embedding_coverage", {})
     except (ValueError, KeyError):
@@ -315,15 +338,110 @@ def consolidate_memory(root: Path, budget_seconds: int = 240) -> dict[str, Any]:
     }
 
 
+def run_memory_graph_control(
+    root: Path,
+    *,
+    timeout_seconds: int = 90,
+    project: str = "AIOS",
+    limit: int = 10,
+) -> dict[str, Any]:
+    """ASC-0194 dream-stage hook.
+
+    MemoryOS owns the graph-control implementation. MyWorld only wakes it as a
+    bounded append-only stage and records enough summary to keep the round
+    controller observable. A timeout is degraded, not fatal, because this stage
+    can scan a large memory graph.
+    """
+    memoryos = root / "memoryOS"
+    if not memoryos.exists():
+        return {"status": "skipped", "reason": "no memoryOS"}
+
+    command = [
+        sys.executable,
+        "-m",
+        "memoryos",
+        "--root",
+        ".",
+        "memory",
+        "graph-control",
+        "run",
+        "--persist",
+        "--project",
+        project,
+        "--limit",
+        str(limit),
+        "--json",
+    ]
+    try:
+        proc = subprocess.run(
+            command,
+            cwd=memoryos,
+            capture_output=True,
+            text=True,
+            timeout=max(1, int(timeout_seconds)),
+        )
+    except subprocess.TimeoutExpired:
+        return {
+            "status": "degraded",
+            "reason": "graph_control_timeout",
+            "timed_out": True,
+            "timeout_seconds": timeout_seconds,
+            "command": command,
+            "boundary": "MemoryOS graph-control stage did not finish inside the dream budget; no closeout claim made",
+        }
+
+    if proc.returncode != 0:
+        return {
+            "status": "degraded",
+            "reason": "graph_control_failed",
+            "returncode": proc.returncode,
+            "timed_out": False,
+            "stderr_tail": (proc.stderr or "")[-1000:],
+        }
+    try:
+        payload = json.loads(proc.stdout)
+    except ValueError as exc:
+        return {
+            "status": "degraded",
+            "reason": f"graph_control_invalid_json:{exc.__class__.__name__}",
+            "returncode": proc.returncode,
+            "stdout_tail": (proc.stdout or "")[-1000:],
+        }
+
+    return {
+        "status": "ok",
+        "contract_id": payload.get("contract_id", "ASC-0194"),
+        "stage": payload.get("stage", "graph_control_model"),
+        "report_id": payload.get("report_id"),
+        "persisted": bool(payload.get("persisted")),
+        "bound_ratio": payload.get("bound_ratio"),
+        "raw_ingest_count": payload.get("raw_ingest_count"),
+        "reclaimed_count": payload.get("reclaimed_count"),
+        "queryable_surface_count": payload.get("queryable_surface_count"),
+        "stop_conditions": list(payload.get("stop_conditions") or []),
+        "halt_auto_consolidation": bool(payload.get("halt_auto_consolidation")),
+        "filters": dict(payload.get("filters") or {}),
+        "boundary": "MemoryOS persisted a GraphControlRun snapshot; graph mutations remain review-gated",
+    }
+
+
 def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
-              consolidate_budget: int = 240) -> int:
+              consolidate_budget: int = 240,
+              graph_control_timeout: int = 90,
+              graph_control_enabled: bool = True,
+              helper_timeout: int = 180) -> int:
     # Dream phase 1 — consolidate the memory append-store (embed) before the
     # consolidation helper reads the digest, so each cycle leaves memory more
     # retrievable than it found it.
     memory_consolidation = consolidate_memory(root, budget_seconds=consolidate_budget)
+    memory_graph_control = (
+        run_memory_graph_control(root, timeout_seconds=graph_control_timeout)
+        if graph_control_enabled else
+        {"status": "skipped", "reason": "graph_control_disabled"}
+    )
     digest = gather_digest(root)
     digest_text = digest_to_text(digest)
-    ok, consolidation = call_consolidation_helper(root, digest_text)
+    ok, consolidation = call_consolidation_helper(root, digest_text, timeout_seconds=helper_timeout)
 
     dream_dir = root / DREAM_DIR
     dream_dir.mkdir(parents=True, exist_ok=True)
@@ -336,6 +454,7 @@ def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
             "generated_at": now_iso(),
             "reason": consolidation,
             "memory_consolidation": memory_consolidation,
+            "memory_graph_control": memory_graph_control,
             "digest": digest,
         }
         (dream_dir / f"report-{stamp}.json").write_text(
@@ -350,7 +469,7 @@ def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
 
     # Boundary 2 — the kernel triages its own surfaced questions:
     # OPERATOR-level → autonomous research; VISION-level → escalate to founder.
-    triage = triage_questions(root, open_questions)
+    triage = triage_questions(root, open_questions, timeout_seconds=min(helper_timeout, 60))
     operator_qs = triage["operator_questions"]
     vision_qs = triage["vision_questions"]
     research_queue = [web_plan_for(root, q) for q in operator_qs]
@@ -361,6 +480,7 @@ def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
         "generated_at": now_iso(),
         "boundary": "all entries are PROPOSALS — nothing accepted; deterministic kernel + operator review decide",
         "memory_consolidation": memory_consolidation,
+        "memory_graph_control": memory_graph_control,
         "digest": digest,
         "consolidation": consolidation,
         "open_questions": open_questions,
@@ -413,6 +533,7 @@ def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
         print(json.dumps({"status": "ok", "report": str(report_path.relative_to(root)),
                           "research_queue": str(queue_path.relative_to(root)),
                           "open_questions": len(open_questions),
+                          "memory_graph_control": memory_graph_control,
                           "research_absorb": research},
                          indent=2, ensure_ascii=False))
     else:
@@ -423,6 +544,9 @@ def run_dream(root: Path, json_mode: bool, do_fetch: bool = True,
         print(f"  research queue: {queue_path.relative_to(root)} ({len(operator_qs)} questions)")
         print(f"  search→absorb:  {research.get('status')} "
               f"(fetched {research.get('fetched', 0)}, absorbed {research.get('absorbed_notes', 0)})")
+        print(f"  graph-control:  {memory_graph_control.get('status')} "
+              f"(report {memory_graph_control.get('report_id') or 'none'}, "
+              f"stops {len(memory_graph_control.get('stop_conditions') or [])})")
         print("--- consolidation (proposals) ---")
         print(consolidation)
     return 0
@@ -436,6 +560,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-fetch", action="store_true", help="skip the search→absorb tail")
     p.add_argument("--consolidate-budget", type=int, default=240,
                    help="seconds budgeted for dream phase-1 memory embedding")
+    p.add_argument("--graph-control-timeout", type=int, default=90,
+                   help="seconds budgeted for the ASC-0194 MemoryOS graph-control stage")
+    p.add_argument("--helper-timeout", type=int, default=180,
+                   help="seconds budgeted for each local helper call")
+    p.add_argument("--no-graph-control", action="store_true",
+                   help="skip the ASC-0194 MemoryOS graph-control dream-stage hook")
     args = p.parse_args(argv)
     root = Path(args.root).resolve()
 
@@ -447,7 +577,10 @@ def main(argv: list[str] | None = None) -> int:
         print(latest.read_text(encoding="utf-8"))
         return 0
     return run_dream(root, args.json, do_fetch=not args.no_fetch,
-                     consolidate_budget=args.consolidate_budget)
+                     consolidate_budget=args.consolidate_budget,
+                     graph_control_timeout=args.graph_control_timeout,
+                     graph_control_enabled=not args.no_graph_control,
+                     helper_timeout=args.helper_timeout)
 
 
 if __name__ == "__main__":

@@ -94,3 +94,46 @@ and surfaces to the operator.
 GO (2026-05-18). Dispatch to memoryOS; build the control model now; a Graph
 Foundation Model is the downstream long-horizon step, out of scope for this
 contract.
+
+## Implementation Receipts
+
+### MemoryOS slice — focused verified
+
+- memoryOS commit: `e5ecff6 Add graph control model alpha`
+- surfaced commands:
+  - `memoryos --root . memory graph-control plan --json`
+  - `memoryos --root . memory graph-control run --persist --json`
+  - `memoryos --root . memory graph-control list --json`
+  - `memoryos --root . memory graph-control show <run_id> --json`
+- focused verification passed:
+  `python -m pytest tests/test_graph_control.py tests/test_schema.py tests/test_doctor.py tests/test_mcp.py -q`
+  and `python -m py_compile memoryos/cli.py memoryos/schema.py memoryos/store.py`.
+- full-gate blocker was separated into ASC-0195 and closed by memoryOS commit
+  `146b946 Harden embed fallback tests`.
+
+### MyWorld dream-cycle wiring — bounded alpha
+
+- myworld commit candidate: `scripts/aios_dream.py`,
+  `scripts/aios_round_controller.py`, `tests/test_aios_dream.py`.
+- `aios_dream.py` now calls MemoryOS-owned
+  `memory graph-control run --persist --project AIOS --limit 10 --json` as a
+  bounded dream-stage hook.
+- The stage records `report_id`, `bound_ratio`, queryable-surface counts, stop
+  conditions, and halt status when MemoryOS completes.
+- The stage records `status=degraded` with `reason=graph_control_timeout` when
+  the large memory graph does not finish inside the dream budget. This prevents
+  the persistent round controller from hanging or falsely claiming closeout.
+- `aios_round_controller.py` passes explicit dream budgets:
+  `--consolidate-budget 120 --graph-control-timeout 60 --helper-timeout 150`
+  inside the existing 420s controller timeout.
+- focused verification passed:
+  `python -m unittest tests.test_aios_dream -v`,
+  `python -m py_compile scripts/aios_dream.py scripts/aios_round_controller.py`,
+  and `git diff --check`.
+
+### Remaining close condition
+
+ASC-0194 remains accepted, not closed. The control model is wired as a
+bounded dream-stage alpha, but a large-ledger live run still needs either
+MemoryOS performance hardening or a smaller incremental graph-control cursor
+before the contract can claim repeatable completion of the dream-cycle stage.

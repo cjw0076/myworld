@@ -5577,3 +5577,40 @@ For repo-local implementation details, also update that repo's own worklog.
   refresh monitor/persona evidence so MemoryOS retrieval and GenesisOS advisory
   gaps are visible as first-class next work.
 - status: ASC-0195 closed; ASC-0194 embed-test blocker removed
+
+## 2026-05-18T00:48+09:00 — ASC-0194 myworld wiring: bounded graph-control dream stage
+
+- when: 2026-05-18T00:48+09:00 KST
+- repo: myworld -> memoryOS
+- agent: codex@myworld
+- role: dream-cycle wiring, timeout guard, supervisor verification
+- goal: connect MemoryOS `memory graph-control run --persist` into the AIOS
+  dream organ without letting a large graph-control scan stall the persistent
+  round controller.
+- changed:
+  - `scripts/aios_dream.py` adds a bounded `memory_graph_control` dream-stage
+    hook that calls MemoryOS-owned `memory graph-control run --persist
+    --project AIOS --limit 10 --json`.
+  - `scripts/aios_round_controller.py` passes explicit dream budgets:
+    `--consolidate-budget 120 --graph-control-timeout 60 --helper-timeout
+    150`.
+  - `tests/test_aios_dream.py` covers successful persisted run summaries,
+    graph-control timeout degradation, helper timeout degradation, and
+    MemoryOS stats timeout degradation.
+- decision: do not close ASC-0194 yet. The hook is present and bounded, but a
+  live large-ledger run with a deliberately tiny 2s graph-control budget
+  degraded as expected. That is good loop hygiene, not proof that the graph
+  control model is repeatably fast enough for closeout.
+- evidence: `python -m unittest tests.test_aios_dream -v` passed 4/4;
+  `python -m unittest tests.test_aios_dream
+  tests.test_aios_local_app.AiosLocalAppTest.test_refresh_writes_snapshot_and_reports_monitor -v`
+  passed 5/5; `python -m py_compile scripts/aios_dream.py
+  scripts/aios_round_controller.py` passed; short live smoke wrote a dream
+  failure report with `memory_graph_control.status=degraded`,
+  `reason=graph_control_timeout`, and no lingering child process.
+- next: dispatch MemoryOS performance/incremental-cursor work for
+  `graph-control run --persist` so the dream stage can finish on the real
+  memory ledger within budget; after that, ASC-0194 can move from bounded alpha
+  to closed.
+- status: ASC-0194 myworld wiring complete; ASC-0194 remains accepted pending
+  large-ledger repeatability

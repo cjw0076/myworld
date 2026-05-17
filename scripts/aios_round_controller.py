@@ -163,7 +163,9 @@ def dream_step(root: Path) -> dict[str, Any]:
     # plus the consolidation helper + research tail all fit one round.
     return json_step(root, "dream",
                      [sys.executable, script.as_posix(), "--root", root.as_posix(), "run", "--json",
-                      "--consolidate-budget", "150"],
+                      "--consolidate-budget", "120",
+                      "--graph-control-timeout", "60",
+                      "--helper-timeout", "150"],
                      timeout=420)
 
 
