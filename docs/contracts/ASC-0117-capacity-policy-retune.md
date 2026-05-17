@@ -1,7 +1,8 @@
 ---
 contract_id: ASC-0117
 slug: capacity-policy-retune
-status: accepted
+status: closed
+closed: 2026-05-17 KST — operator reconciliation. aios_loop_policy.py: added in_flight_count() (contracts with a dispatch packet still in the inbox = actually in the execution pipeline); the capacity gate in decide() now compares `in_flight` to capacity instead of the raw open-contract count, so accepted-but-waiting contracts no longer gridlock new acceptance. build_policy reports both open_contract_count and in_flight_count. tests/test_aios_loop_policy.py: test_policy_holds_for_capacity rewritten to dispatch 4 in-flight + new test_accepted_waiting_does_not_gridlock (20 accepted, 0 in-flight → accept_now). 37 loop_policy/round_controller/dispatch tests pass. Named exit "in_flight after policy retune" met.
 goal: Distinguish "accepted but waiting" from "actively in-progress" in ASC-0011 capacity policy. Today open_count=22 vs capacity=4 means verifier-issued contracts wait 2-3 hours before dispatch. Founder /loop directs continuous contract issue → policy creates artificial gridlock between issuance and execution.
 created: 2026-05-13 KST
 accepted: 2026-05-13 KST by claude as verifier (round 5)

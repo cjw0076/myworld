@@ -59,22 +59,45 @@ class AiosLoopPolicyTest(unittest.TestCase):
             self.assertEqual(by_path["myworld/hivemind/docs/TODO.md"]["decision"], "hold_for_capability")
 
     def test_policy_holds_for_capacity(self) -> None:
+        # ASC-0117 — the capacity gate counts IN-FLIGHT contracts (those with a
+        # dispatch packet in the inbox), so the fixture dispatches 4.
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             contract_dir = root / "docs" / "contracts"
             contract_dir.mkdir(parents=True)
             (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
+            inbox = root / ".aios" / "inbox" / "myworld"
+            inbox.mkdir(parents=True)
             for idx in range(4):
                 (contract_dir / f"ASC-10{idx}.md").write_text(
-                    "---\nstatus: accepted\n---\n",
-                    encoding="utf-8",
-                )
+                    "---\nstatus: accepted\n---\n", encoding="utf-8")
+                (inbox / f"asc-10{idx}.myworld.json").write_text(
+                    json.dumps({"contract_id": f"ASC-10{idx}"}), encoding="utf-8")
 
             data = self.run_policy(root, "--capacity", "4")
 
             by_path = {row["sources"][0]["path"]: row for row in data["decisions"]}
             self.assertEqual(by_path["myworld/docs/TODO.md"]["decision"], "hold_for_capacity")
-            self.assertEqual(data["open_contract_count"], 4)
+            self.assertEqual(data["in_flight_count"], 4)
+
+    def test_accepted_waiting_does_not_gridlock(self) -> None:
+        # ASC-0117 — many accepted contracts with NO dispatch packet are
+        # *waiting*, not in flight; they must not block new acceptance.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            (root / "docs" / "AIOS_TASK_RADAR.md").write_text(RADAR, encoding="utf-8")
+            for idx in range(20):
+                (contract_dir / f"ASC-2{idx:03d}.md").write_text(
+                    "---\nstatus: accepted\n---\n", encoding="utf-8")
+
+            data = self.run_policy(root, "--capacity", "4")
+
+            by_path = {row["sources"][0]["path"]: row for row in data["decisions"]}
+            self.assertEqual(data["open_contract_count"], 20)
+            self.assertEqual(data["in_flight_count"], 0)
+            self.assertEqual(by_path["myworld/docs/TODO.md"]["decision"], "accept_now")
 
     def test_verifier_waiting_contract_precedes_codex_auto_when_slot_opens(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

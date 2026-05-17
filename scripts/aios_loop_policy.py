@@ -235,6 +235,27 @@ def open_contract_count(root: Path) -> int:
     return len(open_contracts(root))
 
 
+def in_flight_count(root: Path) -> int:
+    """ASC-0117 — contracts actually in the execution pipeline: those with a
+    dispatch packet still in the inbox (sent, not yet collected). An accepted
+    contract with no inbox packet is *waiting*, not consuming execution
+    capacity — counting it toward the capacity gate creates artificial
+    gridlock between contract issuance and execution."""
+    inbox = root / ".aios" / "inbox"
+    if not inbox.exists():
+        return 0
+    contract_ids: set[str] = set()
+    for packet in inbox.glob("*/*.json"):
+        try:
+            data = json.loads(packet.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            continue
+        cid = data.get("contract_id")
+        if cid:
+            contract_ids.add(str(cid))
+    return len(contract_ids)
+
+
 def sort_key(candidate: RadarCandidate) -> tuple[int, int, str]:
     return (
         -candidate.score,
@@ -282,7 +303,7 @@ def semantic_verdict(candidate: RadarCandidate) -> str:
     return "executable"
 
 
-def decide(root: Path, candidate: RadarCandidate, open_count: int, capacity: int) -> tuple[str, str, str]:
+def decide(root: Path, candidate: RadarCandidate, in_flight: int, capacity: int) -> tuple[str, str, str]:
     if closed_contract_source(root, candidate):
         return "reject_closed_contract_reference", "closed_contract_reference", "source is already a closed contract evidence document"
     verdict = semantic_verdict(candidate)
@@ -294,8 +315,8 @@ def decide(root: Path, candidate: RadarCandidate, open_count: int, capacity: int
         return "hold_for_capability", verdict, "capability gap signal must route through CapabilityOS first"
     if verdict in {"needs_context", "ambiguous"}:
         return "hold_for_operator", verdict, "candidate needs context or operator judgment before acceptance"
-    if open_count >= capacity:
-        return "hold_for_capacity", verdict, f"open contract count {open_count} is at capacity {capacity}"
+    if in_flight >= capacity:
+        return "hold_for_capacity", verdict, f"in-flight contract count {in_flight} is at capacity {capacity}"
     return "accept_now", verdict, "executable candidate and loop capacity is available"
 
 
@@ -303,6 +324,10 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
     candidates = parse_task_radar(radar, limit=min(limit, DECISION_LIMIT))
     open_items = open_contracts(root)
     open_count = len(open_items)
+    # ASC-0117 — the capacity gate counts in-flight (dispatched) contracts,
+    # not accepted-but-waiting ones; accepted contracts in the queue must not
+    # block new acceptance.
+    in_flight = in_flight_count(root)
     ordered_open = sorted(open_items, key=contract_priority)
     verifier_waits = [item.wait_seconds for item in open_items if item.issuer == "verifier"]
     verifier_starvation_seconds = max(verifier_waits) if verifier_waits else 0
@@ -311,7 +336,7 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
     ) and any(item.issuer == "codex_auto" for item in open_items)
     decisions = []
     for candidate in candidates:
-        decision, verdict, reason = decide(root, candidate, open_count, capacity)
+        decision, verdict, reason = decide(root, candidate, in_flight, capacity)
         decisions.append(
             {
                 "contract_candidate_id": candidate.candidate_id,
@@ -335,6 +360,7 @@ def build_policy(root: Path, radar: Path, capacity: int, limit: int) -> dict[str
         "generated_at": now_iso(),
         "capacity": capacity,
         "open_contract_count": open_count,
+        "in_flight_count": in_flight,
         "verifier_starvation_seconds": verifier_starvation_seconds,
         "priority_inversion_detected": priority_inversion_detected,
         "open_contract_order": [serialize_open_contract(item) for item in ordered_open],
@@ -359,7 +385,8 @@ def write_markdown(path: Path, policy: dict[str, Any]) -> None:
         "",
         f"- generated_at: `{policy['generated_at']}`",
         f"- open_contract_count: `{policy['open_contract_count']}`",
-        f"- capacity: `{policy['capacity']}`",
+        f"- in_flight_count: `{policy.get('in_flight_count', 0)}`",
+        f"- capacity: `{policy['capacity']}`  (gate counts in_flight, not open — ASC-0117)",
         f"- verifier_starvation_seconds: `{policy['verifier_starvation_seconds']}`",
         f"- priority_inversion_detected: `{policy['priority_inversion_detected']}`",
         "",

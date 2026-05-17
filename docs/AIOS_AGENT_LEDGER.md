@@ -5351,3 +5351,19 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: tests/test_aios_round_controller.py 8 passed (3 new ASC-0116 cases).
 - next: ASC-0117 (capacity policy accepted-waiting vs in-progress) review.
 - status: ASC-0116 closed — AIOS no longer self-throttles dispatch while its own agents work
+
+## 2026-05-17T18:15+09:00 — ASC-0117 closed: capacity gate counts in-flight, not accepted-waiting
+
+- when: 2026-05-17T18:15+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: implement + close ASC-0117 — capacity policy counted accepted-but-waiting contracts toward the cap, gridlocking issuance vs execution
+- changed:
+  - scripts/aios_loop_policy.py — in_flight_count() (contracts with a dispatch packet in the inbox); decide() gates on in_flight not raw open_count; build_policy reports both
+  - tests/test_aios_loop_policy.py — test_policy_holds_for_capacity rewritten to in-flight; +test_accepted_waiting_does_not_gridlock
+  - docs/contracts/ASC-0117-* → closed
+- decision: the capacity gate's job is to limit *concurrent execution*, so it must count what is actually executing — contracts with a dispatch packet in flight — not the queue of accepted contracts waiting their turn. Counting accepted-waiting toward the cap was the artificial gridlock the contract diagnosed (open_count=22 vs capacity=4). in_flight is read from .aios/inbox packets (sent, uncollected); accepted contracts with no packet are waiting and free to be joined by new acceptances.
+- evidence: 37 loop_policy/round_controller/dispatch tests pass; new test proves 20 accepted + 0 in-flight → accept_now (not gridlocked).
+- next: all 4 self-model-surfaced stuck contracts resolved (ASC-0099/0116/0117 closed; ASC-0180 founder-gated by design). Remaining: audit gaps #4 (GenesisOS generative) / #5 (hivemind verification) — child-repo domains.
+- status: ASC-0117 closed — contract issuance no longer gridlocks against execution capacity
