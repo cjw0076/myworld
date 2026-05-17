@@ -5518,3 +5518,62 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: `aios_dispatch.py send` → packet .aios/inbox/memoryOS/asc-0194.memoryOS.json; ASC-0184 hook preflight allowed it, ASC-0185 enqueued a leased job (queued:1).
 - next: codex@memoryOS implements when a watcher runs; operator collects + verifies the result. The control model's round-controller wiring (dream-cycle stage) is the myworld-side follow-on.
 - status: Graph Control Model contracted, accepted, dispatched to memoryOS
+
+## 2026-05-18T00:23+09:00 — ASC-0194 memoryOS result collected: Graph Control Model alpha
+
+- when: 2026-05-18T00:23+09:00 KST
+- repo: myworld -> memoryOS
+- agent: codex@myworld supervising; codex@memoryOS via child watcher
+- role: dispatch execution, result collection, focused verification
+- goal: clear the `asc-0194` pending dispatch and verify whether memoryOS
+  produced the Graph Control Model slice requested by the accepted contract.
+- changed:
+  - memoryOS commit `e5ecff6 Add graph control model alpha`
+  - `.aios/outbox/memoryOS/asc-0194.memoryOS.result.json`
+  - `.aios/jobs/done/job_20260517_150207_ffc9bd68.json`
+- decision: treat ASC-0194 memoryOS implementation as focused-verified, not
+  full-gate closed. The child worker implemented the MemoryOS-owned
+  read-only/append-only graph-control alpha and committed it; full repo gate is
+  not claimed because four existing embed fallback tests fail when Ollama is
+  reachable and those tests expect the Ollama-absent path.
+- evidence: watcher result status `passed`; memoryOS focused gate
+  `python -m pytest tests/test_graph_control.py tests/test_schema.py
+  tests/test_doctor.py tests/test_mcp.py -q` passed 513/513; `python -m
+  py_compile memoryos/cli.py memoryos/schema.py memoryos/store.py` passed;
+  child log records full `python -m pytest -q` reached 2023 passing tests with
+  4 environment-limited existing embed fallback failures.
+- next: dispatch a separate memoryOS embed-fallback environment-hardening
+  contract before claiming ASC-0194 full-gate close; then wire
+  `memory graph-control run --persist` into the myworld dream-cycle loop.
+- status: ASC-0194 memoryOS slice focused-verified; monitor pending-result
+  blocker cleared; full close deferred
+
+## 2026-05-18T00:39+09:00 — ASC-0195 closed: memoryOS embed fallback tests hermetic
+
+- when: 2026-05-18T00:39+09:00 KST
+- repo: myworld -> memoryOS
+- agent: codex@myworld supervising; codex@memoryOS via child watcher
+- role: contract dispatch, result verification, closeout
+- goal: remove the ASC-0194 full-gate blocker where existing embed fallback
+  tests depended on whether local Ollama happened to be running.
+- changed:
+  - memoryOS commit `146b946 Harden embed fallback tests`
+  - `docs/contracts/ASC-0195-memoryos-embed-fallback-hermetic-tests.md`
+    moved from `accepted` to `closed`
+  - `.aios/outbox/memoryOS/asc-0195.memoryOS.result.json`
+- decision: close ASC-0195 as a deterministic test-fixture fix. The absence of
+  Ollama is now created by unreachable local URLs or mocked embedding returns,
+  not inferred from ambient host state. No production embedding semantics or
+  raw memory ledgers were touched.
+- evidence: worker full gate `cd memoryOS && python -m pytest -q` passed
+  2027/2027 with 18 subtests; supervisor recheck
+  `python -m pytest tests/test_graph_control.py tests/test_embed.py
+  tests/test_schema.py tests/test_doctor.py tests/test_mcp.py -q` passed
+  578/578 with 5 subtests; `python -m py_compile memoryos/cli.py
+  memoryos/embed.py memoryos/schema.py memoryos/store.py` passed; `git diff
+  --check` passed.
+- next: return to ASC-0194's remaining close condition: wire
+  `memory graph-control run --persist` into the myworld dream-cycle loop, then
+  refresh monitor/persona evidence so MemoryOS retrieval and GenesisOS advisory
+  gaps are visible as first-class next work.
+- status: ASC-0195 closed; ASC-0194 embed-test blocker removed
