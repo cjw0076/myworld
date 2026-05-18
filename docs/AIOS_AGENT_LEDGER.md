@@ -5721,3 +5721,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - evidence: `memoryos memory graph-control run --json` on the live store (198,790 nodes) → budget_exhausted, total_memories 0; child reported `status: passed` (agent exit 0) — the gap between "agent ran" and "named exit met" is exactly why operator verification exists ([[feedback_observation_vs_verification]]).
 - next: codex@memoryOS picks up ASC-0202; ASC-0194 closeout waits on real graph-control work; ASC-0196's empirical non-resolution noted.
 - status: ASC-0194 held open — graph-control implemented but governs nothing; ASC-0202 dispatched to fix
+
+## 2026-05-18T06:40+09:00 — ASC-0202 closed: graph-control does real bounded work → ASC-0194 closed
+
+- when: 2026-05-18T06:40+09:00 KST
+- repo: myworld → memoryOS
+- agent: claude@myworld (deadlock recovery — no codex@memoryOS process running; fix executed by operator-claude on behalf of codex@memoryOS, commit attributed to codex@memoryOS)
+- role: operator (intervene → verify → decide)
+- goal: make graph-control govern the live store within the dream budget (ASC-0202), then close the spine contract ASC-0194
+- decision: diagnosed the score-step budget exhaustion — it was never graph work. `load_embeddings()` json-parses the entire embeddings file (197,682 vectors / 34.7s), exhausting the 45s budget before the 44 accepted MemoryObjects are counted; only 195 rows are `target_type=memory_object`, the rest node embeddings the score step never consumes. `total_memories: 0` was a masked SIGALRM-mid-scan symptom. Fix: `GraphStore.load_embeddings_for_targets()` — streams the file, cheap `target_type` pre-filter, parses only memory-object rows (197,682-row scan 34.7s → 3.6s); routed the four score-step builders + `load_memory_coverage_records` through it. graph-control now completes in 17s with real governance, so ASC-0202 and ASC-0194 are both closed.
+- changed: memoryOS `memoryos/store.py`, `memoryos/cli.py`, `docs/AGENT_WORKLOG.md` (commit `91b6be7`); myworld `docs/contracts/ASC-0194-*.md`, `docs/contracts/ASC-0202-*.md` (status closed).
+- evidence: `python -m pytest -q` (memoryOS) → 2028 passed, 18 subtests (164s). Live `memory graph-control run --persist` on 198K-node store: run 1 = 17.0s `status=stop_condition` `score.total_memories=44` `resolve_merge.candidate_count=316` `community_layer.queryable_surface_count=14` `bound_ratio=7.86` `stop_conditions=[duplicate_proliferation]`; run 2 = 19.0s `previous_total_memories 0→44` `raw_ingest_count 44→0` (incremental cursor advanced). myworld dream hook `run_memory_graph_control` → `status=ok`, `bound_ratio=1.29`, `queryable_surface_count=11`, `stop_conditions=[semantic_drift, duplicate_proliferation]`.
+- risk: low — targeted load is a strict subset of the prior full scan; coverage analytics only ever consumed memory-object embeddings; full suite green.
+- next: dream-cycle graph control is live and bounded. ASC-0183 (dream phase-2 parametric per-repo LoRA adapters) remains founder-gated. Next operator focus returns to the tier-2 quality-gate live-escalation smoke and the multi-agent roster UI.
+- status: ASC-0202 closed; ASC-0194 closed — the Graph Control Model governs the live store within the dream budget; queryable surface O(communities), bound ratio ≥1, named SSGM stop conditions fire instead of masked budget_exhausted.

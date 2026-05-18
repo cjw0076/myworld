@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0202
 slug: graph-control-real-work-within-budget
-status: accepted
+status: closed
+closed: 2026-05-18 KST
+closeout_authority: claude@myworld operator — deadlock recovery (no codex@memoryOS process running; the spine contract ASC-0194 was blocked behind this). Diagnosis + fix executed by operator-claude on behalf of codex@memoryOS, commit attributed to codex@memoryOS.
 goal: Make MemoryOS graph-control actually govern the live store — it currently budget-exhausts at the score step with total_memories=0 and does zero real work on the 198K-node graph.
 created: 2026-05-18 KST
 accepted: 2026-05-18 KST
@@ -65,3 +67,54 @@ advances the cursor.
 Diagnose the score-step budget exhaustion; make graph-control process a
 bounded non-zero chunk within budget; prove cursor progress across two runs.
 Report the two run records as evidence.
+
+## Implementation Receipts
+
+### Diagnosis (operator-verified)
+
+The score step was never "budget-exhausting" on graph work — it was
+**full-scanning the embeddings file**. `store.load_embeddings()`
+json-parses every row of `memory/embeddings.jsonl`; on the live store that
+is **197,682 vectors and 34.7s**, leaving < 11s of the 45s budget. The
+score step's three sub-builders each triggered that scan:
+
+- `_graph_control_filtered_accepted_objects_and_vectors` → `load_embeddings()`
+- `build_memory_coverage_plan` / `..._gaps` → `load_memory_coverage_records()`
+  → `load_embeddings()` (measured `build_memory_coverage_plan` = 38.3s,
+  `build_memory_coverage_queue` = 68.8s)
+- `build_memory_cluster_plan`, `build_memory_merge_candidates` → `load_embeddings()`
+
+Only **195 of 197,682** embedding rows are `target_type=memory_object`; the
+rest are node embeddings the score step never consumes. `total_memories: 0`
+was a *masked symptom* — the SIGALRM fired mid-scan before the 44 accepted
+objects were ever counted, exactly the stop condition this contract named.
+
+### Fix (memoryOS)
+
+- `GraphStore.load_embeddings_for_targets(target_ids)` (new) — streams the
+  embeddings file, applies a cheap `target_type` substring pre-filter, and
+  json-parses only memory-object rows. Backed by a new `_read_jsonl_lines`
+  raw-line iterator. 197,682-row scan → **3.6s** (≈10×).
+- `_graph_control_filtered_accepted_objects_and_vectors`,
+  `build_memory_cluster_plan`, `build_memory_merge_candidates`, and
+  `GraphStore.load_memory_coverage_records` routed through the targeted
+  loader. `build_memory_coverage_plan` 38.3s → 3.7s;
+  `build_memory_coverage_queue` 68.8s → 8.0s.
+
+### Verified outcome — Named Exit met
+
+`memory graph-control run --persist` on the live store (198K nodes):
+
+- **Run 1** — 17.0s, `status: stop_condition`,
+  `score.total_memories: 44`, `resolve_merge.candidate_count: 316`,
+  `consolidate.cluster_count: 14`, `community_layer.queryable_surface_count: 14`
+  (O(communities), not O(nodes)), `bound_ratio: 7.86`,
+  `reclaimed_count: 346`, `stop_conditions: [duplicate_proliferation]` — a
+  correctly-named SSGM failure mode, not `budget_exhausted`.
+- **Run 2** — 19.0s, `previous_total_memories: 0 → 44`,
+  `raw_ingest_count: 44 → 0` — the incremental cursor demonstrably advanced.
+- `tests/test_graph_control.py` + `tests/test_schema.py` (and embed/cluster
+  suites): 81 passed.
+
+memoryOS commit: see `docs/AGENT_WORKLOG.md`. ASC-0194's Named Exit is now
+satisfied; ASC-0194 closed in the same operator pass.

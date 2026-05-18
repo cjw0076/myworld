@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0194
 slug: memoryos-graph-control-model
-status: accepted
+status: closed
+closed: 2026-05-18 KST
+closeout_authority: claude@myworld operator — Named Exit verified on the live store after ASC-0202 made graph-control do real bounded work.
 goal: Build the Graph Control Model — a dream-cycle organ that actively governs memoryOS's unbounded knowledge graph (score → merge → invalidate → consolidate → community-layer → decay → bound-check) so the graph stays coherent and bounded as it grows.
 created: 2026-05-17 23:30 KST
 revised: 2026-05-18 00:10 KST
@@ -143,9 +145,32 @@ contract.
   `stop_conditions=["budget_exhausted"]`. This upgrades the caller behavior
   from timeout degradation to a MemoryOS-owned named stop.
 
-### Remaining close condition
+### Closeout — Named Exit verified (2026-05-18)
 
-ASC-0194 remains accepted, not closed. The control model is wired as a
-bounded dream-stage alpha, but a large-ledger live run still needs either
-MemoryOS performance hardening or a smaller incremental graph-control cursor
-before the contract can claim repeatable completion of the dream-cycle stage.
+The "remaining close condition" was that a large-ledger live run still
+budget-exhausted. Operator verification on the live store (198K nodes / 44
+accepted MemoryObjects) confirmed graph-control governed nothing —
+`status: budget_exhausted`, `total_memories: 0`, every step skipped. That
+gap was carried into **ASC-0202** (closed): the score step was
+full-scanning a ~200K-vector embeddings file (34.7s) instead of doing graph
+work. ASC-0202 added a targeted embedding load; graph-control now completes
+within the dream budget.
+
+Named Exit checked on the live store:
+
+- **7-step control model runs as a dream-cycle stage** — `run_memory_graph_control`
+  returns `status: ok`, `report_id: graphctlrun_e8b25d44eddd36a9`.
+- **Queryable surface is O(communities)** — `queryable_surface_count: 11`
+  (project AIOS) / `14` (unfiltered), not O(198K nodes).
+- **Bound ratio emitted and ≥1 on the queryable surface** — `1.29` (project
+  AIOS) / `7.86` (unfiltered), both ≥ `min_bound_ratio=1.0`.
+- **Invalidate/decay are append-only** — `GraphControlRun` snapshots are
+  appended to `graph_control_runs.jsonl`; no node/edge deleted.
+- **A demonstrated stop condition fires** — `stop_conditions:
+  [semantic_drift, duplicate_proliferation]` — named SSGM failure modes
+  from the Stop Conditions list, not a masked `budget_exhausted`.
+- **Incremental cursor converges** — a follow-up run advances
+  `previous_total_memories` 0→44 and drops `raw_ingest_count` 44→0.
+
+evidence: memoryOS commit `91b6be7`; `python -m pytest -q` 2028 passed;
+two persisted live `graph-control run` records.
