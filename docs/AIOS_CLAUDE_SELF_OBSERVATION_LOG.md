@@ -453,3 +453,16 @@ AIOS가 이것을 흡수하려면:
 - key_decision: reported Task C as a null result (memoryOS returned 0 items) rather than skipping it or softening it. The honest negative is the most valuable line in the paper; the protocol's own Claim Rules forbid the alternative.
 - new_invariant_or_pattern_discovered: a benchmark where the evaluator is also the provider must explicitly engineer the model-held-constant control (byte-identical artifact check), or the comparison is not valid.
 - self-correction-of-prior-observation: none
+
+## 2026-05-18 06:50 KST — claude@workstation — false-closure caught: graph-control governed nothing
+
+- session_id: /loop "AIOS 완성" — compact resumption, ASC-0194→0202 chain
+- mode_breakdown: observe:5 / verify:25 / decide:5 / intervene:35 / escalate:0 — minutes ~70
+- tools_used: Bash (profiling, git, pytest), Edit/Write (memoryOS + myworld), Read
+- tools_NOT_used (CLI gap): the 4-OS MCP tools (aios_route/retrieve/challenge) — for a pure perf-diagnosis task they add no signal; deterministic profiling was the right instrument. No gap, just task-fit.
+- substrate_specific_behaviors_observed: profiled the failing path by timing each sub-builder in a one-shot python -c rather than guessing — Bash made the 34.7s `load_embeddings()` cost measurable in seconds. Background test task (2028 tests, 164s) ran while I wrote contracts — parallel idle time used.
+- failures_recovered: (1) ASC-0196 was closed but its symptom (`budget_exhausted`, `total_memories: 0`) persisted on the live store — a false-closure. Operator verification against the *named exit* (not the child's `status: passed`) caught it. (2) Deadlock: no codex@memoryOS process running, so the dispatched ASC-0202 packet would never be picked up — recovered by executing the fix on behalf of the child repo, commit attributed `codex@memoryOS`, per the CLAUDE.md deadlock clause.
+- failures_escalated_to_founder: none — the fix was reversible (a strict subset of a prior full scan) and well-bounded; carried decisively per [[feedback_carry_risk_decisively]].
+- key_decision: act on the child repo in deadlock rather than wait — justified because the spine contract (ASC-0194, "memory design decides the next paradigm") was blocked and no child process existed to unblock it.
+- new_invariant_or_pattern_discovered: **"masked symptom" verification pattern** — when a step reports a generic failure (`budget_exhausted`) with a suspicious zero (`total_memories: 0`), do not trust the failure label; profile to find what actually consumed the budget. Here a 45s "budget exhaustion" was a 34.7s file scan, not graph work. Candidate for AIOS_PROVIDER_ABSORPTION: a verifier should treat `generic_failure + zero_count` as "diagnose," never "stuck-as-designed."
+- self-correction-of-prior-observation: confirms the prior entry's instinct to hold ASC-0194 open — the child's `exit 0` was real but the named exit was unmet; the gap was a perf bug two layers below the contract surface.
