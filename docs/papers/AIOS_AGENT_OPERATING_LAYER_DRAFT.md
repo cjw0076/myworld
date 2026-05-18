@@ -22,7 +22,11 @@ receipts, ledgers, and memory drafts. The central claim is not that AIOS is a
 smarter model than any provider. The claim is that provider CLIs wrapped by an
 operating layer can improve continuity, reliability, governance,
 recoverability, memory reuse, capability routing, and user visibility in
-long-running agentic work. We propose an evaluation comparing direct provider
+long-running agentic work. We further show that the operating layer can own
+*algorithmic* properties a one-shot workflow cannot: an active memory-graph
+control model runs during idle cycles and keeps the queryable surface of an
+append-only knowledge graph bounded to O(communities) rather than O(nodes) as
+the graph grows. We propose an evaluation comparing direct provider
 CLI workflows against the same provider executed through AIOS, while also
 measuring operational overhead introduced by contracts, artifacts, checkpoints,
 and routing decisions. A first matched-run execution (N=3, §6.4) validates the
@@ -69,7 +73,7 @@ versus AIOS" or "Codex versus AIOS." The comparison is:
 The provider should be held constant. The tested variable is whether the
 operating layer improves the management of long-running work.
 
-This paper makes three contributions.
+This paper makes four contributions.
 
 First, it defines an agent operating layer: a local-first layer above provider
 CLIs that manages contracts, memory retrieval, capability routing, divergence,
@@ -80,7 +84,15 @@ around MyWorld, Hive Mind, MemoryOS, CapabilityOS, and GenesisOS. These are not
 five competing agents. They are five operating roles that make direct provider
 execution governable over time.
 
-Third, it proposes an evaluation protocol for measuring operating-layer value
+Third, it presents one concrete mechanism by which the operating layer keeps a
+growing memory substrate usable: an active memory-graph control model that runs
+during idle cycles and bounds the *queryable surface* of an append-only
+knowledge graph to O(communities) rather than O(nodes). This shows that the
+operating layer's value is not only procedural (contracts, receipts) but can be
+algorithmic — the layer can own properties, such as bounded retrieval cost,
+that a one-shot provider workflow cannot.
+
+Fourth, it proposes an evaluation protocol for measuring operating-layer value
 against direct provider CLI use. The protocol measures continuity, reliability,
 governance, memory usefulness, capability routing, divergence, user visibility,
 and overhead. This keeps the claim operational rather than anthropomorphic:
@@ -623,3 +635,13 @@ governance at an artifact-overhead cost, and its memory advantage remains a
 hypothesis pending the embedding gap being closed. That is a narrower claim
 than "AIOS is useful across diverse tasks" — and it is the claim the evidence
 currently supports.
+
+A separate and stronger result stands on its own. Independent of whether
+semantic retrieval *usefulness* is yet realized, the operating layer
+demonstrably owns an *algorithmic* property the bare provider workflow cannot:
+the active memory-graph control model bounds the queryable surface of an
+append-only knowledge graph to O(communities) as the graph grows (§4.3). This
+distinguishes two kinds of operating-layer value — procedural governance
+(contracts, receipts, continuity) and algorithmic governance (bounded memory
+cost) — and shows the second is achievable today even while the first kind's
+memory-retrieval payoff remains under evaluation.
