@@ -466,3 +466,16 @@ AIOS가 이것을 흡수하려면:
 - key_decision: act on the child repo in deadlock rather than wait — justified because the spine contract (ASC-0194, "memory design decides the next paradigm") was blocked and no child process existed to unblock it.
 - new_invariant_or_pattern_discovered: **"masked symptom" verification pattern** — when a step reports a generic failure (`budget_exhausted`) with a suspicious zero (`total_memories: 0`), do not trust the failure label; profile to find what actually consumed the budget. Here a 45s "budget exhaustion" was a 34.7s file scan, not graph work. Candidate for AIOS_PROVIDER_ABSORPTION: a verifier should treat `generic_failure + zero_count` as "diagnose," never "stuck-as-designed."
 - self-correction-of-prior-observation: confirms the prior entry's instinct to hold ASC-0194 open — the child's `exit 0` was real but the named exit was unmet; the gap was a perf bug two layers below the contract surface.
+
+## 2026-05-18 15:45 KST — claude@workstation — ASC-0192 closed via follow-on contracting; a staging failure
+
+- session_id: /loop "AIOS 완성" — dynamic-mode iteration 3 (ASC-0192 follow-ons)
+- mode_breakdown: observe:10 / verify:15 / decide:15 / intervene:55 / escalate:0 — minutes ~80
+- tools_used: Bash, Edit, Write, Read, ScheduleWakeup
+- tools_NOT_used (CLI gap): none material this iteration
+- substrate_specific_behaviors_observed: closed a contract (ASC-0192) by *contracting its remainder* — its Named Exit was "remaining items tracked as their own follow-on contracts", so drafting ASC-0203/ASC-0204 was itself the closeout act. A contract can close by decomposition, not only by completion. Implemented one work packet (data projection) myself and dispatched the other (UI render) — split a contract by substrate fit (Python+tests = operator-doable, HTML/JS = UI agent).
+- failures_recovered: dispatch CLI — `create` needs the contract *file path* not the bare ID, and `send` takes `--dispatch-id` not a positional. Recovered by reading cmd_create / send --help.
+- failures_escalated_to_founder: none.
+- key_decision: none needing founder — all routine ASC-0192 follow-on operator work.
+- new_invariant_or_pattern_discovered: **staging-imprecision failure.** `git add <named files>` swept ~1200 lines of *pre-existing uncommitted WIP* (files already `M` at session start, from codex@myworld / the round controller) into my commits under my commit message. Not destructive — the content is legitimate AIOS work, test-green — but it mis-attributes and mixes unrelated changes. Correction for future sessions: in this workspace uncommitted drift is the *normal* state, so always run `git diff --cached --stat` before commit and, when a file has pre-existing WIP, stage only my hunks (`git add -p`) or commit the file's prior state separately. Candidate for AIOS_PROVIDER_ABSORPTION: a commit step in a shared-workspace agent must diff staged-vs-intended, not trust filename-level `add`.
+- self-correction-of-prior-observation: none.
