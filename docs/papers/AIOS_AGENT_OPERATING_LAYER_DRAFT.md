@@ -150,7 +150,12 @@ branches before closure.
 Users need to see what the system is doing without reading raw logs. AIOS
 records contracts, work packets, receipts, ledgers, monitor state, visual
 Control Center surfaces, and memory drafts so users can inspect progress,
-blockers, artifacts, and next work.
+blockers, artifacts, and next work. The Control Center additionally projects a
+multi-agent surface: a roster of repo-agents, each with a one-line status
+digest, an out-of-band channel that floats blocked or input-needing agents to
+the top, and a contract-lifecycle board. This surface is a read projection of
+existing state — contracts, dispatch packets, the ledger — not a second store,
+so what the user sees cannot drift from what the system actually recorded.
 
 ## 3. System Model
 
@@ -252,6 +257,19 @@ CapabilityOS owns capability maps, route recommendations, fallback plans, and
 tool/API/provider selection surfaces. In early AIOS, CapabilityOS recommends
 but does not silently execute external tools. This keeps execution authority
 inside contracts.
+
+Routing a conversational turn is two-tier. A fast local-LLM pre-router
+classifies the turn's intent before any expensive execution, and CapabilityOS's
+recommendation matrix — ranked by cost and confidence — selects a substrate
+from that classification rather than from substring heuristics. Because a cheap
+route can still misjudge a non-trivial turn, the operating layer adds a
+post-generation quality gate: a deterministic adequacy check followed, when it
+passes, by an LLM-as-judge that scores the answer against a criterion rubric
+and defaults to a fail verdict. On an inadequate verdict the turn is escalated
+once to a stronger model. This is the two-tier RouteLLM pattern — a cheap
+pre-router plus a post-hoc escalation path — placed inside the operating layer,
+so a misroute is detected and recovered rather than silently shipped to the
+user.
 
 ### 4.5 GenesisOS: Divergence And Semantic Alignment
 
