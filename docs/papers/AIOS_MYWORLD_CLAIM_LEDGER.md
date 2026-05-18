@@ -1,8 +1,10 @@
 # AIOS MyWorld Paper Claim Ledger
 
-Status: seed ledger for ASC-0098. Claims here are not manuscript-ready until
-they are backed by concrete repository evidence or explicitly marked as
-hypotheses.
+Status: claim ledger for ASC-0098 (accepted 2026-05-18). As of 2026-05-18,
+11 of 25 claims are `evidence_bound`; the remaining 7 `evidence_needed` claims
+depend on matched-run benchmark data and 7 are explicitly held as `hypothesis`.
+Claims are not manuscript-ready until backed by concrete repository evidence or
+explicitly marked.
 
 ## Claim Status Labels
 
@@ -17,20 +19,20 @@ hypotheses.
 
 | ID | Claim | Status | Evidence Needed |
 | --- | --- | --- | --- |
-| C-001 | AIOS defines agent work as a contract-bound loop rather than chat continuation. | evidence_needed | `docs/AIOS_DEFINITION.md`, `docs/AIOS_SMART_CONTRACT.md`, contract examples |
-| C-002 | `myworld` acts as the control plane and should not directly implement broad child-repo work. | evidence_needed | `docs/AIOS_WORK_DISPATCH.md`, agent role docs, ledger decisions |
-| C-003 | Hive Mind, MemoryOS, CapabilityOS, and GenesisOS have separate ownership boundaries. | evidence_needed | `docs/agents/*.md`, child repo docs, contract scopes |
-| C-004 | AIOS uses durable artifacts such as contracts, dispatch packets, ledgers, receipts, traces, and observations to make work reviewable across sessions. | evidence_needed | contract directory, `.aios` summarized state, worklogs, result packets |
+| C-001 | AIOS defines agent work as a contract-bound loop rather than chat continuation. | evidence_bound | `docs/AIOS_DEFINITION.md`, `docs/AIOS_SMART_CONTRACT.md`; 206 `ASC-NNNN` contracts in `docs/contracts/` instantiate the proposed→accepted→closed loop |
+| C-002 | `myworld` acts as the control plane and should not directly implement broad child-repo work. | evidence_bound | `AGENTS.md`, `CLAUDE.md`, `docs/AIOS_WORK_DISPATCH.md`; the control plane edits contracts, ledger, and `.aios/` dispatch state, not child-repo source — boundary stated and followed in `docs/AIOS_AGENT_LEDGER.md` decisions |
+| C-003 | Hive Mind, MemoryOS, CapabilityOS, and GenesisOS have separate ownership boundaries. | evidence_bound | `docs/agents/HIVEMIND_AGENT.md`, `MEMORYOS_AGENT.md`, `CAPABILITYOS_AGENT.md`; each contract's `repos`/`Scope` block names the owning repo |
+| C-004 | AIOS uses durable artifacts such as contracts, dispatch packets, ledgers, receipts, traces, and observations to make work reviewable across sessions. | evidence_bound | `docs/contracts/` (206 contracts), `docs/AIOS_AGENT_LEDGER.md` (append-only), 186 result packets under `.aios/outbox/`, per-repo worklogs |
 | C-005 | Completion should be stated as levels from described through repeatable rather than claimed as vague progress. | evidence_bound | `docs/AIOS_DEFINITION.md`; `scripts/aios_readiness.py` emits L0–L6 checks and as of 2026-05-18 reports `level 6 (L6 repeatable), ready=True` with per-level evidence |
 | C-006 | AIOS has demonstrated repeatable parts of the loop, but the full autonomous institution claim remains unsupported. | hypothesis | closed contracts, monitor state, governance readiness docs, adversarial review |
 | C-007 | Local-first operation is a practical privacy boundary for high-context agent work. | hypothesis | privacy stop conditions, MemoryOS review policy, peer-share privacy projection |
 | C-008 | Separating memory review from execution reduces the risk of silently accepting unreviewed context. | hypothesis | MemoryOS lifecycle docs, MemoryOS worklogs, contract stop conditions |
-| C-009 | Capability routing and provider fallback can be treated as first-class audited system behavior. | evidence_needed | CapabilityOS route docs, provider fallback contracts, fallback receipts |
+| C-009 | Capability routing and provider fallback can be treated as first-class audited system behavior. | evidence_bound | `docs/contracts/ASC-0203-chat-route-against-capabilityos-matrix.md` (routing reads the ranked CapabilityOS recommendation matrix); `scripts/aios_chat_router.py` provider-fallback path; CapabilityOS `recommend` route artifacts under `.aios/invocations/*/capability/route.json` |
 | C-010 | GenesisOS adds a necessary divergence and pre-close challenge layer to prevent prompt-prison convergence. | hypothesis | GenesisOS contracts, divergence artifacts, pre-close challenge docs |
 | C-011 | AIOS should be evaluated against direct provider CLI workflow using the same provider as executor, not against the provider as a competing model. | evidence_needed | `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`, future matched-run benchmark receipts |
 | C-012 | AIOS improves operational properties of long-running work: continuity, reliability, governance, recoverability, memory reuse, capability routing, and user visibility. | hypothesis | matched direct CLI vs AIOS runs, monitor receipts, restart/resume evidence, Control Center artifacts |
 | C-013 | AIOS introduces measurable operational overhead through contracts, artifacts, checkpoints, false holds, and user cognitive load. | evidence_needed | artifact counts, task timing, monitor false checkpoint counts, user-facing friction notes |
-| C-014 | AIOS dogfooding can convert operating-layer friction into contracts, tests, receipts, and memory drafts. | evidence_needed | ASC-0157, ASC-0158, dispatch result packets, memory writeback draft IDs |
+| C-014 | AIOS dogfooding can convert operating-layer friction into contracts, tests, receipts, and memory drafts. | evidence_bound | `docs/contracts/ASC-0157`, `ASC-0158`; ASC-0202 was drafted directly from an operator verification gap found while closing ASC-0194, with tests and a ledger receipt — friction-to-contract conversion observed in-session |
 | C-015 | MemoryOS retrieval usefulness should be evaluated by whether provenance-bearing context improves restart/resume quality or reduces repeated prompting. | evidence_needed | `rtrace_7124ea1c1fee8eff`, matched restart/resume runs, selected-memory usage records |
 | C-016 | CapabilityOS route accuracy should be evaluated as route-to-artifact fit rather than provider success alone. | evidence_needed | `.aios/invocations/asc-0160-paper-refinement/capability/route.json`, future task route labels |
 | C-017 | GenesisOS reviewer attacks are useful only if they cause paper edits, claim downgrades, or benchmark tasks. | evidence_needed | `.aios/invocations/asc-0160-paper-refinement/genesis/branches.json`, reviewer-pass diffs |
