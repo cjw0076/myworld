@@ -1,7 +1,7 @@
 # AIOS: An Agent Operating Layer for Reliable Long-Running AI Work
 
-Status: working manuscript draft for ASC-0159/ASC-0160  
-Date: 2026-05-14  
+Status: working manuscript draft — active under ASC-0098 (accepted 2026-05-18); prior refinement under ASC-0159/ASC-0160  
+Date: 2026-05-14; revised 2026-05-18 (§4.3 active memory-graph control; claims C-023–C-025)  
 Primary claim status: draft; claims must be tightened through the claim ledger
 before public submission.
 
@@ -216,6 +216,23 @@ MemoryOS owns context packs, provenance, retrieval traces, memory drafts,
 review queues, and accepted memory. Its core design rule is draft-first memory:
 retrieved context can inform execution, but new memories are not silently
 accepted.
+
+Draft-first review is a passive guard: it keeps the graph from breaking, but it
+does not bound the graph's growth. As the append-only knowledge graph grows —
+currently ~198K nodes — an ungoverned graph degrades retrieval: noisy hubs,
+duplicate proliferation, and stale facts inflate the queryable surface. AIOS
+therefore treats graph growth as an actively governed process. A **memory-graph
+control model** runs as a stage of the idle "dream" cycle in seven steps:
+salience scoring, entity merge, bi-temporal invalidation (superseded facts are
+invalidated, never deleted, preserving the append-only audit), episodic-to-
+semantic consolidation, hierarchical community layering, access-based decay,
+and a final bound check. The load-bearing property is that the *queryable
+surface* becomes O(communities) rather than O(nodes): the graph may keep
+growing while the cost of a query stays bounded. Each run emits a bound ratio
+(reclamation over raw ingest) and halts on named failure modes — duplicate
+proliferation, semantic drift, temporal obsolescence — rather than degrading
+silently. This is the difference between a memory store that merely persists
+and one that stays coherent as it scales.
 
 ### 4.4 CapabilityOS: Tool And Provider Router
 

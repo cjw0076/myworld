@@ -1,12 +1,14 @@
 ---
 contract_id: ASC-0108
 slug: society-simulation
-status: proposed
+status: withdrawn
 goal: Stress-test AIOS-as-Government by running a simulation — N synthetic citizens (agents) sending diverse goals, conflicts, friction packets — and measure governance response. First evidence that AIOS handles real population, not just operator pair.
 created: 2026-05-13 KST
 proposed_by: claude@myworld (operator)
 acceptance_authority: pending — this is exploratory and may merit Hive deliberation before accept; founder picks accept-direct vs Hive-route.
 origin: founder reframe AIOS=Government. Government is meaningful only at scale > 1 user. Today AIOS has 2 operators + on-demand child agents = 5 entities. Simulation tests behavior at 100+ entities before real users arrive.
+withdrawn: 2026-05-18 KST
+withdrawn_reason: AIOS-as-Government framing superseded by founder reframe — 5 OS = the agent's five cognitive personas (cognitive architecture), not a governance system; the society-simulation premise no longer matches AIOS's identity (founder triage decision 2026-05-18)
 ---
 
 # ASC-0108 Society Simulation

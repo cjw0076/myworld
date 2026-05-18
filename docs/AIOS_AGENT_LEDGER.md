@@ -5777,3 +5777,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: MEDIUM-process — apps/control/{index.html,app.js,styles.css} carried a large body of pre-existing uncommitted WIP (codex@myworld / round controller); my ASC-0204 render is entangled with it in those three files, so this commit bundles that WIP. It is test-green (node-check + control-snapshot suite pass). chat.html/chat.js were NOT touched by me and are left uncommitted for codex@myworld. Reversible via git history; surfaced to founder.
 - next: AIOS readiness is L6/ready. Remaining open: ASC-0180 (founder-gated hosting trust model), ASC-0183 (founder-gated dream LoRA), 13 proposed contracts pending triage.
 - status: ASC-0204 closed; ASC-0192 fully resolved; AIOS readiness L6 repeatable / ready=True.
+
+## 2026-05-18T16:35+09:00 — Contract triage; ASC-0098 paper activated; manuscript advanced
+
+- when: 2026-05-18T16:35+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (decide → intervene)
+- goal: triage the proposed-contract backlog and act on the founder's paper decision
+- decision: triaged 13 stale proposed contracts. Withdrew 4 with reasons: ASC-0199 (chat status query auto-promoted as a contract — no scope), ASC-0186 (speculative GenesisOS friction seed, empty goal, undeveloped), ASC-0198 (moot — source ASC-0192 closed successfully), ASC-0108 (AIOS-as-Government simulation — superseded by the founder reframe that the 5 OS are the agent's cognitive personas, not a governance system; founder triage decision). Founder decided to activate the AIOS paper (AIOS-only scope) — accepted ASC-0098 and advanced the manuscript: added §4.3 active memory-graph control to `AIOS_AGENT_OPERATING_LAYER_DRAFT.md`, and three evidence-bound claims C-023 (graph control model), C-024 (two-tier routing + quality gate), C-025 (multi-agent visibility surface) plus a C-005 upgrade (readiness L6) to the claim ledger.
+- changed: `docs/contracts/ASC-0199/0186/0198/0108-*.md` (withdrawn), `docs/contracts/ASC-0098-*.md` (accepted), `docs/papers/AIOS_AGENT_OPERATING_LAYER_DRAFT.md`, `docs/papers/AIOS_MYWORLD_CLAIM_LEDGER.md`.
+- evidence: withdrawals carry `withdrawn_reason`; the three new claims cite ASC-0194/0202/0192/0193/0203/0204, memoryOS commit 91b6be7, and the control-snapshot tests; readiness `aios_readiness.py` → L6.
+- risk: low — triage withdrawals are reversible status flips with recorded reasons; paper edits are evidence-bound and confined to docs/papers/.
+- next: ASC-0098 — dispatch the per-OS work packets (MemoryOS context pack, CapabilityOS route, GenesisOS framing critique, Hive synthesis) and continue tightening the manuscript against the claim ledger before the 2026-05-27 deadline.
+- status: 4 contracts withdrawn; ASC-0098 accepted and manuscript advanced; 9 proposed contracts remain (sprint-driver cluster + ASC-0092/0086/0183 kept per founder).

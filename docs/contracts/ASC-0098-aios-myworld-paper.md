@@ -1,10 +1,10 @@
 ---
 contract_id: ASC-0098
 slug: aios-myworld-paper
-status: proposed
+status: accepted
 goal: Produce an evidence-bound research paper about the full MyWorld AIOS repository ecosystem, treating myworld as the control plane and child repos as owned execution, memory, capability, and divergence layers.
 created: 2026-05-13 KST
-accepted: pending
+accepted: 2026-05-18 KST
 closed: pending
 origin: founder direction 2026-05-13 KST: "AIOS로 논문을 쓸거야. 주제는 myworld 레포 전체"
 ---
