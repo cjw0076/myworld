@@ -5763,3 +5763,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — projections are pure read views composed from existing loaders; generated snapshot data files left unregenerated to avoid committing unrelated drift.
 - next: ASC-0204 packet 2 — render the roster cards + lifecycle kanban + detail tabs in apps/control/ (codex@myworld UI agent).
 - status: ASC-0192 closed; ASC-0204 accepted, data projection done + tested, UI render dispatched.
+
+## 2026-05-18T16:05+09:00 — ASC-0204 closed: multi-agent roster surface live; AIOS readiness L6
+
+- when: 2026-05-18T16:05+09:00 KST
+- repo: myworld
+- agent: claude@myworld (UI packet in deadlock recovery — no codex@myworld process running)
+- role: operator (verify → intervene → decide)
+- goal: complete ASC-0204's UI render so AIOS state is visible, and clear the L6 readiness gap
+- decision: readiness was L5 with the L6 "repeatable" gap caused by exactly one pending packet — the `asc-0204` UI packet I had dispatched. Rather than leave it stuck (no codex process to pick it up), implemented ASC-0204 work packet 2: a `#roster` section in apps/control/index.html, `renderRoster` + `renderContractBoard` in app.js (existing render pattern), ~70 lines of themed CSS, and the two new markers in `check_app_js`. Regenerated the snapshot; closed ASC-0204; reconcile archived the now-stale packet; readiness recheck → L6 repeatable, ready=True. The founder now has a literal multi-agent surface — six agent cards with out-of-band event badges + a five-column contract-lifecycle board — which is the "see AIOS" surface ASC-0192 set out to build.
+- changed: `apps/control/index.html`, `apps/control/app.js`, `apps/control/styles.css`, `apps/control/aios-control-snapshot.json`, `apps/control/aios-control-data.js` (regenerated), `scripts/aios_control_snapshot.py` (+2 marker lines), `docs/contracts/ASC-0204-*.md` (closed).
+- evidence: `python -m unittest tests.test_aios_control_snapshot` → 13 passed; `node --check apps/control/app.js` ok; `--check-app-js` → ok:true; regenerated snapshot carries roster (6 agents) + contract_board; `aios_readiness.py` → level 6 (L6 repeatable), ready=True.
+- risk: MEDIUM-process — apps/control/{index.html,app.js,styles.css} carried a large body of pre-existing uncommitted WIP (codex@myworld / round controller); my ASC-0204 render is entangled with it in those three files, so this commit bundles that WIP. It is test-green (node-check + control-snapshot suite pass). chat.html/chat.js were NOT touched by me and are left uncommitted for codex@myworld. Reversible via git history; surfaced to founder.
+- next: AIOS readiness is L6/ready. Remaining open: ASC-0180 (founder-gated hosting trust model), ASC-0183 (founder-gated dream LoRA), 13 proposed contracts pending triage.
+- status: ASC-0204 closed; ASC-0192 fully resolved; AIOS readiness L6 repeatable / ready=True.

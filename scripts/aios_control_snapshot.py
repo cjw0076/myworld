@@ -2675,6 +2675,8 @@ def check_app_js(root: Path, path: str) -> dict[str, Any]:
         "renderContracts",
         "renderDispatches",
         "renderRepos",
+        "renderRoster",
+        "renderContractBoard",
         "renderRoutes",
         "renderOsObservatory",
         "renderInstallation",

@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0204
 slug: aios-multi-agent-roster-surface
-status: accepted
+status: closed
+closed: 2026-05-18 KST
+closeout_authority: claude@myworld operator — both work packets done (data projection + UI render); Named Exit met, 13 control-snapshot tests pass.
 goal: Give apps/control a multi-agent roster surface — one card per repo-agent with a one-line status digest, a contract-lifecycle kanban, an out-of-band done/blocked/needs-input channel, and diff-first review — so the AIOS interface reads as a multi-agent control plane, not a single hidden chat thread.
 created: 2026-05-18 KST
 proposed_by: claude@myworld
@@ -99,3 +101,40 @@ Add the `roster` and `contract_board` projections to
 Render the roster cards + lifecycle kanban + detail tabs in `apps/control/`
 from the snapshot's new blocks. Diff-first: a closed card shows changed
 files. Read-only.
+
+## Implementation Receipts
+
+Both work packets executed by claude@myworld operator (UI packet in
+deadlock recovery — no codex@myworld process running, and the pending
+`asc-0204` packet was holding the L6 "repeatable" readiness gap open).
+
+### Packet 1 — data projection (committed `3aec50a`)
+
+`aios_control_snapshot.py` emits `roster` (six repo-agents, one-line
+status digest, out-of-band event with blocked/needs_input floated to the
+top) and `contract_board` (all contracts in the five lifecycle columns).
+4 tests in `tests/test_aios_control_snapshot.py`.
+
+### Packet 2 — UI render
+
+- `apps/control/index.html` — new `#roster` section: a roster grid +
+  a contract-board grid, placed directly under the Agent Work band.
+- `apps/control/app.js` — `renderRoster` and `renderContractBoard` added
+  (following the existing `renderRepos`/`renderDispatches` pattern) and
+  wired into the main render pass. Roster cards carry an event-coloured
+  left border; the board renders five lifecycle columns.
+- `apps/control/styles.css` — ~70 lines for `.roster-band` / `.roster-card`
+  / `.contract-board` / `.board-column`, themed via the existing CSS vars
+  so it follows light/dark.
+- `aios_control_snapshot.check_app_js` now also requires the `renderRoster`
+  and `renderContractBoard` markers.
+
+### Verification
+
+- `python -m unittest tests.test_aios_control_snapshot` → 13 passed.
+- `node --check apps/control/app.js` → ok.
+- `aios_control_snapshot --check-app-js apps/control/app.js` → `ok: true`.
+- regenerated snapshot carries `roster` (6 agents) and `contract_board`
+  (proposed 29 / accepted 0 / dispatched 1 / collected 1 / closed 175).
+
+Named Exit met. ASC-0192's last follow-on is closed.

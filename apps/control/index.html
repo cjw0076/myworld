@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AIOS TUI</title>
+    <title>AIOS Control Center</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -11,16 +11,19 @@
       <aside class="side-rail" aria-label="AIOS navigation">
         <div class="brand-block">
           <strong>AIOS</strong>
-          <span>AIOS TUI</span>
+          <span>Control Center</span>
           <small>v0.14.6</small>
         </div>
         <nav class="side-nav" aria-label="Primary">
-          <a class="active" href="#session-form">AIOS TUI</a>
+          <a class="active" href="#conversation">Chat</a>
+          <a href="#session-form">Goals</a>
           <a href="#runtime-band">Runtime</a>
           <a href="#hive-board">Hive TUI</a>
           <a href="#execution-lens">Execution</a>
           <a href="#agent-work-title">Sessions</a>
           <a href="#promotion-queue">Promotions</a>
+          <a href="#capability-router">Tools</a>
+          <a href="#memory-library">Memory</a>
           <a href="#artifact-lane">Artifacts</a>
           <a href="#work-timeline">Timeline</a>
           <a href="#contract-flow">Contracts</a>
@@ -38,7 +41,7 @@
       <section class="topbar" aria-label="Control status">
         <div>
           <p class="eyebrow">System Status</p>
-          <h1>AIOS TUI</h1>
+          <h1>AIOS Control Center</h1>
           <p class="goal-subtitle" id="goal-title">Loading operation plane</p>
         </div>
         <div class="top-actions">
@@ -51,11 +54,103 @@
         </div>
       </section>
 
-      <section class="runtime-band" id="completion-band" aria-label="AIOS completion">
+      <section class="visual-workflow control-visual-workflow" id="control-visual-workflow" aria-label="AIOS visual evidence">
+        <button class="visual-workflow-step active" type="button" data-control-visual-open="reference">Reference</button>
+        <button class="visual-workflow-step" type="button" data-control-visual-open="after">Build</button>
+        <button class="visual-workflow-step" type="button" data-control-visual-open="receipt">Verify</button>
+        <span class="visual-workflow-evidence" id="control-visual-evidence">visual evidence loading</span>
+        <figure class="visual-workflow-preview control-visual-preview" id="control-visual-preview" hidden>
+          <img alt="" id="control-visual-image" />
+          <figcaption id="control-visual-caption">No visual evidence</figcaption>
+        </figure>
+        <pre class="control-visual-receipt" id="control-visual-receipt" hidden></pre>
+      </section>
+
+      <section class="conversation-band" id="conversation" aria-label="AIOS conversation">
+        <div class="command-chat-column">
+        <div class="conversation-head">
+          <div>
+            <p class="eyebrow">Conversation</p>
+            <h2>Talk to AIOS</h2>
+          </div>
+          <div class="conversation-actions">
+            <a class="conversation-link" href="./chat.html">Open Chat</a>
+            <span id="inline-chat-status">Connecting</span>
+          </div>
+        </div>
+        <div class="quick-action-row" id="quick-action-row" aria-label="Quick actions">
+          <button type="button" data-chat-prompt="현재 막힌 것과 다음 행동을 알려줘">Find Blockers</button>
+          <button type="button" data-chat-prompt="최근 산출물과 Agent 작업 결과를 요약해줘">Summarize Artifacts</button>
+          <button type="button" data-chat-prompt="이 대화에서 불편함과 숨은 필요성을 찾아줘">Find Friction</button>
+          <button type="button" data-chat-prompt="이 대화를 실행 가능한 목표로 바꿔줘">Turn Into Goal</button>
+          <button type="button" data-chat-prompt="ASC-0145를 진행하려면 무엇이 필요한지 알려줘">Promote Session</button>
+        </div>
+        <div class="anticipatory-surface" id="anticipatory-surface" aria-label="AIOS next if idle"></div>
+        <div class="intent-lens" id="intent-lens" aria-label="AIOS intent lens"></div>
+        <div class="inline-chat-thread" id="inline-chat-thread" aria-live="polite"></div>
+        <form class="inline-chat-form" id="inline-chat-form">
+          <label class="inline-chat-field" for="inline-chat-input">
+            <span>Message</span>
+            <textarea id="inline-chat-input" rows="2" maxlength="8000" placeholder="AIOS에게 물어보기" required></textarea>
+          </label>
+          <div class="inline-chat-actions">
+            <input id="inline-chat-conversation" type="hidden" value="control-center" aria-label="Conversation" />
+            <button id="inline-chat-submit" type="submit">Send</button>
+          </div>
+        </form>
+        </div>
+        <aside class="command-evidence-desk" id="command-evidence-desk" aria-label="Evidence and artifact desk">
+          <div class="command-evidence-head">
+            <div>
+              <p class="eyebrow">Evidence Desk</p>
+              <h3>Latest receipts and system proof</h3>
+            </div>
+            <a class="conversation-link" href="#artifact-lane">All artifacts</a>
+          </div>
+          <div class="command-governed-ask" id="command-governed-ask"></div>
+          <div class="os-live-loop" id="os-live-loop" aria-label="Live AIOS operating loop"></div>
+          <div class="command-evidence-grid" id="command-evidence-grid"></div>
+          <div class="command-receipt-list" id="command-receipt-list"></div>
+        </aside>
+      </section>
+
+      <section class="agent-work-band" aria-label="Agent work">
+        <div class="agent-work-head">
+          <div>
+            <p class="eyebrow">Agent Work</p>
+            <h2 id="agent-work-title">Latest session</h2>
+          </div>
+          <span id="agent-work-status">Waiting</span>
+        </div>
+        <div class="agent-role-grid" id="agent-role-grid"></div>
+        <div class="artifact-lane" id="artifact-lane"></div>
+        <div class="work-timeline" id="work-timeline"></div>
+      </section>
+
+      <section class="roster-band" id="roster" aria-label="AIOS multi-agent roster">
         <div class="runtime-head">
           <div>
-            <p class="eyebrow">Completion</p>
-            <h2 id="completion-verdict">Checking AIOS completion</h2>
+            <p class="eyebrow">Multi-Agent Roster</p>
+            <h2>Who is doing what</h2>
+          </div>
+          <span id="roster-summary">—</span>
+        </div>
+        <div class="roster-grid" id="roster-list"></div>
+        <div class="runtime-head roster-board-head">
+          <div>
+            <p class="eyebrow">Contract Board</p>
+            <h2>Lifecycle</h2>
+          </div>
+          <span id="contract-board-summary">—</span>
+        </div>
+        <div class="contract-board" id="contract-board"></div>
+      </section>
+
+      <section class="runtime-band" id="completion-band" aria-label="AIOS readiness audit">
+        <div class="runtime-head">
+          <div>
+            <p class="eyebrow">Readiness Audit</p>
+            <h2 id="completion-verdict">Checking AIOS readiness</h2>
           </div>
           <span id="completion-status">—</span>
         </div>
@@ -141,34 +236,6 @@
         </form>
       </section>
 
-      <section class="conversation-band" aria-label="AIOS conversation">
-        <div class="conversation-head">
-          <div>
-            <p class="eyebrow">Conversation</p>
-            <h2>Talk to AIOS</h2>
-          </div>
-          <span id="inline-chat-status">Connecting</span>
-        </div>
-        <div class="quick-action-row" id="quick-action-row" aria-label="Quick actions">
-          <button type="button" data-chat-prompt="현재 막힌 것과 다음 행동을 알려줘">Find Blockers</button>
-          <button type="button" data-chat-prompt="최근 산출물과 Agent 작업 결과를 요약해줘">Summarize Artifacts</button>
-          <button type="button" data-chat-prompt="이 대화에서 불편함과 숨은 필요성을 찾아줘">Find Friction</button>
-          <button type="button" data-chat-prompt="이 대화를 실행 가능한 목표로 바꿔줘">Turn Into Goal</button>
-          <button type="button" data-chat-prompt="ASC-0145를 진행하려면 무엇이 필요한지 알려줘">Promote Session</button>
-        </div>
-        <div class="inline-chat-thread" id="inline-chat-thread" aria-live="polite"></div>
-        <form class="inline-chat-form" id="inline-chat-form">
-          <label class="inline-chat-field" for="inline-chat-input">
-            <span>Message</span>
-            <textarea id="inline-chat-input" rows="2" maxlength="8000" placeholder="AIOS에게 물어보기" required></textarea>
-          </label>
-          <div class="inline-chat-actions">
-            <input id="inline-chat-conversation" value="control-center" aria-label="Conversation" />
-            <button id="inline-chat-submit" type="submit">Send</button>
-          </div>
-        </form>
-      </section>
-
       <section class="promotion-band" id="promotion-queue" aria-label="Promotion queue">
         <div class="promotion-head">
           <div>
@@ -178,6 +245,28 @@
           <span id="promotion-status">Waiting</span>
         </div>
         <div class="promotion-queue-grid" id="promotion-queue-grid"></div>
+      </section>
+
+      <section class="capability-router-band" id="capability-router" aria-label="CapabilityOS router">
+        <div class="capability-router-head">
+          <div>
+            <p class="eyebrow">Capability Router</p>
+            <h2>Tools, providers, and search routes AIOS can choose</h2>
+          </div>
+          <span id="capability-router-status">Routing</span>
+        </div>
+        <div class="capability-router-grid" id="capability-router-grid"></div>
+      </section>
+
+      <section class="memory-library-band" id="memory-library" aria-label="MemoryOS library">
+        <div class="memory-library-head">
+          <div>
+            <p class="eyebrow">Memory Library</p>
+            <h2>What MemoryOS knows and can retrieve</h2>
+          </div>
+          <span id="memory-library-status">Indexing</span>
+        </div>
+        <div class="memory-library-grid" id="memory-library-grid"></div>
       </section>
 
       <section class="memory-draft-band" aria-label="Memory draft queue">
@@ -214,7 +303,7 @@
         <div class="os-lane-grid" id="os-lane-grid"></div>
       </section>
 
-      <section class="genesis-lens-band" aria-label="Genesis Lens">
+      <section class="genesis-lens-band" id="genesis-lens" aria-label="Genesis Lens">
         <div class="genesis-lens-head">
           <div>
             <p class="eyebrow">Genesis Lens</p>
@@ -222,20 +311,9 @@
           </div>
           <span id="genesis-lens-status">Speculative</span>
         </div>
+        <div class="genesis-cycle-grid" id="genesis-cycle-grid"></div>
+        <div class="genesis-worldline-map" id="genesis-worldline-map"></div>
         <div class="genesis-branch-grid" id="genesis-branch-grid"></div>
-      </section>
-
-      <section class="agent-work-band" aria-label="Agent work">
-        <div class="agent-work-head">
-          <div>
-            <p class="eyebrow">Agent Work</p>
-            <h2 id="agent-work-title">Latest session</h2>
-          </div>
-          <span id="agent-work-status">Waiting</span>
-        </div>
-        <div class="agent-role-grid" id="agent-role-grid"></div>
-        <div class="artifact-lane" id="artifact-lane"></div>
-        <div class="work-timeline" id="work-timeline"></div>
       </section>
 
       <section class="goal-bar-band" aria-label="Goal Bar">
