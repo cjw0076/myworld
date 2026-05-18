@@ -1132,6 +1132,83 @@ class Tier2QualityGateTest(unittest.TestCase):
         self.assertFalse(m.tier2_eligible("claude", "multi_step"))
         self.assertFalse(m.tier2_eligible("ollama_qwen", "cheap_single_turn"))
 
+    def test_sanitize_provider_text_strips_ansi_and_thinking_block(self) -> None:
+        m = self._module()
+        raw = (
+            "Thinking...\n"
+            "private scratch\x1b[1D\x1b[K\n"
+            "...done thinking.\n\n"
+            "Final answer\x1b[K with clean text"
+        )
+
+        clean = m.sanitize_provider_text(raw)
+
+        self.assertEqual(clean, "Final answer with clean text")
+        self.assertNotIn("\x1b", clean)
+        self.assertNotIn("Thinking", clean)
+
+    def test_sanitize_provider_text_applies_cursor_erase_and_reflows_wraps(self) -> None:
+        m = self._module()
+        raw = (
+            "Final plan uses a long provenance trace visual row before provider_output_p\x1b[1D\x1b[K\n"
+            "`provider_output_projection` artifacts.\n\n"
+            "- keep markdown bullets\n"
+            "MemoryOS\n"
+            "trace"
+        )
+
+        clean = m.sanitize_provider_text(raw)
+
+        self.assertIn("provider_output_`provider_output_projection` artifacts.", clean)
+        self.assertIn("- keep markdown bullets", clean)
+        self.assertIn("MemoryOS trace", clean)
+        self.assertNotIn("\x1b", clean)
+
+    def test_capability_matrix_routes_by_rank_and_cost(self) -> None:
+        # ASC-0203 — a paid claude card outranks ollama by confidence, but
+        # cost=free must stable-prefer the local card; the harness card is
+        # not a provider substrate and is dropped.
+        m = self._module()
+        payload = {
+            "recommendations": [
+                {"id": "cap_anthropic_claude_opus", "domains": ["claude"],
+                 "cost": "metered", "confidence": 0.9},
+                {"id": "cap_hivemind_execution_harness", "domains": ["aios"],
+                 "cost": "free", "confidence": 0.8},
+                {"id": "cap_ollama_qwen25_7b_local", "domains": ["ollama", "qwen"],
+                 "cost": "free", "confidence": 0.6},
+            ]
+        }
+        self.assertEqual(
+            m.provider_candidates_from_capability(payload),
+            ["ollama_qwen", "claude"],
+        )
+
+    def test_capability_matrix_with_no_provider_card_defaults_local(self) -> None:
+        # ASC-0203 stop condition — matrix maps to no substrate -> local-first.
+        m = self._module()
+        payload = {
+            "recommendations": [
+                {"id": "cap_hivemind_execution_harness", "domains": ["aios"],
+                 "cost": "free", "confidence": 0.8},
+                {"id": "cap_aios_readiness_scorer", "domains": ["aios"],
+                 "cost": "free", "confidence": 0.7},
+            ]
+        }
+        self.assertEqual(
+            m.provider_candidates_from_capability(payload),
+            ["ollama_qwen"],
+        )
+
+    def test_capability_payload_without_matrix_uses_substring_fallback(self) -> None:
+        # ASC-0203 — no `recommendations` key: degrade to the substring scan.
+        m = self._module()
+        payload = {"note": "ollama-served local model; claude available as chair"}
+        self.assertEqual(
+            m.provider_candidates_from_capability(payload),
+            ["ollama_qwen", "claude"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

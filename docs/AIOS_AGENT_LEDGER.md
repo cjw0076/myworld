@@ -5735,3 +5735,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — targeted load is a strict subset of the prior full scan; coverage analytics only ever consumed memory-object embeddings; full suite green.
 - next: dream-cycle graph control is live and bounded. ASC-0183 (dream phase-2 parametric per-repo LoRA adapters) remains founder-gated. Next operator focus returns to the tier-2 quality-gate live-escalation smoke and the multi-agent roster UI.
 - status: ASC-0202 closed; ASC-0194 closed — the Graph Control Model governs the live store within the dream budget; queryable surface O(communities), bound ratio ≥1, named SSGM stop conditions fire instead of masked budget_exhausted.
+
+## 2026-05-18T15:10+09:00 — ASC-0203 closed: chat routes against the CapabilityOS matrix; tier-2 gate live-smoked
+
+- when: 2026-05-18T15:10+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (verify → decide → intervene)
+- goal: ASC-0192 follow-on — tier-2 quality-gate live smoke + close routing item 2
+- decision: (1) live-smoked the ASC-0193 tier-2 quality gate on three real cases — a trivial answer (deterministic signal catches "too short" → escalates to qwen3:30b-a3b → 3883-char real answer, escalated_pass), a long-but-off-topic answer (LLM judge qwen3:8b correctly flags "provides general information about Python but does not address..." → escalated_pass), and an adequate answer (verdict=pass, no false escalation). The gate works end-to-end. (2) Operator review of ASC-0192 follow-on item 2 found `provider_candidates_from_capability` still substring-matched the capability payload's JSON dump — the same keyword anti-pattern ASC-0192 removed from tier-1, still governing route selection. Drafted + accepted + implemented + closed ASC-0203: the router now ranks substrates from the CapabilityOS `recommendations` matrix (id/domains→substrate, rec rank preserved, cost=free stable-preferred), with the substring scan kept as the no-matrix fallback.
+- changed: `scripts/aios_chat_router.py` (`provider_candidates_from_capability` rewrite + `_capability_rec_substrate`), `tests/test_aios_chat_router.py` (+3 cases), `docs/contracts/ASC-0203-*.md` (new, closed).
+- evidence: `python -m unittest tests.test_aios_chat_router` → 45 passed (42 prior + 3 new); tier-2 live smoke A/B/C verdicts as above; `git diff --check` clean.
+- risk: low — matrix path only engages with ≥1 dict recommendation; legacy string-list fixtures still exercise the unchanged fallback.
+- next: ASC-0192 follow-on item 3 (multi-agent roster surface) still needs its own contract before ASC-0192 closes — next operator focus.
+- status: ASC-0203 closed; ASC-0193 tier-2 gate confirmed live; ASC-0192 has 2 of 3 follow-ons resolved.

@@ -35,6 +35,10 @@ CHAIR_RUNTIME_SCHEMA = "aios.gate.chair_runtime.v1"
 CHAIR_RUNTIME_MODES = {"internal_evidence_synthesizer", "ollama", "claude", "codex", "gemini"}
 PROVIDER_CHAIR_MODES = {"claude", "codex", "gemini"}
 MAX_MESSAGE_CHARS = 8000
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
+THINK_BLOCK_RE = re.compile(r"^\s*(?:Thinking\.\.\.|<think>)\s*.*?(?:\.\.\.done thinking\.|</think>)\s*", re.IGNORECASE | re.DOTALL)
+MARKDOWN_LINE_RE = re.compile(r"^\s*(?:[-*+] |\d+\. |#{1,6} |```|>|\|)")
 OVERRIDES = {
     "@claude": "claude",
     "@codex": "codex",
@@ -464,7 +468,58 @@ def genesis_friction_projection(payload: dict[str, Any]) -> dict[str, Any] | Non
     }
 
 
+# Provider substrates and the id/domain tokens that identify their cards.
+_CAPABILITY_SUBSTRATE_ALIASES: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("ollama_qwen", ("ollama", "qwen", "local_llm", "local-llm")),
+    ("claude", ("claude", "anthropic")),
+    ("codex", ("codex", "openai")),
+    ("gemini", ("gemini",)),
+)
+
+
+def _capability_rec_substrate(rec: dict[str, Any]) -> str | None:
+    """Map one CapabilityOS recommendation to a provider substrate via its
+    id + domains. Returns None for cards that are not provider substrates
+    (e.g. cap_hivemind_execution_harness, cap_aios_readiness_scorer)."""
+    haystack = " ".join(
+        str(part).lower()
+        for part in (
+            rec.get("id"),
+            " ".join(str(domain) for domain in rec.get("domains") or []),
+        )
+    )
+    for substrate, aliases in _CAPABILITY_SUBSTRATE_ALIASES:
+        if any(alias in haystack for alias in aliases):
+            return substrate
+    return None
+
+
 def provider_candidates_from_capability(payload: dict[str, Any]) -> list[str]:
+    """Rank provider substrates from the CapabilityOS recommendation matrix
+    (ASC-0203).
+
+    `recommendations` is already confidence-sorted by CapabilityOS; preserve
+    that rank, then stable-prefer `cost: free` so the local-first AIOS default
+    holds. When the payload carries no structured `recommendations` array, fall
+    back to a JSON-substring scan — the layer degrades, it does not break."""
+    recs = payload.get("recommendations")
+    dict_recs = [rec for rec in recs if isinstance(rec, dict)] if isinstance(recs, list) else []
+    if dict_recs:
+        ranked: list[tuple[int, str]] = []  # (cost_rank, substrate), in rec order
+        seen: set[str] = set()
+        for rec in dict_recs:
+            substrate = _capability_rec_substrate(rec)
+            if substrate is None or substrate in seen:
+                continue
+            seen.add(substrate)
+            cost_rank = 0 if str(rec.get("cost") or "").lower() == "free" else 1
+            ranked.append((cost_rank, substrate))
+        if ranked:
+            # stable sort on cost only — rec rank (confidence) kept within tier
+            return [substrate for _, substrate in sorted(ranked, key=lambda t: t[0])]
+        # matrix present but no mappable provider card — local-first default
+        return ["ollama_qwen"]
+    # no structured matrix — substring fallback (degrade, do not break)
     candidates: list[str] = []
     text = json.dumps(payload, ensure_ascii=False).lower()
     if "ollama" in text or "local" in text:
@@ -938,8 +993,78 @@ def attach_memory_review_gaps(root: Path, message: str, memory: dict[str, Any]) 
     }
 
 
+def _apply_terminal_control_sequences(text: str) -> str:
+    output: list[str] = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "\x1b" and index + 1 < len(text) and text[index + 1] == "[":
+            end = index + 2
+            while end < len(text) and not ("@" <= text[end] <= "~"):
+                end += 1
+            if end >= len(text):
+                break
+            params = text[index + 2:end]
+            command = text[end]
+            if command == "D":
+                try:
+                    count = int(params or "1")
+                except ValueError:
+                    count = 1
+                for _ in range(max(1, count)):
+                    if output:
+                        output.pop()
+            index = end + 1
+            continue
+        if char == "\b":
+            if output:
+                output.pop()
+            index += 1
+            continue
+        output.append(char)
+        index += 1
+    return "".join(output)
+
+
+def _reflow_soft_wrapped_lines(lines: list[str]) -> list[str]:
+    reflowed: list[str] = []
+    paragraph = ""
+    previous_line_len = 0
+
+    def flush() -> None:
+        nonlocal paragraph
+        if paragraph:
+            reflowed.append(paragraph)
+            paragraph = ""
+
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            flush()
+            reflowed.append("")
+            continue
+        if MARKDOWN_LINE_RE.match(stripped):
+            flush()
+            reflowed.append(stripped)
+            continue
+        if paragraph:
+            separator = "" if previous_line_len >= 60 else " "
+            paragraph = f"{paragraph}{separator}{stripped}"
+        else:
+            paragraph = stripped
+        previous_line_len = len(stripped)
+    flush()
+    return reflowed
+
+
 def sanitize_provider_text(text: str, *, max_lines: int = 80, max_chars: int = 8000) -> str:
-    lines = [line.rstrip() for line in str(text).splitlines() if line.strip() or line == ""]
+    cleaned = _apply_terminal_control_sequences(str(text))
+    cleaned = ANSI_ESCAPE_RE.sub("", cleaned)
+    cleaned = cleaned.replace("\r", "\n")
+    cleaned = CONTROL_CHAR_RE.sub("", cleaned)
+    cleaned = THINK_BLOCK_RE.sub("", cleaned, count=1)
+    raw_lines = [line.rstrip() for line in cleaned.splitlines() if line.strip() or line == ""]
+    lines = _reflow_soft_wrapped_lines(raw_lines)
     clipped = "\n".join(lines[:max_lines])
     if len(clipped) > max_chars:
         return clipped[:max_chars] + " ..."
