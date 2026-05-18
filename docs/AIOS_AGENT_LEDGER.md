@@ -5749,3 +5749,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — matrix path only engages with ≥1 dict recommendation; legacy string-list fixtures still exercise the unchanged fallback.
 - next: ASC-0192 follow-on item 3 (multi-agent roster surface) still needs its own contract before ASC-0192 closes — next operator focus.
 - status: ASC-0203 closed; ASC-0193 tier-2 gate confirmed live; ASC-0192 has 2 of 3 follow-ons resolved.
+
+## 2026-05-18T15:40+09:00 — ASC-0192 closed; ASC-0204 multi-agent roster — data projection done
+
+- when: 2026-05-18T15:40+09:00 KST
+- repo: myworld
+- agent: claude@myworld
+- role: operator (decide → intervene)
+- goal: close ASC-0192 (two-tier routing) and open + start its last follow-on (the multi-agent surface)
+- decision: ASC-0192's Named Exit was "tier-1 done + the three follow-on items tracked as their own contracts". With ASC-0193 (tier-2 gate, closed) and ASC-0203 (route against CapabilityOS, closed) already covering items 1-2, drafted + accepted ASC-0204 for item 3 (multi-agent roster surface) — so ASC-0192 is now closed. Then implemented ASC-0204 work packet 1 (data projection): `aios_control_snapshot.py` emits a `roster` block (six repo-agents, one-line status digest, out-of-band event with blocked/needs_input floated to the top — cmux borrow) and a `contract_board` block (every contract bucketed into the five lifecycle columns proposed→accepted→dispatched→collected→closed — vibe-kanban borrow; dispatched/collected refined from the dispatch aggregate). Both are read projections — no new store (Invariant 3). UI render (packet 2) is dispatched to codex@myworld.
+- changed: `scripts/aios_control_snapshot.py` (`build_roster`, `build_contract_board`, `_roster_event`, `load_dispatches` by_contract index, `load_contracts` board_rows), `tests/test_aios_control_snapshot.py` (+4 cases), `docs/contracts/ASC-0192-*.md` (closed), `docs/contracts/ASC-0204-*.md` (new, accepted).
+- evidence: `python -m unittest tests.test_aios_control_snapshot` → 13 passed (9 prior + 4 new); live `build_snapshot` shows roster=6 agents and contract_board bucketing 206 contracts (proposed 29 / accepted 1 / dispatched 0 / collected 1 / closed 175); `git diff --check` clean.
+- risk: low — projections are pure read views composed from existing loaders; generated snapshot data files left unregenerated to avoid committing unrelated drift.
+- next: ASC-0204 packet 2 — render the roster cards + lifecycle kanban + detail tabs in apps/control/ (codex@myworld UI agent).
+- status: ASC-0192 closed; ASC-0204 accepted, data projection done + tested, UI render dispatched.

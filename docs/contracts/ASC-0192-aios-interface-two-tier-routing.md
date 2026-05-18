@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0192
 slug: aios-interface-two-tier-routing
-status: accepted
+status: closed
+closed: 2026-05-18 KST
+closeout_authority: claude@myworld operator — tier-1 done; all three follow-on items now tracked as their own contracts (ASC-0193, ASC-0203, ASC-0204).
 goal: Fix the AIOS chat interface — replace keyword task-classification with two-tier LLM routing, and move the single-thread chat toward a chatbot+multi-agent surface, informed by the agent-multiplexer OSS study.
 created: 2026-05-17 21:55 KST
 accepted: 2026-05-17 21:55 KST
@@ -61,6 +63,23 @@ misroutes. Route against a live registry (CapabilityOS), not hardcoded.
 
 Closed when: tier-1 done (this commit); the remaining three items are tracked
 as their own follow-on contracts.
+
+## Closeout (2026-05-18)
+
+Tier-1 two-tier classification shipped with this contract. All three
+follow-on items are now tracked as their own contracts:
+
+1. **Tier-2 quality gate** → **ASC-0193** (closed) — RouteLLM-pattern
+   post-generation gate; live-smoked on three real cases (deterministic
+   catch, LLM-judge catch, no false escalation).
+2. **Route against CapabilityOS live** → **ASC-0203** (closed) —
+   `provider_candidates_from_capability` now ranks substrates from the
+   CapabilityOS recommendation matrix instead of substring-matching the
+   payload dump.
+3. **Multi-agent surface** → **ASC-0204** (accepted) — roster cards +
+   contract-lifecycle kanban + diff-first review in `apps/control/`.
+
+The Named Exit is met; ASC-0192 is closed.
 
 ## Stop Conditions
 

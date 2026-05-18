@@ -4,12 +4,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import urllib.parse
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,10 +24,23 @@ INSTALL_MARKER = "# AIOS_INSTALLER_MANAGED v=asc-0080"
 CHAIR_RUNTIME_SCHEMA = "aios.gate.chair_runtime.v1"
 CHAIR_RUNTIME_MODES = {"internal_evidence_synthesizer", "ollama", "claude", "codex", "gemini"}
 PROVIDER_CHAIR_MODES = {"claude", "codex", "gemini"}
+GATE_CHAIR_DEMOTION_STATUSES = {
+    "gate_chair_timeout",
+    "gate_chair_exception",
+    "provider_access_denied",
+    "provider_backpressure",
+    "pin_required_noninteractive",
+    "empty_output",
+    "provider_execution_failed",
+}
 
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def stable_hash(value: str) -> str:
+    return hashlib.sha1(value.encode("utf-8", "replace")).hexdigest()
 
 
 def parse_frontmatter(text: str) -> tuple[dict[str, str], str]:
@@ -106,6 +121,11 @@ def read_text(path: Path, *, limit: int = 4096) -> str:
         return path.read_text(encoding="utf-8", errors="replace")[:limit]
     except OSError:
         return ""
+
+
+def compact_preview(value: Any, *, limit: int = 240) -> str:
+    text = " ".join(str(value or "").split())
+    return text[:limit]
 
 
 def is_managed_install_file(path: Path) -> bool:
@@ -192,6 +212,7 @@ def load_contracts(root: Path) -> dict[str, Any]:
     for path in sorted((root / "docs" / "contracts").glob("ASC-*.md")):
         text = path.read_text(encoding="utf-8", errors="replace")
         frontmatter, body = parse_frontmatter(text)
+        quality = contract_quality(frontmatter, body)
         rows.append(
             {
                 "id": frontmatter.get("contract_id") or path.stem.split("-")[0],
@@ -203,11 +224,53 @@ def load_contracts(root: Path) -> dict[str, Any]:
                 "closed": frontmatter.get("closed", ""),
                 "path": path.relative_to(root).as_posix(),
                 "stop_conditions": bullet_items(section(body, "Stop Conditions"), limit=8),
+                "quality_state": quality["state"],
+                "quality_warnings": quality["warnings"],
+                "review_action": quality["review_action"],
             }
         )
     counts = Counter(row["status"] for row in rows)
+    quality_counts = Counter(row["quality_state"] for row in rows)
     latest = sorted(rows, key=lambda row: row["id"], reverse=True)[:10]
-    return {"counts": dict(counts), "latest": latest, "total": len(rows)}
+    # ASC-0204: compact all-contract list for the contract board projection.
+    board_rows = [
+        {"id": row["id"], "slug": row["slug"], "status": row["status"],
+         "goal": row["goal"], "path": row["path"]}
+        for row in rows
+    ]
+    return {
+        "counts": dict(counts),
+        "quality_counts": dict(quality_counts),
+        "latest": latest,
+        "total": len(rows),
+        "board_rows": board_rows,
+    }
+
+
+def contract_quality(frontmatter: dict[str, str], body: str) -> dict[str, Any]:
+    status = (frontmatter.get("status") or "unknown").strip().lower()
+    goal = (frontmatter.get("goal") or "").strip()
+    origin = (frontmatter.get("origin") or "").strip().lower()
+    body_lower = body.lower()
+    warnings: list[str] = []
+
+    if status == "proposed" and "session promotion" in origin:
+        if len(goal) < 18:
+            warnings.append("goal_too_short_for_contract_acceptance")
+        if "signal_coverage: `0.0`" in body_lower or "signal_coverage: 0.0" in body_lower:
+            warnings.append("memory_signal_coverage_zero")
+        if "pending_or_not_required" in body_lower:
+            warnings.append("os_role_evidence_not_narrowed")
+
+    if status == "proposed" and warnings:
+        return {
+            "state": "weak_proposed",
+            "warnings": warnings,
+            "review_action": "revise_or_supersede_before_acceptance",
+        }
+    if status == "proposed":
+        return {"state": "review_required", "warnings": [], "review_action": "operator_accept_or_revise"}
+    return {"state": status, "warnings": [], "review_action": ""}
 
 
 def first_heading(body: str) -> str:
@@ -215,6 +278,51 @@ def first_heading(body: str) -> str:
         if line.startswith("# "):
             return line[2:].strip()
     return ""
+
+
+def dispatch_packet_candidates(root: Path, dispatch_id: str, repos: set[str]) -> list[Path]:
+    candidates: list[Path] = []
+    inbox_root = root / ".aios" / "inbox"
+    archive_root = root / ".aios" / "archive" / "inbox"
+    for repo in sorted(repos):
+        candidates.append(inbox_root / repo / f"{dispatch_id}.{repo}.json")
+        candidates.append(archive_root / repo / f"{dispatch_id}.{repo}.json")
+    if inbox_root.exists():
+        candidates.extend(sorted(inbox_root.glob(f"*/{dispatch_id}.*.json")))
+    if archive_root.exists():
+        candidates.extend(sorted(archive_root.glob(f"*/{dispatch_id}.*.json")))
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        unique.append(path)
+    return unique
+
+
+def dispatch_memory_context(root: Path, dispatch_id: str, repos: set[str]) -> dict[str, Any]:
+    for path in dispatch_packet_candidates(root, dispatch_id, repos):
+        payload = read_json(path)
+        if not isinstance(payload, dict):
+            continue
+        envelope = payload.get("session_envelope") if isinstance(payload.get("session_envelope"), dict) else {}
+        memory_context = envelope.get("memory_context") if isinstance(envelope.get("memory_context"), dict) else {}
+        if not memory_context:
+            continue
+        try:
+            packet_ref = path.relative_to(root).as_posix()
+        except ValueError:
+            packet_ref = path.as_posix()
+        return {
+            "packet": packet_ref,
+            "session_envelope_ref": envelope.get("ref") or "",
+            "retrieval_trace": memory_context.get("retrieval_trace") or "",
+            "signal_coverage": memory_context.get("signal_coverage") or "",
+            "context_pack": memory_context.get("context_pack") or "",
+            "memory_backed": bool(memory_context.get("retrieval_trace") and memory_context.get("signal_coverage")),
+        }
+    return {}
 
 
 def load_dispatches(root: Path) -> dict[str, Any]:
@@ -259,10 +367,164 @@ def load_dispatches(root: Path) -> dict[str, Any]:
         timeline.append({"dispatch_id": dispatch_id, "event": row.get("event"), "repo": row.get("repo"), "status": row.get("status"), "timestamp": row.get("timestamp")})
     rows = []
     for entry in by_id.values():
-        rows.append({**entry, "sent": sorted(entry["sent"]), "collected": sorted(entry["collected"])})
+        repos = set(entry["sent"]) | set(entry["collected"])
+        memory_context = dispatch_memory_context(root, str(entry["dispatch_id"]), repos)
+        rows.append({**entry, "sent": sorted(entry["sent"]), "collected": sorted(entry["collected"]), "memory_context": memory_context})
     rows.sort(key=lambda row: row.get("timestamp") or "", reverse=True)
     counts = Counter(row["status"] for row in rows)
-    return {"counts": dict(counts), "latest": rows[:12], "timeline": timeline[-30:], "total": len(rows)}
+    # ASC-0204: per-contract dispatch aggregate, so the contract board can
+    # tell an accepted-but-undispatched contract from a dispatched/collected one.
+    by_contract: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        cid = str(row.get("contract_id") or "")
+        if not cid:
+            continue
+        agg = by_contract.setdefault(cid, {"sent": set(), "collected": set(), "statuses": []})
+        agg["sent"].update(row.get("sent") or [])
+        agg["collected"].update(row.get("collected") or [])
+        if row.get("status"):
+            agg["statuses"].append(str(row["status"]))
+    by_contract = {
+        cid: {"sent": sorted(agg["sent"]), "collected": sorted(agg["collected"]), "statuses": agg["statuses"]}
+        for cid, agg in by_contract.items()
+    }
+    return {
+        "counts": dict(counts),
+        "latest": rows[:12],
+        "timeline": timeline[-30:],
+        "total": len(rows),
+        "by_contract": by_contract,
+    }
+
+
+# ASC-0204 — the six AIOS repo-agents the roster surfaces.
+ROSTER_AGENTS: tuple[tuple[str, str], ...] = (
+    ("claude@myworld", "myworld"),
+    ("codex@myworld", "myworld"),
+    ("codex@hivemind", "hivemind"),
+    ("codex@memoryOS", "memoryOS"),
+    ("codex@CapabilityOS", "CapabilityOS"),
+    ("codex@GenesisOS", "GenesisOS"),
+)
+
+# Contract-lifecycle kanban columns (vibe-kanban borrow).
+CONTRACT_BOARD_COLUMNS: tuple[str, ...] = (
+    "proposed", "accepted", "dispatched", "collected", "closed",
+)
+
+# Roster event ordering — blocked / needs_input float to the top (cmux
+# out-of-band channel: a stuck agent must never need scrolling to find).
+ROSTER_EVENT_ORDER: dict[str, int] = {
+    "blocked": 0, "needs_input": 1, "working": 2, "idle": 3, "unknown": 4,
+}
+
+
+def _roster_event(*, inbox_count: int, dirty: bool, blocked: bool, needs_input: bool) -> str:
+    """Derive an agent's out-of-band event from traceable signals only —
+    never invent state (Invariant 8)."""
+    if blocked:
+        return "blocked"
+    if needs_input:
+        return "needs_input"
+    if inbox_count > 0 or dirty:
+        return "working"
+    return "idle"
+
+
+def build_roster(
+    root: Path,
+    dispatches: dict[str, Any],
+    repos_state: dict[str, Any],
+) -> dict[str, Any]:
+    """ASC-0204 — one card per repo-agent: a one-line status digest and an
+    out-of-band event, projected from inbox/outbox counts, git dirtiness, and
+    dispatch failure signals. A projection only — no new store."""
+    repo_by_name = {str(item.get("repo")): item for item in repos_state.get("items", [])}
+    # repos not in load_repos() (myworld itself, GenesisOS) — read git directly.
+    extra_repo_state: dict[str, dict[str, Any]] = {}
+    for repo, rel in (("myworld", "."), ("GenesisOS", "GenesisOS")):
+        if repo not in repo_by_name:
+            extra_repo_state[repo] = git_status(root, rel)
+    blocked_repos: set[str] = set()
+    for row in dispatches.get("latest", []):
+        status = str(row.get("status") or "").lower()
+        if any(token in status for token in ("fail", "block", "error", "stuck")):
+            for repo in list(row.get("sent") or []):
+                blocked_repos.add(str(repo))
+    agents: list[dict[str, Any]] = []
+    for agent, repo in ROSTER_AGENTS:
+        rs = repo_by_name.get(repo) or extra_repo_state.get(repo) or {}
+        inbox_count = int(rs.get("inbox_count") or 0)
+        outbox_count = int(rs.get("outbox_count") or 0)
+        dirty = bool(rs.get("dirty"))
+        blocked = repo in blocked_repos
+        event = _roster_event(inbox_count=inbox_count, dirty=dirty, blocked=blocked, needs_input=False)
+        digest = f"{event} · inbox {inbox_count} · outbox {outbox_count}"
+        if dirty:
+            digest += " · git dirty"
+        agents.append({
+            "agent": agent,
+            "repo": repo,
+            "event": event,
+            "health": "blocked" if blocked else "ok",
+            "inbox_count": inbox_count,
+            "outbox_count": outbox_count,
+            "dirty": dirty,
+            "status_digest": digest,
+        })
+    agents.sort(key=lambda a: (ROSTER_EVENT_ORDER.get(a["event"], 9), a["agent"]))
+    return {
+        "agents": agents,
+        "blocked_count": sum(1 for a in agents if a["event"] == "blocked"),
+        "needs_input_count": sum(1 for a in agents if a["event"] == "needs_input"),
+    }
+
+
+def build_contract_board(
+    contract_rows: list[dict[str, Any]],
+    dispatches: dict[str, Any],
+) -> dict[str, Any]:
+    """ASC-0204 — bucket every contract into the five lifecycle columns.
+    proposed/closed come from contract status (the source of truth); an
+    accepted contract is refined to dispatched/collected by its dispatch
+    aggregate. A read projection of the ledger, never a writable board."""
+    by_contract = dispatches.get("by_contract") or {}
+    columns: dict[str, list[dict[str, Any]]] = {col: [] for col in CONTRACT_BOARD_COLUMNS}
+    for row in contract_rows:
+        status = str(row.get("status") or "unknown").strip().lower()
+        card = {
+            "contract_id": row.get("id"),
+            "slug": row.get("slug"),
+            "title": row.get("goal") or row.get("slug"),
+            "status": status,
+            "path": row.get("path"),
+        }
+        if status == "closed":
+            column = "closed"
+        elif status == "proposed":
+            column = "proposed"
+        elif status == "accepted":
+            agg = by_contract.get(str(row.get("id")))
+            if not agg or not agg.get("sent"):
+                column = "accepted"
+            elif agg.get("collected") and set(agg["collected"]) >= set(agg["sent"]):
+                column = "collected"
+            else:
+                column = "dispatched"
+            card["dispatch"] = {
+                "sent": (agg or {}).get("sent", []),
+                "collected": (agg or {}).get("collected", []),
+            }
+        else:
+            # untraceable status — surface as proposed-for-review, never drop
+            column = "proposed"
+            card["status"] = "unknown"
+        columns[column].append(card)
+    return {
+        "columns": {col: columns[col] for col in CONTRACT_BOARD_COLUMNS},
+        "counts": {col: len(columns[col]) for col in CONTRACT_BOARD_COLUMNS},
+        "column_order": list(CONTRACT_BOARD_COLUMNS),
+    }
 
 
 def load_hive_board(root: Path) -> dict[str, Any]:
@@ -544,6 +806,267 @@ def load_gate_chair_candidate_config(root: Path) -> dict[str, Any] | None:
     }
 
 
+def gate_chair_report_recovers_runtime(root: Path, report: dict[str, Any], mode: str, model: str, ref: Path | str) -> dict[str, Any] | None:
+    if not report.get("promotion_ready"):
+        return None
+    scores = report.get("scores") if isinstance(report.get("scores"), dict) else {}
+    try:
+        if float(scores.get("current", 0.0)) <= float(scores.get("internal", 0.0)):
+            return None
+    except (TypeError, ValueError):
+        return None
+    for mode_report in report.get("modes") or []:
+        if not isinstance(mode_report, dict) or mode_report.get("mode") != "current":
+            continue
+        runtime_modes = {str(item) for item in mode_report.get("runtime_modes") or []}
+        if mode not in runtime_modes:
+            continue
+        runtime_models = {str(item) for item in mode_report.get("runtime_models") or []}
+        if model and model not in runtime_models:
+            continue
+        failed = False
+        for run in mode_report.get("runs") or []:
+            if not isinstance(run, dict):
+                continue
+            chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+            status = str(chair.get("status") or "")
+            if run.get("ok") is False or (status and status not in {"success", "not_attempted"}):
+                failed = True
+                break
+        if failed:
+            continue
+        ref_text = ref.resolve().relative_to(root.resolve()).as_posix() if isinstance(ref, Path) else str(ref)
+        return {
+            "recovery_reason": "fresh_eval_beat_internal_baseline",
+            "recovery_ref": ref_text,
+            "recovery_current_score": scores.get("current"),
+            "recovery_internal_score": scores.get("internal"),
+        }
+    return None
+
+
+def gate_chair_runtime_demotion(root: Path, mode: str, model: str = "", threshold: int = 2) -> dict[str, Any] | None:
+    if mode in {"", "internal_evidence_synthesizer"}:
+        return None
+    failures: list[dict[str, str]] = []
+
+    def add_failure(status: str, provider: str, found_model: str, ref: Path | str) -> None:
+        if len(failures) >= threshold:
+            return
+        if status not in GATE_CHAIR_DEMOTION_STATUSES or provider != mode:
+            return
+        if model and found_model not in {"", "unknown", model}:
+            return
+        ref_text = ref.resolve().relative_to(root.resolve()).as_posix() if isinstance(ref, Path) else str(ref)
+        failures.append({"status": status, "ref": ref_text, "model": found_model or model or "unknown"})
+
+    eval_root = root / ".aios" / "evals" / "gate_chair"
+    if eval_root.exists():
+        for path in sorted(eval_root.glob("*/report.json"), key=lambda item: item.stat().st_mtime, reverse=True)[:80]:
+            payload = read_json(path)
+            if not isinstance(payload, dict) or payload.get("schema_version") != "aios.gate_chair_eval.v1":
+                continue
+            if gate_chair_report_recovers_runtime(root, payload, mode, model, path):
+                return None
+            for mode_report in payload.get("modes") or []:
+                if not isinstance(mode_report, dict):
+                    continue
+                for run in mode_report.get("runs") or []:
+                    if not isinstance(run, dict):
+                        continue
+                    chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+                    add_failure(
+                        str(chair.get("status") or ""),
+                        str(chair.get("mode") or mode_report.get("mode") or ""),
+                        str(chair.get("model") or "unknown"),
+                        path,
+                    )
+                    if len(failures) >= threshold:
+                        break
+                if len(failures) >= threshold:
+                    break
+            if len(failures) >= threshold:
+                break
+
+    chat_root = root / ".aios" / "chat"
+    if len(failures) < threshold and chat_root.exists():
+        for path in sorted(chat_root.glob("*/gate_chair_turns.jsonl"), key=lambda item: item.stat().st_mtime, reverse=True)[:120]:
+            for row in reversed(read_jsonl_rows(path)[-80:]):
+                if row.get("schema_version") != "aios.chat.gate_chair_turn.v1":
+                    continue
+                meta = row.get("chair_meta") if isinstance(row.get("chair_meta"), dict) else {}
+                runtime = meta.get("meta") if isinstance(meta.get("meta"), dict) else {}
+                add_failure(
+                    str(meta.get("status") or ""),
+                    str(runtime.get("mode") or ""),
+                    str(runtime.get("model") or "unknown"),
+                    path,
+                )
+                if len(failures) >= threshold:
+                    break
+            if len(failures) >= threshold:
+                break
+
+    if len(failures) < threshold:
+        return None
+    return {
+        "reason": "active_runtime_demoted_by_negative_evidence",
+        "requested_mode": mode,
+        "requested_model": model,
+        "failure_count": len(failures),
+        "failure_threshold": threshold,
+        "failure_statuses": [item["status"] for item in failures],
+        "failure_refs": list(dict.fromkeys(item["ref"] for item in failures)),
+    }
+
+
+def gate_chair_runtime_recovery_proof(root: Path, mode: str, model: str = "", threshold: int = 2) -> dict[str, Any] | None:
+    if mode in {"", "internal_evidence_synthesizer"}:
+        return None
+    proof: dict[str, Any] | None = None
+    older_failures: list[str] = []
+    eval_root = root / ".aios" / "evals" / "gate_chair"
+    if not eval_root.exists():
+        return None
+    for path in sorted(eval_root.glob("*/report.json"), key=lambda item: item.stat().st_mtime, reverse=True)[:80]:
+        payload = read_json(path)
+        if not isinstance(payload, dict) or payload.get("schema_version") != "aios.gate_chair_eval.v1":
+            continue
+        if proof is None:
+            proof = gate_chair_report_recovers_runtime(root, payload, mode, model, path)
+            if proof is not None:
+                continue
+        if proof is None:
+            continue
+        for mode_report in payload.get("modes") or []:
+            if not isinstance(mode_report, dict):
+                continue
+            for run in mode_report.get("runs") or []:
+                if not isinstance(run, dict):
+                    continue
+                chair = run.get("gate_chair_status") if isinstance(run.get("gate_chair_status"), dict) else {}
+                status = str(chair.get("status") or "")
+                provider = str(chair.get("mode") or mode_report.get("mode") or "")
+                found_model = str(chair.get("model") or "unknown")
+                if status not in GATE_CHAIR_DEMOTION_STATUSES or provider != mode:
+                    continue
+                if model and found_model not in {"", "unknown", model}:
+                    continue
+                older_failures.append(path.resolve().relative_to(root.resolve()).as_posix())
+                if len(older_failures) >= threshold:
+                    return {
+                        **proof,
+                        "superseded_failure_count": len(older_failures),
+                        "superseded_failure_refs": list(dict.fromkeys(older_failures)),
+                    }
+    return None
+
+
+def build_gate_chair_runtime_preview(
+    mode: str,
+    state: str,
+    detail: str,
+    config: dict[str, Any] | None,
+    candidate_config: dict[str, Any] | None,
+    latest: dict[str, Any] | None,
+    demotion: dict[str, Any] | None,
+    recovery_proof: dict[str, Any] | None,
+) -> dict[str, Any]:
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    def add_node(node_id: str, node_type: str, label: str, node_state: str, x: int, y: int, detail_text: str = "") -> None:
+        if node_id in seen:
+            return
+        seen.add(node_id)
+        nodes.append(
+            {
+                "id": node_id,
+                "type": node_type,
+                "label": compact_preview(label, limit=30),
+                "detail": compact_preview(detail_text or label, limit=140),
+                "state": node_state,
+                "x": x,
+                "y": y,
+            }
+        )
+
+    if config:
+        configured_mode = str(config.get("mode") or "runtime")
+        configured_model = str(config.get("model") or "")
+        add_node(
+            "runtime_config",
+            "config",
+            configured_mode if not configured_model else f"{configured_mode} {configured_model}",
+            "active" if config.get("status") == "active" else "held",
+            14,
+            34,
+            str(config.get("path") or ".aios/gate/founder/chair_runtime.json"),
+        )
+    if candidate_config:
+        candidate_mode = str(candidate_config.get("mode") or "candidate")
+        add_node(
+            "runtime_candidate",
+            "candidate",
+            candidate_mode,
+            "held",
+            14,
+            66,
+            str(candidate_config.get("path") or ".aios/gate/founder/chair_candidate_runtime.json"),
+        )
+    add_node(
+        "runtime_effective",
+        "effective",
+        mode,
+        "attention" if demotion else ("external" if state == "external" else "internal"),
+        46,
+        50,
+        detail,
+    )
+    if config:
+        edges.append({"from": "runtime_config", "to": "runtime_effective", "kind": "selects"})
+    if candidate_config:
+        edges.append({"from": "runtime_candidate", "to": "runtime_effective", "kind": "candidate"})
+    if latest:
+        latest_status = str(latest.get("status") or "latest_turn")
+        add_node(
+            "runtime_latest_turn",
+            "turn",
+            latest_status,
+            "attention" if latest_status in GATE_CHAIR_DEMOTION_STATUSES else "active",
+            82,
+            50,
+            str(latest.get("turn_id") or latest.get("conversation") or "latest gate chair turn"),
+        )
+        edges.append({"from": "runtime_effective", "to": "runtime_latest_turn", "kind": "produces"})
+    if demotion:
+        add_node(
+            "runtime_demotion",
+            "failure",
+            f"{demotion.get('failure_count', 0)} failure(s)",
+            "attention",
+            46,
+            78,
+            ", ".join(str(item) for item in (demotion.get("failure_statuses") or [])[:3]),
+        )
+        edges.append({"from": "runtime_demotion", "to": "runtime_effective", "kind": "demotes"})
+    if recovery_proof:
+        add_node(
+            "runtime_recovery",
+            "recovery",
+            "recovery proof",
+            "active",
+            46,
+            22,
+            str(recovery_proof.get("recovery_ref") or ""),
+        )
+        edges.append({"from": "runtime_recovery", "to": "runtime_effective", "kind": "recovers"})
+
+    edges = [edge for edge in edges if edge.get("from") in seen and edge.get("to") in seen]
+    return {"nodes": nodes, "edges": edges}
+
+
 def load_gate_chair_runtime(root: Path) -> dict[str, Any]:
     pack = read_json(root / ".aios" / "gate" / "founder" / "gate_pack.json")
     active_pack = isinstance(pack, dict) and pack.get("schema_version") == "aios.gate.pack.v1" and pack.get("status") == "active"
@@ -553,23 +1076,39 @@ def load_gate_chair_runtime(root: Path) -> dict[str, Any]:
     env_command = os.environ.get("AIOS_GATE_AGENT_COMMAND", "").strip()
     ollama_path = shutil.which("ollama")
     latest = latest_gate_chair_turn(root)
+    demotion: dict[str, Any] | None = None
+    recovery_proof: dict[str, Any] | None = None
     if config_active and config.get("mode") == "internal_evidence_synthesizer":
         mode = "internal_evidence_synthesizer"
         state = "internal"
         detail = "chair_runtime.json"
     elif config_active and config.get("mode") == "ollama":
-        mode = "ollama" if ollama_path else "internal_evidence_synthesizer"
-        state = "external" if ollama_path else "internal"
         model = config.get("model") or "qwen2.5:7b"
-        detail = f"chair_runtime.json model={model}" if ollama_path else f"chair_runtime.json requested ollama model={model}; command missing"
+        demotion = gate_chair_runtime_demotion(root, "ollama", str(model))
+        recovery_proof = None if demotion else gate_chair_runtime_recovery_proof(root, "ollama", str(model))
+        if demotion:
+            mode = "internal_evidence_synthesizer"
+            state = "internal"
+            detail = f"chair_runtime.json requested ollama model={model}; demoted by negative evidence"
+        else:
+            mode = "ollama" if ollama_path else "internal_evidence_synthesizer"
+            state = "external" if ollama_path else "internal"
+            detail = f"chair_runtime.json model={model}" if ollama_path else f"chair_runtime.json requested ollama model={model}; command missing"
     elif config_active and config.get("mode") in PROVIDER_CHAIR_MODES:
         requested = str(config.get("mode"))
         provider_path = shutil.which(requested)
-        mode = requested if provider_path else "internal_evidence_synthesizer"
-        state = "external" if provider_path else "internal"
         model = config.get("model") or ""
         model_text = f" model={model}" if model else ""
-        detail = f"chair_runtime.json provider={requested}{model_text}" if provider_path else f"chair_runtime.json requested {requested}; command missing"
+        demotion = gate_chair_runtime_demotion(root, requested, str(model))
+        recovery_proof = None if demotion else gate_chair_runtime_recovery_proof(root, requested, str(model))
+        if demotion:
+            mode = "internal_evidence_synthesizer"
+            state = "internal"
+            detail = f"chair_runtime.json requested {requested}{model_text}; demoted by negative evidence"
+        else:
+            mode = requested if provider_path else "internal_evidence_synthesizer"
+            state = "external" if provider_path else "internal"
+            detail = f"chair_runtime.json provider={requested}{model_text}" if provider_path else f"chair_runtime.json requested {requested}; command missing"
     elif env_command:
         mode = "env_command"
         state = "external"
@@ -582,11 +1121,26 @@ def load_gate_chair_runtime(root: Path) -> dict[str, Any]:
         mode = "internal_evidence_synthesizer"
         state = "internal"
         detail = "deterministic fallback"
+    runtime_preview = build_gate_chair_runtime_preview(
+        mode,
+        state,
+        detail,
+        config,
+        candidate_config,
+        latest,
+        demotion,
+        recovery_proof,
+    )
     return {
         "enabled": bool(active_pack),
         "state": state if active_pack else "disabled",
         "mode": mode,
+        "effective_mode": mode,
+        "configured_mode": config.get("mode") if config else "",
         "detail": detail,
+        "demoted": bool(demotion),
+        "demotion": demotion,
+        "recovery_proof": recovery_proof,
         "gate_pack_id": pack.get("id") if isinstance(pack, dict) else "",
         "gate_pack_active": bool(active_pack),
         "runtime_config": config,
@@ -594,6 +1148,7 @@ def load_gate_chair_runtime(root: Path) -> dict[str, Any]:
         "candidate_config": candidate_config,
         "candidate_config_active": bool(candidate_config),
         "latest_turn": latest,
+        "runtime_preview": runtime_preview,
     }
 
 
@@ -771,10 +1326,137 @@ def safe_promotion_ref(root: Path, path: Path) -> str:
         return path.as_posix()
 
 
+def load_latest_asks(root: Path) -> dict[str, Any]:
+    base = root / ".aios" / "asks"
+    if not base.exists():
+        return {"latest": [], "total": 0}
+    rows: list[dict[str, Any]] = []
+    for receipt_path in base.glob("*/receipt.json"):
+        receipt = read_json(receipt_path)
+        if not isinstance(receipt, dict) or receipt.get("schema_version") != "aios.ask.receipt.v1":
+            continue
+        paths = receipt.get("artifact_paths") if isinstance(receipt.get("artifact_paths"), dict) else {}
+        goal_ref = str(paths.get("goal") or "")
+        goal_payload = read_json(root / goal_ref) if goal_ref else None
+        if not isinstance(goal_payload, dict):
+            goal_payload = {}
+        materialization = read_json(receipt_path.parent / "materialization.json")
+        if not isinstance(materialization, dict) or materialization.get("schema_version") != "aios.ask_contract_materialization.v1":
+            materialization = {}
+        rows.append(
+            {
+                "ask_id": receipt.get("ask_id") or receipt_path.parent.name,
+                "created_at": receipt.get("created_at") or goal_payload.get("created_at") or "",
+                "goal": receipt.get("goal") or goal_payload.get("goal") or "",
+                "status": receipt.get("status") or "unknown",
+                "invocation_status": receipt.get("invocation_status") or "",
+                "next_action": receipt.get("next_action") or "",
+                "role_statuses": receipt.get("invocation_role_statuses") if isinstance(receipt.get("invocation_role_statuses"), dict) else {},
+                "receipt": safe_promotion_ref(root, receipt_path),
+                "goal_ref": goal_ref,
+                "instruction": str(paths.get("instruction") or ""),
+                "praxis": str(paths.get("praxis") or ""),
+                "contract_seed": str(paths.get("contract_seed") or ""),
+                "invocation_receipt": str(paths.get("invocation_receipt") or ""),
+                "materialized_contract_id": materialization.get("contract_id") or "",
+                "materialized_contract": materialization.get("contract_path") or "",
+                "materialization_receipt": safe_promotion_ref(root, receipt_path.parent / "materialization.json") if materialization else "",
+                "mtime": receipt_path.stat().st_mtime,
+            }
+        )
+    rows.sort(key=lambda row: (row.get("created_at") or "", row.get("mtime") or 0), reverse=True)
+    for row in rows:
+        row.pop("mtime", None)
+    return {"latest": rows[:5], "total": len(rows)}
+
+
+def next_contract_id(root: Path) -> str:
+    highest = 0
+    for path in (root / "docs" / "contracts").glob("ASC-*.md"):
+        match = re.match(r"ASC-(\d{4})", path.name)
+        if match:
+            highest = max(highest, int(match.group(1)))
+    return f"ASC-{highest + 1:04d}"
+
+
+def parse_iso(value: Any) -> str:
+    return str(value or "")
+
+
+def visual_focus_url_for(url: str) -> str:
+    parsed = urllib.parse.urlsplit(url)
+    if not parsed.fragment or "=" in parsed.fragment:
+        return ""
+    query = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
+    query["visual_focus"] = [parsed.fragment]
+    encoded = urllib.parse.urlencode(query, doseq=True)
+    return urllib.parse.urlunsplit((parsed.scheme, parsed.netloc, parsed.path, encoded, ""))
+
+
+def visual_receipt_index(root: Path) -> list[dict[str, Any]]:
+    base = root / ".aios" / "visual_verification"
+    if not base.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for path in base.glob("*/receipt.json"):
+        payload = read_json(path)
+        if not isinstance(payload, dict) or payload.get("schema_version") != "aios.visual_verification.v1":
+            continue
+        rows.append(
+            {
+                "path": safe_promotion_ref(root, path),
+                "status": payload.get("status") or "",
+                "url": payload.get("url") or "",
+                "created_at": parse_iso(payload.get("created_at")),
+                "screenshot_path": payload.get("screenshot_path") or "",
+                "stop_conditions": payload.get("stop_conditions") if isinstance(payload.get("stop_conditions"), list) else [],
+            }
+        )
+    rows.sort(key=lambda row: row.get("created_at") or "")
+    return rows
+
+
+def visual_promotion_quality(root: Path, receipt: dict[str, Any], visual_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    source = receipt.get("source") if isinstance(receipt.get("source"), dict) else {}
+    if source.get("kind") != "visual_verification_receipt":
+        if receipt.get("materialization_recommended") is False:
+            return {
+                "quality_state": "needs_revision",
+                "quality_reason": ", ".join(str(item) for item in receipt.get("quality_warnings") or []) or "promotion_quality_warning",
+                "quality_evidence": "",
+            }
+        return {"quality_state": "actionable", "quality_reason": "", "quality_evidence": ""}
+
+    source_ref = str(source.get("ref") or "")
+    source_receipt = read_json(root / source_ref) if source_ref else {}
+    source_url = str(source_receipt.get("url") or "")
+    source_created = parse_iso(source_receipt.get("created_at"))
+    for row in visual_rows:
+        if row.get("status") == "passed" and row.get("url") == source_url and row.get("created_at", "") > source_created:
+            return {
+                "quality_state": "solved_by_later_receipt",
+                "quality_reason": "same visual verification URL passed after this promotion source",
+                "quality_evidence": row.get("path") or "",
+            }
+
+    focus_url = visual_focus_url_for(source_url)
+    if focus_url:
+        passed_focus = [row for row in visual_rows if row.get("status") == "passed" and row.get("url") == focus_url]
+        if passed_focus:
+            evidence = sorted(passed_focus, key=lambda row: row.get("created_at") or "")[-1]
+            return {
+                "quality_state": "mitigated_by_visual_focus",
+                "quality_reason": "hash-scroll visual issue has a passing visual_focus harness receipt",
+                "quality_evidence": evidence.get("path") or "",
+            }
+    return {"quality_state": "actionable_visual_fix", "quality_reason": "latest source visual receipt remains degraded or failed", "quality_evidence": source_ref}
+
+
 def load_promotions(root: Path) -> dict[str, Any]:
     base = root / ".aios" / "promotions"
     if not base.exists():
-        return {"items": [], "total": 0}
+        return {"items": [], "total": 0, "next_contract_id": next_contract_id(root)}
+    visual_rows = visual_receipt_index(root)
     items: list[dict[str, Any]] = []
     for receipt_path in sorted(base.glob("*/promotion.json")):
         try:
@@ -786,6 +1468,10 @@ def load_promotions(root: Path) -> dict[str, Any]:
             continue
         paths = receipt.get("artifact_paths") if isinstance(receipt.get("artifact_paths"), dict) else {}
         session_envelope = receipt.get("session_envelope") if isinstance(receipt.get("session_envelope"), dict) else {}
+        materialization = read_json(receipt_path.parent / "materialization.json")
+        if not isinstance(materialization, dict) or materialization.get("schema_version") != "aios.promotion_contract_materialization.v1":
+            materialization = {}
+        quality = visual_promotion_quality(root, receipt, visual_rows)
         items.append(
             {
                 "promotion_id": receipt.get("promotion_id") or receipt_path.parent.name,
@@ -796,16 +1482,23 @@ def load_promotions(root: Path) -> dict[str, Any]:
                 "contract_seed": paths.get("contract_seed") or "",
                 "dispatch_preview": paths.get("dispatch_preview") or "",
                 "receipt": safe_promotion_ref(root, receipt_path),
+                "materialized_contract_id": materialization.get("contract_id") or "",
+                "materialized_contract": materialization.get("contract_path") or "",
+                "materialization_receipt": safe_promotion_ref(root, receipt_path.parent / "materialization.json") if materialization else "",
                 "next_action": receipt.get("next_action") or "",
+                "next_contract_id": next_contract_id(root),
                 "execution_started": bool(receipt.get("execution_started")),
                 "stop_conditions": receipt.get("stop_conditions") if isinstance(receipt.get("stop_conditions"), list) else [],
+                "quality_state": quality.get("quality_state") or "actionable",
+                "quality_reason": quality.get("quality_reason") or "",
+                "quality_evidence": quality.get("quality_evidence") or "",
                 "mtime": receipt_path.stat().st_mtime,
             }
         )
     items.sort(key=lambda row: (row.get("created_at") or "", row.get("mtime") or 0), reverse=True)
     for row in items:
         row.pop("mtime", None)
-    return {"items": items[:8], "total": len(items)}
+    return {"items": items[:8], "total": len(items), "next_contract_id": next_contract_id(root)}
 
 
 def load_memory_draft_review_index(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
@@ -851,12 +1544,70 @@ def load_memory_draft_review_index(root: Path) -> dict[tuple[str, str], dict[str
     return index
 
 
+def memory_review_guidance(decision: str) -> dict[str, str]:
+    normalized = str(decision or "").strip()
+    if normalized == "needs_more_evidence":
+        return {
+            "review_reason": "MemoryOS kept this candidate as draft because the evidence is not strong enough for durable memory.",
+            "next_evidence": "Add a corroborating artifact, an operator review note, or repeated future turns that point to the same pattern before accepting it.",
+        }
+    if normalized == "accept":
+        return {
+            "review_reason": "MemoryOS judged the draft acceptable for the review lifecycle.",
+            "next_evidence": "Operator can approve or cite this memory with provenance; no automatic acceptance is implied by the UI.",
+        }
+    if normalized == "reject":
+        return {
+            "review_reason": "MemoryOS judged this candidate unsuitable for durable memory.",
+            "next_evidence": "Keep the rejection as negative evidence and avoid routing future decisions through this claim.",
+        }
+    if normalized:
+        return {
+            "review_reason": f"MemoryOS returned review decision `{normalized}`.",
+            "next_evidence": "Open the review result artifact before using this draft as evidence.",
+        }
+    return {
+        "review_reason": "",
+        "next_evidence": "",
+    }
+
+
+def load_memory_review_evidence_index(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
+    index: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in read_jsonl_rows(root / ".aios" / "state" / "memory_review_evidence.jsonl"):
+        source = str(row.get("source_artifact") or "")
+        draft_id = str(row.get("draft_id") or "")
+        if not source or not draft_id:
+            continue
+        key = (source, draft_id)
+        existing = index.setdefault(
+            key,
+            {
+                "evidence_count": 0,
+                "latest_evidence_ref": "",
+                "latest_evidence_note": "",
+                "latest_evidence_artifact": "",
+                "latest_evidence_at": "",
+            },
+        )
+        created_at = str(row.get("created_at") or "")
+        existing["evidence_count"] = int(existing.get("evidence_count") or 0) + 1
+        if created_at >= str(existing.get("latest_evidence_at") or ""):
+            paths = row.get("artifact_paths") if isinstance(row.get("artifact_paths"), dict) else {}
+            existing["latest_evidence_ref"] = paths.get("evidence") or ""
+            existing["latest_evidence_note"] = str(row.get("note") or "")[:220]
+            existing["latest_evidence_artifact"] = str(row.get("evidence_artifact") or "")
+            existing["latest_evidence_at"] = created_at
+    return index
+
+
 def load_chat_memory_draft_queue(root: Path) -> dict[str, Any]:
     base = root / ".aios" / "chat"
     if not base.exists():
         return {"items": [], "total": 0, "counts": {}, "latest_created_at": ""}
 
     review_index = load_memory_draft_review_index(root)
+    evidence_index = load_memory_review_evidence_index(root)
     items: list[dict[str, Any]] = []
     type_counts: Counter[str] = Counter()
     latest_created_at = ""
@@ -890,6 +1641,8 @@ def load_chat_memory_draft_queue(root: Path) -> dict[str, Any]:
             raw_refs = [str(ref) for ref in draft.get("raw_refs") or [] if isinstance(ref, str)]
             resolved_draft_id = str(draft.get("id") or f"{conversation_id}:{index}")
             review_state = review_index.get((rel_path, resolved_draft_id), {})
+            evidence_state = evidence_index.get((rel_path, resolved_draft_id), {})
+            guidance = memory_review_guidance(str(review_state.get("review_result") or ""))
             items.append(
                 {
                     "draft_id": resolved_draft_id,
@@ -907,8 +1660,15 @@ def load_chat_memory_draft_queue(root: Path) -> dict[str, Any]:
                     "review_state": review_state.get("review_state") or "operator_review_required",
                     "review_request_id": review_state.get("request_id") or "",
                     "review_result": review_state.get("review_result") or "",
+                    "review_reason": review_state.get("review_reason") or guidance["review_reason"],
+                    "next_evidence": review_state.get("next_evidence") or guidance["next_evidence"],
                     "review_result_ref": review_state.get("review_result_ref") or "",
                     "reviewed_at": review_state.get("reviewed_at") or "",
+                    "evidence_count": evidence_state.get("evidence_count") or 0,
+                    "latest_evidence_ref": evidence_state.get("latest_evidence_ref") or "",
+                    "latest_evidence_note": evidence_state.get("latest_evidence_note") or "",
+                    "latest_evidence_artifact": evidence_state.get("latest_evidence_artifact") or "",
+                    "latest_evidence_at": evidence_state.get("latest_evidence_at") or "",
                     "mtime": resolved.stat().st_mtime,
                 }
             )
@@ -949,25 +1709,170 @@ def load_genesis_lens(root: Path, invocations: dict[str, Any]) -> dict[str, Any]
                 "source_artifact": genesis_ref,
                 "authority": payload.get("authority") or "speculative_only",
                 "branches": branches,
+                "worldline_preview": build_genesis_worldline_preview(branches, str(genesis_ref or "")),
                 "stop_conditions": payload.get("stop_conditions") or [],
             }
     return {"branches": []}
 
 
+def build_genesis_worldline_preview(branches: list[dict[str, Any]], source_artifact: str = "") -> dict[str, Any]:
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    if source_artifact:
+        source_id = f"gen_src_{stable_hash(source_artifact)[:10]}"
+        nodes.append(
+            {
+                "id": source_id,
+                "type": "source",
+                "label": compact_preview(source_artifact, limit=30),
+                "detail": source_artifact,
+                "state": "clear",
+                "x": 86,
+                "y": 50,
+            }
+        )
+        seen.add(source_id)
+    else:
+        source_id = ""
+
+    branch_total = min(len(branches), 5)
+    discomfort_count = 0
+    seed_count = 0
+    for index, branch in enumerate(branches[:5]):
+        if not isinstance(branch, dict):
+            continue
+        branch_id = str(branch.get("branch_id") or f"branch_{index}")
+        branch_node_id = f"gen_branch_{stable_hash(branch_id)[:10]}"
+        branch_type = str(branch.get("type") or "branch")
+        nodes.append(
+            {
+                "id": branch_node_id,
+                "type": "branch",
+                "label": compact_preview(branch_type.replace("_", " "), limit=26),
+                "detail": compact_preview(branch.get("premise") or branch_id, limit=120),
+                "state": "speculative",
+                "x": 46,
+                "y": distributed_y(index, branch_total),
+            }
+        )
+        seen.add(branch_node_id)
+
+        discomfort = str(branch.get("what_it_breaks") or branch.get("premise") or "")
+        if discomfort:
+            discomfort_id = f"gen_discomfort_{stable_hash(discomfort)[:10]}"
+            if discomfort_id not in seen:
+                nodes.append(
+                    {
+                        "id": discomfort_id,
+                        "type": "discomfort",
+                        "label": compact_preview(discomfort, limit=28),
+                        "detail": discomfort,
+                        "state": "attention",
+                        "x": 13,
+                        "y": distributed_y(discomfort_count, max(branch_total, 1)),
+                    }
+                )
+                discomfort_count += 1
+                seen.add(discomfort_id)
+            edges.append({"from": discomfort_id, "to": branch_node_id, "kind": "provokes"})
+
+        seed = str(branch.get("contract_seed") or "")
+        if seed:
+            seed_id = f"gen_seed_{stable_hash(branch_id + seed)[:10]}"
+            nodes.append(
+                {
+                    "id": seed_id,
+                    "type": "seed",
+                    "label": compact_preview(seed, limit=28),
+                    "detail": seed,
+                    "state": "held",
+                    "x": 68,
+                    "y": distributed_y(seed_count, max(branch_total, 1)),
+                }
+            )
+            seed_count += 1
+            seen.add(seed_id)
+            edges.append({"from": branch_node_id, "to": seed_id, "kind": "invents"})
+            if source_id:
+                edges.append({"from": seed_id, "to": source_id, "kind": "evidence"})
+        elif source_id:
+            edges.append({"from": branch_node_id, "to": source_id, "kind": "evidence"})
+
+    edges = [edge for edge in edges if edge.get("from") in seen and edge.get("to") in seen][:40]
+    return {"nodes": nodes[:24], "edges": edges}
+
+
 def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str, Any]:
     items: list[dict[str, Any]] = []
-    for row in (monitor or {}).get("next_actions", [])[:4]:
+    for row in (monitor or {}).get("findings", [])[:4]:
         if not isinstance(row, dict):
             continue
+        alert = row.get("alert") if isinstance(row.get("alert"), dict) else {}
+        contracts = []
+        if row.get("code") == "genesis_prompt_prison_advisory":
+            for sample in (alert.get("sample") or [])[:3]:
+                if not isinstance(sample, dict):
+                    continue
+                contracts.append(
+                    {
+                        "contract_id": sample.get("contract_id"),
+                        "path": sample.get("path"),
+                        "status": sample.get("status"),
+                        "confidence": sample.get("confidence"),
+                        "escape_vectors": [str(value) for value in (sample.get("escape_vectors") or [])[:4]],
+                        "signatures": [
+                            {
+                                "signature": signature.get("signature"),
+                                "evidence": signature.get("evidence"),
+                                "escape_vector": signature.get("escape_vector"),
+                            }
+                            for signature in (sample.get("signatures") or [])[:3]
+                            if isinstance(signature, dict)
+                        ],
+                    }
+                )
+        weak_personas = []
+        if row.get("code") == "persona_axis_advisory":
+            persona_axis = monitor.get("persona_axis") if isinstance(monitor, dict) else {}
+            if isinstance(persona_axis, dict):
+                for weak in (persona_axis.get("weak_personas") or [])[:3]:
+                    if isinstance(weak, dict):
+                        weak_personas.append(
+                            {
+                                "score_key": weak.get("score_key"),
+                                "score": weak.get("score"),
+                                "recommendation": weak.get("recommendation"),
+                            }
+                        )
         items.append(
             {
                 "source": "monitor",
+                "code": row.get("code"),
                 "owner": row.get("owner") or "myworld",
                 "severity": row.get("severity") or "info",
                 "need": row.get("action") or "review",
                 "reason": row.get("reason") or "",
+                "contracts": contracts,
+                "weak_personas": weak_personas,
             }
         )
+    if not items:
+        for row in (monitor or {}).get("next_actions", [])[:4]:
+            if not isinstance(row, dict):
+                continue
+            items.append(
+                {
+                    "source": "monitor",
+                    "owner": row.get("owner") or "myworld",
+                    "severity": row.get("severity") or "info",
+                    "need": row.get("action") or "review",
+                    "reason": row.get("reason") or "",
+                    "contracts": [],
+                    "weak_personas": [],
+                }
+            )
     if not items:
         items.append(
             {
@@ -976,6 +1881,8 @@ def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str,
                 "severity": "info",
                 "need": "continue_conversation",
                 "reason": "Ask AIOS for the next step, or turn the current conversation into governed work.",
+                "contracts": [],
+                "weak_personas": [],
             }
         )
     return {"items": items}
@@ -988,10 +1895,12 @@ def load_memory_observatory(root: Path) -> dict[str, Any]:
     objects_path = memory / "objects.jsonl"
     reviews_path = memory / "reviews.jsonl"
     retrieval_path = memory / "retrieval_traces.jsonl"
+    graph_control_path = memory / "graph_control_runs.jsonl"
     hyperedges_path = ontology / "hyperedges.jsonl"
     sources_path = memory / "sources.jsonl"
 
     object_rows = read_jsonl_rows(objects_path)
+    objects_by_id = {str(row.get("id")): row for row in object_rows if row.get("id")}
     object_statuses = {str(row.get("id")): str(row.get("status") or "unknown") for row in object_rows if row.get("id")}
     review_rows = read_jsonl_rows(reviews_path)
     latest_review = ""
@@ -1004,7 +1913,174 @@ def load_memory_observatory(root: Path) -> dict[str, Any]:
             object_statuses[memory_object_id] = str(row.get("new_status"))
     status_counts = Counter(object_statuses.values())
     traces = read_jsonl_rows(retrieval_path)
+    graph_control_rows = read_jsonl_rows(graph_control_path)
     selected_trace_count = sum(1 for row in traces if row.get("selected"))
+    source_rows = read_jsonl_rows(sources_path)
+    sources_by_id = {str(row.get("id")): row for row in source_rows if row.get("id")}
+
+    def selected_memory_ids(row: dict[str, Any]) -> list[str]:
+        selected = row.get("selected")
+        ids: list[str] = []
+        if isinstance(selected, list):
+            for item in selected:
+                if isinstance(item, dict):
+                    memory_id = str(item.get("id") or item.get("memory_object_id") or "")
+                else:
+                    memory_id = str(item or "")
+                if memory_id and memory_id not in ids:
+                    ids.append(memory_id)
+        attrs = row.get("attrs") if isinstance(row.get("attrs"), dict) else {}
+        selected_ids = attrs.get("selected_ids") or []
+        if isinstance(selected_ids, list):
+            for item in selected_ids:
+                memory_id = str(item or "")
+                if memory_id and memory_id not in ids:
+                    ids.append(memory_id)
+        return ids
+
+    def selected_payload(row: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        payloads: dict[str, dict[str, Any]] = {}
+        selected = row.get("selected")
+        if isinstance(selected, list):
+            for item in selected:
+                if not isinstance(item, dict):
+                    continue
+                memory_id = str(item.get("id") or item.get("memory_object_id") or "")
+                if memory_id:
+                    payloads[memory_id] = item
+        return payloads
+
+    def memory_card(memory_id: str, trace_payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        payload = trace_payload or {}
+        obj = objects_by_id.get(memory_id, {})
+        attrs = obj.get("attrs") if isinstance(obj.get("attrs"), dict) else {}
+        source_id = str(payload.get("source_artifact_id") or obj.get("source_artifact_id") or attrs.get("source_artifact_id") or "")
+        source = sources_by_id.get(source_id, {})
+        raw_refs = [str(ref) for ref in obj.get("raw_refs") or [] if isinstance(ref, str)]
+        source_path = str(source.get("path") or (raw_refs[0] if raw_refs else ""))
+        return {
+            "id": memory_id,
+            "status": str(payload.get("status") or obj.get("status") or object_statuses.get(memory_id) or "unknown"),
+            "confidence": payload.get("confidence") if payload.get("confidence") is not None else obj.get("confidence"),
+            "evidence_state": str(payload.get("evidence_state") or obj.get("evidence_state") or "unknown"),
+            "content_preview": compact_preview(obj.get("content") or "(memory object not found)", limit=220),
+            "source_artifact_id": source_id,
+            "source_path": source_path,
+            "source_kind": str(source.get("kind") or ""),
+            "review_record_id": str(payload.get("last_review_record_id") or attrs.get("last_review_record_id") or ""),
+            "raw_refs": raw_refs[:3],
+        }
+
+    recent_traces: list[dict[str, Any]] = []
+    for trace in list(reversed(traces))[:5]:
+        ids = selected_memory_ids(trace)
+        payloads = selected_payload(trace)
+        attrs = trace.get("attrs") if isinstance(trace.get("attrs"), dict) else {}
+        explain = attrs.get("explain") if isinstance(attrs.get("explain"), dict) else {}
+        recent_traces.append(
+            {
+                "id": str(trace.get("id") or ""),
+                "created_at": str(trace.get("created_at") or ""),
+                "query": compact_preview(trace.get("query") or trace.get("task"), limit=180),
+                "role": str(trace.get("role") or ""),
+                "privacy_filter": str(trace.get("privacy_filter") or ""),
+                "signal_coverage": trace.get("signal_coverage"),
+                "selected_count": len(ids),
+                "selected_ids": ids[:10],
+                "candidate_counts": explain.get("candidate_counts") if isinstance(explain.get("candidate_counts"), dict) else {},
+                "selected_memories": [memory_card(memory_id, payloads.get(memory_id)) for memory_id in ids[:4]],
+            }
+        )
+
+    def distributed_y(index: int, total: int) -> int:
+        if total <= 1:
+            return 50
+        return int(18 + (index * (64 / max(total - 1, 1))))
+
+    def graph_preview() -> dict[str, Any]:
+        graph_nodes: list[dict[str, Any]] = []
+        graph_edges: list[dict[str, str]] = []
+        seen_nodes: set[str] = set()
+        selected_ids: list[str] = []
+        trace_ids: list[str] = []
+
+        for trace in recent_traces[:3]:
+            trace_id = str(trace.get("id") or "")
+            if not trace_id:
+                continue
+            trace_ids.append(trace_id)
+            for memory_id in trace.get("selected_ids") or []:
+                memory_id = str(memory_id)
+                if memory_id and memory_id not in selected_ids:
+                    selected_ids.append(memory_id)
+                graph_edges.append({"from": trace_id, "to": memory_id, "kind": "retrieved"})
+
+        if not selected_ids:
+            for row in object_rows[:8]:
+                memory_id = str(row.get("id") or "")
+                if memory_id:
+                    selected_ids.append(memory_id)
+
+        selected_ids = selected_ids[:10]
+        trace_ids = trace_ids[:3]
+
+        for index, trace_id in enumerate(trace_ids):
+            trace = next((row for row in recent_traces if row.get("id") == trace_id), {})
+            graph_nodes.append(
+                {
+                    "id": trace_id,
+                    "type": "trace",
+                    "label": trace_id.replace("rtrace_", "r:")[:18],
+                    "detail": compact_preview(trace.get("query"), limit=90),
+                    "x": 13,
+                    "y": distributed_y(index, len(trace_ids)),
+                }
+            )
+            seen_nodes.add(trace_id)
+
+        source_ids: list[str] = []
+        for index, memory_id in enumerate(selected_ids):
+            card = memory_card(memory_id)
+            graph_nodes.append(
+                {
+                    "id": memory_id,
+                    "type": "memory",
+                    "status": card.get("status"),
+                    "label": memory_id.replace("mem_", "m:")[:18],
+                    "detail": card.get("content_preview"),
+                    "x": 50,
+                    "y": distributed_y(index, len(selected_ids)),
+                }
+            )
+            seen_nodes.add(memory_id)
+            source_path = str(card.get("source_path") or "")
+            if source_path:
+                source_id = f"src_{stable_hash(source_path)[:10]}"
+                graph_edges.append({"from": memory_id, "to": source_id, "kind": "provenance"})
+                if source_id not in source_ids:
+                    source_ids.append(source_id)
+                    sources_by_id[source_id] = {"path": source_path, "kind": card.get("source_kind") or "artifact"}
+
+        for index, source_id in enumerate(source_ids[:6]):
+            source = sources_by_id.get(source_id, {})
+            graph_nodes.append(
+                {
+                    "id": source_id,
+                    "type": "source",
+                    "label": compact_preview(source.get("path") or source_id, limit=22),
+                    "detail": str(source.get("kind") or "source"),
+                    "x": 86,
+                    "y": distributed_y(index, min(len(source_ids), 6)),
+                }
+            )
+            seen_nodes.add(source_id)
+
+        graph_edges = [
+            edge
+            for edge in graph_edges
+            if edge.get("from") in seen_nodes and edge.get("to") in seen_nodes
+        ][:24]
+        return {"nodes": graph_nodes[:20], "edges": graph_edges}
 
     nodes = count_lines(memory / "processed" / "nodes.jsonl")
     edges = count_lines(ontology / "edges.jsonl")
@@ -1013,6 +2089,23 @@ def load_memory_observatory(root: Path) -> dict[str, Any]:
     retrieval_traces = len(traces) if traces else count_lines(retrieval_path)
     hyperedges = count_lines(hyperedges_path)
     sources = count_lines(sources_path)
+    latest_graph_control = graph_control_rows[-1] if graph_control_rows else {}
+    graph_control_attrs = latest_graph_control.get("attrs") if isinstance(latest_graph_control.get("attrs"), dict) else {}
+    graph_control = {
+        "run_count": len(graph_control_rows) if graph_control_rows else count_lines(graph_control_path),
+        "latest": {
+            "id": str(latest_graph_control.get("id") or ""),
+            "status": str(graph_control_attrs.get("status") or latest_graph_control.get("status") or "unknown"),
+            "captured_at": str(latest_graph_control.get("captured_at") or ""),
+            "bound_ratio": latest_graph_control.get("bound_ratio"),
+            "raw_ingest_count": latest_graph_control.get("raw_ingest_count"),
+            "reclaimed_count": latest_graph_control.get("reclaimed_count"),
+            "queryable_surface_count": latest_graph_control.get("queryable_surface_count"),
+            "stop_conditions": list(latest_graph_control.get("stop_conditions") or []),
+            "halt_auto_consolidation": bool(latest_graph_control.get("halt_auto_consolidation")),
+            "provenance_contract_ids": list(graph_control_attrs.get("provenance_contract_ids") or []),
+        } if latest_graph_control else {},
+    }
 
     exists = base.exists()
     return {
@@ -1026,9 +2119,12 @@ def load_memory_observatory(root: Path) -> dict[str, Any]:
         "reviews": reviews,
         "retrieval_traces": retrieval_traces,
         "retrieval_traces_with_selected": selected_trace_count,
+        "graph_control": graph_control,
         "hyperedges": hyperedges,
         "sources": sources,
         "latest_review_at": latest_review,
+        "recent_traces": recent_traces,
+        "graph_preview": graph_preview(),
         "headline": f"{int(status_counts.get('accepted', 0))} accepted / {int(status_counts.get('draft', 0))} draft memories from {nodes:,} graph nodes",
         "signals": [
             {"label": "Knowledge graph", "value": nodes, "unit": "nodes"},
@@ -1063,15 +2159,154 @@ def run_capabilityos(root: Path, *args: str) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def distributed_y(index: int, total: int) -> int:
+    if total <= 1:
+        return 50
+    return int(18 + (index * (64 / max(total - 1, 1))))
+
+
+def build_capability_route_preview(
+    top_routes: list[dict[str, Any]],
+    gap_samples: list[dict[str, Any]],
+    provider_routes: list[dict[str, Any]],
+) -> dict[str, Any]:
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, str]] = []
+    seen: set[str] = set()
+
+    for index, route in enumerate(top_routes[:5]):
+        route_id = str(route.get("id") or f"route_{index}")
+        nodes.append(
+            {
+                "id": route_id,
+                "type": "route",
+                "label": compact_preview(route.get("name") or route_id, limit=28),
+                "detail": f"score {route.get('score')} · risk {route.get('risk')} · {route.get('privacy')}",
+                "state": "attention" if route.get("requires_network") or str(route.get("risk")) == "high" else "active",
+                "x": 14,
+                "y": distributed_y(index, min(len(top_routes), 5)),
+            }
+        )
+        seen.add(route_id)
+
+        for fallback_id in (route.get("fallback_ids") or [])[:2]:
+            fallback_id = str(fallback_id)
+            if fallback_id and fallback_id not in seen:
+                nodes.append(
+                    {
+                        "id": fallback_id,
+                        "type": "fallback",
+                        "label": fallback_id.replace("cap_", "")[:26],
+                        "detail": "fallback candidate",
+                        "state": "held",
+                        "x": 48,
+                        "y": distributed_y(len([node for node in nodes if node.get("type") == "fallback"]), 8),
+                    }
+                )
+                seen.add(fallback_id)
+            if fallback_id:
+                edges.append({"from": route_id, "to": fallback_id, "kind": "fallback"})
+
+        for evidence_ref in (route.get("evidence_refs") or [])[:1]:
+            evidence_ref = str(evidence_ref)
+            if not evidence_ref:
+                continue
+            evidence_id = f"ev_{stable_hash(evidence_ref)[:10]}"
+            if evidence_id not in seen:
+                nodes.append(
+                    {
+                        "id": evidence_id,
+                        "type": "evidence",
+                        "label": compact_preview(evidence_ref.replace("../", ""), limit=30),
+                        "detail": evidence_ref,
+                        "state": "clear",
+                        "x": 84,
+                        "y": distributed_y(len([node for node in nodes if node.get("type") == "evidence"]), 8),
+                    }
+                )
+                seen.add(evidence_id)
+            edges.append({"from": route_id, "to": evidence_id, "kind": "evidence"})
+
+    for index, gap in enumerate(gap_samples[:4]):
+        evidence_ref = str(gap.get("evidence_ref") or "")
+        gap_id = f"gap_{stable_hash(str(gap.get('reason') or '') + evidence_ref)[:10]}"
+        nodes.append(
+            {
+                "id": gap_id,
+                "type": "gap",
+                "label": compact_preview(gap.get("reason") or "gap", limit=24),
+                "detail": compact_preview(gap.get("detail") or evidence_ref, limit=100),
+                "state": "attention",
+                "x": 48,
+                "y": distributed_y(index + 4, 8),
+            }
+        )
+        seen.add(gap_id)
+        if evidence_ref:
+            evidence_id = f"ev_{stable_hash(evidence_ref)[:10]}"
+            if evidence_id in seen:
+                edges.append({"from": gap_id, "to": evidence_id, "kind": "blocked_by"})
+
+    for index, provider in enumerate(provider_routes[:4]):
+        provider_id = f"provider_{str(provider.get('agent') or index)}"
+        try:
+            provider_failed = int(provider.get("failed") or 0)
+        except (TypeError, ValueError):
+            provider_failed = 0
+        nodes.append(
+            {
+                "id": provider_id,
+                "type": "provider",
+                "label": str(provider.get("agent") or "provider"),
+                "detail": f"{provider.get('passed', 0)} passed · {provider.get('failed', 0)} failed",
+                "state": "attention" if provider_failed else "active",
+                "x": 84,
+                "y": distributed_y(index + 4, 8),
+            }
+        )
+        seen.add(provider_id)
+
+    edges = [edge for edge in edges if edge.get("from") in seen and edge.get("to") in seen][:32]
+    return {"nodes": nodes[:24], "edges": edges}
+
+
 def load_capability_observatory(root: Path) -> dict[str, Any]:
     listed = run_capabilityos(root, "list", "--json") or {}
     recommended = run_capabilityos(
         root,
         "recommend",
         "--task",
-        "visual operating system interface memory search capability route genesis divergence hive execution",
+        "visual operating system interface memory search capability route genesis divergence hive execution web api mcp provider fallback",
         "--observations-inbox",
         "../.aios/outbox",
+        "--json",
+    ) or {}
+    observed = run_capabilityos(root, "observe-results", "--inbox", "../.aios/outbox", "--json") or {}
+    provider_route = run_capabilityos(
+        root,
+        "provider-route",
+        "--task",
+        "AIOS provider fallback after Claude/Codex/Gemini/local failure",
+        "--assigned-agent",
+        "claude",
+        "--observations-inbox",
+        "../.aios/outbox",
+        "--json",
+    ) or {}
+    web_route = run_capabilityos(
+        root,
+        "web-route",
+        "--task",
+        "latest provider web design references and current API documentation for AIOS interface",
+        "--json",
+    ) or {}
+    constraint_route = run_capabilityos(
+        root,
+        "constraint-break",
+        "--task",
+        "AIOS agents blocked by provider instructions, CLI auth, rate limit, missing GUI/browser",
+        "--blocker",
+        "provider auth/rate limit/prompt constraints reduce autonomy",
         "--json",
     ) or {}
     capabilities = listed.get("capabilities") if isinstance(listed.get("capabilities"), list) else []
@@ -1084,12 +2319,47 @@ def load_capability_observatory(root: Path) -> dict[str, Any]:
             {
                 "id": row.get("id"),
                 "name": row.get("name"),
+                "kind": row.get("kind"),
                 "score": row.get("score"),
                 "requires_network": bool(row.get("requires_network")),
                 "risk": row.get("risk"),
+                "privacy": row.get("privacy"),
+                "latency": row.get("latency"),
                 "observation_count": row.get("observation_count", 0),
+                "reason_codes": [str(item) for item in row.get("reason_codes") or []][:6],
+                "risk_notes": [str(item) for item in row.get("risk_notes") or []][:5],
+                "fallback_ids": [str(item) for item in row.get("fallback_ids") or []][:4],
+                "evidence_refs": [str(item) for item in row.get("evidence_refs") or []][:3],
             }
         )
+    mode_rows = capability_source_modes(capabilities)
+    gaps = observed.get("gaps") if isinstance(observed.get("gaps"), list) else []
+    provider_routes = provider_route.get("routes") if isinstance(provider_route.get("routes"), list) else []
+    gap_samples = [
+        {
+            "reason": str(row.get("reason") or ""),
+            "detail": compact_preview(row.get("detail"), limit=120),
+            "evidence_ref": str((row.get("evidence_refs") or [""])[0]),
+            "status": str(row.get("status") or ""),
+        }
+        for row in gaps[:6]
+        if isinstance(row, dict)
+    ]
+    provider_route_rows = [
+        {
+            "agent": row.get("agent"),
+            "score": row.get("score"),
+            "confidence": row.get("confidence"),
+            "observations": row.get("observations"),
+            "passed": row.get("passed"),
+            "failed": row.get("failed"),
+            "timeout": row.get("timeout"),
+            "reason_codes": [str(item) for item in row.get("reason_codes") or []][:5],
+            "evidence_refs": [str(item) for item in row.get("evidence_refs") or []][:2],
+        }
+        for row in provider_routes[:4]
+        if isinstance(row, dict)
+    ]
     return {
         "status": "active" if capabilities else ("degraded" if (root / "CapabilityOS").exists() else "missing"),
         "capability_cards": len(capabilities),
@@ -1098,8 +2368,114 @@ def load_capability_observatory(root: Path) -> dict[str, Any]:
         "result_files": int(summary.get("result_files") or 0),
         "observed_capabilities": int(recommended.get("observed_capabilities") or 0),
         "top_routes": top_routes,
+        "source_modes": mode_rows,
+        "gap_samples": gap_samples,
+        "provider_routes": provider_route_rows,
+        "route_preview": build_capability_route_preview(top_routes, gap_samples, provider_route_rows),
+        "web_route": {
+            "risk_notes": [str(item) for item in web_route.get("risk_notes") or []][:6],
+            "route_steps": [
+                {
+                    "step": str(row.get("step") or ""),
+                    "tool_family": str(row.get("tool_family") or ""),
+                    "purpose": compact_preview(row.get("purpose"), limit=120),
+                    "evidence_required": [str(item) for item in row.get("evidence_required") or []][:4],
+                }
+                for row in (web_route.get("route_steps") or [])[:4]
+                if isinstance(row, dict)
+            ],
+            "execution_policy": web_route.get("execution_policy") if isinstance(web_route.get("execution_policy"), dict) else {},
+        },
+        "constraint_route": {
+            "freedom_level": constraint_route.get("freedom_level") or "",
+            "permission_questions": [
+                {
+                    "permission_id": str(row.get("permission_id") or ""),
+                    "question": compact_preview(row.get("question"), limit=140),
+                    "risk": str(row.get("risk") or ""),
+                }
+                for row in (constraint_route.get("permission_questions") or [])[:4]
+                if isinstance(row, dict)
+            ],
+            "unblock_options": [
+                {
+                    "option_id": str(row.get("option_id") or ""),
+                    "move": compact_preview(row.get("move"), limit=140),
+                    "requires_permission": bool(row.get("requires_permission")),
+                }
+                for row in (constraint_route.get("unblock_options") or [])[:4]
+                if isinstance(row, dict)
+            ],
+            "stop_conditions": [str(item) for item in constraint_route.get("stop_conditions") or []][:5],
+        },
         "headline": f"{len(capabilities)} cards, {int(summary.get('observations_count') or 0)} observations, {int(summary.get('gaps_count') or 0)} gaps",
     }
+
+
+def capability_mode(card: dict[str, Any]) -> str:
+    kind = str(card.get("kind") or "").lower()
+    domains = {str(item).lower() for item in card.get("domains") or []}
+    privacy = str(card.get("privacy") or "").lower()
+    if kind == "mcp" or "mcp" in domains:
+        return "MCP"
+    if kind == "api" or "api" in domains:
+        return "API"
+    if bool(card.get("requires_network")) or privacy == "remote" or "web" in domains or "internet" in domains:
+        return "Web"
+    if "provider" in domains or "llm" in domains or "ollama" in domains or "gemini" in domains or "claude" in domains or "codex" in domains:
+        return "Provider/LLM"
+    if kind == "skill" or "skill" in domains or "plugin" in domains:
+        return "Skill/Plugin"
+    if kind in {"workflow", "harness", "router", "catalog", "memory"}:
+        return "Local OS"
+    return "Other"
+
+
+def capability_source_modes(capabilities: list[Any]) -> list[dict[str, Any]]:
+    buckets: dict[str, dict[str, Any]] = {}
+    for item in capabilities:
+        if not isinstance(item, dict):
+            continue
+        mode = capability_mode(item)
+        bucket = buckets.setdefault(
+            mode,
+            {
+                "mode": mode,
+                "count": 0,
+                "network": 0,
+                "executes_tools": 0,
+                "risk_counts": Counter(),
+                "privacy_counts": Counter(),
+                "top_capabilities": [],
+            },
+        )
+        bucket["count"] += 1
+        if item.get("requires_network"):
+            bucket["network"] += 1
+        if item.get("executes_tools"):
+            bucket["executes_tools"] += 1
+        bucket["risk_counts"][str(item.get("risk") or "unknown")] += 1
+        bucket["privacy_counts"][str(item.get("privacy") or "unknown")] += 1
+        if len(bucket["top_capabilities"]) < 4:
+            bucket["top_capabilities"].append(str(item.get("id") or item.get("name") or "capability"))
+    order = ["Local OS", "Provider/LLM", "Web", "API", "MCP", "Skill/Plugin", "Other"]
+    rows: list[dict[str, Any]] = []
+    for mode in order:
+        bucket = buckets.get(mode)
+        if not bucket:
+            continue
+        rows.append(
+            {
+                "mode": mode,
+                "count": bucket["count"],
+                "network": bucket["network"],
+                "executes_tools": bucket["executes_tools"],
+                "risk_counts": dict(bucket["risk_counts"]),
+                "privacy_counts": dict(bucket["privacy_counts"]),
+                "top_capabilities": bucket["top_capabilities"],
+            }
+        )
+    return rows
 
 
 def load_genesis_observatory(root: Path, genesis_lens: dict[str, Any]) -> dict[str, Any]:
@@ -1240,6 +2616,7 @@ def build_snapshot(root: Path) -> dict[str, Any]:
     dispatches = load_dispatches(root)
     genesis_lens = load_genesis_lens(root, invocations)
     installation = load_installation(root, round_state)
+    repos_state = load_repos(root)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now_iso(),
@@ -1247,13 +2624,16 @@ def build_snapshot(root: Path) -> dict[str, Any]:
         "goals": load_goals(root),
         "contracts": contracts,
         "dispatches": dispatches,
-        "repos": load_repos(root),
+        "repos": repos_state,
+        "roster": build_roster(root, dispatches, repos_state),
+        "contract_board": build_contract_board(contracts.get("board_rows", []), dispatches),
         "aios_inputs": load_aios_inputs(root),
         "monitor": monitor,
         "installation": installation,
         "round_controller": round_state,
         "stop_lanes": load_stop_lanes(root),
         "invocations": invocations,
+        "asks": load_latest_asks(root),
         "promotions": load_promotions(root),
         "memory_draft_queue": load_chat_memory_draft_queue(root),
         "genesis_lens": genesis_lens,
