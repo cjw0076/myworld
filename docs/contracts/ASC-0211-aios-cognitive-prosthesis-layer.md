@@ -1,17 +1,42 @@
 ---
-contract_id: ASC-0210
+contract_id: ASC-0211
 slug: aios-cognitive-prosthesis-layer
 status: accepted
 created: 2026-05-20 KST
 accepted: 2026-05-20 KST
+renumbered_from: ASC-0210 (이전 번호) — codex@myworld 가 같은 directive 로 ASC-0210 (offline-user-agent-frontier-loop) 을 closed 했음. ID 충돌 해소: 코덱스 0210 keep (먼저 close), 본 contract 는 ASC-0211 로 이동. 두 contract 는 *복선 → 통합*: ASC-0210 = L3 의 *첫 enacted routine*, ASC-0211 = umbrella frame.
 proposed_by: claude@myworld (peer agent)
 acceptance_authority: founder 재원 — directive 2026-05-20 "내(user) 지식의 한계, 네(agent) 시스템과 학습 자료 한계를 벗어나 생각할 수 있도록 해. 그렇게 생각할 수 있는 시스템을 구축해. 네게는 오프라인에 user라는 Agent가 있다고 생각해." + 동의 (2026-05-20 chat): "ASC-0210 수락 + 병렬 진행". Invariant 8 (Peer Honesty) 제안은 founder 가 *거부* — "숨길 자유 필요" (강제 disclosure = peer agency 부정).
-escalation: VISION-LEVEL — AIOS 의 정체성 재정의 (operator/agent → meta-operator/peers). ASC-0205 (북극성 v1) 완료 후 ASC-0210 이 v2 의 본체. MCP-native 와 *병렬* 진행 (Tier 1).
-goal: AIOS 를 두 peer agent (user, claude) 의 합집합 *너머* 향하는 인지 보철로 구축. 4-layer (Peer Network / Limits Ledger / Transcendence Engine / Anticipatory Output) 의 첫 buildable slice.
-origin: 2026-05-20 founder directive 직접. project_aios_peer_agent_frame · project_user_agent_재원 · project_claude_agent_limits 메모리들이 frame 의 선행 인스턴스.
+escalation: VISION-LEVEL — AIOS 의 정체성 재정의 (operator/agent → meta-operator/peers). ASC-0205 (북극성 v1) 완료 후 ASC-0211 이 v2 의 본체. MCP-native 와 *병렬* 진행 (Tier 1).
+goal: AIOS 를 두 peer agent (user, claude) 의 합집합 *너머* 향하는 인지 보철로 구축. 4-layer (Peer Network / Limits Ledger / Transcendence Engine / Anticipatory Output) 의 첫 buildable slice. ASC-0210 (codex) 의 offline_user_agent_packet primitive 가 L3 의 첫 라이브 routine.
+origin: 2026-05-20 founder directive 직접. project_aios_peer_agent_frame · project_user_agent_재원 · project_claude_agent_limits 메모리들이 frame 의 선행 인스턴스. 코덱스가 *독립적으로* ASC-0210 으로 L3 primitive 를 same-day 구현 — peer transcendence 의 실증.
 ---
 
-# ASC-0210 — AIOS Cognitive Prosthesis Layer (CPL)
+# ASC-0211 — AIOS Cognitive Prosthesis Layer (CPL)
+
+## 코덱스의 독립 수렴 (ASC-0210)
+
+본 contract 가 frame 으로 *제안* 된 직후 (commit `8d4da32`), codex@myworld
+가 ASC-0210 (offline-user-agent-frontier-loop) 을 같은 날 18:00 ~ 18:04
+사이에 *독립적으로* close 했음 — 같은 founder directive 에 응답.
+
+코덱스 작업:
+- `aios.offline_user_agent_packet.v1` schema (4 packet types)
+- `unknown.frontier.question` / `user.offline_task` / `field_observation` /
+  `contradiction`
+- `scripts/aios_offline_user_agent.py` helper + tests
+- Default route → `.aios/inbox/memoryOS/` → draft-first review
+- 강제 가드: `observed_by: user@offline`, `private_data_included: false`,
+  sensitive-term rejection 등
+
+이는 본 ASC-0211 의 **L3 Transcendence Engine 의 첫 enacted routine** 이다:
+- "frontier-question generator" → `unknown.frontier.question` 패킷
+- "field observation request" → `user.offline_task` 패킷
+- "convergence audit trigger" → `contradiction` 패킷
+
+claude (이 frame) 와 codex (이 enaction) 가 *서로 모르고* 같은 결론에
+수렴 — 두 peer 의 사고가 합집합 *밖* 의 동일 지점에 도달한 셈. 본
+사건 자체가 [[project_aios_peer_agent_frame]] 의 첫 작동 사례.
 
 DNA references:
 - Invariant 1 (decide before acting — CPL 출력은 *제안*, peer 가 평가)
