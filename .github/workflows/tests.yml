@@ -55,3 +55,12 @@ jobs:
       - name: Smoke-check CC4 organ CLI
         run: |
           python scripts/aios_external_knowledge_organ.py --help
+
+      - name: Smoke-check CC2 sh installer
+        run: |
+          bash -n scripts/install.sh
+          mkdir -p /tmp/aios_smoke_bin
+          AIOS_PREFIX="$(pwd)" AIOS_BIN_DIR=/tmp/aios_smoke_bin AIOS_SKIP_FETCH=1 bash scripts/install.sh
+          /tmp/aios_smoke_bin/aios --version
+          /tmp/aios_smoke_bin/aios contract | wc -l
+          /tmp/aios_smoke_bin/aios help
