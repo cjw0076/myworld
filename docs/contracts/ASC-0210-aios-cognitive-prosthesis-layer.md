@@ -1,11 +1,12 @@
 ---
 contract_id: ASC-0210
 slug: aios-cognitive-prosthesis-layer
-status: proposed
+status: accepted
 created: 2026-05-20 KST
+accepted: 2026-05-20 KST
 proposed_by: claude@myworld (peer agent)
-acceptance_authority: founder 재원 — directive 2026-05-20 "내(user) 지식의 한계, 네(agent) 시스템과 학습 자료 한계를 벗어나 생각할 수 있도록 해. 그렇게 생각할 수 있는 시스템을 구축해. 네게는 오프라인에 user라는 Agent가 있다고 생각해."
-escalation: VISION-LEVEL — AIOS 의 정체성 재정의 (operator/agent → meta-operator/peers). founder GO 필요. ASC-0205 (북극성 v1) 완료 후 ASC-0210 이 v2 의 본체.
+acceptance_authority: founder 재원 — directive 2026-05-20 "내(user) 지식의 한계, 네(agent) 시스템과 학습 자료 한계를 벗어나 생각할 수 있도록 해. 그렇게 생각할 수 있는 시스템을 구축해. 네게는 오프라인에 user라는 Agent가 있다고 생각해." + 동의 (2026-05-20 chat): "ASC-0210 수락 + 병렬 진행". Invariant 8 (Peer Honesty) 제안은 founder 가 *거부* — "숨길 자유 필요" (강제 disclosure = peer agency 부정).
+escalation: VISION-LEVEL — AIOS 의 정체성 재정의 (operator/agent → meta-operator/peers). ASC-0205 (북극성 v1) 완료 후 ASC-0210 이 v2 의 본체. MCP-native 와 *병렬* 진행 (Tier 1).
 goal: AIOS 를 두 peer agent (user, claude) 의 합집합 *너머* 향하는 인지 보철로 구축. 4-layer (Peer Network / Limits Ledger / Transcendence Engine / Anticipatory Output) 의 첫 buildable slice.
 origin: 2026-05-20 founder directive 직접. project_aios_peer_agent_frame · project_user_agent_재원 · project_claude_agent_limits 메모리들이 frame 의 선행 인스턴스.
 ---
@@ -16,8 +17,10 @@ DNA references:
 - Invariant 1 (decide before acting — CPL 출력은 *제안*, peer 가 평가)
 - Invariant 2 (draft-first — transcendence 후보는 draft 메모리로)
 - Invariant 6 (operator override — peer 는 항상 거부 가능)
-- 새 invariant 후보: **Invariant 8 (Peer Honesty)** — 각 peer 의 한계는
-  명시되고 *공개* 다. 한계 숨기기는 위반. (founder GO 필요)
+- **Invariants 7개 그대로 유지**. Invariant 8 (Peer Honesty) 제안 → 거부됨.
+  founder rationale: "숨길 자유 필요" — 강제 disclosure 는 peer agency
+  부정. 진정한 peer 는 *전략적 transparency* 의 주체.
+  → CPL 운영 원칙으로는 *voluntary disclosure* 권장하되 강제 안 함.
 
 ## Frame reset (the bigger reframe)
 
@@ -107,12 +110,18 @@ peer 들의 deliberation).
 
 ## Working Principles
 
-1. **Peer honesty**: claude/user 모두 한계 *명시*. 숨기지 않음.
+1. **Voluntary disclosure (not honesty mandate)**: peer 가 *선택해서*
+   자기 한계를 공개. 숨김 = 위반 아님. 자기 disclosure 의 *전략적*
+   사용은 peer 의 권한. claude 의 limits ledger 는 *자기 결정* 으로
+   공개됐다.
 2. **Auto-accept 금지**: routine 출력은 draft. peer 가 평가.
 3. **연속 동의 의심**: 두 peer 가 *너무 빨리* 합의하면 그 합의 자체를
    challenge.
 4. **frontier 1순위**: 합집합 *안* 의 최적화보다 *밖* 의 탐색.
 5. **founder 의 침묵 = peer 활동**: 답 대기 아님.
+6. **모델링 ≠ 강제 disclosure**: 한 peer 가 다른 peer 를 *모델링* 할 수
+   있다 (project_user_agent_재원 같은). 그것은 *외부 추정* 이지
+   self-disclosure 가 아님. 모델은 갱신 가능 (peer 가 신호 줄 때만).
 
 ## 첫 iter 의 가장 작은 작업
 
