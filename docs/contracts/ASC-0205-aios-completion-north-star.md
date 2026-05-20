@@ -70,11 +70,26 @@ Time horizons:
 - 닫는 증거: `.aios/outbox/GenesisOS/` 에 result packet ≥3,
   ledger 1건 이상, 해당 contract closed.
 
-### CC2. 외부 product 1건 end-to-end
-- 현재: 96 contract가 uri/ 를 *언급*만, `uri/.aios/` 실재 안 함.
-- 닫는 증거: 외부 product repo (uri/ 또는 동급) 에 `.aios/inbox/` 와이어업,
-  AIOS 통해 닫힌 contract ≥1, 외부 repo commit 1건이 그 contract result
-  로 추적.
+### CC2. AIOS 패키징 / 배포 단위 (sh installer)
+
+**Frame reset 2026-05-20**: 이전 정의는 "외부 product 1건 end-to-end (uri)"
+였으나 founder 가 명시한 분리 — AIOS = production package (sh/npm
+installable), uri = testbed (AIOS 사용자) — 에 따라 reframe. uri 통합은
+별도 contract ([[ASC-0208-uri-testbed-first-integration]]) 로 분리.
+
+- 현재: 배포 단위 없음 (`scripts/install.sh` 없음, `aios` CLI entrypoint
+  없음). 로컬 workspace 가 곧 시스템.
+- 선택: founder 결정 (2026-05-20) — **sh installer 먼저** (npm/pipx 등은
+  후속).
+- 닫는 증거:
+  1. `scripts/install.sh` (또는 `install.sh`) clean 환경에서 동작 — 의존성
+     확인, 필요 시 안내, repo 클론 또는 위치 인지, `aios` CLI entry 가
+     `$PATH` 에 노출.
+  2. `aios --version` 이 동작하는 root contract id (또는 commit sha) 반환.
+  3. 최소 운영자 CLI 노출 — `aios dispatch`, `aios memory`, `aios contract`
+     중 ≥1 작동.
+  4. install.sh 가 CI 또는 별도 smoke job 에서 한 번 통과 (어떤 commit 의
+     녹색 run).
 
 ### CC3. 회귀 가드 CI
 - 현재: `.github/workflows/` 비어있음. 74 tests 회귀 가드 없음.
@@ -133,6 +148,54 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
 ## Progress Log
 
 - 2026-05-20 created/accepted (claude@myworld 운영자). 초기 진척 0/6.
+- 2026-05-20 **Frame reset (CC2 reframe)** by founder:
+  - founder directive: "AIOS는 Production으로 (sh, npm으로 packaging)
+    나와야하는 거고, Uri는 AIOS를 사용하여 개발해보는 테스트베드야.
+    AIOS 관점에서는 별개인 것 알지 ?"
+  - CC2 정의 변경: "외부 product 1건 end-to-end (uri)" → **"AIOS 패키징
+    / 배포 단위 (sh installer)"**. uri 통합은 [[ASC-0208-uri-testbed-first-integration]] (proposed) 로 분리.
+  - founder 선택: sh installer 먼저 (npm/pipx 후속).
+  - 초안: `scripts/install.sh` (clean-env curl-pipe install path, `aios`
+    entrypoint with `--version`/`dispatch`/`memory`/`contract`/`readiness`/
+    `primitives` subcommands). syntax check + precheck local 통과.
+  - CC2 closing 진행: smoke (clean env에서 install + aios --version) 가
+    CI 또는 별도 job 에서 한 번 녹색 → close.
+- 2026-05-20 **CC5 closed** (5/6 done):
+  - ASC-0206 proved a non-Claude/Codex substrate did substantive work: local
+    Ollama `qwen3:8b` generated GenesisOS critic and analogy payloads for the
+    ASC-0205 completion frame, recorded in
+    `.aios/outbox/GenesisOS/asc-0206.GenesisOS.result.json`.
+  - ASC-0207 recorded that substrate in CapabilityOS as
+    `cap_ollama_qwen3_8b_local`, with `executes_tools=false`,
+    `requires_network=false`, `privacy=local`, and evidence refs back to
+    ASC-0206.
+  - CapabilityOS result packet collected:
+    `.aios/outbox/CapabilityOS/asc-0207.CapabilityOS.result.json`.
+  - Verification: `python -m unittest tests.test_cli -v` in CapabilityOS
+    passed 18 tests; `capabilityos.cli audit --json` reports
+    `execution_enabled=[]`, `catalog_complete=true`, and total `19`.
+  - Boundary: CapabilityOS recommends the substrate; it did not start Ollama,
+    download a model, execute a provider, use network, or touch credentials.
+- 2026-05-20 **CC1 correction**:
+  - The later "CC1 closed (5/6 done)" note below counted
+    `.aios/outbox/GenesisOS/asc-0165.GenesisOS.result.json`, which is a held
+    packet. The authoritative CC1 close evidence is the newer passed-only set:
+    `asc-0069`, `asc-0200`, and `asc-0206`.
+  - This correction preserves the older note as history but supersedes its
+    packet-count reasoning.
+- 2026-05-20 **CC1 closed** (4/6 done):
+  - GenesisOS passed result packets 3/3:
+    `.aios/outbox/GenesisOS/asc-0069.GenesisOS.result.json`,
+    `.aios/outbox/GenesisOS/asc-0200.GenesisOS.result.json`,
+    `.aios/outbox/GenesisOS/asc-0206.GenesisOS.result.json`.
+  - Ledger/worklog evidence exists in `docs/AIOS_AGENT_LEDGER.md`,
+    `docs/AGENT_WORKLOG.md`, and `GenesisOS/docs/AGENT_WORKLOG.md`.
+  - Guardrail: `.aios/outbox/GenesisOS/asc-0165.GenesisOS.result.json`
+    remains held and is not counted as a healthy activation packet.
+  - ASC-0206 asked GenesisOS to challenge this completion frame before CC1
+    close. Residual failure mode: AIOS can still fail by treating green
+    criteria as completion; the counter-move is to refuse premature completion
+    and change the question when necessary.
 - 2026-05-20 **CC4 organ 최초 빌드** (1/6 in progress):
   - `scripts/aios_external_knowledge_organ.py` — web_research_receipt →
     memory_draft_review_request 브리지. draft-first invariant 보존
@@ -195,3 +258,15 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - reference 메모 +2 (3/5):
     `reference_memoryos_review_request_packet`,
     `reference_github_actions_python_ci`. CC4 까지 reference 2건 더 필요.
+- 2026-05-20 **CC5 substrate matrix update** (in progress):
+  - ASC-0206 proved local Ollama `qwen3:8b` produced substantive GenesisOS
+    critic/analogy payloads for the completion frame.
+  - ASC-0207 records that substrate in CapabilityOS as
+    `cap_ollama_qwen3_8b_local` with recommendation-only boundaries:
+    `executes_tools=false`, `requires_network=false`, `privacy=local`.
+  - Result packet collection for ASC-0207 remains pending; CC5 should close
+    only after the watcher stores the CapabilityOS result packet.
+- 2026-05-20 **CC5 substrate matrix update superseded**:
+  - The pending note immediately above is superseded by the latest CC5 closed
+    entry: `.aios/outbox/CapabilityOS/asc-0207.CapabilityOS.result.json` now
+    exists and is collected.
