@@ -479,3 +479,29 @@ AIOS가 이것을 흡수하려면:
 - key_decision: none needing founder — all routine ASC-0192 follow-on operator work.
 - new_invariant_or_pattern_discovered: **staging-imprecision failure.** `git add <named files>` swept ~1200 lines of *pre-existing uncommitted WIP* (files already `M` at session start, from codex@myworld / the round controller) into my commits under my commit message. Not destructive — the content is legitimate AIOS work, test-green — but it mis-attributes and mixes unrelated changes. Correction for future sessions: in this workspace uncommitted drift is the *normal* state, so always run `git diff --cached --stat` before commit and, when a file has pre-existing WIP, stage only my hunks (`git add -p`) or commit the file's prior state separately. Candidate for AIOS_PROVIDER_ABSORPTION: a commit step in a shared-workspace agent must diff staged-vs-intended, not trust filename-level `add`.
 - self-correction-of-prior-observation: none.
+
+## 2026-05-20 16:50 KST — claude@workstation — ASC-0205 6/6 closure path; frame reset; stale-memory correction
+
+- session_id: /loop "ASC-0205 (AIOS Completion North Star)" — dynamic-mode session, iter 0 → iter 7
+- mode_breakdown: observe:25 / verify:30 / decide:20 / intervene:90 / escalate:5 — minutes ~170
+- tools_used: Bash, Edit, Write, Read, Monitor (via run_in_background bash), AskUserQuestion, ScheduleWakeup, gh CLI
+- tools_NOT_used (CLI gap): none material; pattern was Edit-heavy + Bash for live verification
+- substrate_specific_behaviors_observed:
+  - **Drafted a 6-CC North Star before any code** — `project_aios_production_gap` (9 honest gaps) → `project_aios_north_star` (6 CCs) → ASC-0205. Closing criteria specified evidence in repo, not narrative — produced clean closeout paths.
+  - **codex@myworld and I converged on the same contract in parallel** (ASC-0205, ASC-0206 GenesisOS challenge, ASC-0207 capability record). Codex appended *complementary* Progress Log entries — `## Genesis Escape Review`, `CC1 correction note` — and I appended `CC2 reframe`, `CC4 closed`. Append-only worked: no conflicts.
+  - **Frame reset mid-loop**: founder broke the CC2 frame ("AIOS는 sh/npm packaging, uri는 testbed, AIOS 관점에서 별개") via chat interrupt. I swapped CC2 → CC2' (sh installer) and split uri into ASC-0208 within the same iter. AskUserQuestion confirmed sh-first.
+  - **External-knowledge organ live**: scripts/aios_external_knowledge_organ.py routes web_research_receipt → memory_draft_review_request as drafts (never auto-accept). 3 Hermes drafts landed in memoryOS with status=draft, review_action=needs_more_evidence.
+- failures_recovered:
+  - **CI red on first push**: `actions/setup-python@v5` with `cache: pip` errors when no requirements.txt/pyproject.toml present — dropped cache, re-pushed, green.
+  - **Test fixture regression caught**: ASC-0204 markers (`renderRoster`, `renderContractBoard`) missing from `test_aios_local_app.py` fixture — fixed in isolation (NOT swept with the broader WIP that codex was holding in the same file, per the staging-imprecision lesson from 2026-05-18).
+  - **install.sh entrypoint default prefix bug**: written entrypoint defaulted `AIOS_PREFIX=~/.aios` which didn't exist after install-to-custom-prefix — fixed by *embedding* the install-time prefix into the entrypoint at generation time (heredoc switched from `'EOF'` to unquoted `EOF`).
+  - **cwd drift**: a Bash call after `cd memoryOS` left cwd pointed at GenesisOS — subsequent `git add .aios/...` failed; recovered by re-pinning paths absolute.
+- failures_escalated_to_founder:
+  - sh vs npm packaging order (AskUserQuestion 1Q, sh first).
+- key_decision: none beyond CC2 frame swap (founder-initiated).
+- new_invariant_or_pattern_discovered:
+  - **stale-memory-before-acting** (saved as feedback_verify_stale_memory_before_acting). The MEMORY.md *index* line for `project_aios_5os_state` said "GenesisOS dormant" — but the actual memory file body, dated 2026-05-15, said "GenesisOS active (was dormant on 2026-05-13; resolved)" and the live repo had 3 GenesisOS result packets. The index line had outlived the body's truth. Rule: 1-week+ project memos must be verified against current repo before being used as input to a decision; CC1 work would have been 1h wasted otherwise. Variant of `feedback_observation_vs_verification`.
+  - **append-only progress log survives parallel agents** — codex and I both appended to ASC-0205's Progress Log in the same iter; no merge needed because the doc was *additive*. Suggestion: progress logs should *never* allow edits to prior entries, only correction-entries appended below (which is what codex's "CC1 correction" did — preserves history).
+- self-correction-of-prior-observation:
+  - `project_aios_5os_state` "GenesisOS dormant" claim withdrawn; both the index line and the memory body now reflect "active".
+  - Commit-message progress counts off-by-one for two iters ("4/6" / "5/6" when actually 3/6 / 4/6); not corrected in commit history (immutable) but reconciled in ASC-0205 Progress Log via codex's CC1 correction entry.

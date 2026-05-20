@@ -1,10 +1,12 @@
 ---
 contract_id: ASC-0205
 slug: aios-completion-north-star
-status: accepted
+status: closed
 created: 2026-05-20 KST
 proposed_by: claude@myworld
 accepted: 2026-05-20 KST
+closed: 2026-05-20 KST
+closeout_authority: claude@myworld operator — 6/6 CC closing evidence in repo (commit/run links in Progress Log). ASC-0208 (uri testbed) 별도 분리 진행.
 acceptance_authority: founder 재원 — 2026-05-20 paper→IRIS 전환 + "AIOS 완성에만 집중" 지시. North Star 6개 기준 위임.
 goal: AIOS 본체 완성의 측정 가능한 정의 — 6개 Completion Criterion (CC1~CC6) 을 모두 닫는다. 각 CC는 repo에 증거가 있어야만 "닫혔다".
 origin: 2026-05-20 founder 대화. paper(ASC-0098) → IRIS 이관 결정. 그 결과 AIOS 본체에 집중할 새 North Star 필요. 자가진단 9개 production gap (memory project_aios_production_gap) 에서 도출.
@@ -148,6 +150,24 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
 ## Progress Log
 
 - 2026-05-20 created/accepted (claude@myworld 운영자). 초기 진척 0/6.
+- 2026-05-20 **CC2' closed (6/6 — ASC-0205 closeout)**:
+  - `scripts/install.sh` end-to-end: clean tmpdir → install entrypoint
+    → `aios --version` 동작 → `aios contract` 211 lines → `aios help`.
+  - `tests/test_install_sh.py` 4 smoke tests pass locally.
+  - `.github/workflows/tests.yml` new "Smoke-check CC2 sh installer" step
+    runs installer in CI and exercises entrypoint.
+  - **닫는 증거**: commit `c4ff181`, run
+    https://github.com/cjw0076/myworld/actions/runs/26148815029 (success).
+  - prefix-embedding pattern: entrypoint bakes install-time prefix
+    (heredoc unquoted) so default invocation works without env;
+    `AIOS_SKIP_FETCH=1` short-circuit allows in-repo CI smoke.
+  - **ASC-0205 status → closed. 6/6 closing criteria met**: CC1 GenesisOS,
+    CC2' sh installer, CC3 CI, CC4 external-knowledge organ,
+    CC5 Provider 다축화 (Ollama qwen3:8b), CC6 proposed 수렴
+    (ASC-0183 founder-gated 1건만 명시 잔존).
+  - **Follow-ons (외부)**: ASC-0208 uri testbed (proposed),
+    ASC-0183 dream-parametric LoRA (founder-gated proposed),
+    npm/pipx/brew/Docker packaging (no contract yet — 후속 라운드).
 - 2026-05-20 **Frame reset (CC2 reframe)** by founder:
   - founder directive: "AIOS는 Production으로 (sh, npm으로 packaging)
     나와야하는 거고, Uri는 AIOS를 사용하여 개발해보는 테스트베드야.
@@ -174,6 +194,9 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - Verification: `python -m unittest tests.test_cli -v` in CapabilityOS
     passed 18 tests; `capabilityos.cli audit --json` reports
     `execution_enabled=[]`, `catalog_complete=true`, and total `19`.
+  - Durability: CapabilityOS commit `425abf5` records the qwen3 substrate
+    card; MemoryOS commit `3869491` ignores local `.aios/` runtime receipts
+    so CC5 proof artifacts do not keep the repo dirty.
   - Boundary: CapabilityOS recommends the substrate; it did not start Ollama,
     download a model, execute a provider, use network, or touch credentials.
 - 2026-05-20 **CC1 correction**:
