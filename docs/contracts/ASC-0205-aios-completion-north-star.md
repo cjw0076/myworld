@@ -107,3 +107,16 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - `tests/test_aios_external_knowledge_organ.py` — 5 tests pass.
   - 누적 reference 메모: 2/5 (`reference_aios_tools`,
     `reference_external_agent_systems`). 다음 iter에 ≥3 추가하면 CC4 closed.
+- 2026-05-20 **CC3 closed** (2/6 done):
+  - `.github/workflows/tests.yml` — ubuntu / py3.13 / compileall +
+    `unittest discover` + organ smoke. submodules:false (myworld 자체는
+    stdlib-only). `tests/__init__.py` 추가 — discover 의 namespace
+    package 함정 해결.
+  - 회귀 1건 검출/수정: ASC-0204 fixture marker 누락
+    (`tests/test_aios_local_app.py`).
+  - 닫는 증거: commit `59734d9`, run
+    https://github.com/cjw0076/myworld/actions/runs/26147674534 (success,
+    480 tests pass).
+  - reference 메모 +2 (3/5):
+    `reference_memoryos_review_request_packet`,
+    `reference_github_actions_python_ci`. CC4 까지 reference 2건 더 필요.
