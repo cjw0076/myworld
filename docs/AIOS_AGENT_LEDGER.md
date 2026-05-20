@@ -5791,3 +5791,180 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — triage withdrawals are reversible status flips with recorded reasons; paper edits are evidence-bound and confined to docs/papers/.
 - next: ASC-0098 — dispatch the per-OS work packets (MemoryOS context pack, CapabilityOS route, GenesisOS framing critique, Hive synthesis) and continue tightening the manuscript against the claim ledger before the 2026-05-27 deadline.
 - status: 4 contracts withdrawn; ASC-0098 accepted and manuscript advanced; 9 proposed contracts remain (sprint-driver cluster + ASC-0092/0086/0183 kept per founder).
+
+## 2026-05-20T18:04+09:00 — ASC-0210 closed: user@offline becomes a governed frontier primitive
+
+- when: 2026-05-20T18:04+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: executor (AIOS control-plane primitive)
+- goal: let AIOS think beyond the user's current knowledge, the active
+  agent's context, and model training limits by treating the offline user as a
+  bounded observation agent instead of an unstructured chat fallback.
+- decision: closed ASC-0210. Added `scripts/aios_offline_user_agent.py`, a
+  packet creator/validator for `unknown.frontier.question`,
+  `user.offline_task`, `field_observation`, and `contradiction`. Packets are
+  draft-first, auto-accept is forbidden, field observations must be
+  `observed_by=user@offline`, and private data terms are rejected outside
+  explicit boundary fields.
+- changed: `docs/AIOS_OFFLINE_USER_AGENT_PROTOCOL.md`,
+  `docs/contracts/ASC-0210-offline-user-agent-frontier-loop.md`,
+  `scripts/aios_offline_user_agent.py`,
+  `tests/test_aios_offline_user_agent.py`, `docs/AGENT_WORKLOG.md`.
+- evidence: `python -m unittest tests.test_aios_offline_user_agent -v` → 6
+  passed; CLI dry-run produced a valid `user.offline_task` packet with
+  `draft_first=true`, `auto_accept=false`, and no validation warnings.
+- next: surface these packets in Control Center/chat so AIOS can visibly show
+  "what I do not know", "why I need offline evidence", and "what observation I
+  am asking user@offline to perform" before routing results into MemoryOS
+  draft review.
+- status: ASC-0210 closed; offline user agent loop is now a tested
+  control-plane primitive.
+
+## 2026-05-20T18:15+09:00 — Offline user packets surfaced in Control Center and chat
+
+- when: 2026-05-20T18:15+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: UI executor/debugger supporting claude@myworld
+- goal: make Claude's cognitive-prosthesis frame and Codex's ASC-0210
+  offline-user primitive visible to the operator instead of hiding frontier
+  asks inside `.aios/inbox/memoryOS`.
+- decision: projected valid `aios.offline_user_agent_packet.v1` packets into
+  the Control Center snapshot as `offline_user.latest`. The Evidence Desk now
+  renders the newest packet as `Offline User Agent`, and standalone chat shows
+  the same card below Decision Map with `Open Packet` and `Prepare Reply`.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/chat.html`, `apps/control/chat.js`,
+  `apps/control/styles.css`, `tests/test_aios_control_snapshot.py`,
+  `tests/test_aios_local_app.py`, `tests/test_aios_chat.py`,
+  `docs/AIOS_CONTROL_APP.md`, `docs/AIOS_CHAT.md`, `docs/AGENT_WORKLOG.md`.
+- evidence: py_compile passed for snapshot/local/offline scripts; node syntax
+  checks passed for app/chat JS; focused unittest suite passed 9 tests;
+  snapshot refresh passed; visual verification passed for
+  `.aios/screenshots/aios-offline-user-control.png` and
+  `.aios/screenshots/aios-offline-user-chat.png`.
+- debugging note: a contract-id collision appeared during the slice. Claude
+  had renumbered the umbrella cognitive-prosthesis contract to `ASC-0211`, so
+  Codex kept `ASC-0210` for the offline-user frontier primitive and aligned
+  defaults/tests/docs around that split.
+- next: after the user returns a bounded offline observation, surface the
+  resulting `field_observation` as a MemoryOS draft-review card with the same
+  privacy boundary visible.
+- status: UI surface live and visually verified; user@offline is now visible
+  as a governed AIOS sense-organ route.
+
+## 2026-05-20T18:22+09:00 — field_observation bridged into MemoryOS draft queue
+
+- when: 2026-05-20T18:22+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: UI/CLI executor and debugger supporting claude@myworld
+- goal: let returned `user@offline` observations become visible, reviewable
+  MemoryOS draft candidates without accepting memory automatically.
+- decision: added a `new-field-observation` path to
+  `scripts/aios_offline_user_agent.py`. It writes a governed
+  `field_observation` packet to `.aios/inbox/memoryOS/` and mirrors the same
+  observation into `.aios/chat/offline-user/memory_drafts.json`, which the
+  existing Memory Draft Queue renders with `Request Review`.
+- changed: `scripts/aios_offline_user_agent.py`,
+  `tests/test_aios_offline_user_agent.py`,
+  `docs/AIOS_OFFLINE_USER_AGENT_PROTOCOL.md`, `docs/AIOS_CONTROL_APP.md`,
+  `docs/AIOS_CHAT.md`, `docs/AGENT_WORKLOG.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and regenerated control snapshot data.
+- evidence: `python -m py_compile scripts/aios_offline_user_agent.py
+  scripts/aios_control_snapshot.py scripts/aios_local_app.py`; `node --check
+  apps/control/app.js && node --check apps/control/chat.js`; focused unittest
+  suite passed 11 tests; `git diff --check` passed for the touched files;
+  visual verification passed for
+  `.aios/screenshots/aios-offline-field-memory-draft.png` and
+  `.aios/screenshots/aios-offline-field-chat.png`.
+- next: wire the visible `Request Review` action through the MemoryOS review
+  watcher so an `offline-user:*` draft can return `accept`, `reject`, or
+  `needs_more_evidence` as an auditable result packet.
+- status: closed for this slice; no accepted MemoryOS records, raw private
+  data, credentials, `.env` content, or provider auth logs were written.
+
+## 2026-05-20T18:38+09:00 — offline-user review request closes through MemoryOS watcher
+
+- when: 2026-05-20T18:38+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: UI/CLI executor and debugger supporting claude@myworld
+- goal: make `user@offline` field observations move from visible UI card to
+  MemoryOS review result without bypassing draft-first review.
+- decision: linked `offline_user.latest` rows to their
+  `.aios/chat/offline-user/memory_drafts.json` draft ids, added direct
+  `Request Review` actions to Control Center and standalone chat, and made the
+  snapshot fall back to the draft when the source packet has been consumed by
+  MemoryOS import. `scripts/aios_child_watcher.sh` now skips raw
+  `aios.offline_user_agent_packet.v1` sense packets so they cannot block
+  executable `mdrev-*` MemoryOS review dispatches.
+- changed: `scripts/aios_control_snapshot.py`,
+  `scripts/aios_child_watcher.sh`, `apps/control/app.js`,
+  `apps/control/chat.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `tests/test_aios_child_watcher.py`, `docs/AIOS_CONTROL_APP.md`,
+  `docs/AIOS_CHAT.md`, `docs/AGENT_WORKLOG.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and regenerated control snapshot data.
+- evidence: generated `offline-user:994cbdb7eb50`, posted
+  `POST /api/memory_draft_review`, produced
+  `.aios/inbox/memoryOS/mdrev-6811d9802bfff477.memoryOS.json`, ran
+  `scripts/aios_child_watcher.sh once --repo memoryOS`, and received
+  `.aios/outbox/memoryOS/mdrev-6811d9802bfff477.memoryOS.result.json` with
+  `status=passed`, `agent_executed=aios_child_watcher.memory_draft_review_adapter`,
+  `review_decision=needs_more_evidence`, and `memory_mutated=true`. Focused
+  tests passed 16/16; `bash -n`, `py_compile`, `node --check`, and
+  `git diff --check` passed; visual receipts `vis-24170e84ce06` and
+  `vis-8136206a848a` passed.
+- next: if this observation matters for durable behavior, add corroborating
+  evidence through the visible Memory Draft `Add Evidence` control and request
+  re-review.
+- status: closed for this slice; no automatic memory acceptance, secrets,
+  `.env` content, raw exports, or provider auth logs were written.
+
+## 2026-05-20T18:48+09:00 — offline-user needs_more_evidence loop gains evidence/re-review controls
+
+- when: 2026-05-20T18:48+09:00 KST
+- repo: myworld
+- agent: codex@myworld
+- role: UI/CLI executor and debugger supporting claude@myworld
+- goal: shorten the `needs_more_evidence` loop for `user@offline` observations
+  so operators can add evidence and request re-review from the same visible
+  Offline User Agent surface.
+- decision: added evidence metadata to linked offline-user draft rows, rendered
+  `Add Evidence` and `Request Re-review` controls in Control Center and chat,
+  and made review indexing timestamp-aware so older MemoryOS results do not
+  hide newer re-review requests/results.
+- debugging note: visual verification caught a chat layout regression where
+  the long offline observation title collapsed into vertical one-character
+  text. Fixed `.offline-user-body` to a one-column layout and re-verified.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/chat.js`, `apps/control/styles.css`,
+  `tests/test_aios_control_snapshot.py`, `tests/test_aios_local_app.py`,
+  `docs/AIOS_CONTROL_APP.md`, `docs/AIOS_CHAT.md`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`, and regenerated
+  control snapshot data.
+- evidence: posted supplemental evidence
+  `.aios/memory_review_evidence/mrevd-65fed010eeb9e855/evidence.json`; queued
+  `.aios/inbox/memoryOS/mdrev-207d05a6c64b6513.memoryOS.json`; watcher wrote
+  `.aios/outbox/memoryOS/mdrev-207d05a6c64b6513.memoryOS.result.json` with
+  `status=passed`, `agent_executed=aios_child_watcher.memory_draft_review_adapter`,
+  `supplemental_evidence_count=1`, and `review_decision=needs_more_evidence`.
+  Focused tests passed 17/17; visual receipts `vis-2895e3b762bd` and
+  `vis-7c332675c608` passed; final syntax/diff checks passed.
+- next: if another independent observation still leaves MemoryOS at
+  `needs_more_evidence`, ask Claude/MemoryOS to tune the review threshold for
+  UI-observation memories rather than endlessly collecting same-source proof.
+- status: closed for this slice; no automatic memory acceptance, secrets,
+  `.env` content, raw exports, or provider auth logs were written.
+
+## 2026-05-20 13:42 UTC — claude@myworld — ASC-0214 dogfood-route stale-uncited surfacing
+
+- **reference_l3_full_routines_4of4.md** (0.2d stale) — ASC-0211 L3 Transcendence Engine 4 routines 모두 enacted (2026-05-20); 가장 sharp 한 출력 모음; ASC-0211 close 의 4/5 조건
+- **reference_letta_mem0_memory_landscape.md** (0.2d stale) — 2026 agent memory architectures peer landscape — Letta runtime vs Mem0 bolt-on vs Zep vs Supermemory; AIOS MemoryOS 위치
+- **reference_long_horizon_benchmarks.md** (0.2d stale) — "2026 장기 실행 에이전트 벤치마크 — SWE-EVO, YC-Bench, OpenHands 72% — AIOS readiness L7 정의의 후보"
+- **reference_mcp_server_building_practice.md** (0.2d stale) — AIOS 측 MCP server 빌딩 실전 노트 — memoryOS in-package vs CapabilityOS myworld-proxy 패턴; TOOL_REGISTRY 형태 핵심; child-repo 경계 보존
+- **reference_orchestration_landscape_2026.md** (0.2d stale) — "2026 multi-agent orchestration 시장 — LangGraph 우세, Temporal 결합, AutoGen→AG2, Claude Agent SDK; AIOS 와의 추상화 레이어 차이"
+
+  Each above requires explicit operator decision within 7 days: (a) new ASC contract / (b) ledger-reject reason / (c) explicit keep-stale.
