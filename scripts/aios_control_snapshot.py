@@ -2608,6 +2608,57 @@ def load_completion(root: Path) -> dict[str, Any]:
         return {"schema": "aios.completion.v1", "verdict": f"completion check failed: {exc}"}
 
 
+TRANSCENDENCE_ORIGINS = {
+    "aios_discomfort_inject",
+    "aios_frontier_question",
+    "aios_boundary_probe",
+}
+
+
+def build_frontier_queue(root: Path, *, limit: int = 20) -> dict[str, Any]:
+    """Surface ASC-0211 L3 Transcendence Engine drafts queued in
+    .aios/inbox/memoryOS/. Anticipatory output — visible *before* a peer
+    asks. ASC-0211 L4 condition. Read-only projection."""
+    inbox = root / ".aios" / "inbox" / "memoryOS"
+    rows: list[dict[str, Any]] = []
+    if inbox.exists():
+        files = sorted(inbox.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        for path in files:
+            try:
+                packet = json.loads(path.read_text(encoding="utf-8", errors="replace"))
+            except Exception:
+                continue
+            draft = packet.get("draft", {}) or {}
+            origin = str(draft.get("origin", ""))
+            if origin not in TRANSCENDENCE_ORIGINS:
+                continue
+            provenance = draft.get("provenance", {}) or {}
+            rows.append({
+                "request_id": packet.get("request_id"),
+                "origin": origin,
+                "kind": provenance.get("kind", origin.replace("aios_", "")),
+                "content": str(draft.get("content", ""))[:400],
+                "target": provenance.get("target_id") or provenance.get("memo") or provenance.get("contract_id"),
+                "verdict": provenance.get("audit_verdict"),
+                "footprint_score": provenance.get("footprint_score"),
+                "domain": provenance.get("domain"),
+                "memo_slug": provenance.get("memo_slug"),
+                "generated_at": provenance.get("generated_at"),
+                "path": path.relative_to(root).as_posix(),
+            })
+            if len(rows) >= limit:
+                break
+    counts: dict[str, int] = {}
+    for r in rows:
+        counts[r["origin"]] = counts.get(r["origin"], 0) + 1
+    return {
+        "schema_version": "aios.frontier_queue.v1",
+        "queued": len(rows),
+        "by_origin": counts,
+        "drafts": rows,
+    }
+
+
 def build_snapshot(root: Path) -> dict[str, Any]:
     monitor = load_monitor(root)
     round_state = load_round(root)
@@ -2627,6 +2678,7 @@ def build_snapshot(root: Path) -> dict[str, Any]:
         "repos": repos_state,
         "roster": build_roster(root, dispatches, repos_state),
         "contract_board": build_contract_board(contracts.get("board_rows", []), dispatches),
+        "frontier_queue": build_frontier_queue(root),
         "aios_inputs": load_aios_inputs(root),
         "monitor": monitor,
         "installation": installation,
