@@ -47,9 +47,11 @@ for, stop closing criteria and create a GenesisOS challenge contract first.
 The challenge must ask what AIOS would still fail at after all six CCs appear
 green.
 
-Cross-domain frame: treat ASC-0205 like bridge load testing, not like a
-building ribbon-cutting. Passing inspection is not the ceremony; the bridge
-must carry real traffic, show stress points, and keep a maintenance log.
+Cross-domain frame: use city planning plus bridge load testing, not a
+building ribbon-cutting. A city is not healthy because permits are closed;
+roads, hospitals, markets, and maintenance crews must keep working under real
+traffic. Passing inspection is not the ceremony; the bridge must carry real
+traffic, show stress points, and keep a maintenance log.
 
 Time horizons:
 
@@ -141,6 +143,18 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - `tests/test_aios_external_knowledge_organ.py` — 5 tests pass.
   - 누적 reference 메모: 2/5 (`reference_aios_tools`,
     `reference_external_agent_systems`). 다음 iter에 ≥3 추가하면 CC4 closed.
+- 2026-05-20 **CC4 closed** (4/6 done):
+  - organ live: `scripts/aios_external_knowledge_organ.py` +
+    `tests/test_aios_external_knowledge_organ.py` (5 tests pass).
+  - reference 메모 5/5: `reference_aios_tools`,
+    `reference_external_agent_systems`,
+    `reference_memoryos_review_request_packet`,
+    `reference_github_actions_python_ci`,
+    `reference_contract_triage_patterns`.
+  - 라이브 ingest 검증: Hermes Agent → 3 drafts (mem_bec92.../59d4.../679e...)
+    in memoryOS, draft-first invariant 준수 (review_action=needs_more_evidence).
+  - 닫는 증거: organ smoke 가 CI 워크플로우에 등록됨
+    (`.github/workflows/tests.yml` 의 last step).
 - 2026-05-20 **CC6 closed** (3/6 done):
   - 7 proposed → 0 (ASC-0183 founder-gated 1건만 남음, 명시 허용 조건 충족).
   - **superseded by ASC-0205** (4건): ASC-0082, ASC-0083, ASC-0086 →
