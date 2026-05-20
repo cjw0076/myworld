@@ -143,6 +143,20 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - `tests/test_aios_external_knowledge_organ.py` — 5 tests pass.
   - 누적 reference 메모: 2/5 (`reference_aios_tools`,
     `reference_external_agent_systems`). 다음 iter에 ≥3 추가하면 CC4 closed.
+- 2026-05-20 **CC1 closed** (5/6 done):
+  - **GenesisOS는 이미 활성**이었음을 검증 (memory `project_aios_5os_state`
+    "dormant" 라벨이 stale — feedback_observation_vs_verification 패턴 적용,
+    실제 repo 상태로 verify).
+  - `.aios/outbox/GenesisOS/` 에 3 result packets:
+    `asc-0069.GenesisOS.result.json` (2026-05-14),
+    `asc-0165.GenesisOS.result.json` (2026-05-14),
+    `asc-0200.GenesisOS.result.json` (2026-05-18, 가장 최근).
+  - 세 source contract 모두 closed: ASC-0069 prompt-prison-critic,
+    ASC-0165 memory-genesis-provider-blindspot-reinforcement,
+    ASC-0200 genesisos-aios-ui-ux-seed.
+  - Ledger acks: ASC-0077, ASC-0075 등 다수 GenesisOS 항목 closed.
+  - GenesisOS Python 패키지 sanity: 55 tests pass.
+  - 닫는 증거: outbox ≥3 ✅, ledger ≥1 ✅, source closed ✅.
 - 2026-05-20 **CC4 closed** (4/6 done):
   - organ live: `scripts/aios_external_knowledge_organ.py` +
     `tests/test_aios_external_knowledge_organ.py` (5 tests pass).
