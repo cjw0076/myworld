@@ -35,7 +35,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-          cache: pip
+          # cache disabled: this repo has no requirements.txt / pyproject.toml
+          # yet (myworld control plane uses stdlib only). When deps land, add
+          # `cache: pip` back.
 
       - name: Show interpreter
         run: |
