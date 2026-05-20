@@ -28,7 +28,7 @@ class AiosLocalAppTest(unittest.TestCase):
         (root / "apps" / "control").mkdir(parents=True)
         (root / "apps" / "control" / "index.html").write_text("<!doctype html><div>AIOS</div>\n", encoding="utf-8")
         (root / "apps" / "control" / "app.js").write_text(
-            "window.AIOS_CONTROL_SNAPSHOT; function renderContracts(){} function renderDispatches(){} function renderRepos(){} function renderRoutes(){} function renderOsObservatory(){} function renderInstallation(){} function renderPromotionQueue(){} function renderMemoryDraftQueue(){}\n",
+            "window.AIOS_CONTROL_SNAPSHOT; function renderContracts(){} function renderDispatches(){} function renderRepos(){} function renderRoster(){} function renderContractBoard(){} function renderRoutes(){} function renderOsObservatory(){} function renderInstallation(){} function renderPromotionQueue(){} function renderMemoryDraftQueue(){}\n",
             encoding="utf-8",
         )
         for source in (SCRIPT, SNAPSHOT, MONITOR, ROUND):

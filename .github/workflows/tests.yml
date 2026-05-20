@@ -1,0 +1,55 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unittest:
+    name: python unittest (myworld control plane)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # We need only the myworld control plane itself for these tests —
+          # child OS repos (hivemind, memoryOS, CapabilityOS, GenesisOS,
+          # GenesisOS) are git submodules and we leave them on their pinned
+          # commits; CI doesn't recurse into them.
+          submodules: false
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Show interpreter
+        run: |
+          python --version
+          python -c "import sys, platform; print(platform.platform()); print(sys.executable)"
+
+      - name: Compile-check Python files
+        run: |
+          python -m compileall -q scripts tests
+
+      - name: Run unittest discover
+        run: |
+          python -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tail -80
+
+      - name: Smoke-check CC4 organ CLI
+        run: |
+          python scripts/aios_external_knowledge_organ.py --help
