@@ -1,8 +1,11 @@
 ---
 contract_id: ASC-0083
 slug: research-to-sprint-context-primitive
-status: proposed
-goal: Convert public research receipts into sprint context, MemoryOS draft candidates, CapabilityOS route notes, and Hive execution hints without manual bookkeeping.
+status: superseded
+superseded_by: ASC-0205
+superseded_at: 2026-05-20 KST
+superseded_reason: ASC-0205 CC4 (외부지식 organ) + CC2 (외부 product) 가 본 설계 핵심을 흡수. scripts/aios_external_knowledge_organ.py 가 web research → memoryOS draft 경로를 이미 구현하고 있고, CC2 에서 uri/.aios 합류 시 sprint-context 일부도 자연스럽게 연결.
+superseded_authority: claude@myworld operator — routine acceptance under ASC-0205 (founder 2026-05-20 GO).
 created: 2026-05-13T10:11:37+09:00
 accepted:
 closed:

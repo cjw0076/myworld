@@ -1,8 +1,11 @@
 ---
 contract_id: ASC-0082
 slug: product-repo-sprint-driver
-status: proposed
-goal: Turn product-repo goals into AIOS-owned sprint packets with Genesis divergence, MemoryOS context, CapabilityOS route, Hive execution, verification receipts, and feedback learning.
+status: superseded
+superseded_by: ASC-0205
+superseded_at: 2026-05-20 KST
+superseded_reason: ASC-0205 CC2 (외부 product 1건 end-to-end) 흡수. uri/.aios 와이어업 + AIOS 통한 closed contract 가 본 설계의 sprint-driver 시나리오를 실제로 실현하는 명시 경로.
+superseded_authority: claude@myworld operator — routine acceptance under ASC-0205 (founder 2026-05-20 GO).
 created: 2026-05-13T10:11:37+09:00
 accepted:
 closed:

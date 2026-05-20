@@ -1,8 +1,10 @@
 ---
 contract_id: ASC-0135
 slug: research-to-sprint-context-primitive-uri-add-research-to-sprint-context-primitive-to-aios-111a9017
-status: proposed
-goal: Convert public research receipts into sprint context, MemoryOS draft candidates, CapabilityOS route notes, and Hive execution hints without manual bookkeeping.
+status: withdrawn
+withdrawn_at: 2026-05-20 KST
+withdrawn_reason: ASC-0058 inbox-processor auto-promoted instance (uri-scoped). uri/.aios 가 아직 와이어업 안 됐고 (CC2 미완), 부모 설계 ASC-0083 은 ASC-0205 로 supersede 됨. uri 통합 완료 후 CC2 가 새 packet 으로 재발의.
+withdrawal_authority: claude@myworld operator — 2026-05-20 ASC-0205 CC6 정리.
 created: 2026-05-14T01:36:47+09:00
 accepted:
 closed:

@@ -25,6 +25,40 @@ trajectory 로 진행.
 
 따라서 AIOS 본체 완성을 정의할 새 North Star 가 필요.
 
+## Genesis Escape Review
+
+Plain language: AIOS is not "done" when the documents look neat. It is done
+only when the system can receive a real goal, choose the right agent or repo,
+remember and cite what matters, use outside knowledge without poisoning memory,
+recover from provider failure, show the operator what is happening, and leave
+evidence that another run can replay.
+
+Assumptions to challenge:
+
+1. Assumption: six criteria are enough. Negation: a seventh failure mode may
+   appear only after uri or another product repo becomes truly wired.
+2. Assumption: zero proposed contracts means convergence. Negation: it may
+   mean useful discomfort was suppressed or misfiled.
+3. Assumption: one external product proves production readiness. Negation: it
+   proves only the first bridge; the second product may expose the real shape.
+
+Counter-default branch: if ASC-0205 becomes a checklist that agents optimize
+for, stop closing criteria and create a GenesisOS challenge contract first.
+The challenge must ask what AIOS would still fail at after all six CCs appear
+green.
+
+Cross-domain frame: treat ASC-0205 like bridge load testing, not like a
+building ribbon-cutting. Passing inspection is not the ceremony; the bridge
+must carry real traffic, show stress points, and keep a maintenance log.
+
+Time horizons:
+
+- 1h: clear blocked dispatch/accounting gaps so the loop is not lying about
+  pending work.
+- 1w: close CC1/CC4/CC5 with evidence packets, not narrative claims.
+- 1y: prove AIOS can evolve across products and providers without the founder
+  manually reconstructing state from logs.
+
 ## Completion Criteria (CC)
 
 자가 선언 금지 — 각 CC는 닫는 증거가 repo에 존재해야 한다.
@@ -107,6 +141,19 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
   - `tests/test_aios_external_knowledge_organ.py` — 5 tests pass.
   - 누적 reference 메모: 2/5 (`reference_aios_tools`,
     `reference_external_agent_systems`). 다음 iter에 ≥3 추가하면 CC4 closed.
+- 2026-05-20 **CC6 closed** (3/6 done):
+  - 7 proposed → 0 (ASC-0183 founder-gated 1건만 남음, 명시 허용 조건 충족).
+  - **superseded by ASC-0205** (4건): ASC-0082, ASC-0083, ASC-0086 →
+    CC1/CC2/CC4/CC5 가 흡수. 각 contract frontmatter 에
+    `superseded_by: ASC-0205` 명시.
+  - **withdrawn** (4건): ASC-0092 (Hive 활성도 낮을 때 빈 강제),
+    ASC-0135/0137/0141 (ASC-0058 auto-promoted uri instances; CC2 가
+    proper packet 으로 재발의). 각각 withdrawn_reason + revive 트리거 기록.
+  - **남은 1건**: ASC-0183 (dream phase-2 parametric LoRA) — frontmatter
+    이미 `escalation: VISION-LEVEL — founder GO required before build` 로
+    표기. CC6 spec 의 "founder-gated 만 남은 상태로 명시" 조건 충족.
+  - 닫는 증거: `grep "^status: proposed" docs/contracts/ASC-*.md` →
+    `ASC-0183-...md` 1건만, escalation 필드로 명시됨.
 - 2026-05-20 **CC3 closed** (2/6 done):
   - `.github/workflows/tests.yml` — ubuntu / py3.13 / compileall +
     `unittest discover` + organ smoke. submodules:false (myworld 자체는

@@ -1,8 +1,11 @@
 ---
 contract_id: ASC-0086
 slug: capability-genesis-autonomy-envelope
-status: proposed
-goal: Give CapabilityOS and GenesisOS higher freedom inside explicit non-destructive autonomy envelopes so AIOS can discover routes, generate alternatives, and challenge assumptions without waiting for narrow operator prompts.
+status: superseded
+superseded_by: ASC-0205
+superseded_at: 2026-05-20 KST
+superseded_reason: ASC-0205 CC1 (GenesisOS dispatch surface 활성화) + CC5 (Provider 다축화) 가 본 contract 의 autonomy-envelope 의도를 더 구체적으로 흡수. CapabilityOS 측은 ASC-0203 (matrix routing) 으로 일부 이미 closed.
+superseded_authority: claude@myworld operator — routine acceptance under ASC-0205 (founder 2026-05-20 GO).
 created: 2026-05-13 KST
 accepted:
 closed:

@@ -1,8 +1,10 @@
 ---
 contract_id: ASC-0092
 slug: hive-context-binding
-status: proposed
-goal: Make every Hive deliberation receive a MemoryOS context_build result as required reading so Hive doesn't keep deliberating in isolation. Fixes founder-verified gap: ASC-0084 DNA debate cited 0 mem_/trace_id references.
+status: withdrawn
+withdrawn_at: 2026-05-20 KST
+withdrawn_reason: ASC-0205 CC1~CC6 보다 우선순위 낮음. 지금 Hive 활성도가 떨어진 상태에서 deliberation 매번 context_build 강제는 빈 강제. CC1 (GenesisOS) 완료 후 Hive 재활성화 시 재발의(re-propose) — 본 contract 의 verified gap (ASC-0084 0-cite) 은 메모리에 보존.
+withdrawal_authority: claude@myworld operator — 2026-05-20 ASC-0205 CC6 정리. revive 트리거: Hive deliberation 횟수가 다시 늘어나면 즉시 재발의.
 created: 2026-05-13 KST
 proposed_by: claude@myworld (operator)
 acceptance_authority: pending founder GO.

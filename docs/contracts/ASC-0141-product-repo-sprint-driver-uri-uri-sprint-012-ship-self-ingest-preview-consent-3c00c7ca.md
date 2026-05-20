@@ -1,8 +1,10 @@
 ---
 contract_id: ASC-0141
 slug: product-repo-sprint-driver-uri-uri-sprint-012-ship-self-ingest-preview-consent-3c00c7ca
-status: proposed
-goal: Turn product-repo goals into AIOS-owned sprint packets with Genesis divergence, MemoryOS context, CapabilityOS route, Hive execution, verification receipts, and feedback learning.
+status: withdrawn
+withdrawn_at: 2026-05-20 KST
+withdrawn_reason: ASC-0058 inbox-processor auto-promoted instance (uri-scoped, sprint-012 self-ingest preview consent). 부모 설계 ASC-0082 는 ASC-0205 로 supersede 됨. CC2 가 uri/.aios 와이어업 시 새 packet 으로 재발의.
+withdrawal_authority: claude@myworld operator — 2026-05-20 ASC-0205 CC6 정리.
 created: 2026-05-14T01:36:47+09:00
 accepted:
 closed:

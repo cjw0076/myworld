@@ -1,8 +1,10 @@
 ---
 contract_id: ASC-0137
 slug: product-repo-sprint-driver-uri-record-codex-provider-loop-gap-from-uri-developm-75f61dd1
-status: proposed
-goal: Turn product-repo goals into AIOS-owned sprint packets with Genesis divergence, MemoryOS context, CapabilityOS route, Hive execution, verification receipts, and feedback learning.
+status: withdrawn
+withdrawn_at: 2026-05-20 KST
+withdrawn_reason: ASC-0058 inbox-processor auto-promoted instance (uri-scoped, codex provider loop gap). 부모 설계 ASC-0082 는 ASC-0205 로 supersede 됨. uri/.aios 와이어업 (CC2) 완료 후 진짜 sprint packet 으로 재발의.
+withdrawal_authority: claude@myworld operator — 2026-05-20 ASC-0205 CC6 정리.
 created: 2026-05-14T01:36:47+09:00
 accepted:
 closed:
