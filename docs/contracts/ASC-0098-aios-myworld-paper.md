@@ -1,11 +1,14 @@
 ---
 contract_id: ASC-0098
 slug: aios-myworld-paper
-status: accepted
+status: withdrawn
 goal: Produce an evidence-bound research paper about the full MyWorld AIOS repository ecosystem, treating myworld as the control plane and child repos as owned execution, memory, capability, and divergence layers.
 created: 2026-05-13 KST
 accepted: 2026-05-18 KST
-closed: pending
+withdrawn: 2026-05-20 KST
+withdrawn_reason: founder 2026-05-20 redirected paper trajectory to a separate workspace (IRIS); AIOS 본체 완성에만 집중하기로 결정 (ASC-0205 North Star). 본 contract의 manuscript/claim ledger 자산은 IRIS 측에서 인계받는다.
+withdrawal_authority: founder 재원 — 2026-05-20 chat directive
+supersedes_relation: trajectory moved out-of-scope (not superseded by new AIOS contract)
 origin: founder direction 2026-05-13 KST: "AIOS로 논문을 쓸거야. 주제는 myworld 레포 전체"
 ---
 

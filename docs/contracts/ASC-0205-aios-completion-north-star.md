@@ -97,3 +97,13 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
 ## Progress Log
 
 - 2026-05-20 created/accepted (claude@myworld 운영자). 초기 진척 0/6.
+- 2026-05-20 **CC4 organ 최초 빌드** (1/6 in progress):
+  - `scripts/aios_external_knowledge_organ.py` — web_research_receipt →
+    memory_draft_review_request 브리지. draft-first invariant 보존
+    (auto_accept=False, status=draft).
+  - 라이브 검증: Hermes Agent 학습 3 claim 흘려서
+    `mem_bec92a1061c2b129`, `mem_59d459008e5a9da2`, `mem_679e0d288d2cce45`
+    모두 draft/needs_more_evidence 로 정착.
+  - `tests/test_aios_external_knowledge_organ.py` — 5 tests pass.
+  - 누적 reference 메모: 2/5 (`reference_aios_tools`,
+    `reference_external_agent_systems`). 다음 iter에 ≥3 추가하면 CC4 closed.
