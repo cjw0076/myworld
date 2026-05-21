@@ -226,3 +226,115 @@ Minimum Kernel Audit 의 6 missing 항목을 *분해 후 다시* 평가:
 ---
 
 이 dissection 이 ContractObject v0 의 첫 *외부-grounded 사용 사례*. 8 cells 모두 채워졌고, 우리 schema 가 *실제* head 의 모양과 13/14 정합. 다음 단계 = 위 4 action queue 의 첫 항목부터 build.
+
+---
+
+# Addendum — agiresearch/AIOS (the *other* AIOS)
+
+**Added 2026-05-21** by `co-agiresearch-dissect-001` (ContractObject runtime 3rd instance).
+founder verdict "B": one more repo dissection before building. Picked
+agiresearch/AIOS for max marginal value — kernel angle (our weakest) +
+same-name disambiguation.
+
+## Source
+
+| Repo | Size | Lang | Files |
+|---|---|---|---|
+| agiresearch/AIOS (kernel) | 14 MB | Python | 152 .py |
+| agiresearch/Cerebrum (SDK) | 7.7 MB | Python | (SDK) |
+
+arXiv 2403.16971 / 2312.03815; COLM 2025; docs.aios.foundation.
+
+## What they built — a genuine OS-kernel metaphor
+
+agiresearch/AIOS realizes the *OS kernel abstraction* we claim but never built:
+
+- **`aios/syscall/`** — agent operations are *system calls*: `LLMSyscall`,
+  `MemorySyscall`, `StorageSyscall`, `ToolSyscall`. `SyscallExecutor`
+  dispatches them.
+- **`aios/scheduler/`** — `BaseScheduler` + `fifo_scheduler.py` +
+  `rr_scheduler.py` (round-robin). Schedules syscalls across *concurrent
+  agents* — like an OS schedules processes on a CPU.
+- **Request queues** — `global_llm_req_queue`, `global_memory_req_queue`,
+  `global_storage_req_queue`, `global_tool_req_queue`. Syscalls enqueue;
+  scheduler arbitrates.
+- **Resource managers** — `LLMAdapter`, `MemoryManager`, `StorageManager`,
+  `ToolManager`. Each owns one resource class.
+- **`aios/llm_core/routing.py`** — load-balancing strategies + LP
+  optimization (`pulp` solver) + `litellm` router. Routes LLM calls to
+  cheapest/fastest endpoint under constraints.
+- **`aios/context/`** — `simple_context.py` = context *switching* between
+  agents.
+- **computer-use**: `aios/tool/virtual_env/` — VM controller + MCP server,
+  sandboxed computer interaction.
+
+Flow: `agent → Cerebrum SDK → syscall → request queue → scheduler →
+resource manager`. Claim: 2.1× faster agent serving.
+
+## The disambiguation — two different OS metaphors named "AIOS"
+
+| | **agiresearch/AIOS** | **our (MyWorld) AIOS** |
+|---|---|---|
+| OS metaphor | **LLM-as-CPU** — schedule agent syscalls | **device-head** — operate the user's machine |
+| Optimizes | serving *many agents* efficiently (throughput) | *one user's* device worked by an organism |
+| Tenancy | server-side, multi-agent, multi-tenant | client-side, local-first, single-user |
+| Core abstraction | syscall + scheduler + resource managers | ContractObject + delegated authority + provider CLIs |
+| Authority | kernel owns LLM/mem/storage/tool resources | head receives *delegated* device authority |
+| Deps | heavy (chromadb, qdrant, litellm, pulp LP, gdown) | stdlib-first (minimum kernel) |
+| Intelligence locus | scheduling efficiency | frontier-LLM-in-loop + provider CLI orchestration |
+| Provenance/ledger | no | yes (append-only cross-repo) |
+| Genesis-style critic | no | yes |
+
+→ **같은 이름, 다른 OS.** agiresearch = *agent 요청을 스케줄하는 커널*.
+우리 = *사용자 디바이스를 운영하는 head*. 외부 문서에서 반드시
+disambiguate: "MyWorld AIOS (device-head interpretation)" vs
+"agiresearch AIOS (LLM-kernel interpretation)".
+
+## 4-angle comparison (now 3 systems)
+
+| angle | Hermes | OMO | agiresearch | 우리 (목표) |
+|---|---|---|---|---|
+| runtime | standalone agent loop | OpenCode plugin | syscall scheduler kernel | ContractObject runtime (building) |
+| memory | MemoryProvider abstract (1 external) | host session state | MemoryManager + providers + retrievers | MemoryOS graph control + (need provider abstract) |
+| provider routing | 10+ adapters + credential pool | hooks/model-fallback | LP-optimized litellm router | CapabilityOS matrix + (need adapters) |
+| UX | 25 messaging platforms + TUI | tmux multi-pane | Web UI + Terminal UI | apps/control (our dashboard) |
+
+## Borrow / avoid (agiresearch-specific)
+
+### Borrow
+1. **Syscall *typing*** — agiresearch types each op (LLMSyscall/MemorySyscall/
+   StorageSyscall/ToolSyscall). Our `ContractObject.Step.tool` (fs.read /
+   provider.X / web) is *already syscall-shaped*; formalize as typed
+   syscalls for cleaner authorization + receipts.
+2. **Resource-manager separation** — clean LLM/memory/storage/tool manager
+   split. We have memoryOS/capabilityOS; storage + tool managers are implicit.
+3. **Context-switch concept** — `simple_context.py` for switching between
+   work items. Maps to ContractObject state save/restore.
+
+### Avoid
+1. **Scheduler complexity** — FIFO/RR cross-agent scheduling is for
+   *multi-agent throughput*. We are single-user; premature. Add only if AIOS
+   ever serves concurrent agents.
+2. **Heavy deps** — chromadb/qdrant/litellm/pulp LP solver/gdown violate our
+   minimum-kernel stdlib-first. CapabilityOS routing stays lightweight.
+3. **Server-side multi-tenant framing** — opposite of local-first device
+   head. Their 2.1× throughput claim is irrelevant to single-user latency.
+
+## Net effect on our build queue
+
+agiresearch confirms the **4 build items** from the Hermes/OMO dissection
+stand, with one refinement:
+
+- Build item #3 (`contract_runner.py`) should formalize `Step.tool` as
+  **typed syscalls** (borrowing agiresearch's syscall typing) so
+  authorization + receipts are uniform.
+- Build items #1, #2, #4 unchanged (adapters, MemoryProvider base, aios run head).
+- **Explicitly NOT building**: a scheduler. Single-user head needs no
+  cross-agent CPU-style scheduling. This is a deliberate divergence from the
+  academic AIOS — our "OS" is a *device head*, not a *request scheduler*.
+
+Conclusion: 3 systems dissected (Hermes standalone-head, OMO plugin-runtime,
+agiresearch syscall-kernel). Our ContractObject schema maps cleanly across
+all three. Our distinct position = **delegated-authority device head** —
+neither a chat agent (Hermes), an IDE plugin (OMO), nor a request scheduler
+(agiresearch). Build from here.
