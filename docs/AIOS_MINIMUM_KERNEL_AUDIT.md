@@ -103,14 +103,20 @@ Current footprint (verified 2026-05-20):
 
 이게 *진짜 work*. 외부 사용자가 받을 수 있는 head 의 구성:
 
-1. **`aios <goal>` 단일 entry**
+1. **`aios <goal>` 단일 entry** — ✅ BUILT 2026-06-01
    - input: 자연어 goal 1개 ("이 repo 의 bug 찾아", "이 디렉터리 정리해", "이 paper 한 섹션 도와")
    - 내부 흐름: planner (frontier LLM) → router (CapabilityOS) → tool calls (provider CLI / web / local LLM / filesystem) → memory write → response
+   - `scripts/aios_head.py`: goal → planner(provider) → ContractObject →
+     runtime → receipts. DEFAULT READ-ONLY; write 는 `--allow-write`, network 은
+     `--allow-network`. 사악한 plan 은 실행 전 fail-closed 거부 (6 tests).
+   - 미연결: router(CapabilityOS) + memory write step 은 아직 자동 wiring 안 됨.
 
-2. **Provider CLI adapter layer**
+2. **Provider CLI adapter layer** — ✅ BUILT 2026-06-01
    - `aios.adapter.claude` / `.codex` / `.gemini` / `.ollama_local`
    - 각 adapter 가 `plan(goal) → list[step]` 과 `execute(step) → result` 인터페이스
-   - 현재 우리는 `aios_invoke.py` 하나에 코드 다 묶음. 명시 adapter 분리 없음.
+   - `scripts/aios_adapters.py`: AdapterSpec registry, dependency-injected runner
+     (unit-test 가능, 실 CLI 미호출). 부재 CLI = 미등록 = runner offline named-exit.
+     secret 없음 (key 는 각 CLI config 에만). (7 tests)
 
 3. **Safe filesystem write surface** — ✅ BUILT 2026-06-01
    - write 는 항상 patch + receipt (어디를 어떻게 변경했는지) 발급
@@ -131,7 +137,10 @@ Current footprint (verified 2026-05-20):
 6. **External task input format**
    - `aios "<자연어>"` 외 정형 input (yaml/json) 도 받을 수 있게. 그러나 시작은 *자연어* 1줄.
 
-→ 이 6개가 *진짜 head*. 현재 0/6 완성.
+→ 이 6개가 *진짜 head*. 현재 **3/6 완성** (2026-06-01: #1 head, #2 adapters,
+#3 safe-fs-kernel). 남은 것: #4 local LLM background cognition (ollama 필요),
+#5 web research→action 자동 연결, #6 정형 input (자연어/json 둘 다 이미 동작 —
+사실상 부분 완료). 35 kernel tests green.
 
 ## Outside-domain test — 첫 검증 task
 

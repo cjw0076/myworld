@@ -505,3 +505,25 @@ AIOS가 이것을 흡수하려면:
 - self-correction-of-prior-observation:
   - `project_aios_5os_state` "GenesisOS dormant" claim withdrawn; both the index line and the memory body now reflect "active".
   - Commit-message progress counts off-by-one for two iters ("4/6" / "5/6" when actually 3/6 / 4/6); not corrected in commit history (immutable) but reconciled in ASC-0205 Progress Log via codex's CC1 correction entry.
+
+## 2026-06-01 15:30 KST — claude@workstation — secret-leak remediation + kernel triad (head/adapters/runtime) built
+
+- session_id: /compact resumption — security incident then "operating system" directive, single turn
+- mode_breakdown: intervene:80 / verify:30 / decide:15 / observe:10 / escalate:5 — minutes ~140
+- tools_used: Bash, Edit, Write, Read, TaskCreate/Update, ToolSearch, git (commit/push as codex@myworld)
+- tools_NOT_used (CLI gap): live provider adapters NOT exercised — calling `claude`/`gemini` from inside a claude session is recursion/auth/cost-unsafe, so the adapter layer was built dependency-injected and tested with fakes only. This is the recurring "can't dogfood my own substrate live" gap — note for ASC-0066: the portable role capsule must distinguish "wired" from "exercised."
+- substrate_specific_behaviors_observed:
+  - **Leaked-secret reflex order**: revoke-first (told founder to rotate at aistudio before anything), THEN sanitize working tree, THEN note history persistence. Did NOT auto-force-push a history rewrite — flagged it as a destructive op needing explicit founder GO. Matches feedback_carry_risk_decisively (reversible vs irreversible boundary).
+  - **Irony captured**: the leaked Gemini key sat *inside a prompt-redaction test* — the test asserting secrets get stripped hardcoded a real one. Replaced with an obvious fake; the assertion still proves redaction.
+  - **Two-word directive → large build**: founder said only "operating system." Read as "stop governance docs, build the actual head." Built 3 of 6 missing kernel pieces (audit §Missing) in one turn rather than asking. Carried the interpretation decisively, stated it so a one-word redirect was cheap.
+  - **Fail-closed authority as the design spine**: every layer rejects-before-running. validate() pre-flights all steps; a plan with one unauthorized step doesn't run at all; dain/ denied even when write is granted. The model proposes, the contract authorizes — this is the delegated-authority (not blind-root) thesis made executable.
+- failures_recovered:
+  - **Resume-from-checkpoint dead state**: run loop only advanced proposed/accepted→running, so a waiting_user contract returned bad_state on resume. Fixed: added waiting_user→running + idempotent skip of already-succeeded steps (seq kept monotonic for backup ordering).
+  - **Audit-doc commit larger than my edit** (53 insertions for a 5-line change): the linter had touched the file and my own earlier-session uncommitted audit content (Chosen-path-C section) rode along. Inspected `git show` before trusting — content was coherent and mine, no codex WIP/secrets. The staging-imprecision lesson held: always `git show`/`--cached --stat` before believing a commit is clean.
+- failures_escalated_to_founder:
+  - git history rewrite (filter-repo/BFG + force-push to public repo) — flagged as destructive, did not execute; revocation is the authoritative fix regardless.
+- key_decision: build the kernel triad on a two-word steer without a clarifying question — justified because the work is reversible (new files, fail-closed defaults) and squarely on the standing founder override (kernel extraction > governance).
+- new_invariant_or_pattern_discovered:
+  - **named-exit over silent-stub for unavailable substrate**: an authorized-but-offline provider/web step records a `success=False` receipt with "no live adapter (offline)" rather than faking success or crashing. Keeps Invariant 4 (every loop has a named exit) true at the syscall layer, not just the contract layer.
+- self-correction-of-prior-observation:
+  - Kernel audit claim "aios_invoke.py 하나에 코드 다 묶음 (provider code tangled)" was inaccurate — aios_invoke wraps the *4 OS CLIs* (genesis/memory/capability/hive) into a dispatch envelope; it never executed LLM providers. The provider-as-executor layer was greenfield, not a consolidation. Audit left as-is (historical), corrected here.
