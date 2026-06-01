@@ -444,7 +444,7 @@ class AiosChatRouterTest(unittest.TestCase):
                     "id": "neg_1",
                     "type": "provider_failure",
                     "failure_class": "provider_access_denied",
-                    "content": "Gemini key AIzaSyDgWUyl84mX7OH8RF4khA-i76L1Zmp0ylw failed.",
+                    "content": "Gemini key AIzaSyFAKE-TEST-KEY-NOT-A-REAL-SECRET-00 failed.",
                     "raw_refs": ["secret/api_key=demo"],
                 }
             ],
@@ -463,7 +463,7 @@ class AiosChatRouterTest(unittest.TestCase):
         self.assertLess(len(prompt), 5000)
         self.assertNotIn("cjw070690@example.com", prompt)
         self.assertNotIn("q1q1e3e3", prompt)
-        self.assertNotIn("AIzaSyDgWUyl84mX7OH8RF4khA-i76L1Zmp0ylw", prompt)
+        self.assertNotIn("AIzaSyFAKE-TEST-KEY-NOT-A-REAL-SECRET-00", prompt)
         self.assertIn("[REDACTED_PRIVATE]", prompt)
         self.assertEqual(len(payload["memory_context"]["selected_memories"]), 5)
         self.assertEqual(len(payload["memory_context"]["selected_memory_ids"]), 8)
