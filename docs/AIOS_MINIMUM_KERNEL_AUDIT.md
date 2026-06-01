@@ -142,6 +142,26 @@ Current footprint (verified 2026-05-20):
 #5 web research→action 자동 연결, #6 정형 input (자연어/json 둘 다 이미 동작 —
 사실상 부분 완료). 35 kernel tests green.
 
+## Layer boundary — AIOS is a kernel, not a workflow engine (founder decision A, 2026-06-01)
+
+질문: "system은 workflow 개념인가, 더 low-level인가?" → founder 답: **A (더 낮다).**
+
+```
+goal → planner(LLM, "무엇을") → ContractObject(생성된 plan + capability)
+     → runtime kernel(권한강제+syscall+receipt+rollback)  ← AIOS 본체, LOW LEVEL
+     → adapters/fs/web(드라이버)
+```
+
+- AIOS의 가치 = **통치**(authority enforcement + audit + reversibility), 오케스트레이션의
+  영리함이 아님. workflow 엔진(Temporal/LangGraph/n8n)과 *경쟁 안 함* — 그것들은 위에서
+  돌리면 됨.
+- **확정된 NON-goal (이제 founder-confirmed):** runtime에 분기/병렬/조건/루프/durable-
+  suspend = scheduler 넣지 않는다. workflow 표현력이 필요하면 커널 *위* 별도 레이어.
+- 함의: 남은 #4/#5 는 *커널-저수준*으로 짓는다 (background cognition을 syscall로, web→action을
+  receipt-연결 syscall로) — 스케줄러로 부풀리지 않는다.
+- 기존 sprint-loop/round-controller(스케줄러성 자기개발 자동화) deprecate 방향 강화.
+- ContractObject step 리스트가 선형 workflow처럼 *보여도* 가치는 통치이지 흐름제어 아님.
+
 ## Outside-domain test — 첫 검증 task
 
 founder 가 제시한 후보 (다시 명시):
