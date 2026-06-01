@@ -233,6 +233,7 @@ def run_contract(
     *,
     adapters: dict[str, Any] | None = None,
     fetcher: Any = None,
+    memory_sink: Any = None,
     approve_checkpoints: bool = False,
     dry_run: bool = False,
 ) -> dict[str, Any]:
@@ -240,6 +241,9 @@ def run_contract(
 
     Returns a run summary dict. Mutates `contract` in place (state, receipts).
     `fetcher(inputs)->str` is the optional network substrate for web syscalls.
+    `memory_sink(contract)->dict` is the optional closeout hook that turns the
+    run's receipts into draft-first memory (injected, not baked — decision A
+    keeps the kernel small; memoryOS owns the actual draft).
     """
     adapters = adapters or {}
     Receipt = co.Receipt
@@ -321,8 +325,14 @@ def run_contract(
                 "evals": [(e.name, e.result) for e in contract.evals]}
     contract.transition("verified", reason="runner evals passed")
     contract.transition("closed", reason="runner closeout")
-    return {"status": contract.state, "executed": executed,
-            "evals": [(e.name, e.result) for e in contract.evals]}
+    result = {"status": contract.state, "executed": executed,
+              "evals": [(e.name, e.result) for e in contract.evals]}
+    if memory_sink is not None:
+        try:
+            result["memory"] = memory_sink(contract)
+        except Exception as exc:  # memory write-back must never fail a closed run
+            result["memory"] = {"status": "error", "detail": str(exc)[:200]}
+    return result
 
 
 def _dispatch(contract: Any, step: Any, seq: int, adapters: dict[str, Any], fetcher: Any = None):

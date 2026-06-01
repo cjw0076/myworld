@@ -137,11 +137,20 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
     """Real planner: ask a provider to emit a JSON step list."""
     def planner(goal: str, context: dict[str, Any]) -> str:
         adapter = adapters[provider]
+        recalled = context.get("recalled_memory") or []
+        memory_block = ""
+        if recalled:
+            joined = "\n".join(f"- {m}" for m in recalled[:5])
+            memory_block = (
+                "\nRelevant prior runs (recalled memory — use to plan better):\n"
+                f"{joined}\n"
+            )
         prompt = (
             f"You are the AIOS planner. Goal: {goal}\n"
             f"Workspace root: {context['workspace_root']}\n"
             f"Writable paths: {context['write_paths'] or '(none — read-only)'}\n"
-            f"Network allowed: {context['network']}\n\n"
+            f"Network allowed: {context['network']}\n"
+            f"{memory_block}\n"
             f"{PLANNER_SCHEMA_HINT}"
         )
         return adapter(prompt)
@@ -155,18 +164,26 @@ def compile_goal(
     planner: Planner,
     allow_write: list[str] | None = None,
     allow_network: bool = False,
+    retriever: Callable[[str], list[str]] | None = None,
 ) -> tuple[Any, list[str]]:
     """Goal -> (ContractObject with steps, validation errors).
 
     Validation errors non-empty => the plan exceeds granted authority and must
     not run (fail-closed). Caller decides whether to surface or abort.
+
+    `retriever(goal)->list[str]` recalls prior execution traces (memory) and
+    injects them into the planner context. This is what closes the cognition
+    loop: the head plans better for a goal it has seen relatives of before.
     """
     c = build_skeleton(goal, workspace_root=workspace_root,
                        allow_write=allow_write, allow_network=allow_network)
+    recalled = retriever(goal) if retriever else []
+    c.memory_inputs = list(recalled)
     context = {
         "workspace_root": c.workspace_root,
         "write_paths": c.filesystem_scope.write_paths,
         "network": c.authority_scope.network,
+        "recalled_memory": recalled,
     }
     raw = planner(goal, context)
     plan = _extract_json_array(raw)
@@ -207,6 +224,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="compile + validate the plan, do not execute")
     parser.add_argument("--approve-checkpoints", action="store_true")
     parser.add_argument("--save", help="write the resulting contract json to this path")
+    parser.add_argument("--no-memory", action="store_true",
+                        help="disable the cognition loop (no recall before, no draft after)")
     args = parser.parse_args(argv)
 
     adapters = _default_adapters(args.provider)
@@ -216,10 +235,20 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     planner = make_provider_planner(args.provider, adapters)
 
+    # cognition loop: recall before planning, draft after closeout (draft-first)
+    retriever = None
+    memory_sink = None
+    if not args.no_memory:
+        bridge = _load("aios_memory_bridge")
+        root_path = Path(args.root).resolve()
+        retriever = lambda g: bridge.retrieve(g, root_path)
+        memory_sink = lambda c: bridge.writeback(c, root_path)
+
     try:
         contract, errors = compile_goal(
             args.goal, workspace_root=args.root, planner=planner,
-            allow_write=args.allow_write, allow_network=args.allow_network)
+            allow_write=args.allow_write, allow_network=args.allow_network,
+            retriever=retriever)
     except ValueError as exc:
         print(json.dumps({"status": "plan_parse_error", "detail": str(exc)}, indent=2))
         return 1
@@ -241,6 +270,7 @@ def main(argv: list[str] | None = None) -> int:
 
     fetcher = default_fetcher if args.allow_network else None
     summary = runner.run_contract(contract, adapters=adapters, fetcher=fetcher,
+                                  memory_sink=memory_sink,
                                   approve_checkpoints=args.approve_checkpoints)
     if args.save:
         Path(args.save).write_text(contract.to_json(), encoding="utf-8")
