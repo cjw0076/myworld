@@ -128,6 +128,42 @@ class ContractRunnerTest(unittest.TestCase):
         self.assertEqual(summary["status"], "closed", summary)
         self.assertTrue(c.receipts[0].success)
 
+    def test_web_fetch_to_cache_then_downstream_read(self):
+        # web -> action: fetch writes a runtime cache file; a later fs.read consumes it.
+        c = self._contract(contract_id="co-web")
+        c.authority_scope.network = True
+        # the cache path is deterministic: .aios/runtime/web/<cid>/<sid>.txt
+        cache = self.root / ".aios" / "runtime" / "web" / "co-web" / "w1.txt"
+        c.filesystem_scope = self.co.FilesystemScope(read_paths=[str(self.root) + "/"])
+        c.steps.append(self.co.Step(id="w1", description="fetch", tool="web",
+                                    inputs={"url": "https://example.com"}))
+        c.steps.append(self.co.Step(id="r1", description="read fetched", tool="fs.read",
+                                    inputs={"path": str(cache)}))
+        summary = self.runner.run_contract(
+            c, fetcher=lambda inputs: f"BODY of {inputs['url']}")
+        self.assertEqual(summary["status"], "closed", summary)
+        self.assertEqual(len(c.receipts), 2)
+        self.assertTrue(all(r.success for r in c.receipts))
+        self.assertIn("BODY of https://example.com", cache.read_text(encoding="utf-8"))
+
+    def test_web_without_fetcher_is_named_exit(self):
+        c = self._contract(contract_id="co-web2")
+        c.authority_scope.network = True
+        c.steps.append(self.co.Step(id="w1", description="fetch", tool="web",
+                                    inputs={"url": "https://x", "hard": False}))
+        summary = self.runner.run_contract(c)  # no fetcher
+        self.assertEqual(summary["status"], "closed", summary)
+        self.assertFalse(c.receipts[0].success)
+        self.assertIn("offline", c.receipts[0].error)
+
+    def test_web_denied_when_network_false(self):
+        c = self._contract(contract_id="co-web3")
+        # network defaults False -> validate() rejects the web step
+        c.steps.append(self.co.Step(id="w1", description="fetch", tool="web",
+                                    inputs={"url": "https://x"}))
+        summary = self.runner.run_contract(c, fetcher=lambda i: "x")
+        self.assertEqual(summary["status"], "invalid", summary)
+
     def test_dry_run_executes_nothing(self):
         target = self.root / "dry.txt"
         c = self._contract(contract_id="co-dry")

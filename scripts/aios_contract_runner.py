@@ -197,18 +197,49 @@ def _syscall_web(contract: Any, step: Any) -> tuple[bool, list[str], str, str | 
     return False, [], "", f"web '{target}' authorized but no live network substrate (offline)"
 
 
+def _web_cache_path(contract: Any, step: Any) -> Path:
+    d = _runtime_root(contract) / "web" / contract.contract_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d / f"{step.id}.txt"
+
+
+def _syscall_web_fetch(contract: Any, step: Any, fetcher) -> tuple[bool, list[str], str, str | None]:
+    """web -> action, kernel-low: fetch to a deterministic runtime cache file.
+
+    The fetched content lands at .aios/runtime/web/<cid>/<sid>.txt (a predictable
+    path the planner can wire a downstream fs.read against). This is file-as-IPC
+    — no inter-step dataflow engine (decision A: kernel, not workflow).
+    The fetcher is dependency-injected so the kernel never hardcodes a network
+    client; absent fetcher takes the offline named-exit.
+    """
+    if fetcher is None:
+        return _syscall_web(contract, step)
+    target = step.inputs.get("url") or step.inputs.get("query") or ""
+    if not target:
+        return False, [], "", "web step has neither url nor query"
+    try:
+        content = fetcher(step.inputs)
+    except Exception as exc:  # network substrate is external
+        return False, [], "", f"web fetch failed for '{target}': {exc}"
+    cache = _web_cache_path(contract, step)
+    cache.write_text(content, encoding="utf-8")
+    return True, [str(cache)], f"fetched {len(content)} chars from '{target}' -> {cache.name}", None
+
+
 # --- the run loop -------------------------------------------------------------
 
 def run_contract(
     contract: Any,
     *,
     adapters: dict[str, Any] | None = None,
+    fetcher: Any = None,
     approve_checkpoints: bool = False,
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Execute a ContractObject's steps under its declared authority.
 
     Returns a run summary dict. Mutates `contract` in place (state, receipts).
+    `fetcher(inputs)->str` is the optional network substrate for web syscalls.
     """
     adapters = adapters or {}
     Receipt = co.Receipt
@@ -264,7 +295,7 @@ def run_contract(
             continue
 
         seq += 1
-        success, artifacts, summary, error = _dispatch(contract, step, seq, adapters)
+        success, artifacts, summary, error = _dispatch(contract, step, seq, adapters, fetcher)
         r = Receipt(step_id=step.id, timestamp=_now(), success=success,
                     artifacts=artifacts, summary=summary, error=error)
         contract.record_receipt(r)
@@ -294,7 +325,7 @@ def run_contract(
             "evals": [(e.name, e.result) for e in contract.evals]}
 
 
-def _dispatch(contract: Any, step: Any, seq: int, adapters: dict[str, Any]):
+def _dispatch(contract: Any, step: Any, seq: int, adapters: dict[str, Any], fetcher: Any = None):
     tool = step.tool
     if tool == "fs.read":
         return _syscall_fs_read(contract, step)
@@ -309,7 +340,7 @@ def _dispatch(contract: Any, step: Any, seq: int, adapters: dict[str, Any]):
     if tool.startswith("provider."):
         return _syscall_provider(contract, step, adapters)
     if tool == "web":
-        return _syscall_web(contract, step)
+        return _syscall_web_fetch(contract, step, fetcher)
     return False, [], "", f"unknown syscall '{tool}'"
 
 

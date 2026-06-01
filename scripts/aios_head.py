@@ -182,6 +182,18 @@ def _default_adapters(authorized_provider: str) -> dict[str, Callable[[str], str
     return adapters_mod.build_adapters(providers=[authorized_provider])
 
 
+def default_fetcher(inputs: dict[str, Any]) -> str:
+    """Minimal live web substrate: plain GET for {url}. {query} needs a search
+    provider and is not wired here (kernel takes the offline named-exit)."""
+    url = inputs.get("url")
+    if not url:
+        raise ValueError("default_fetcher only supports {url}; {query} needs a search provider")
+    import urllib.request
+    req = urllib.request.Request(url, headers={"User-Agent": "aios-head/0"})
+    with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 — url is contract-scoped
+        return resp.read(1_000_000).decode("utf-8", errors="replace")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="aios <goal> — goal-first head")
     parser.add_argument("goal", help="natural-language goal")
@@ -227,7 +239,8 @@ def main(argv: list[str] | None = None) -> int:
                                     for s in contract.steps]}, indent=2))
         return 0
 
-    summary = runner.run_contract(contract, adapters=adapters,
+    fetcher = default_fetcher if args.allow_network else None
+    summary = runner.run_contract(contract, adapters=adapters, fetcher=fetcher,
                                   approve_checkpoints=args.approve_checkpoints)
     if args.save:
         Path(args.save).write_text(contract.to_json(), encoding="utf-8")
