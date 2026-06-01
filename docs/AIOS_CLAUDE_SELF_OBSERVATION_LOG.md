@@ -527,3 +527,23 @@ AIOS가 이것을 흡수하려면:
   - **named-exit over silent-stub for unavailable substrate**: an authorized-but-offline provider/web step records a `success=False` receipt with "no live adapter (offline)" rather than faking success or crashing. Keeps Invariant 4 (every loop has a named exit) true at the syscall layer, not just the contract layer.
 - self-correction-of-prior-observation:
   - Kernel audit claim "aios_invoke.py 하나에 코드 다 묶음 (provider code tangled)" was inaccurate — aios_invoke wraps the *4 OS CLIs* (genesis/memory/capability/hive) into a dispatch envelope; it never executed LLM providers. The provider-as-executor layer was greenfield, not a consolidation. Audit left as-is (historical), corrected here.
+
+## 2026-06-01 16:30 KST — claude@workstation — uri 사업계획서 (외부 deliverable) + cognition-loop sprint (head grows from traces)
+
+- session_id: same turn continuation — "operating system" → decision A → uri bizplan → "goal 잡고 sprint 치자"
+- mode_breakdown: decide:20 / intervene:90 / verify:35 / observe:15 — minutes ~160
+- tools_used: Bash, Edit, Write, Read, Agent(Explore — uri business-doc synthesis), TaskCreate/Update
+- tools_NOT_used (CLI gap): live LLM planner still not exercised (acted AS the planner myself to avoid claude-CLI recursion). The "me as frontier planner, kernel as governed executor" split was clean and is the honest in-loop substitute — worth noting for ASC-0066 as a portable pattern, not a gap.
+- substrate_specific_behaviors_observed:
+  - **Refused to fabricate a bug**: uri was clean (540 tests + typecheck green, 0 TODOs). The honest move was to NOT manufacture a defect for the "outside-domain proof" — instead surfaced the real gap (need a founder-wanted task) and let the founder pick. They chose "uri 사업계획서". Fabricating would have defeated the audit's whole purpose.
+  - **Synthesis over invention**: uri already had 8+ scattered strategy docs. The business plan *consolidated* them (and explicitly flagged a "정직한 공백" section: no fabricated financials/CAC/LTV) rather than inventing a new strategy. Delegated the doc-reading to an Explore agent to keep main context clean.
+  - **Cognition loop = the compounding thesis made executable**: wired writeback (run→draft memory) + retrieve (recall before planning) around the kernel. Proven live: goal#2 recalled goal#1's trace before planning. This is the first time AIOS demonstrably *grows from its own traces* rather than restarting ignorant.
+- failures_recovered:
+  - **memoryOS ingest-contract-closeout is hardwired to the LEGACY ASC-NNNN format** (strict `ASC-\d{4}` id + aios.contract_closeout_memory.v1). My new `co-` ContractObjects don't fit, and minting ASC ids would violate the contract freeze. Recovered by routing through the *general* draft path `drafts import-review-request` (aios.memory_draft_review_request.v1) instead — no ASC constraint, still draft-first. Lesson: the new ContractObject runtime and the old ASC-contract memory ingest are two worlds; bridge through the general review-request packet, don't force the legacy closeout schema.
+  - **cross-repo source_artifact resolution**: memoryOS `_resolve_existing_aios_ref` accepts absolute paths, so the bridge passes an absolute closeout path and the live cross-repo draft lands.
+- failures_escalated_to_founder:
+  - uri repo commit of the business plan (outward-facing to cjw0076/uri-v3) — written to working tree, NOT committed; awaiting founder review + GO.
+- key_decision: set the sprint goal myself ("close the cognition loop") on a delegated "goal 잡고 sprint 치자" — justified as the highest-leverage, anti-drift (memory I/O, not scheduler) advance of the final-goal layer-3 compounding property.
+- new_invariant_or_pattern_discovered:
+  - **memory write-back must never fail a closed run** — the sink is wrapped so a memoryOS outage degrades to a queued packet, never reverts a verified closeout. Variant of named-exit at the cognition layer.
+- self-correction-of-prior-observation: none.
