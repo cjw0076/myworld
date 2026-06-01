@@ -394,6 +394,8 @@ def main(argv: list[str] | None = None) -> int:
                      help="authorize every step but execute nothing")
     run.add_argument("--write", action="store_true",
                      help="write the mutated contract back to the json file")
+    run.add_argument("--no-live-providers", action="store_true",
+                     help="do not wire real provider CLIs; provider steps take the offline named-exit")
 
     rb = sub.add_parser("rollback", help="restore all filesystem mutations of a contract")
     rb.add_argument("contract")
@@ -402,8 +404,19 @@ def main(argv: list[str] | None = None) -> int:
     contract = _load_contract(args.contract)
 
     if args.cmd == "run":
+        adapters: dict[str, Any] = {}
+        if not args.no_live_providers and not args.dry_run:
+            # only build adapters for providers this contract actually authorized
+            authorized = [r.provider for r in contract.provider_routes]
+            if authorized:
+                try:
+                    import aios_adapters
+                    adapters = aios_adapters.build_adapters(providers=authorized)
+                except Exception:  # adapter layer optional; runner still works
+                    adapters = {}
         summary = run_contract(
             contract,
+            adapters=adapters,
             approve_checkpoints=args.approve_checkpoints,
             dry_run=args.dry_run,
         )
