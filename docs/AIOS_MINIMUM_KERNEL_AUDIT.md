@@ -112,10 +112,13 @@ Current footprint (verified 2026-05-20):
    - 각 adapter 가 `plan(goal) → list[step]` 과 `execute(step) → result` 인터페이스
    - 현재 우리는 `aios_invoke.py` 하나에 코드 다 묶음. 명시 adapter 분리 없음.
 
-3. **Safe filesystem write surface**
+3. **Safe filesystem write surface** — ✅ BUILT 2026-06-01
    - write 는 항상 patch + receipt (어디를 어떻게 변경했는지) 발급
    - rollback 가능
-   - 현재: scripts 가 직접 file.write_text — *unsafe*
+   - `scripts/aios_contract_runner.py`: ContractObject runtime kernel.
+     fail-closed authority check → typed syscall → backup → receipt → rollback.
+     모든 fs mutation 은 `.aios/runtime/backups/` 로 backup 후 reversible.
+     live proof: governed read → reversible write → receipt → rollback (8 tests).
 
 4. **Local LLM background cognition**
    - Ollama qwen3:8b 같은 모델이 *상시 background* — summarize/critique/route
@@ -157,12 +160,55 @@ founder 명시: literal 무제한 device ownership 위험. 다음 가드:
 - local LLM: cheap background cognition
 - frontier LLM: planner / 어려운 reasoning
 
+## Chosen path — C. Hybrid
+
+Founder clarification 2026-05-20:
+
+> AIOS가 cli들을 이용해 내 디바이스 전권을 가지고 작업을 처리하며 스스로는
+> 커가는 시스템을 만드는 것이 목표.
+
+Decision: choose **C. hybrid**.
+
+Why:
+- **A. bottom-up** is testable but repeats the self-development trap. Schema →
+  runtime → compiler can stay internal for too long while no outside task gets
+  completed.
+- **B. outside-domain first** gives immediate reality contact but risks
+  overfitting the runtime object to one privacy-heavy case.
+- **C. hybrid** keeps the schema small, then immediately forces it through one
+  outside-domain task. That makes contract-as-system concrete without letting
+  architecture work become another governance loop.
+
+Execution sequence:
+
+1. Define one minimal `ContractObject` schema first. Target duration: 1-2
+   hours, not a new ASC.
+2. Use the selected outside-domain task as the first live specimen. Current
+   founder candidate: **개인 자료 정리**, with privacy gates.
+3. During that task, record every step into the schema fields: goal, authority,
+   filesystem scope, provider/tool route, memory inputs, actions, receipts,
+   evals, user checkpoints, and memory effects.
+4. After the task, derive runtime requirements from the specimen. Only then
+   build the scheduler/state-machine/compiler pieces that the specimen proved
+   necessary.
+
+Important distinction:
+- Contract files are not the product.
+- Contract objects can become the **AIOS process model**.
+- The `aios` head should compile a natural-language goal into a governed
+  runtime object, then use provider CLIs, local LLMs, memory, capability
+  routing, web/tools/apps, and safe filesystem action to finish the task.
+
 ## Next move (immediate)
 
-1. **본 audit 자체가 commit 됨** (이 파일, deletion/move 안 함 — 분석 보고)
-2. founder 가 outside-domain test task 선택 → kernel head MVP 빌딩 시작
-3. 그 task 가 *외부* 에서 *완료* 될 때 까지 *AIOS 자체* 작업 안 함
-4. 통과시 — kernel 확장 (다음 missing 항목 1-2개)
-5. 실패시 — label adjustment (라벨 낮춤, 거창함 제거)
+1. **Done**: write the minimal `ContractObject` schema as a runtime object
+   spec, not as another ASC. Implementation:
+   `scripts/aios_contract_object.py`; human spec:
+   `docs/AIOS_CONTRACT_OBJECT_V0.md`.
+2. Run the outside-domain proof immediately after schema draft. Current
+   candidate: privacy-gated personal file organization.
+3. Build only the head/kernel pieces that the proof needs.
+4. If the proof completes, generalize the schema and runtime. If it fails,
+   downgrade the AIOS claim and keep the specimen as negative evidence.
 
 본 audit 통과 못하면 AIOS 는 production 이 아니다. 현재는 **operator-grade research scaffold**. 방향은 살아 있지만, 몸을 다시 줄이고 실제 head 를 만들어야 한다.
