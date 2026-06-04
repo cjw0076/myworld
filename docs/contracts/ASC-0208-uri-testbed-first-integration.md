@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0208
 slug: uri-testbed-first-integration
-status: proposed
+status: deferred
+deferred_reason: uri is a consumer testbed after AIOS body packaging; keep out of ASC-0205 body-completion proposed queue until CC2 installer path is closed.
+deferred_by: codex@myworld — ASC-0205 CC6 hygiene, 2026-05-20
 created: 2026-05-20 KST
 proposed_by: claude@myworld
 escalation: founder direction 2026-05-20 — "AIOS는 Production으로 (sh, npm으로 packaging) 나와야하는 거고, Uri는 AIOS를 사용하여 개발해보는 테스트베드야. AIOS 관점에서는 별개인 것 알지 ?"
@@ -27,6 +29,40 @@ founder 2026-05-20 분리 명시:
 따라서 본 contract는 *AIOS 본체 완성* 의 일부가 아니다. AIOS 본체 완성
 (ASC-0205 CC1~CC6, 특히 CC2 sh installer) *완료 후* 의 첫 testbed 실증
 이다.
+
+## Genesis Escape Review
+
+Plain language: uri is not proof that AIOS is complete. uri is the first road
+vehicle that drives over the AIOS bridge after the bridge itself is installed.
+If the bridge is not installable, uri must not become a shortcut that hides the
+missing product packaging work.
+
+Assumptions to challenge:
+
+1. Assumption: a dev-mode wire-up is equivalent to a consumer install.
+   Negation: dev-mode may prove only that the founder's local workspace still
+   has privileged paths.
+2. Assumption: one uri commit proves AIOS works for products. Negation: it
+   proves only one consumer path; the second product may expose missing
+   isolation, packaging, or privacy boundaries.
+3. Assumption: testbed work should start as soon as it is possible. Negation:
+   starting too early can let uri absorb AIOS body work and blur ownership.
+
+Counter-default branch: if uri integration starts before ASC-0205 CC2 has an
+installer-grade path, treat the run as a rehearsal, not as CC completion. The
+rehearsal must produce a blocker list for the installer contract.
+
+Cross-domain frame: use city planning. AIOS is the public transit system; uri
+is one neighborhood using it. A neighborhood may reveal whether buses arrive,
+but it should not secretly build the central station.
+
+Time horizons:
+
+- 1h: keep ASC-0208 proposed and remove prompt-prison ambiguity before any
+  uri-side work begins.
+- 1w: close AIOS CC2 packaging/install path, then run uri as a consumer.
+- 1y: prove multiple products can consume AIOS without sharing private state
+  or relying on founder-only workspace topology.
 
 ## 사전 조건
 

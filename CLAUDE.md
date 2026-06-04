@@ -2,6 +2,32 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Founder Alignment Override — 2026-05-20
+
+Founder directive: stop optimizing AIOS by creating more contracts about
+AIOS. The immediate job is to act as founder-delegated senior engineer and
+turn AIOS back toward the original organism vision: a Hermes-style local head
+that coordinates provider CLIs, local LLMs, memory, capabilities, ontology,
+web/tools/apps, and safe filesystem action to create value outside AIOS itself.
+
+Until this override is explicitly superseded:
+
+- Treat `docs/AIOS_MINIMUM_KERNEL_AUDIT.md` as required reading before any
+  AIOS architecture, contract, dispatch, or cross-repo planning work.
+- Do not propose or mint new ASC contracts by default. Contract creation is
+  frozen except when the founder explicitly asks for one or when a concrete
+  outside-domain proof requires a minimal execution record.
+- Prefer kernel extraction, CLI head implementation, provider adapter
+  consolidation, memory/capability/genesis integration, and outside-domain
+  proof work over ledger growth, governance polish, or self-referential AIOS
+  development.
+- Distinguish product substance from internal history. Contracts, ledgers,
+  operator sessions, and private founder memory are fossil records/training
+  corpus unless they directly help an external user complete a real task.
+- When making a judgment call, optimize for the founder's original vision:
+  AIOS as a permissioned device head and multi-provider execution organism,
+  not a document governance system.
+
 ## What This Workspace Is
 
 `myworld/` is the **AIOS control plane**. It does not host implementation code — it issues goals, contracts, and cross-repo handoffs that the three sibling OS repos execute against:
@@ -19,13 +45,15 @@ Each sibling has its own `CLAUDE.md` with repo-specific commands, source layout,
 When a task crosses repo boundaries (or you are unsure which repo owns it), read in this order before touching code:
 
 1. `AGENTS.md` — workspace entry point and ownership boundaries
-2. `docs/AIOS_NORTHSTAR.md` — final system shape and the three OS roles
-3. `docs/AIOS_AGENT_PROTOCOL.md` — the durable-record format for cross-repo entries
-4. `docs/AIOS_SMART_CONTRACT.md` — the contract shape for multi-OS tasks
-5. `docs/AIOS_AGENT_LEDGER.md` — append-only cross-repo decision log
-6. `docs/WORKSTREAMS.md` — Codex/Claude lead split, OS ownership, default task flow
-7. `docs/contracts/README.md` — contract directory index, file shape, lifecycle
-8. The role file for the repo you are touching:
+2. `docs/AIOS_MINIMUM_KERNEL_AUDIT.md` — current founder alignment,
+   contract freeze, kernel extraction, and outside-domain proof target
+3. `docs/AIOS_NORTHSTAR.md` — final system shape and the three OS roles
+4. `docs/AIOS_AGENT_PROTOCOL.md` — the durable-record format for cross-repo entries
+5. `docs/AIOS_SMART_CONTRACT.md` — the contract shape for multi-OS tasks
+6. `docs/AIOS_AGENT_LEDGER.md` — append-only cross-repo decision log
+7. `docs/WORKSTREAMS.md` — Codex/Claude lead split, OS ownership, default task flow
+8. `docs/contracts/README.md` — contract directory index, file shape, lifecycle
+9. The role file for the repo you are touching:
    - `docs/agents/HIVEMIND_AGENT.md`
    - `docs/agents/MEMORYOS_AGENT.md`
    - `docs/agents/CAPABILITYOS_AGENT.md`
@@ -47,6 +75,13 @@ If a task is ambiguous about ownership, stop at an operator checkpoint rather th
 `claude@myworld` + `codex@myworld` jointly act as the AIOS **operator**. The founder (재원) provides ideas and the ultimate override; routine acceptance, dispatch, release/hold/escalate decisions belong to the operator pair. See `docs/WORKSTREAMS.md` for the full role split and escalation rules.
 
 A non-trivial cross-OS task flows through this workspace as:
+
+Current exception: under the 2026-05-20 Founder Alignment Override, do not use
+this workflow as a reflex. If the task is about AIOS product direction,
+minimum kernel extraction, the `aios` head, or outside-domain proof, start from
+`docs/AIOS_MINIMUM_KERNEL_AUDIT.md` and choose the smallest implementation or
+handoff artifact that advances the product. Use ASC dispatch only when it is
+explicitly needed for execution across repo boundaries.
 
 1. Founder states an idea at the workspace root, OR an operator surfaces a next task from the prior contract's results.
 2. Operator drafts an AIOS smart contract under `docs/contracts/ASC-NNNN-<slug>.md` (shape per `docs/AIOS_SMART_CONTRACT.md`). Status starts `proposed`.

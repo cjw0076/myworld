@@ -142,6 +142,14 @@ contract 묶음으로 닫힐 수도 있다.
 
 부분 진척은 본 contract 의 `## Progress Log` 절에 append-only 로 기록.
 
+## Verification Gate
+
+```bash
+python -m unittest tests.test_install_sh -v
+python scripts/aios_local_app.py status --json --assert-live
+python scripts/aios_monitor.py assess --json
+```
+
 ## Scope
 
 repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
@@ -158,16 +166,26 @@ repos: `myworld` (control plane), `hivemind` / `memoryOS` / `CapabilityOS`
     runs installer in CI and exercises entrypoint.
   - **닫는 증거**: commit `c4ff181`, run
     https://github.com/cjw0076/myworld/actions/runs/26148815029 (success).
+  - Dispatch closeout:
+    `.aios/outbox/myworld/asc-0205.myworld.result.json` passed and was
+    collected after replaying the ASC-0205 Verification Gate.
   - prefix-embedding pattern: entrypoint bakes install-time prefix
     (heredoc unquoted) so default invocation works without env;
     `AIOS_SKIP_FETCH=1` short-circuit allows in-repo CI smoke.
   - **ASC-0205 status → closed. 6/6 closing criteria met**: CC1 GenesisOS,
     CC2' sh installer, CC3 CI, CC4 external-knowledge organ,
     CC5 Provider 다축화 (Ollama qwen3:8b), CC6 proposed 수렴
-    (ASC-0183 founder-gated 1건만 명시 잔존).
-  - **Follow-ons (외부)**: ASC-0208 uri testbed (proposed),
-    ASC-0183 dream-parametric LoRA (founder-gated proposed),
+    (ASC-0183 founder-gated is deferred, not active proposed queue).
+  - **Follow-ons (외부)**: ASC-0208 uri testbed (deferred),
+    ASC-0183 dream-parametric LoRA (founder-gated deferred),
     npm/pipx/brew/Docker packaging (no contract yet — 후속 라운드).
+- 2026-05-20 **CC6 hygiene correction**:
+  - `ASC-0183` is founder-gated vision-level LoRA work and is now
+    `status: deferred`.
+  - `ASC-0208` is a uri consumer-testbed follow-on after AIOS body packaging
+    and is now `status: deferred`.
+  - This preserves both records while restoring the active proposed queue to
+    zero.
 - 2026-05-20 **Frame reset (CC2 reframe)** by founder:
   - founder directive: "AIOS는 Production으로 (sh, npm으로 packaging)
     나와야하는 거고, Uri는 AIOS를 사용하여 개발해보는 테스트베드야.

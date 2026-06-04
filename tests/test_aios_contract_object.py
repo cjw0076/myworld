@@ -27,6 +27,7 @@ class ContractObjectTest(unittest.TestCase):
 
     def test_new_contract_default_state_is_proposed(self):
         co = self.mod.ContractObject(contract_id="co-test", goal="do a thing")
+        self.assertEqual(co.schema_version, "aios.contract_object.v0")
         self.assertEqual(co.state, "proposed")
         self.assertEqual(co.validate(), [])
 
@@ -95,6 +96,12 @@ class ContractObjectTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             co.record_receipt(r_bad)
 
+    def test_validate_rejects_duplicate_step_ids(self):
+        co = self.mod.ContractObject(contract_id="co-dup", goal="x")
+        co.steps.append(self.mod.Step(id="same", description="one", tool="user.checkpoint"))
+        co.steps.append(self.mod.Step(id="same", description="two", tool="user.checkpoint"))
+        self.assertTrue(any("duplicate step_id" in e for e in co.validate()))
+
     def test_roundtrip_json(self):
         co = self.mod.ContractObject(
             contract_id="co-7",
@@ -120,6 +127,44 @@ class ContractObjectTest(unittest.TestCase):
         self.assertEqual(len(co2.steps), 1)
         self.assertEqual(len(co2.evals), 1)
         self.assertEqual(len(co2.memory_effects), 1)
+
+    def test_personal_files_specimen_is_privacy_gated(self):
+        co = self.mod.personal_files_specimen(
+            goal="organize my desktop files",
+            input_root="/home/user/Desktop",
+            output_root="/home/user/Organized",
+            deny_paths=["/home/user/Desktop/private"],
+            provider="codex",
+            local_llm="ollama_local",
+            workspace_root="/home/user",
+        )
+        self.assertEqual(co.schema_version, "aios.contract_object.v0")
+        self.assertFalse(co.authority_scope.network)
+        self.assertEqual(co.authority_scope.device_authority, "delegated")
+        self.assertIn("/home/user/Desktop/private/", co.filesystem_scope.deny_paths)
+        self.assertIn("fs.delete", co.capability_route["forbidden_tools"])
+        self.assertIn("plan_review", [s.id for s in co.steps])
+        self.assertIn("memory_writeback_review", [s.id for s in co.steps])
+        self.assertEqual(co.validate(), [])
+
+    def test_cli_personal_files_specimen(self):
+        import subprocess
+        r = subprocess.run(
+            [
+                sys.executable, str(SCRIPT), "specimen", "personal-files",
+                "--input-root", "/tmp/in",
+                "--output-root", "/tmp/out",
+                "--deny-path", "/tmp/in/private",
+            ],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = json.loads(r.stdout)
+        self.assertEqual(data["schema_version"], "aios.contract_object.v0")
+        self.assertEqual(data["authority_scope"]["device_authority"], "delegated")
+        self.assertFalse(data["authority_scope"]["network"])
+        self.assertEqual(data["state"], "proposed")
+        self.assertTrue(any(s["id"] == "apply_moves" for s in data["steps"]))
 
     def test_cli_new_command(self):
         import subprocess

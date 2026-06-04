@@ -130,6 +130,16 @@ else:
 PY
 }
 
+normalize_agent() {
+  local raw="$1"
+  raw="${raw%%@*}"
+  case "$raw" in
+    codex|claude|gemini|local) echo "$raw" ;;
+    ollama|ollama_qwen|local_llm) echo "local" ;;
+    *) echo "$raw" ;;
+  esac
+}
+
 packet_result_path() {
   local packet="$1"
   local repo="$2"
@@ -187,17 +197,22 @@ build_prompt() {
   local repo="$1"
   local packet="$2"
   local prompt_file="$3"
-  local contract_id dispatch_id goal target_agent contract_path allowed forbidden
+  local contract_id dispatch_id goal target_agent invocation_identity contract_path allowed forbidden
   contract_id="$(json_get "$packet" "contract_id")"
   dispatch_id="$(json_get "$packet" "dispatch_id")"
   goal="$(json_get "$packet" "goal")"
   target_agent="$(json_get "$packet" "agent")"
+  if [[ "$target_agent" == *"@"* ]]; then
+    invocation_identity="$target_agent"
+  else
+    invocation_identity="${target_agent}@${repo}"
+  fi
   contract_path="$(json_get "$packet" "contract_path")"
   allowed="$(json_get "$packet" "scope.allowed_files")"
   forbidden="$(json_get "$packet" "scope.forbidden_files")"
 
   cat > "$prompt_file" <<EOF
-You are ${target_agent}@${repo}, invoked by the myworld AIOS child watcher.
+You are ${invocation_identity}, invoked by the myworld AIOS child watcher.
 
 Current time: $(now_iso)
 MyWorld root: ${ROOT}
@@ -728,7 +743,7 @@ run_packet() {
 
   local dispatch_id agent safe_id prompt_file log_file before_file after_file lock_file attempts_file
   dispatch_id="$(json_get "$packet" "dispatch_id")"
-  agent="$(json_get "$packet" "agent")"
+  agent="$(normalize_agent "$(json_get "$packet" "agent")")"
   safe_id="${dispatch_id}.${repo}"
   prompt_file="$PROMPT_DIR/${safe_id}.child.prompt.md"
   log_file="$LOG_DIR/${safe_id}.child.log"
@@ -805,6 +820,10 @@ run_once() {
   mkdir -p "$INBOX_DIR/$repo" "$OUTBOX_DIR/$repo"
   local packet
   packet="$(find "$INBOX_DIR/$repo" -maxdepth 1 -type f -name '*.json' | sort | while read -r candidate; do
+    schema_version="$(json_get "$candidate" "schema_version")"
+    if [[ "$schema_version" == "aios.offline_user_agent_packet.v1" ]]; then
+      continue
+    fi
     result="$(packet_result_path "$candidate" "$repo")"
     if [[ ! -f "$result" ]]; then
       echo "$candidate"

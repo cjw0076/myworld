@@ -1,0 +1,241 @@
+{
+  "schema_version": "aios.web_research_receipt.v1",
+  "receipt_id": "ASC-0216-github-reddit-alignment-mining",
+  "task": "Mine GitHub projects and Reddit practitioner threads for alignment, evaluation, observability, guardrail, and preference-learning ideas that AIOS should attach.",
+  "executed_at": "2026-05-20T22:51:00+09:00",
+  "executed_by": "codex@myworld",
+  "route_contract": "capabilityos.web_research_route.v1",
+  "recommendation_only": true,
+  "capabilityos_executed_network": false,
+  "route": {
+    "capability_id": "cap_web_research_route",
+    "route_steps": [
+      "query",
+      "freshness_check",
+      "open_github",
+      "open_reddit",
+      "extract",
+      "synthesize"
+    ],
+    "source_policy": {
+      "prefer": [
+        "official_repositories",
+        "project_docs",
+        "reddit_practitioner_threads",
+        "primary_papers"
+      ],
+      "citation_required": true,
+      "compare_dates_for_current_topics": true
+    },
+    "privacy_policy": {
+      "sent_to_web": [
+        "public project names",
+        "public alignment and LLMOps terms",
+        "generic AIOS alignment substrate question"
+      ],
+      "not_sent_to_web": [
+        "secrets",
+        "tokens",
+        "raw private exports",
+        "personal data",
+        "provider auth files"
+      ]
+    }
+  },
+  "queries": [
+    "GitHub open source LLM evaluation promptfoo deepeval langfuse ragas OpenAI evals",
+    "GitHub open source RLHF DPO preference optimization TRL OpenRLHF alignment handbook",
+    "GitHub open source LLM observability eval prompt management langfuse helicone arize phoenix",
+    "site:reddit.com LLM eval tools production agents observability promptfoo langfuse deepeval"
+  ],
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "promptfoo/promptfoo",
+      "url": "https://github.com/promptfoo/promptfoo",
+      "publisher": "GitHub / promptfoo",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Promptfoo is a CLI and library for evaluating and red-teaming LLM apps with local, declarative, CI-friendly workflows.",
+        "The project supports prompt and model comparisons, vulnerability scanning, pull-request review, and red-team reports.",
+        "AIOS can borrow promptfoo's matrix-style evaluation and red-team config shape without adopting its full runtime first."
+      ]
+    },
+    {
+      "source_id": "S2",
+      "title": "langfuse/langfuse",
+      "url": "https://github.com/langfuse/langfuse",
+      "publisher": "GitHub / Langfuse",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Langfuse presents itself as an open-source LLM engineering platform for observability, metrics, evals, prompt management, playgrounds, and datasets.",
+        "The repository emphasizes OpenTelemetry integration and self-hostable observability for privacy-sensitive LLM applications.",
+        "AIOS should borrow trace and dataset concepts while preserving local-first storage and MemoryOS review boundaries."
+      ]
+    },
+    {
+      "source_id": "S3",
+      "title": "Arize-ai/phoenix",
+      "url": "https://github.com/Arize-ai/phoenix",
+      "publisher": "GitHub / Arize Phoenix",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Phoenix is an open-source AI observability and evaluation platform built on OpenTelemetry and OpenInference.",
+        "The project includes CLI, eval, tracing, and MCP packages for fetching traces, datasets, and experiments.",
+        "AIOS should treat OpenTelemetry-style spans as a bridge between dispatch packets, tool calls, and alignment evals."
+      ]
+    },
+    {
+      "source_id": "S4",
+      "title": "confident-ai/deepeval",
+      "url": "https://github.com/confident-ai/deepeval",
+      "publisher": "GitHub / Confident AI",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "DeepEval markets itself as an LLM evaluation framework with dataset management, traces, production evals, and MCP-backed inspection.",
+        "Its quickstart pattern frames evals as tests that agents can generate, run, and iterate on.",
+        "AIOS can borrow the pytest-like developer ergonomics for contract and result-quality evals."
+      ]
+    },
+    {
+      "source_id": "S5",
+      "title": "NVIDIA/garak",
+      "url": "https://github.com/NVIDIA/garak",
+      "publisher": "GitHub / NVIDIA",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Garak is a generative AI red-teaming and assessment kit for probing hallucination, data leakage, prompt injection, misinformation, toxicity, and jailbreak weaknesses.",
+        "The project combines static, dynamic, and adaptive probes to make LLM or dialog systems fail in unwanted ways.",
+        "AIOS should attach garak-style adversarial probes to GenesisOS and Hive verification before autonomy increases."
+      ]
+    },
+    {
+      "source_id": "S6",
+      "title": "protectai/llm-guard",
+      "url": "https://github.com/protectai/llm-guard",
+      "publisher": "GitHub / Protect AI",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "LLM Guard provides sanitization, harmful-language detection, data-leakage prevention, and prompt-injection resistance for LLM interactions.",
+        "The project is positioned as a security toolkit for LLM inputs and outputs.",
+        "AIOS should use guardrail scanners as runtime checks around external web, user-private context, and provider outputs."
+      ]
+    },
+    {
+      "source_id": "S7",
+      "title": "openai/evals",
+      "url": "https://github.com/openai/evals",
+      "publisher": "GitHub / OpenAI",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "OpenAI Evals provides a framework for evaluating LLMs and LLM systems, with custom evals for private workflow patterns.",
+        "The repository highlights that high-quality evals are one of the most impactful steps for builders using LLMs.",
+        "AIOS should define its own system eval registry for contract quality, route choice, evidence sufficiency, and user preference."
+      ]
+    },
+    {
+      "source_id": "S8",
+      "title": "huggingface/trl",
+      "url": "https://github.com/huggingface/trl",
+      "publisher": "GitHub / Hugging Face",
+      "source_type": "primary_repository",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "TRL provides post-training tools including DPOTrainer, RewardTrainer, and CLI flows for supervised and preference optimization.",
+        "The repository's DPO examples use public preference datasets and small models such as Qwen variants.",
+        "AIOS should postpone TRL integration until MemoryOS has reviewed preference pairs and stable eval gates."
+      ]
+    },
+    {
+      "source_id": "S9",
+      "title": "AI_Agents Reddit thread: Are most LLM eval tools still too prompt-focused?",
+      "url": "https://www.reddit.com/r/AI_Agents/comments/1t9xlfw/are_most_llm_eval_tools_still_too_promptfocused/",
+      "publisher": "Reddit / r/AI_Agents",
+      "source_type": "reddit_practitioner_thread",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Practitioners argue prompt-only evals miss workflow drift, stale context, schema mismatch, and assumption drift across multi-step agents.",
+        "The thread recommends canary inputs, schema validation, and distribution tracking over time.",
+        "AIOS should evaluate contract trajectories and dispatch traces, not only single prompts or final answers."
+      ]
+    },
+    {
+      "source_id": "S10",
+      "title": "AIAgentsInAction Reddit thread: how do you know agents are working?",
+      "url": "https://www.reddit.com/r/AIAgentsInAction/comments/1tb1u66/everyone_says_they_have_ai_agents_in_production/",
+      "publisher": "Reddit / r/AIAgentsInAction",
+      "source_type": "reddit_practitioner_thread",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Practitioners identify step-level traces and feedback loops that turn production failures into eval cases as key production signals.",
+        "The thread warns that frozen eval sets only test whether systems still pass an older reality snapshot.",
+        "AIOS needs a live preference and failure-mining loop that promotes real misses into regression contracts."
+      ]
+    },
+    {
+      "source_id": "S11",
+      "title": "LangChain Reddit thread: LLM observability is the new logging",
+      "url": "https://www.reddit.com/r/LangChain/comments/1rjn3pn/llm_observability_is_the_new_logging_quick/",
+      "publisher": "Reddit / r/LangChain",
+      "source_type": "reddit_practitioner_thread",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Practitioners compare Langfuse, LangSmith, Helicone, Datadog, and Weave as LLM observability options.",
+        "Comments distinguish tracing from output-quality regression and call for eval layers on top of observability.",
+        "AIOS should keep monitor traces, eval verdicts, and user preference outcomes as separate but linked artifacts."
+      ]
+    }
+  ],
+  "synthesis_claims": [
+    {
+      "claim": "The highest-value immediate attachment is an AIOS eval spine: local eval configs, matrix-style comparisons, red-team probes, and CI-friendly result receipts.",
+      "source_ids": [
+        "S1",
+        "S5",
+        "S7"
+      ]
+    },
+    {
+      "claim": "Observability alone is not alignment; AIOS needs trace capture plus quality evals, preference feedback, and failure-to-regression promotion.",
+      "source_ids": [
+        "S2",
+        "S3",
+        "S10",
+        "S11"
+      ]
+    },
+    {
+      "claim": "Prompt-level evals are insufficient for AIOS because the system fails across stateful workflows, stale context, schema boundaries, and multi-step dispatch traces.",
+      "source_ids": [
+        "S9",
+        "S10",
+        "S11"
+      ]
+    },
+    {
+      "claim": "Runtime guardrails and red-team scanners should wrap web, provider, and private-context boundaries before AIOS expands autonomy or external product traffic.",
+      "source_ids": [
+        "S5",
+        "S6"
+      ]
+    },
+    {
+      "claim": "TRL, Alignment Handbook, and OpenRLHF are useful later, but AIOS should first accumulate reviewed preference pairs and stable eval gates.",
+      "source_ids": [
+        "S8"
+      ]
+    }
+  ],
+  "limitations": [
+    "This receipt summarizes public GitHub and Reddit evidence only; it does not import third-party code or install dependencies.",
+    "Reddit threads are treated as practitioner signals, not authoritative technical specifications.",
+    "CapabilityOS did not execute network actions; browsing was performed by codex@myworld through the session web tool."
+  ]
+}

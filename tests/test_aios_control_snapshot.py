@@ -951,6 +951,262 @@ origin: AIOS reviewed session promotion
             self.assertFalse(data["ok"])
             self.assertIn("app js not found", data["errors"])
 
+    def test_snapshot_surfaces_offline_user_packets(self) -> None:
+        module = load_snapshot_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            inbox = root / ".aios" / "inbox" / "memoryOS"
+            inbox.mkdir(parents=True)
+            packet = {
+                "schema_version": "aios.offline_user_agent_packet.v1",
+                "packet_type": "user.offline_task",
+                "contract_id": "ASC-0210",
+                "created_at": "2026-05-20T18:00:00+09:00",
+                "status": "draft",
+                "task": "Open the Uri campus screen and note where your eye stops first.",
+                "privacy_boundary": "Private data and raw screenshots stay offline.",
+                "review_policy": {"draft_first": True, "auto_accept": False},
+            }
+            (inbox / "asc-0210.user-offline-task.uri-screen.json").write_text(
+                json.dumps(packet), encoding="utf-8"
+            )
+
+            offline = module.load_offline_user_packets(root)
+
+        self.assertEqual(offline["total"], 1)
+        self.assertEqual(offline["latest"][0]["packet_type"], "user.offline_task")
+        self.assertEqual(offline["latest"][0]["next_action"], "wait for bounded user@offline observation")
+        self.assertEqual(offline["latest"][0]["path"], ".aios/inbox/memoryOS/asc-0210.user-offline-task.uri-screen.json")
+        self.assertTrue(offline["latest"][0]["draft_first"])
+        self.assertFalse(offline["latest"][0]["auto_accept"])
+
+    def test_snapshot_links_field_observation_to_memory_draft_review(self) -> None:
+        module = load_snapshot_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            packet_ref = ".aios/inbox/memoryOS/asc-0210.field-observation.uri-screen.json"
+            packet_path = root / packet_ref
+            packet_path.parent.mkdir(parents=True)
+            packet_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.offline_user_agent_packet.v1",
+                        "packet_type": "field_observation",
+                        "contract_id": "ASC-0210",
+                        "created_at": "2026-05-20T18:20:00+09:00",
+                        "status": "draft",
+                        "observed_by": "user@offline",
+                        "observed_at": "2026-05-20T18:19:00+09:00",
+                        "summary": "The operator saw the offline-user card and understood the privacy boundary.",
+                        "confidence": 0.74,
+                        "private_data_included": False,
+                        "next_question": "Should the card be pinned above Governed Ask?",
+                        "review_policy": {"draft_first": True, "auto_accept": False},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            draft_path = root / ".aios" / "chat" / "offline-user" / "memory_drafts.json"
+            draft_path.parent.mkdir(parents=True)
+            draft_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.chat.memory_drafts.v1",
+                        "conversation_id": "offline-user",
+                        "memory_drafts": [
+                            {
+                                "id": "offline-user:demo",
+                                "type": "field_observation",
+                                "origin": "offline_user_agent",
+                                "status": "draft",
+                                "confidence": 0.74,
+                                "conversation_id": "offline-user",
+                                "project": "AIOS",
+                                "content": "The operator saw the offline-user card and understood the privacy boundary.",
+                                "raw_refs": [packet_ref],
+                                "provenance": {"source_packet": packet_ref, "source": "aios_offline_user_agent"},
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            offline = module.load_offline_user_packets(root)
+
+        row = offline["latest"][0]
+        self.assertEqual(row["packet_type"], "field_observation")
+        self.assertEqual(row["next_action"], "send to MemoryOS draft review")
+        self.assertEqual(row["memory_draft_source"], ".aios/chat/offline-user/memory_drafts.json")
+        self.assertEqual(row["memory_draft_id"], "offline-user:demo")
+        self.assertEqual(row["memory_review_state"], "operator_review_required")
+
+    def test_snapshot_keeps_offline_user_visible_after_source_packet_is_consumed(self) -> None:
+        module = load_snapshot_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            packet_ref = ".aios/inbox/memoryOS/asc-0210.field-observation.consumed.json"
+            draft_path = root / ".aios" / "chat" / "offline-user" / "memory_drafts.json"
+            draft_path.parent.mkdir(parents=True)
+            draft_path.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.chat.memory_drafts.v1",
+                        "conversation_id": "offline-user",
+                        "memory_drafts": [
+                            {
+                                "id": "offline-user:consumed",
+                                "type": "field_observation",
+                                "origin": "offline_user_agent",
+                                "status": "draft",
+                                "confidence": 0.78,
+                                "conversation_id": "offline-user",
+                                "project": "AIOS",
+                                "content": "The source packet was consumed by MemoryOS import but the draft remains reviewable.",
+                                "raw_refs": [packet_ref],
+                                "provenance": {
+                                    "source": "aios_offline_user_agent",
+                                    "source_packet": packet_ref,
+                                    "created_at": "2026-05-20T18:34:00+09:00",
+                                    "next_question": "Does the review result need more evidence?",
+                                },
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            (state / "memory_draft_reviews.jsonl").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.memory_draft_review_request.v1",
+                        "request_id": "mdrev-consumed",
+                        "created_at": "2026-05-20T18:35:00+09:00",
+                        "status": "sent_to_memoryOS_inbox",
+                        "source_artifact": ".aios/chat/offline-user/memory_drafts.json",
+                        "draft_id": "offline-user:consumed",
+                        "artifact_paths": {"return_to": ".aios/outbox/memoryOS/mdrev-consumed.memoryOS.result.json"},
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            (state / "memory_review_evidence.jsonl").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.memory_review_evidence.v1",
+                        "evidence_id": "mrevd-consumed",
+                        "created_at": "2026-05-20T18:36:00+09:00",
+                        "status": "evidence_recorded",
+                        "source_artifact": ".aios/chat/offline-user/memory_drafts.json",
+                        "draft_id": "offline-user:consumed",
+                        "note": "Operator added a corroborating UI observation.",
+                        "evidence_artifact": ".aios/screenshots/offline-user.png",
+                        "artifact_paths": {
+                            "evidence": ".aios/memory_review_evidence/mrevd-consumed/evidence.json",
+                            "evidence_artifact": ".aios/screenshots/offline-user.png",
+                        },
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            offline = module.load_offline_user_packets(root)
+
+        row = offline["latest"][0]
+        self.assertEqual(row["packet_type"], "field_observation")
+        self.assertEqual(row["path"], ".aios/chat/offline-user/memory_drafts.json")
+        self.assertEqual(row["source_packet"], packet_ref)
+        self.assertEqual(row["memory_draft_id"], "offline-user:consumed")
+        self.assertEqual(row["memory_review_state"], "review_requested")
+        self.assertEqual(row["memory_review_request_id"], "mdrev-consumed")
+        self.assertEqual(row["evidence_count"], 1)
+        self.assertEqual(row["latest_evidence_ref"], ".aios/memory_review_evidence/mrevd-consumed/evidence.json")
+        self.assertEqual(row["latest_evidence_note"], "Operator added a corroborating UI observation.")
+
+    def test_memory_review_index_keeps_latest_review_round(self) -> None:
+        module = load_snapshot_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            source = ".aios/chat/offline-user/memory_drafts.json"
+            draft_id = "offline-user:latest"
+            (state / "memory_draft_reviews.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "request_id": "mdrev-old",
+                                "created_at": "2026-05-20T18:30:00+09:00",
+                                "status": "sent_to_memoryOS_inbox",
+                                "source_artifact": source,
+                                "draft_id": draft_id,
+                                "artifact_paths": {"return_to": ".aios/outbox/memoryOS/mdrev-old.memoryOS.result.json"},
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "request_id": "mdrev-new",
+                                "created_at": "2026-05-20T18:40:00+09:00",
+                                "status": "sent_to_memoryOS_inbox",
+                                "source_artifact": source,
+                                "draft_id": draft_id,
+                                "artifact_paths": {"return_to": ".aios/outbox/memoryOS/mdrev-new.memoryOS.result.json"},
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            outbox = root / ".aios" / "outbox" / "memoryOS"
+            outbox.mkdir(parents=True)
+            (outbox / "mdrev-old.memoryOS.result.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.dispatch.result.v1",
+                        "status": "passed",
+                        "executed_at": "2026-05-20T18:31:00+09:00",
+                        "review_request": {
+                            "request_id": "mdrev-old",
+                            "source_artifact": source,
+                            "draft_id": draft_id,
+                            "review_decision": "reject",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            index = module.load_memory_draft_review_index(root)
+            self.assertEqual(index[(source, draft_id)]["request_id"], "mdrev-new")
+            self.assertEqual(index[(source, draft_id)]["review_state"], "review_requested")
+
+            (outbox / "mdrev-new.memoryOS.result.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.dispatch.result.v1",
+                        "status": "passed",
+                        "executed_at": "2026-05-20T18:41:00+09:00",
+                        "review_request": {
+                            "request_id": "mdrev-new",
+                            "source_artifact": source,
+                            "draft_id": draft_id,
+                            "review_decision": "needs_more_evidence",
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            index = module.load_memory_draft_review_index(root)
+            self.assertEqual(index[(source, draft_id)]["request_id"], "mdrev-new")
+            self.assertEqual(index[(source, draft_id)]["review_state"], "review_result_ready")
+            self.assertEqual(index[(source, draft_id)]["review_result"], "needs_more_evidence")
+
 
 class RosterAndContractBoardTest(unittest.TestCase):
     """ASC-0204 — roster + contract-lifecycle board projections."""

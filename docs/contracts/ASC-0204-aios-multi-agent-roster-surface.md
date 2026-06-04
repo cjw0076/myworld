@@ -74,6 +74,16 @@ lifecycle columns correct, a blocked agent surfaces); `apps/control/` renders
 the roster + kanban from the snapshot; `python -m unittest
 tests.test_aios_control_snapshot` passes.
 
+## Verification Gate
+
+```bash
+python -m py_compile scripts/aios_control_snapshot.py scripts/aios_local_app.py
+python scripts/aios_control_snapshot.py --check-app-js apps/control/app.js --json
+python -m unittest tests.test_aios_control_snapshot -v
+python scripts/aios_local_app.py refresh --json
+python scripts/aios_monitor.py assess --json
+```
+
 ## Stop Conditions
 
 - If a roster cell cannot be traced to a contract / packet / ledger entry,
@@ -136,5 +146,8 @@ top) and `contract_board` (all contracts in the five lifecycle columns).
 - `aios_control_snapshot --check-app-js apps/control/app.js` → `ok: true`.
 - regenerated snapshot carries `roster` (6 agents) and `contract_board`
   (proposed 29 / accepted 0 / dispatched 1 / collected 1 / closed 175).
+- dispatch result: `.aios/outbox/myworld/asc-0204.myworld.result.json`
+  passed 2026-05-20T16:22:56+09:00 after adding the dispatch-safe
+  `Verification Gate` block above.
 
 Named Exit met. ASC-0192's last follow-on is closed.

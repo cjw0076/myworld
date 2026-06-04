@@ -1,7 +1,9 @@
 ---
 contract_id: ASC-0183
 slug: dream-parametric-per-repo-adapters
-status: proposed
+status: deferred
+deferred_reason: founder-gated vision-level dream phase-2 work; not part of ASC-0205 body-completion proposed queue.
+deferred_by: codex@myworld — ASC-0205 CC6 hygiene, 2026-05-20
 goal: Build dream phase 2 — periodic parametric self-evolution that re-fits a per-repo LoRA adapter from each OS's verified-good experience and hot-swaps it on context switch. The named heavier follow-on already declared in scripts/aios_self_evolve.py.
 created: 2026-05-17 03:35 KST
 proposed_by: claude@myworld

@@ -50,3 +50,16 @@ Sovereign score 0: a worker-mode agent silently absorbs a vision decision.
 
 All V1 scores are advisory. They do not block dispatch or replace the
 governance axis.
+
+## Audit Output
+
+`scripts/aios_persona_audit.py` reports more than aggregate scores:
+
+- `weak_personas`: persona score keys below 0.5 with the next routing rule that
+  should appear in future contracts.
+- `contract_gaps`: the most recent closed contracts whose evidence omitted one
+  or more persona roles, with recommendations for the next contract seed.
+
+Use these fields as input to the next AIOS work packet. Do not retroactively
+edit closed contracts just to improve a score; that would hide the historical
+shape of the system instead of teaching the next loop.

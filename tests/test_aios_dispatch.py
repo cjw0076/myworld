@@ -230,6 +230,37 @@ bash scripts/check.sh
 """
 
 
+GIT_DIFF_CHECK_CONTRACT = """---
+contract_id: ASC-0991
+status: accepted
+goal: Test safe git diff check verification.
+accepted: now
+closed:
+---
+
+# ASC-0991 Test
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `scripts/aios_dispatch.py`
+
+forbidden_files:
+
+- `.env`
+
+## Verification Gate
+
+```bash
+cd {root}
+git diff --check -- scripts/aios_dispatch.py tests/test_aios_dispatch.py
+```
+"""
+
+
 LOCAL_EVIDENCE_CONTRACT = """---
 contract_id: ASC-0994
 status: accepted
@@ -520,6 +551,20 @@ class AiosDispatchTest(unittest.TestCase):
             packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0993.myworld.json"
             packet = json.loads(packet_path.read_text(encoding="utf-8"))
             self.assertEqual(packet["verification_commands"][0]["command"], "bash scripts/check.sh")
+            self.assertTrue(packet["verification_commands"][0]["cwd"].endswith(root.name))
+
+    def test_send_allows_git_diff_check_verification(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0991-test.md"
+            contract.write_text(GIT_DIFF_CHECK_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0991.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["verification_commands"][0]["command"], "git diff --check -- scripts/aios_dispatch.py tests/test_aios_dispatch.py")
             self.assertTrue(packet["verification_commands"][0]["cwd"].endswith(root.name))
 
     def test_policy_gate_allows_local_web_evidence_review(self) -> None:

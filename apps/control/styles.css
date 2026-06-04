@@ -1185,6 +1185,7 @@ h2 {
   grid-template-areas:
     "quick quick quick"
     "decision decision decision"
+    "offline offline offline"
     "history thread evidence"
     "history compose evidence";
   align-items: stretch;
@@ -1649,6 +1650,92 @@ h2 {
   background: #f3fbf6;
 }
 
+.offline-user-panel {
+  grid-area: offline;
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d9e5ed;
+  border-radius: 10px;
+  background: #fbfdf9;
+}
+
+.offline-user-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.offline-user-head strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.offline-user-head span,
+.offline-user-body small,
+.offline-user-boundary {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.offline-user-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 7px;
+  align-items: stretch;
+}
+
+.offline-user-body strong,
+.offline-user-boundary {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.offline-user-body strong {
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.offline-user-boundary {
+  padding: 7px 9px;
+  border: 1px solid #dde8d7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.offline-user-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 6px;
+}
+
+.offline-user-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid #cddfd1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.offline-user-review-status {
+  align-self: center;
+  max-width: 180px;
+}
+
+.offline-user-evidence-form {
+  margin-top: 4px;
+}
+
 .chat-status,
 .chat-meta-label {
   color: var(--muted);
@@ -1867,6 +1954,7 @@ h2 {
     grid-template-areas:
       "quick"
       "decision"
+      "offline"
       "thread"
       "compose"
       "evidence"
@@ -1894,6 +1982,14 @@ h2 {
 
   .chat-decision-node i {
     grid-row: auto;
+  }
+
+  .offline-user-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .offline-user-actions {
+    justify-content: start;
   }
 
   .chat-history-panel,
@@ -4643,6 +4739,20 @@ body {
 
 .command-governed-ask[hidden] {
   display: none;
+}
+
+.offline-user-row {
+  border-color: #d7e6d0;
+  background: #fbfdf9;
+}
+
+.offline-user-facts span {
+  border-color: #d7e6d0;
+  background: #ffffff;
+}
+
+.offline-user-actions {
+  align-items: center;
 }
 
 .command-route-rail {

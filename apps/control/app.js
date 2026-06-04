@@ -98,11 +98,13 @@
 
     const invocation = (((data.invocations || {}).latest || [])[0]) || {};
     const latestAsk = (((data.asks || {}).latest || [])[0]) || {};
+    const latestOffline = (((data.offline_user || {}).latest || [])[0]) || {};
     const governedAsk = qs("command-governed-ask");
     if (governedAsk) {
       const askCard = latestAsk.ask_id ? renderGovernedAskCard(latestAsk, data) : null;
-      governedAsk.replaceChildren(...(askCard ? [askCard] : []));
-      governedAsk.hidden = !askCard;
+      const offlineCard = latestOffline.path ? renderOfflineUserCard(latestOffline) : null;
+      governedAsk.replaceChildren(...[offlineCard, askCard].filter(Boolean));
+      governedAsk.hidden = !askCard && !offlineCard;
     }
     const previews = invocation.artifact_previews || {};
     const latestDispatches = ((data.dispatches || {}).latest || []).slice(0, 2);
@@ -316,6 +318,79 @@
       actions.append(materialize);
     }
     if (actions.children.length) card.append(actions);
+    return card;
+  }
+
+  function renderOfflineUserCard(packet) {
+    const card = el("div", "command-receipt-row offline-user-row");
+    const draftItem = packet.memory_draft_source && packet.memory_draft_id
+      ? { source_artifact: packet.memory_draft_source, draft_id: packet.memory_draft_id }
+      : null;
+    const head = el("div", "command-receipt-row-head");
+    head.append(el("strong", "", "Offline User Agent"), pill(text(packet.packet_type, "frontier"), packet.status || "draft"));
+    const title = el("span", "command-receipt-path", text(packet.title, packet.path));
+    title.title = text(packet.title, packet.path);
+    const facts = el("div", "governed-ask-facts offline-user-facts");
+    [
+      ["contract", packet.contract_id],
+      ["next", packet.next_action],
+      ["boundary", packet.privacy_boundary || packet.stop_condition || packet.next_question],
+    ].filter((row) => row[1]).forEach(([label, value]) => {
+      const chip = el("span", "", `${label}: ${value}`);
+      chip.title = value;
+      facts.append(chip);
+    });
+    const actions = el("div", "governed-ask-actions offline-user-actions");
+    const open = artifactPreviewControl(packet.path, "command-receipt-open");
+    if (open) actions.append(open);
+    if (draftItem) {
+      const queued = packet.memory_review_state && packet.memory_review_state !== "operator_review_required";
+      const canRereview = packet.memory_review_result === "needs_more_evidence" && Number(packet.evidence_count || 0) > 0;
+      const review = el("button", "command-receipt-open offline-user-review", canRereview ? "Request Re-review" : (queued ? "Review Queued" : "Request Review"));
+      review.type = "button";
+      review.disabled = Boolean(queued && !canRereview);
+      const reviewStatus = el("small", "offline-user-review-status", packet.memory_review_result || packet.memory_review_state || "MemoryOS draft");
+      review.addEventListener("click", () => requestMemoryDraftReview(draftItem, reviewStatus, review));
+      actions.append(review, reviewStatus);
+    }
+    const prepare = el("button", "command-receipt-open", "Prepare Observation");
+    prepare.type = "button";
+    prepare.addEventListener("click", () => {
+      const prompt = [
+        "이 offline-user-agent packet을 읽고, user@offline에게 요청할 관찰을 더 안전하고 작게 다듬어줘.",
+        `packet=${packet.path}`,
+        `type=${text(packet.packet_type)}`,
+        `title=${text(packet.title)}`,
+        `privacy_boundary=${text(packet.privacy_boundary, "private/raw data must stay offline")}`,
+      ].join("\n");
+      focusInlineChat(prompt, "Offline observation prompt prepared");
+    });
+    actions.append(prepare);
+    card.append(head, title, facts, actions);
+    if (draftItem && packet.memory_review_result === "needs_more_evidence") {
+      const evidence = el("div", "memory-draft-evidence-form offline-user-evidence-form");
+      if (packet.evidence_count) {
+        evidence.append(el(
+          "small",
+          "memory-draft-evidence-summary",
+          `${Number(packet.evidence_count)} evidence item${Number(packet.evidence_count) === 1 ? "" : "s"} · ${text(packet.latest_evidence_note || packet.latest_evidence_artifact, "latest evidence")}`
+        ));
+      }
+      const note = document.createElement("textarea");
+      note.placeholder = "Operator evidence note";
+      note.rows = 2;
+      note.setAttribute("aria-label", "Offline user memory evidence note");
+      const artifact = document.createElement("input");
+      artifact.type = "text";
+      artifact.placeholder = ".aios/... or docs/...";
+      artifact.setAttribute("aria-label", "Offline user memory evidence artifact");
+      const evidenceButton = el("button", "memory-draft-evidence-button", "Add Evidence");
+      evidenceButton.type = "button";
+      const evidenceStatus = el("small", "memory-draft-evidence-status", "");
+      evidenceButton.addEventListener("click", () => recordMemoryReviewEvidence(draftItem, evidenceStatus, evidenceButton, note, artifact));
+      evidence.append(note, artifact, evidenceButton, evidenceStatus);
+      card.append(evidence);
+    }
     return card;
   }
 

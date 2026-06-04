@@ -20,6 +20,17 @@
         <p>Ask in plain language. AIOS handles routing and execution safety.</p>
       </section>
 
+      <section class="visual-workflow" aria-label="AIOS visual workflow">
+        <button class="visual-workflow-step active" type="button" data-visual-open="reference">Reference</button>
+        <button class="visual-workflow-step" type="button" data-visual-open="after">Build</button>
+        <button class="visual-workflow-step" type="button" data-visual-open="receipt">Verify</button>
+        <span class="visual-workflow-evidence" id="visual-workflow-evidence">screenshot-first</span>
+        <figure class="visual-workflow-preview" id="visual-workflow-preview" hidden>
+          <img alt="" id="visual-workflow-image" />
+          <figcaption id="visual-workflow-caption">No visual evidence</figcaption>
+        </figure>
+      </section>
+
       <section class="chat-layout" aria-label="AIOS chat">
         <div class="quick-questions" id="quick-questions" aria-label="Quick prompts">
           <button type="button" data-chat-prompt="오늘 상태가 어때?">현재 상태 알려줘</button>
@@ -27,6 +38,56 @@
           <button type="button" data-chat-prompt="이 대화에서 불편함과 숨은 필요성을 찾아줘">불편함 찾기</button>
           <button type="button" data-chat-prompt="최근 산출물만 요약해줘">요약만</button>
         </div>
+
+        <section class="chat-decision-map" id="chat-decision-map" aria-label="AIOS decision map">
+          <div class="chat-decision-head">
+            <strong>Decision Map</strong>
+            <span>waiting for first route</span>
+          </div>
+          <div class="chat-decision-flow" id="chat-decision-flow"></div>
+        </section>
+
+        <section class="offline-user-panel" id="offline-user-panel" aria-label="Offline user agent">
+          <div class="offline-user-head">
+            <strong>Offline User Agent</strong>
+            <span id="offline-user-status">no frontier packet</span>
+          </div>
+          <div class="offline-user-body" id="offline-user-body">
+            <small>AIOS will show bounded field-observation requests here.</small>
+          </div>
+        </section>
+
+        <section class="chat-history-panel" aria-label="Recent AIOS conversations">
+          <div class="chat-history-head">
+            <strong>Recent Conversations</strong>
+            <button id="chat-history-refresh" type="button">Refresh</button>
+          </div>
+          <div class="chat-history-filters" id="chat-history-filters" aria-label="Conversation filters">
+            <button type="button" data-history-filter="all" aria-pressed="true">All</button>
+            <button type="button" data-history-filter="provider_chair">Provider Chair</button>
+            <button type="button" data-history-filter="internal">Internal</button>
+            <button type="button" data-history-filter="memory_review_needed">Memory Review</button>
+            <button type="button" data-history-filter="failed_provider">Failed Provider</button>
+          </div>
+          <div class="chat-history-list" id="chat-history-list">
+            <span class="chat-history-empty">Loading history</span>
+          </div>
+        </section>
+
+        <aside class="artifact-evidence-desk" id="artifact-evidence-desk" aria-label="AIOS evidence desk">
+          <div class="artifact-hash-head">
+            <strong>Evidence Desk</strong>
+            <button class="artifact-hash-close" id="evidence-desk-clear" type="button">Clear</button>
+          </div>
+          <small class="artifact-hash-path">No artifact selected</small>
+          <div class="artifact-summary">No artifact metadata yet.</div>
+          <div class="artifact-desk-actions">
+            <button id="evidence-desk-ask" type="button">Ask About This</button>
+            <button id="evidence-desk-copy" type="button">Copy Path</button>
+            <small id="evidence-desk-action-status"></small>
+          </div>
+          <pre class="artifact-hash-preview">Open a route, receipt, memory pack, or screenshot verification artifact.</pre>
+        </aside>
 
         <div class="chat-thread" id="chat-thread" aria-live="polite">
           <article class="chat-empty">대화를 시작하려면 아래에 메시지를 입력하세요.</article>
@@ -42,6 +103,7 @@
         </form>
       </section>
     </main>
+    <script src="./aios-control-data.js"></script>
     <script src="./chat.js"></script>
   </body>
 </html>

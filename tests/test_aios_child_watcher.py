@@ -541,6 +541,97 @@ class AiosChildWatcherTest(unittest.TestCase):
             self.assertTrue(Path(data["review_request"]["import_result_ref"]).exists())
             self.assertFalse(data["stop_conditions_triggered"])
 
+    def test_memory_watcher_skips_offline_user_packets_for_review_dispatch(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            package = root / "memoryOS" / "memoryos"
+            package.mkdir()
+            (package / "__init__.py").write_text("", encoding="utf-8")
+            (package / "cli.py").write_text(
+                "\n".join(
+                    [
+                        "from __future__ import annotations",
+                        "import json",
+                        "print(json.dumps({",
+                        "  'schema_version': 'aios.memory_draft_review_import.v1',",
+                        "  'request_id': 'mdrev-offline',",
+                        "  'draft_id': 'offline-user:demo',",
+                        "  'memory_status': 'draft',",
+                        "  'review_action': 'needs_more_evidence',",
+                        "  'auto_accept': False,",
+                        "  'imported_counts': {'source_artifacts': 1, 'memory_objects': 1, 'hyperedges': 0, 'reviews': 1},",
+                        "  'skipped_counts': {'source_artifacts': 0, 'memory_objects': 0, 'hyperedges': 0, 'reviews': 0},",
+                        "}))",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            marker = root / "codex-called"
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                f"touch {marker.as_posix()}\n"
+                "exit 0\n",
+            )
+            offline_packet = {
+                "schema_version": "aios.offline_user_agent_packet.v1",
+                "packet_type": "field_observation",
+                "contract_id": "ASC-0210",
+                "created_at": "2026-05-20T18:34:00+09:00",
+                "status": "draft",
+                "observed_by": "user@offline",
+                "observed_at": "2026-05-20T18:34:00+09:00",
+                "summary": "offline observation should not be executed as a child dispatch",
+                "confidence": 0.8,
+                "private_data_included": False,
+                "next_question": "review?",
+                "review_policy": {"draft_first": True, "auto_accept": False},
+            }
+            (root / ".aios" / "inbox" / "memoryOS" / "asc-0210.field_observation.demo.json").write_text(
+                json.dumps(offline_packet), encoding="utf-8"
+            )
+            review_packet = {
+                "schema_version": "aios.memory_draft_review_request.v1",
+                "result_schema_version": "aios.dispatch.result.v1",
+                "request_id": "mdrev-offline",
+                "dispatch_id": "mdrev-offline",
+                "contract_id": "MEMORY-DRAFT-REVIEW",
+                "contract_path": "docs/AIOS_CHAT.md",
+                "target_repo": "memoryOS",
+                "agent": "memoryOS-reviewer",
+                "goal": "Review one offline-user field observation candidate.",
+                "source_artifact": ".aios/chat/offline-user/memory_drafts.json",
+                "draft_id": "offline-user:demo",
+                "return_to": ".aios/outbox/memoryOS/mdrev-offline.memoryOS.result.json",
+                "review_policy": {"auto_accept": False, "draft_first": True},
+                "draft": {
+                    "type": "field_observation",
+                    "origin": "offline_user_agent",
+                    "status": "draft",
+                    "confidence": 0.8,
+                    "content": "offline observation should be reviewed",
+                    "raw_refs": [".aios/inbox/memoryOS/asc-0210.field_observation.demo.json"],
+                    "provenance": {"source": "aios_offline_user_agent", "observed_by": "user@offline"},
+                },
+                "scope": {"allowed_files": [], "forbidden_files": [".env"]},
+            }
+            (root / ".aios" / "inbox" / "memoryOS" / "mdrev-offline.memoryOS.json").write_text(
+                json.dumps(review_packet), encoding="utf-8"
+            )
+
+            result = self.run_watcher(root, bin_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            self.assertIn("mdrev-offline.memoryOS.json", result.stdout)
+            self.assertFalse(marker.exists())
+            result_path = root / ".aios" / "outbox" / "memoryOS" / "mdrev-offline.memoryOS.result.json"
+            data = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(data["status"], "passed")
+            self.assertEqual(data["agent_executed"], "aios_child_watcher.memory_draft_review_adapter")
+            self.assertEqual(data["review_request"]["draft_type"], "field_observation")
+
     def test_memory_draft_review_request_without_dispatch_id_is_held(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = self.make_root(tmp)

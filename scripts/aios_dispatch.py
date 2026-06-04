@@ -1465,6 +1465,10 @@ def safe_argv(command: str) -> list[str]:
     if not argv:
         raise ValueError("empty command")
     executable = Path(argv[0]).name
+    if executable == "git":
+        if len(argv) >= 3 and argv[1:3] == ["diff", "--check"]:
+            return argv
+        raise ValueError(f"unsupported git verification command: {command}")
     if executable not in {"python", "python3", "pytest", "bash", "sleep"}:
         raise ValueError(f"unsupported executable in verification command: {argv[0]}")
     return argv
@@ -1512,6 +1516,10 @@ def cmd_watch(args: argparse.Namespace) -> int:
         if args.dispatch_id
         else latest_packet(root, args.repo)
     )
+    if args.dispatch_id and (not packet_path or not packet_path.exists()):
+        archived_packet = root / ".aios" / "archive" / "inbox" / args.repo / f"{args.dispatch_id}.{args.repo}.json"
+        if archived_packet.exists():
+            packet_path = archived_packet
     if not packet_path or not packet_path.exists():
         raise SystemExit(f"packet not found for repo {args.repo}")
     packet = json.loads(packet_path.read_text(encoding="utf-8"))

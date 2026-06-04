@@ -8,10 +8,12 @@ workflow: refresh local state, serve the app, inspect status, and stop it.
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import http.server
 import json
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -56,6 +58,17 @@ ARTIFACT_FORBIDDEN_MARKERS = (
     "raw_export",
     "raw-exports",
     "private_history",
+)
+PRIVATE_TEXT_RE = re.compile(
+    r"("
+    r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}"
+    r"|q1q1e3e3"
+    r"|AIza[0-9A-Za-z_-]+"
+    r"|sk-[A-Za-z0-9_-]+"
+    r"|api[_ -]?key[=:]\S+"
+    r"|token[=:]\S+"
+    r")",
+    re.IGNORECASE,
 )
 
 
@@ -132,6 +145,28 @@ def read_json_file(root: Path, relative_path: str) -> dict[str, Any] | None:
     return parsed if isinstance(parsed, dict) else None
 
 
+def read_jsonl_file(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            parsed = json.loads(line)
+            if isinstance(parsed, dict):
+                rows.append(parsed)
+    except (OSError, json.JSONDecodeError):
+        return []
+    return rows
+
+
+def redacted_preview(value: Any, *, max_chars: int = 260) -> str:
+    text = re.sub(r"\s+", " ", str(value or "")).strip()
+    text = PRIVATE_TEXT_RE.sub("[REDACTED_PRIVATE]", text)
+    if len(text) > max_chars:
+        return text[: max_chars - 3].rstrip() + "..."
+    return text
+
+
 def safe_artifact_ref(root: Path, ref: str) -> Path | None:
     if not ref or "\x00" in ref:
         return None
@@ -187,6 +222,243 @@ def build_artifact_response(root: Path, payload: dict[str, Any]) -> tuple[int, d
     }
 
 
+def file_mtime_iso(path: Path) -> str:
+    return datetime.fromtimestamp(path.stat().st_mtime, timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def visual_screenshot_item(root: Path, path: Path, *, kind: str) -> dict[str, Any]:
+    raw = path.read_bytes()
+    data_url = ""
+    if len(raw) <= 900_000:
+        data_url = "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
+    return {
+        "kind": kind,
+        "path": relative_ref(root, path),
+        "bytes": len(raw),
+        "updated_at": file_mtime_iso(path),
+        "data_url": data_url,
+    }
+
+
+def latest_visual_receipt(root: Path) -> dict[str, Any] | None:
+    receipt_root = root / ".aios" / "visual_verification"
+    if not receipt_root.exists():
+        return None
+    receipts = sorted(receipt_root.glob("*/receipt.json"), key=lambda path: path.stat().st_mtime, reverse=True)
+    for path in receipts[:20]:
+        payload = read_json_file(root, relative_ref(root, path))
+        if not isinstance(payload, dict):
+            continue
+        return {
+            "kind": "receipt",
+            "path": relative_ref(root, path),
+            "updated_at": file_mtime_iso(path),
+            "status": payload.get("status"),
+            "screenshot_path": payload.get("screenshot_path"),
+            "stop_conditions": payload.get("stop_conditions") if isinstance(payload.get("stop_conditions"), list) else [],
+        }
+    return None
+
+
+def visual_workflow_action(receipt: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not receipt:
+        return None
+    status = str(receipt.get("status") or "")
+    if status in {"", "passed"}:
+        return None
+    stops = receipt.get("stop_conditions") if isinstance(receipt.get("stop_conditions"), list) else []
+    prompt = (
+        "AIOS visual verification이 통과하지 못한 UI 증거를 work item으로 바꿔줘. "
+        f"receipt={receipt.get('path')} status={status} "
+        f"screenshot={receipt.get('screenshot_path') or 'none'} "
+        f"stop_conditions={', '.join(str(item) for item in stops) or 'none'}. "
+        "원인, 수정 범위, 검증 command, stop condition을 포함해줘."
+    )
+    return {
+        "kind": "visual_fix_work_item",
+        "label": "Create Visual Fix",
+        "severity": "attention" if status == "degraded" else "held",
+        "prompt": prompt,
+        "receipt": receipt.get("path"),
+        "status": status,
+        "stop_conditions": stops,
+    }
+
+
+def safe_visual_receipt_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "artifact_ref_not_allowed"
+    try:
+        path.resolve().relative_to((root / ".aios" / "visual_verification").resolve())
+    except ValueError:
+        return None, "visual_receipt_outside_visual_verification"
+    if path.name != "receipt.json":
+        return None, "visual_receipt_invalid"
+    return path, ""
+
+
+def render_visual_fix_contract_seed(receipt_ref: str, receipt: dict[str, Any]) -> str:
+    status = str(receipt.get("status") or "unknown")
+    screenshot = str(receipt.get("screenshot_path") or "none")
+    stops = receipt.get("stop_conditions") if isinstance(receipt.get("stop_conditions"), list) else []
+    stop_text = "\n".join(f"- `{item}`" for item in stops) or "- `visual_issue_unclassified`"
+    return f"""---
+contract_id: ASC-XXXX
+slug: visual-verification-fix
+status: proposed
+goal: Turn degraded visual verification evidence into a scoped UI fix.
+created: {now_iso()}
+accepted:
+closed:
+origin: AIOS visual workflow promotion
+visual_receipt: {receipt_ref}
+---
+
+# ASC-XXXX Visual Verification Fix
+
+## Why Now
+
+The latest visual verification receipt did not pass cleanly. Preserve the
+receipt as evidence and turn it into a bounded UI repair contract before
+executor work starts.
+
+- visual_receipt: `{receipt_ref}`
+- visual_status: `{status}`
+- screenshot: `{screenshot}`
+
+## Scope
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `apps/control/index.html`
+- `apps/control/app.js`
+- `apps/control/styles.css`
+- `scripts/aios_visual_verify.py`
+- `scripts/aios_local_app.py`
+- `tests/test_aios_visual_verify.py`
+- `tests/test_aios_local_app.py`
+- `docs/AIOS_CONTROL_APP.md`
+- `docs/AGENT_WORKLOG.md`
+
+forbidden_files:
+
+- `.env`
+- raw exports
+- provider auth files
+- child repo implementation files
+
+## Required Work
+
+- Inspect the visual receipt and screenshot.
+- Identify whether the failure is UI layout, browser verifier, data freshness,
+  or missing visual evidence.
+- Make the smallest scoped fix.
+- Re-run the visual verification command for the affected URL.
+
+## Verification Gate
+
+```bash
+python scripts/aios_visual_verify.py 'http://127.0.0.1:8765/?mode=operator' --allow-degraded --json
+```
+
+## Stop Conditions
+
+{stop_text}
+- `visual_receipt_missing`
+- `screenshot_missing`
+- `fix_requires_private_or_credentialed_data`
+- `executor_runs_before_operator_acceptance`
+"""
+
+
+def build_visual_fix_promotion_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "visual_fix_promotion_without_confirmation"}
+    receipt_ref = str(payload.get("visual_receipt") or payload.get("receipt") or "").strip()
+    receipt_path, reason = safe_visual_receipt_ref(root, receipt_ref)
+    if receipt_path is None:
+        return 400, {"ok": False, "reason": reason}
+    receipt = read_json_file(root, relative_ref(root, receipt_path))
+    if not isinstance(receipt, dict) or receipt.get("schema_version") != "aios.visual_verification.v1":
+        return 400, {"ok": False, "reason": "visual_receipt_schema_invalid"}
+    status = str(receipt.get("status") or "")
+    if status not in {"degraded", "failed"}:
+        return 409, {"ok": False, "reason": "visual_receipt_not_actionable", "status": status}
+    promotion_id = "visual-fix-" + stable_hash(receipt_ref + "|" + status)[:12]
+    receipt_out_ref = f".aios/promotions/{promotion_id}/promotion.json"
+    contract_seed_ref = f".aios/promotions/{promotion_id}/contract_seed.md"
+    promotion = {
+        "schema_version": PROMOTION_SCHEMA,
+        "promotion_id": promotion_id,
+        "status": "proposed_contract_seed",
+        "goal": "Turn degraded visual verification evidence into a scoped UI fix.",
+        "created_at": now_iso(),
+        "source": {
+            "kind": "visual_verification_receipt",
+            "ref": receipt_ref,
+            "status": status,
+            "screenshot_path": receipt.get("screenshot_path"),
+            "stop_conditions": receipt.get("stop_conditions") if isinstance(receipt.get("stop_conditions"), list) else [],
+        },
+        "artifact_paths": {
+            "receipt": receipt_out_ref,
+            "contract_seed": contract_seed_ref,
+            "visual_receipt": receipt_ref,
+        },
+        "materialization_recommended": True,
+        "quality_warnings": [],
+        "execution_started": False,
+        "next_action": "operator_assign_asc_accept_and_dispatch",
+        "stop_conditions": ["accepted_contract_missing", "visual_receipt_missing", "executor_runs_without_dispatch_packet"],
+    }
+    write_json(root / receipt_out_ref, promotion)
+    write_text(root / contract_seed_ref, render_visual_fix_contract_seed(receipt_ref, receipt).rstrip() + "\n")
+    return 200, {"ok": True, "receipt": promotion}
+
+
+def build_visual_workflow_response(root: Path) -> tuple[int, dict[str, Any]]:
+    screenshot_root = root / ".aios" / "screenshots"
+    screenshots = sorted(screenshot_root.glob("*.png"), key=lambda path: path.stat().st_mtime, reverse=True) if screenshot_root.exists() else []
+    receipt = latest_visual_receipt(root)
+    reference = next((path for path in screenshots if re.search(r"(reference|before)", path.name, re.IGNORECASE)), None)
+    after = next((path for path in screenshots if re.search(r"(after|workflow|markdown|turn)", path.name, re.IGNORECASE)), None)
+    receipt_screenshot_ref = str((receipt or {}).get("screenshot_path") or "")
+    receipt_screenshot = root / receipt_screenshot_ref if receipt_screenshot_ref and not Path(receipt_screenshot_ref).is_absolute() else None
+    if receipt_screenshot and receipt_screenshot.exists():
+        try:
+            receipt_screenshot.resolve().relative_to(screenshot_root.resolve())
+            after = receipt_screenshot
+        except ValueError:
+            pass
+    if reference is None and screenshots:
+        reference = screenshots[-1]
+    if after is None and screenshots:
+        after = screenshots[0]
+    items: dict[str, Any] = {}
+    try:
+        if reference:
+            items["reference"] = visual_screenshot_item(root, reference, kind="reference")
+        if after:
+            items["after"] = visual_screenshot_item(root, after, kind="after")
+    except OSError as exc:
+        return 502, {"ok": False, "reason": "visual_screenshot_read_failed", "error": str(exc)}
+    if receipt:
+        items["receipt"] = receipt
+    action = visual_workflow_action(receipt)
+    return 200, {
+        "ok": True,
+        "schema_version": "aios.visual_workflow.v1",
+        "status": "ready" if items.get("reference") and items.get("after") else "missing_visual_evidence",
+        "items": items,
+        "action": action,
+    }
+
+
 def safe_chat_memory_drafts_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
     path = safe_artifact_ref(root, ref)
     if path is None:
@@ -200,6 +472,473 @@ def safe_chat_memory_drafts_ref(root: Path, ref: str) -> tuple[Path, str] | tupl
     return path, ""
 
 
+def safe_chat_friction_seed_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "artifact_ref_not_allowed"
+    try:
+        path.resolve().relative_to((root / ".aios" / "chat").resolve())
+    except ValueError:
+        return None, "friction_seed_source_outside_chat"
+    if path.name != "friction_contract_seed.md":
+        return None, "friction_seed_source_invalid"
+    return path, ""
+
+
+def extract_friction_seed_goal(text: str) -> str:
+    marker = "## Proposed Goal"
+    if marker not in text:
+        return "Review GenesisOS friction contract seed"
+    rest = text.split(marker, 1)[1]
+    rest = rest.split("\n## ", 1)[0]
+    goal = re.sub(r"\s+", " ", rest).strip()
+    return goal[:500] or "Review GenesisOS friction contract seed"
+
+
+def next_contract_id(root: Path) -> str:
+    highest = 0
+    for path in (root / "docs" / "contracts").glob("ASC-*.md"):
+        match = re.match(r"ASC-(\d{4})", path.name)
+        if match:
+            highest = max(highest, int(match.group(1)))
+    return f"ASC-{highest + 1:04d}"
+
+
+def render_genesis_break_frame_seed(payload: dict[str, Any], source_seed_ref: str) -> str:
+    contract_id = str(payload.get("contract_id") or "ASC-UNKNOWN").strip()[:80]
+    contract_path = str(payload.get("contract_path") or payload.get("path") or "").strip()[:240]
+    reason = str(payload.get("reason") or "GenesisOS flagged prompt-prison convergence.").strip()[:600]
+    escape_vectors = [str(value).strip()[:240] for value in (payload.get("escape_vectors") or []) if str(value).strip()][:6]
+    signatures = [row for row in (payload.get("signatures") or []) if isinstance(row, dict)][:6]
+    goal = f"Break GenesisOS prompt-prison frame for {contract_id} into alternate worldlines and a verifiable AIOS work contract."
+    escape_lines = "\n".join(f"- {value}" for value in escape_vectors) or "- produce a counter-default branch before implementation"
+    signature_lines = "\n".join(
+        f"- `{str(row.get('signature') or 'signature')}`: {str(row.get('evidence') or 'no evidence recorded')[:300]}"
+        for row in signatures
+    ) or "- no signature details captured"
+    return f"""---
+contract_id: ASC-XXXX
+status: proposed
+authority: speculative_only
+goal: {goal}
+source_contract: {contract_id}
+---
+
+# ASC-XXXX Genesis Break-Frame Seed
+
+This file is not execution authority; it is a reviewable bridge from GenesisOS
+discomfort to an operator-approved AIOS smart contract.
+
+## Proposed Goal
+
+{goal}
+
+## Source Friction
+
+- source_contract: `{contract_id}`
+- source_path: `{contract_path}`
+- source_seed: `{source_seed_ref}`
+- reason: {reason}
+
+## Escape Vectors
+
+{escape_lines}
+
+## Prompt-Prison Signatures
+
+{signature_lines}
+
+## Alternate Worldlines
+
+1. Schema worldline: restate the target work as machine-checkable inputs,
+   outputs, stop conditions, and verification gates before implementation.
+2. Inversion worldline: negate the top three hidden assumptions and produce a
+   counter-plan that intentionally avoids the default wording.
+3. Distant-domain worldline: map the contract to a non-software operating
+   system analogy, then import one concrete mechanism back into AIOS.
+
+## Scope
+
+repos:
+
+- `myworld`
+- `GenesisOS`
+
+allowed_files:
+
+- `{contract_path or 'docs/contracts/ASC-XXXX-genesis-break-frame-seed.md'}`
+- `docs/contracts/ASC-XXXX-genesis-break-frame-seed.md`
+- `.aios/promotions/**`
+
+forbidden_files:
+
+- `.env`
+- raw exports
+- private runtime auth files
+- child repo implementation files
+
+## Verification Gate
+
+```bash
+python -m py_compile scripts/aios_control_snapshot.py
+python -m unittest tests.test_aios_control_snapshot -v
+```
+
+## Stop Conditions
+
+- The seed is treated as accepted execution authority.
+- GenesisOS critique loses the cited source contract or escape vectors.
+- The generated contract cannot be reviewed independently of this chat turn.
+"""
+
+
+def build_genesis_break_frame_seed_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "genesis_break_frame_without_confirmation"}
+    contract_path = str(payload.get("contract_path") or payload.get("path") or "").strip()
+    if contract_path:
+        source_path = safe_artifact_ref(root, contract_path)
+        if source_path is None:
+            return 400, {"ok": False, "reason": "source_contract_ref_not_allowed"}
+        try:
+            source_path.resolve().relative_to((root / "docs" / "contracts").resolve())
+        except ValueError:
+            return 400, {"ok": False, "reason": "source_contract_outside_contracts"}
+    seed_id = stable_hash(json.dumps(payload, ensure_ascii=False, sort_keys=True))[:16]
+    source_seed_ref = f".aios/chat/friction-radar-{seed_id}/friction_contract_seed.md"
+    write_text(root / source_seed_ref, render_genesis_break_frame_seed(payload, source_seed_ref).rstrip() + "\n")
+    status, promotion_payload = build_friction_seed_promotion_response(
+        root,
+        {"source_seed": source_seed_ref, "confirm": True},
+    )
+    if status != 200:
+        return status, promotion_payload
+    response: dict[str, Any] = {
+        "ok": True,
+        "schema_version": "aios.genesis_break_frame_seed.v1",
+        "source_seed": source_seed_ref,
+        "promotion": promotion_payload.get("receipt"),
+        "execution_started": False,
+    }
+    if payload.get("materialize", True):
+        receipt = promotion_payload.get("receipt") if isinstance(promotion_payload.get("receipt"), dict) else {}
+        receipt_ref = str((receipt.get("artifact_paths") or {}).get("receipt") or "")
+        material_status, material_payload = build_promotion_contract_materialization_response(
+            root,
+            {
+                "promotion_receipt": receipt_ref,
+                "asc_id": str(payload.get("asc_id") or next_contract_id(root)),
+                "confirm": True,
+            },
+        )
+        if material_status != 200:
+            response["materialization_error"] = material_payload
+            return material_status, response
+        response["materialization"] = material_payload.get("materialization")
+    return 200, response
+
+
+def build_friction_seed_promotion_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "friction_seed_promotion_without_confirmation"}
+    source_ref = str(payload.get("source_seed") or payload.get("path") or "").strip()
+    source_path, reason = safe_chat_friction_seed_ref(root, source_ref)
+    if source_path is None:
+        return 400, {"ok": False, "reason": reason}
+    try:
+        seed_text = source_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return 404, {"ok": False, "reason": "friction_seed_read_failed", "error": str(exc)}
+    if "authority: speculative_only" not in seed_text or "not execution authority" not in seed_text:
+        return 409, {"ok": False, "reason": "friction_seed_guardrail_missing"}
+
+    promotion_id = f"friction-{stable_hash(source_ref)[:12]}-{datetime.now(timezone.utc).astimezone().strftime('%Y%m%dT%H%M%S')}"
+    receipt_ref = f".aios/promotions/{promotion_id}/promotion.json"
+    contract_seed_ref = f".aios/promotions/{promotion_id}/contract_seed.md"
+    goal = extract_friction_seed_goal(seed_text)
+    receipt = {
+        "schema_version": PROMOTION_SCHEMA,
+        "promotion_id": promotion_id,
+        "status": "proposed_contract_seed",
+        "created_at": now_iso(),
+        "session_envelope": {"ref": "", "schema_version": ""},
+        "goal": goal,
+        "source": "aios_chat_genesis_friction",
+        "source_seed": source_ref,
+        "artifact_paths": {
+            "receipt": receipt_ref,
+            "contract_seed": contract_seed_ref,
+            "source_seed": source_ref,
+            "dispatch_preview": "",
+        },
+        "execution_started": False,
+        "next_action": "operator_assign_asc_accept_and_dispatch",
+        "stop_conditions": ["accepted_contract_missing", "genesis_seed_used_as_execution_authority"],
+    }
+    write_json(root / receipt_ref, receipt)
+    promoted_seed = seed_text.rstrip() + f"\n\n## Promotion Receipt\n\n- promotion_receipt: `{receipt_ref}`\n- source_seed: `{source_ref}`\n"
+    write_text(root / contract_seed_ref, promoted_seed + "\n")
+    return 200, {"ok": True, "receipt": receipt}
+
+
+def safe_promotion_receipt_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "artifact_ref_not_allowed"
+    try:
+        path.resolve().relative_to((root / ".aios" / "promotions").resolve())
+    except ValueError:
+        return None, "promotion_receipt_outside_promotions"
+    if path.name != "promotion.json":
+        return None, "promotion_receipt_invalid"
+    return path, ""
+
+
+def safe_promotion_contract_seed_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "artifact_ref_not_allowed"
+    try:
+        path.resolve().relative_to((root / ".aios" / "promotions").resolve())
+    except ValueError:
+        return None, "promotion_seed_outside_promotions"
+    if path.name != "contract_seed.md":
+        return None, "promotion_seed_invalid"
+    return path, ""
+
+
+def safe_contract_ref(root: Path, ref: str) -> tuple[Path, str] | tuple[None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "artifact_ref_not_allowed"
+    try:
+        path.resolve().relative_to((root / "docs" / "contracts").resolve())
+    except ValueError:
+        return None, "contract_outside_contracts_dir"
+    if not re.fullmatch(r"ASC-\d{4}.*\.md", path.name):
+        return None, "contract_path_invalid"
+    return path, ""
+
+
+def frontmatter_value(text: str, key: str) -> str:
+    if not text.startswith("---\n"):
+        return ""
+    try:
+        header = text.split("---", 2)[1]
+    except IndexError:
+        return ""
+    prefix = f"{key}:"
+    for line in header.splitlines():
+        if line.startswith(prefix):
+            return line.partition(":")[2].strip()
+    return ""
+
+
+def set_frontmatter_fields(text: str, fields: dict[str, str]) -> str:
+    if text.startswith("---\n") and "\n---" in text[4:]:
+        _, header, body = text.split("---", 2)
+        lines = header.strip("\n").splitlines()
+    else:
+        lines = []
+        body = "\n" + text
+    seen: set[str] = set()
+    updated: list[str] = []
+    for line in lines:
+        key = line.partition(":")[0].strip()
+        if key in fields:
+            updated.append(f"{key}: {fields[key]}")
+            seen.add(key)
+        else:
+            updated.append(line)
+    for key, value in fields.items():
+        if key not in seen:
+            updated.append(f"{key}: {value}")
+    return "---\n" + "\n".join(updated).rstrip() + "\n---" + body
+
+
+def build_contract_review_action_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "contract_review_action_without_confirmation"}
+    action = str(payload.get("action") or "").strip()
+    if action != "mark_superseded":
+        return 400, {"ok": False, "reason": "unsupported_contract_review_action", "expected": "mark_superseded"}
+    contract_ref = str(payload.get("contract_path") or payload.get("path") or "").strip()
+    contract_path, reason = safe_contract_ref(root, contract_ref)
+    if contract_path is None:
+        return 400, {"ok": False, "reason": reason}
+    try:
+        text = contract_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return 404, {"ok": False, "reason": "contract_read_failed", "error": str(exc)}
+    status = frontmatter_value(text, "status")
+    if status != "proposed":
+        return 409, {"ok": False, "reason": "contract_not_proposed", "status": status}
+    contract_id = frontmatter_value(text, "contract_id") or contract_path.stem.split("-")[0]
+    review_reason = redacted_preview(payload.get("reason") or "weak proposed contract superseded before acceptance", max_chars=300)
+    updated = set_frontmatter_fields(
+        text,
+        {
+            "status": "superseded",
+            "superseded": now_iso(),
+            "superseded_reason": review_reason,
+        },
+    )
+    write_text(contract_path, updated.rstrip() + "\n")
+    review_id = f"{contract_id.lower()}-{stable_hash(contract_ref + '|' + review_reason + '|' + now_iso())[:12]}"
+    receipt_ref = f".aios/contract_reviews/{review_id}/review_action.json"
+    receipt = {
+        "schema_version": "aios.contract_review_action.v1",
+        "review_id": review_id,
+        "contract_id": contract_id,
+        "contract_path": relative_ref(root, contract_path),
+        "action": action,
+        "previous_status": status,
+        "status": "superseded",
+        "reason": review_reason,
+        "created_at": now_iso(),
+        "execution_started": False,
+    }
+    write_json(root / receipt_ref, receipt)
+    return 200, {"ok": True, "receipt": receipt}
+
+
+def build_promotion_contract_materialization_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "contract_materialization_without_confirmation"}
+    asc_id = str(payload.get("asc_id") or payload.get("contract_id") or "").strip().upper()
+    if not re.fullmatch(r"ASC-\d{4}", asc_id):
+        return 400, {"ok": False, "reason": "contract_id_invalid", "expected": "ASC-NNNN"}
+    receipt_ref = str(payload.get("promotion_receipt") or payload.get("receipt") or "").strip()
+    receipt_path, reason = safe_promotion_receipt_ref(root, receipt_ref)
+    if receipt_path is None:
+        return 400, {"ok": False, "reason": reason}
+    receipt = read_json_file(root, relative_ref(root, receipt_path))
+    if not isinstance(receipt, dict) or receipt.get("schema_version") != PROMOTION_SCHEMA:
+        return 400, {"ok": False, "reason": "promotion_receipt_schema_invalid"}
+    if receipt.get("materialization_recommended") is False and not payload.get("override_quality_warning"):
+        return 409, {
+            "ok": False,
+            "reason": "promotion_quality_warning",
+            "quality_warnings": receipt.get("quality_warnings") or [],
+            "stop_condition": "weak_route_materialization_requires_revision_or_override",
+        }
+    paths = receipt.get("artifact_paths") if isinstance(receipt.get("artifact_paths"), dict) else {}
+    seed_ref = str(paths.get("contract_seed") or "")
+    seed_path, seed_reason = safe_promotion_contract_seed_ref(root, seed_ref)
+    if seed_path is None:
+        return 400, {"ok": False, "reason": seed_reason}
+    try:
+        seed_text = seed_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return 404, {"ok": False, "reason": "promotion_seed_read_failed", "error": str(exc)}
+    if "status: proposed" not in seed_text:
+        return 409, {"ok": False, "reason": "promotion_seed_not_proposed"}
+
+    slug = slugify(str(receipt.get("goal") or asc_id))
+    target_ref = f"docs/contracts/{asc_id}-{slug}.md"
+    target_path = root / target_ref
+    if target_path.exists():
+        return 409, {"ok": False, "reason": "contract_already_exists", "contract_path": target_ref}
+    body = seed_text.replace("ASC-XXXX", asc_id)
+    body = body.replace(f"docs/contracts/{asc_id}-genesis-break-frame-seed.md", target_ref)
+    if f"contract_id: {asc_id}" not in body:
+        body = f"---\ncontract_id: {asc_id}\nstatus: proposed\n---\n\n" + body
+    write_text(target_path, body.rstrip() + "\n")
+
+    materialization_ref = f".aios/promotions/{receipt_path.parent.name}/materialization.json"
+    materialization = {
+        "schema_version": "aios.promotion_contract_materialization.v1",
+        "promotion_id": receipt.get("promotion_id") or receipt_path.parent.name,
+        "promotion_receipt": receipt_ref,
+        "contract_id": asc_id,
+        "contract_path": target_ref,
+        "status": "proposed_contract_materialized",
+        "created_at": now_iso(),
+        "execution_started": False,
+        "next_action": "operator_review_accept_and_dispatch",
+    }
+    write_json(root / materialization_ref, materialization)
+    return 200, {"ok": True, "materialization": materialization}
+
+
+def safe_ask_receipt_ref(root: Path, ref: str) -> tuple[Path | None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "ask_receipt_ref_not_allowed"
+    try:
+        path.relative_to((root / ".aios" / "asks").resolve())
+    except ValueError:
+        return None, "ask_receipt_not_under_asks"
+    if path.name != "receipt.json":
+        return None, "ask_receipt_must_be_receipt_json"
+    return path, ""
+
+
+def safe_ask_contract_seed_ref(root: Path, ref: str) -> tuple[Path | None, str]:
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return None, "ask_contract_seed_ref_not_allowed"
+    try:
+        path.relative_to((root / ".aios" / "asks").resolve())
+    except ValueError:
+        return None, "ask_contract_seed_not_under_asks"
+    if path.name != "contract_seed.md":
+        return None, "ask_contract_seed_must_be_contract_seed_md"
+    return path, ""
+
+
+def build_ask_contract_materialization_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "ask_contract_materialization_without_confirmation"}
+    asc_id = str(payload.get("asc_id") or payload.get("contract_id") or "").strip().upper()
+    if not re.fullmatch(r"ASC-\d{4}", asc_id):
+        return 400, {"ok": False, "reason": "contract_id_invalid", "expected": "ASC-NNNN"}
+    receipt_ref = str(payload.get("ask_receipt") or payload.get("receipt") or "").strip()
+    receipt_path, reason = safe_ask_receipt_ref(root, receipt_ref)
+    if receipt_path is None:
+        return 400, {"ok": False, "reason": reason}
+    receipt = read_json_file(root, relative_ref(root, receipt_path))
+    if not isinstance(receipt, dict) or receipt.get("schema_version") != "aios.ask.receipt.v1":
+        return 400, {"ok": False, "reason": "ask_receipt_schema_invalid"}
+    paths = receipt.get("artifact_paths") if isinstance(receipt.get("artifact_paths"), dict) else {}
+    seed_ref = str(paths.get("contract_seed") or "")
+    seed_path, seed_reason = safe_ask_contract_seed_ref(root, seed_ref)
+    if seed_path is None:
+        return 400, {"ok": False, "reason": seed_reason}
+    try:
+        seed_text = seed_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        return 404, {"ok": False, "reason": "ask_seed_read_failed", "error": str(exc)}
+    if "status: proposed" not in seed_text:
+        return 409, {"ok": False, "reason": "ask_seed_not_proposed"}
+
+    slug = slugify(str(receipt.get("goal") or asc_id))
+    target_ref = f"docs/contracts/{asc_id}-{slug}.md"
+    target_path = root / target_ref
+    if target_path.exists():
+        return 409, {"ok": False, "reason": "contract_already_exists", "contract_path": target_ref}
+    body = seed_text.replace("ASC-XXXX", asc_id)
+    if f"contract_id: {asc_id}" not in body:
+        body = f"---\ncontract_id: {asc_id}\nstatus: proposed\n---\n\n" + body
+    write_text(target_path, body.rstrip() + "\n")
+
+    ask_id = str(receipt.get("ask_id") or receipt_path.parent.name)
+    materialization_ref = f".aios/asks/{receipt_path.parent.name}/materialization.json"
+    materialization = {
+        "schema_version": "aios.ask_contract_materialization.v1",
+        "ask_id": ask_id,
+        "ask_receipt": receipt_ref,
+        "contract_id": asc_id,
+        "contract_path": target_ref,
+        "status": "proposed_contract_materialized",
+        "created_at": now_iso(),
+        "execution_started": False,
+        "next_action": "operator_review_accept_and_dispatch",
+    }
+    write_json(root / materialization_ref, materialization)
+    return 200, {"ok": True, "materialization": materialization}
+
+
 def select_memory_draft(payload: dict[str, Any], source_path: Path, draft_id: str) -> tuple[dict[str, Any] | None, int, str]:
     drafts = payload.get("memory_drafts") if isinstance(payload.get("memory_drafts"), list) else []
     conversation_id = source_path.parent.name
@@ -210,6 +949,52 @@ def select_memory_draft(payload: dict[str, Any], source_path: Path, draft_id: st
         if candidate_id == draft_id or str(index) == draft_id:
             return draft, index, candidate_id
     return None, -1, ""
+
+
+def memory_review_evidence_for(root: Path, source_ref: str, draft_id: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    state_path = root / ".aios" / "state" / "memory_review_evidence.jsonl"
+    try:
+        lines = state_path.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return rows
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        if row.get("source_artifact") != source_ref or row.get("draft_id") != draft_id:
+            continue
+        paths = row.get("artifact_paths") if isinstance(row.get("artifact_paths"), dict) else {}
+        evidence_ref = str(paths.get("evidence") or "")
+        artifact_ref = str(row.get("evidence_artifact") or "")
+        rows.append(
+            {
+                "evidence_id": row.get("evidence_id"),
+                "created_at": row.get("created_at"),
+                "note": row.get("note") or "",
+                "evidence_ref": evidence_ref,
+                "evidence_artifact": artifact_ref,
+            }
+        )
+    rows.sort(key=lambda row: str(row.get("created_at") or ""))
+    return rows[-5:]
+
+
+def dedupe_strings(values: list[str]) -> list[str]:
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value or "").strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        deduped.append(text)
+    return deduped
 
 
 def build_memory_draft_review_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -240,7 +1025,11 @@ def build_memory_draft_review_response(root: Path, payload: dict[str, Any]) -> t
     packet_ref = f".aios/inbox/memoryOS/{request_id}.memoryOS.json"
     result_ref = f".aios/outbox/memoryOS/{request_id}.memoryOS.result.json"
     content = str(draft.get("content") or "")
-    raw_refs = [str(ref) for ref in draft.get("raw_refs") or [] if isinstance(ref, str)]
+    supplemental_evidence = memory_review_evidence_for(root, source_ref, resolved_draft_id)
+    evidence_refs: list[str] = []
+    for item in supplemental_evidence:
+        evidence_refs.extend(str(ref) for ref in (item.get("evidence_ref"), item.get("evidence_artifact")) if ref)
+    raw_refs = dedupe_strings([str(ref) for ref in draft.get("raw_refs") or [] if isinstance(ref, str)] + evidence_refs)
     provenance = draft.get("provenance") if isinstance(draft.get("provenance"), dict) else {}
     packet = {
         "schema_version": MEMORY_DRAFT_REVIEW_SCHEMA,
@@ -272,10 +1061,12 @@ def build_memory_draft_review_response(root: Path, payload: dict[str, Any]) -> t
             "raw_refs": raw_refs,
             "provenance": provenance,
         },
+        "supplemental_evidence": supplemental_evidence,
         "must_produce": [
             "MemoryOS review receipt for this draft candidate",
             "review decision: accept, reject, or needs_more_evidence",
             "provenance link back to source_artifact and draft_id",
+            "supplemental evidence refs preserved when provided",
         ],
         "scope": {
             "repos": ["memoryOS"],
@@ -322,11 +1113,79 @@ def build_memory_draft_review_response(root: Path, payload: dict[str, Any]) -> t
         },
         "next_action": "memoryOS_watcher_reviews_candidate",
         "execution_started": False,
+        "supplemental_evidence_count": len(supplemental_evidence),
         "stop_conditions": packet["stop_conditions"],
     }
     write_json(root / request_ref, {**packet, "artifact_paths": receipt["artifact_paths"]})
     write_json(root / packet_ref, packet)
     state_path = root / ".aios" / "state" / "memory_draft_reviews.jsonl"
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    with state_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n")
+    return 200, {"ok": True, "receipt": receipt}
+
+
+def build_memory_review_evidence_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "memory_review_evidence_without_confirmation"}
+    source_ref = str(payload.get("source_artifact") or payload.get("path") or "").strip()
+    draft_id = str(payload.get("draft_id") or "").strip()
+    note = str(payload.get("note") or "").strip()
+    evidence_ref = str(payload.get("evidence_artifact") or payload.get("artifact") or "").strip()
+    if not source_ref or not draft_id:
+        return 400, {"ok": False, "reason": "memory_review_evidence_ref_missing"}
+    if len(note) > 2000:
+        return 413, {"ok": False, "reason": "memory_review_note_too_large", "max_chars": 2000}
+    if not note and not evidence_ref:
+        return 400, {"ok": False, "reason": "memory_review_evidence_missing"}
+    source_path, reason = safe_chat_memory_drafts_ref(root, source_ref)
+    if source_path is None:
+        return 400, {"ok": False, "reason": reason}
+    try:
+        draft_payload = json.loads(source_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 400, {"ok": False, "reason": "memory_draft_source_unreadable"}
+    if not isinstance(draft_payload, dict) or draft_payload.get("schema_version") != "aios.chat.memory_drafts.v1":
+        return 400, {"ok": False, "reason": "memory_draft_schema_invalid"}
+    draft, draft_index, resolved_draft_id = select_memory_draft(draft_payload, source_path, draft_id)
+    if draft is None:
+        return 404, {"ok": False, "reason": "memory_draft_not_found"}
+    evidence_path = None
+    if evidence_ref:
+        evidence_path = safe_artifact_ref(root, evidence_ref)
+        if evidence_path is None:
+            return 400, {"ok": False, "reason": "evidence_artifact_ref_not_allowed"}
+        evidence_ref = relative_ref(root, evidence_path)
+
+    evidence_id = f"mrevd-{stable_hash(source_ref + '|' + resolved_draft_id + '|' + note + '|' + evidence_ref + '|' + now_iso())[:16]}"
+    evidence_record_ref = f".aios/memory_review_evidence/{evidence_id}/evidence.json"
+    receipt = {
+        "schema_version": "aios.memory_review_evidence.v1",
+        "evidence_id": evidence_id,
+        "created_at": now_iso(),
+        "status": "evidence_recorded",
+        "source_artifact": source_ref,
+        "draft_id": resolved_draft_id,
+        "draft_index": draft_index,
+        "draft_type": draft.get("type") or "memory_draft",
+        "note": note,
+        "evidence_artifact": evidence_ref,
+        "artifact_paths": {
+            "evidence": evidence_record_ref,
+            "source_artifact": source_ref,
+            "evidence_artifact": evidence_ref,
+        },
+        "execution_started": False,
+        "next_action": "request_memoryos_review_again_when_evidence_is_sufficient",
+        "stop_conditions": [
+            "evidence_contains_private_data",
+            "source_artifact_missing",
+            "draft_id_missing",
+            "auto_accept_attempted",
+        ],
+    }
+    write_json(root / evidence_record_ref, receipt)
+    state_path = root / ".aios" / "state" / "memory_review_evidence.jsonl"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     with state_path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(receipt, ensure_ascii=False, sort_keys=True) + "\n")
@@ -357,55 +1216,115 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+
+
 def write_text(path: Path, body: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(body, encoding="utf-8")
 
 
 def slugify(text: str) -> str:
-    import re
-
     return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()[:80] or "aios-session"
 
 
-def render_aios_role_evidence_section() -> str:
-    return """## AIOS Role Evidence
+def extract_context_pack_evidence(root: Path, envelope: dict[str, Any]) -> dict[str, Any]:
+    artifacts = envelope.get("role_artifacts") if isinstance(envelope.get("role_artifacts"), dict) else {}
+    ref = str(artifacts.get("memory_context_pack") or "").strip()
+    evidence: dict[str, Any] = {
+        "context_pack": ref or "pending_or_not_required",
+        "retrieval_trace": "pending_or_not_required",
+        "selected_memory_ids": [],
+        "signal_coverage": "not_reported",
+    }
+    if not ref:
+        return evidence
+    path = safe_artifact_ref(root, ref)
+    if path is None:
+        return evidence
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return evidence
+    trace_match = re.search(r"\btrace_id:\s*(rtrace_[A-Za-z0-9]+)", text)
+    if trace_match:
+        evidence["retrieval_trace"] = trace_match.group(1)
+    coverage_match = re.search(r"\bsignal_coverage:\s*([A-Za-z0-9_.+-]+)", text)
+    if coverage_match:
+        evidence["signal_coverage"] = coverage_match.group(1)
+    selected_match = re.search(r"\bselected_memory_ids:\s*(\[.*?\])", text)
+    if selected_match:
+        try:
+            parsed = json.loads(selected_match.group(1))
+        except json.JSONDecodeError:
+            parsed = []
+        if isinstance(parsed, list):
+            evidence["selected_memory_ids"] = [str(item) for item in parsed if item]
+    return evidence
+
+
+def render_aios_role_evidence_section(root: Path | None = None, envelope: dict[str, Any] | None = None) -> str:
+    memory = extract_context_pack_evidence(root, envelope or {}) if root is not None and envelope is not None else {
+        "context_pack": "pending_or_not_required",
+        "retrieval_trace": "pending_or_not_required",
+        "selected_memory_ids": [],
+        "signal_coverage": "not_reported",
+    }
+    selected = memory.get("selected_memory_ids") or []
+    selected_text = json.dumps(selected, ensure_ascii=False) if selected else "pending_or_not_required"
+    artifacts = (envelope or {}).get("role_artifacts") if isinstance((envelope or {}).get("role_artifacts"), dict) else {}
+    capability_ref = artifacts.get("capability_route") or "pending_or_not_required"
+    genesis_ref = artifacts.get("genesis") or "pending_or_not_required"
+    hive_ref = artifacts.get("hive_execution_plan") or "pending_after_acceptance"
+    return f"""## AIOS Role Evidence
 
 ### MemoryOS
 
-- context_pack: `pending_or_not_required`
-- retrieval_trace: `pending_or_not_required`
-- accepted_memory_ids: `pending_or_not_required`
+- context_pack: `{memory.get('context_pack')}`
+- retrieval_trace: `{memory.get('retrieval_trace')}`
+- accepted_memory_ids: `{selected_text}`
+- signal_coverage: `{memory.get('signal_coverage')}`
 - draft_memory_policy: `draft_first_no_auto_accept`
 
 ### CapabilityOS
 
-- route: `pending_or_not_required`
+- route: `{capability_ref}`
 - recommended_tools: `pending_or_not_required`
 - fallback_plan: `pending_or_not_required`
 - authority: `recommendation_only`
 
 ### GenesisOS
 
-- branch_set: `pending_or_not_required`
+- branch_set: `{genesis_ref}`
 - assumption_mutations: `pending_or_not_required`
 - semantic_alignment_notes: `pending_or_not_required`
 - authority: `advisory_only`
 
 ### Hive Mind
 
-- execution_plan: `pending_after_acceptance`
+- execution_plan: `{hive_ref}`
 - provider_route: `pending_after_acceptance`
 - verification_receipt: `pending_after_execution`
 - degraded_or_fallback_receipt: `pending_if_triggered`
+
+### 5-Persona Use
+
+- Hive / Wrapper: `pending_after_acceptance` provider route or single-provider justification required before execution
+- MemoryOS / Retriever: retrieval_trace `{memory.get('retrieval_trace')}`, signal_coverage: `{memory.get('signal_coverage')}`
+- CapabilityOS / Router: route `{capability_ref}`
+- GenesisOS / Philosophy: branch_set `{genesis_ref}`
+- MyWorld / Sovereign: promotion receipt and operator acceptance are required before dispatch
 """
 
 
-def render_promotion_contract_seed(envelope_ref: str, envelope: dict[str, Any], receipt_ref: str) -> str:
+def render_promotion_contract_seed(root: Path, envelope_ref: str, envelope: dict[str, Any], receipt_ref: str) -> str:
     goal = str(envelope.get("goal") or "Promote reviewed AIOS session").strip()
     slug = slugify(goal)
     dispatch_ref = ((envelope.get("role_artifacts") or {}).get("dispatch_packets") or "")
-    role_evidence = render_aios_role_evidence_section()
+    role_evidence = render_aios_role_evidence_section(root=root, envelope=envelope)
     return f"""---
 contract_id: ASC-XXXX
 slug: {slug}
@@ -468,6 +1387,33 @@ python scripts/aios_monitor.py assess --json
 """
 
 
+def session_promotion_quality(root: Path, envelope: dict[str, Any]) -> dict[str, Any]:
+    warnings: list[str] = []
+    goal = str(envelope.get("goal") or "").strip()
+    memory = extract_context_pack_evidence(root, envelope)
+    coverage_raw = str(memory.get("signal_coverage") or "not_reported")
+    try:
+        coverage = float(coverage_raw)
+    except ValueError:
+        coverage = 0.0
+    artifacts = envelope.get("role_artifacts") if isinstance(envelope.get("role_artifacts"), dict) else {}
+    if len(goal) < 20:
+        warnings.append("goal_too_short_for_contract_materialization")
+    if coverage <= 0:
+        warnings.append("memory_signal_coverage_zero_or_missing")
+    if not artifacts.get("capability_route"):
+        warnings.append("capability_route_missing")
+    if not artifacts.get("genesis"):
+        warnings.append("genesis_branch_artifact_missing")
+    if not artifacts.get("dispatch_packets"):
+        warnings.append("dispatch_preview_missing")
+    return {
+        "materialization_recommended": not warnings,
+        "quality_warnings": warnings,
+        "memory_signal_coverage": coverage_raw,
+    }
+
+
 def build_session_promotion_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     if not payload.get("confirm"):
         return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "promotion_without_confirmation"}
@@ -489,6 +1435,7 @@ def build_session_promotion_response(root: Path, payload: dict[str, Any]) -> tup
     receipt_ref = f".aios/promotions/{promotion_id}/promotion.json"
     contract_seed_ref = f".aios/promotions/{promotion_id}/contract_seed.md"
     dispatch_preview_ref = str(((envelope.get("role_artifacts") or {}).get("dispatch_packets") or ""))
+    quality = session_promotion_quality(root, envelope)
     receipt = {
         "schema_version": PROMOTION_SCHEMA,
         "promotion_id": promotion_id,
@@ -502,12 +1449,43 @@ def build_session_promotion_response(root: Path, payload: dict[str, Any]) -> tup
             "dispatch_preview": dispatch_preview_ref,
         },
         "execution_started": False,
+        "materialization_recommended": quality["materialization_recommended"],
+        "quality_warnings": quality["quality_warnings"],
+        "memory_signal_coverage": quality["memory_signal_coverage"],
         "next_action": "operator_assign_asc_accept_and_dispatch",
         "stop_conditions": ["accepted_contract_missing", "executor_runs_without_dispatch_packet"],
     }
     write_json(root / receipt_ref, receipt)
-    write_text(root / contract_seed_ref, render_promotion_contract_seed(envelope_ref, envelope, receipt_ref))
+    write_text(root / contract_seed_ref, render_promotion_contract_seed(root, envelope_ref, envelope, receipt_ref))
     return 200, {"ok": True, "receipt": receipt}
+
+
+def build_chat_route_promotion_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "chat_route_promotion_without_confirmation"}
+    receipt_ref = str(payload.get("invocation_receipt") or payload.get("receipt") or "").strip()
+    receipt_path = safe_invocation_ref(root, receipt_ref)
+    if receipt_path is None:
+        return 400, {"ok": False, "reason": "invocation_receipt_ref_outside_invocations"}
+    if receipt_path.name != "receipt.json":
+        return 400, {"ok": False, "reason": "invocation_receipt_invalid"}
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 400, {"ok": False, "reason": "invocation_receipt_missing"}
+    if not isinstance(receipt, dict) or receipt.get("schema_version") != "aios.invocation_receipt.v1":
+        return 400, {"ok": False, "reason": "invocation_receipt_schema_invalid"}
+    envelope_ref = str(receipt.get("session_envelope") or "").strip()
+    if not envelope_ref:
+        return 400, {"ok": False, "reason": "session_envelope_missing_from_receipt"}
+    status, body = build_session_promotion_response(
+        root,
+        {"session_envelope": envelope_ref, "confirm": True},
+    )
+    if isinstance(body, dict):
+        body["source_invocation_receipt"] = receipt_ref
+        body["schema_version"] = "aios.chat_route_promotion.v1"
+    return status, body
 
 
 def build_session_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
@@ -587,6 +1565,369 @@ def build_chat_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[
     return 200, {"ok": True, "result": parsed}
 
 
+def build_chat_history_response(root: Path, limit: int = 24) -> tuple[int, dict[str, Any]]:
+    chat_root = root / ".aios" / "chat"
+    if not chat_root.exists():
+        return 200, {"ok": True, "schema_version": "aios.chat.history.v1", "items": [], "total": 0}
+
+    memory_reviews: dict[str, list[str]] = {}
+    memory_outbox = root / ".aios" / "outbox" / "memoryOS"
+    if memory_outbox.exists():
+        for result_path in sorted(memory_outbox.glob("mdrev-*.memoryOS.result.json"), key=lambda path: path.stat().st_mtime, reverse=True)[:200]:
+            payload = read_json_file(root, relative_ref(root, result_path))
+            if not isinstance(payload, dict):
+                continue
+            review = payload.get("review_request") if isinstance(payload.get("review_request"), dict) else {}
+            source_artifact = str(review.get("source_artifact") or "").strip()
+            decision = str(review.get("review_decision") or "").strip()
+            if not source_artifact or not decision:
+                continue
+            memory_reviews.setdefault(source_artifact, []).append(decision)
+
+    items: list[dict[str, Any]] = []
+    conversation_dirs = [path for path in chat_root.iterdir() if path.is_dir()]
+    conversation_dirs.sort(key=lambda path: path.stat().st_mtime, reverse=True)
+    for chat_dir in conversation_dirs[: max(1, limit)]:
+        messages_path = chat_dir / "messages.jsonl"
+        if not messages_path.exists():
+            continue
+        messages = read_jsonl_file(messages_path)
+        if not messages:
+            continue
+        last_user = next((row for row in reversed(messages) if row.get("role") == "user"), {})
+        last_assistant = next((row for row in reversed(messages) if row.get("role") == "assistant"), {})
+        latest = last_assistant or messages[-1]
+        chair_rows = read_jsonl_file(chat_dir / "gate_chair_turns.jsonl")
+        latest_chair = chair_rows[-1] if chair_rows else {}
+        chair_meta = latest_chair.get("chair_meta") if isinstance(latest_chair.get("chair_meta"), dict) else {}
+        chair_config = chair_meta.get("meta") if isinstance(chair_meta.get("meta"), dict) else {}
+        provider_rows = read_jsonl_file(chat_dir / "provider_turns.jsonl")
+        artifact_paths: dict[str, str] = {"messages": relative_ref(root, messages_path)}
+        if (chat_dir / "gate_chair_turns.jsonl").exists():
+            artifact_paths["gate_chair_turns"] = relative_ref(root, chat_dir / "gate_chair_turns.jsonl")
+        if (chat_dir / "provider_turns.jsonl").exists():
+            artifact_paths["provider_turns"] = relative_ref(root, chat_dir / "provider_turns.jsonl")
+        if (chat_dir / "memory_drafts.json").exists():
+            artifact_paths["memory_drafts"] = relative_ref(root, chat_dir / "memory_drafts.json")
+        if (chat_dir / "cost.json").exists():
+            artifact_paths["cost"] = relative_ref(root, chat_dir / "cost.json")
+        if (chat_dir / "run_state.json").exists():
+            artifact_paths["run_state"] = relative_ref(root, chat_dir / "run_state.json")
+        gate_files = sorted((chat_dir / "gate_decisions").glob("*.json"), key=lambda path: path.stat().st_mtime, reverse=True) if (chat_dir / "gate_decisions").exists() else []
+        if gate_files:
+            artifact_paths["gate_decision"] = relative_ref(root, gate_files[0])
+        chair_status = str(chair_meta.get("status") or "not_attempted")
+        chair_mode = str(chair_config.get("mode") or "")
+        memory_decisions = memory_reviews.get(artifact_paths.get("memory_drafts", ""), [])
+        provider_statuses = [
+            str((row.get("provider_meta") if isinstance(row.get("provider_meta"), dict) else {}).get("status") or "")
+            for row in provider_rows
+        ]
+        failed_provider_statuses = [
+            status
+            for status in [chair_status, *provider_statuses]
+            if status
+            and status
+            not in {
+                "success",
+                "fallback_success",
+                "not_attempted",
+                "not_executed",
+                "not_executing",
+            }
+        ]
+        flags = []
+        if latest_chair and chair_mode and chair_mode != "internal_evidence_synthesizer":
+            flags.append("provider_chair")
+        if not latest_chair or chair_mode in {"", "internal_evidence_synthesizer"}:
+            flags.append("internal")
+        if any(decision in {"needs_more_evidence", "queued_for_memoryos_review"} for decision in memory_decisions):
+            flags.append("memory_review_needed")
+        if failed_provider_statuses:
+            flags.append("failed_provider")
+        items.append(
+            {
+                "conversation_id": chat_dir.name,
+                "updated_at": str(latest.get("created_at") or latest_chair.get("created_at") or ""),
+                "message_count": len(messages),
+                "last_user_preview": redacted_preview(last_user.get("content"), max_chars=180),
+                "last_response_preview": redacted_preview(last_assistant.get("content"), max_chars=260),
+                "substrate": latest.get("substrate"),
+                "route_reason": latest.get("route_reason"),
+                "intent": latest.get("intent"),
+                "chair": {
+                    "attempted": bool(latest_chair),
+                    "status": chair_status,
+                    "mode": chair_mode or None,
+                    "model": chair_config.get("model"),
+                    "executed": bool(latest_chair.get("executed")) if latest_chair else False,
+                },
+                "flags": flags,
+                "memory_review_decisions": memory_decisions[:4],
+                "provider_failure_statuses": failed_provider_statuses[:4],
+                "artifact_paths": artifact_paths,
+            }
+        )
+
+    counts = {
+        "all": len(items),
+        "provider_chair": sum(1 for item in items if "provider_chair" in item.get("flags", [])),
+        "internal": sum(1 for item in items if "internal" in item.get("flags", [])),
+        "memory_review_needed": sum(1 for item in items if "memory_review_needed" in item.get("flags", [])),
+        "failed_provider": sum(1 for item in items if "failed_provider" in item.get("flags", [])),
+    }
+    return 200, {
+        "ok": True,
+        "schema_version": "aios.chat.history.v1",
+        "items": items,
+        "total": len(items),
+        "counts": counts,
+    }
+
+
+def chat_history_item(root: Path, conversation_id: str) -> dict[str, Any] | None:
+    status, payload = build_chat_history_response(root, limit=200)
+    if status != 200 or not payload.get("ok"):
+        return None
+    wanted = re.sub(r"[^A-Za-z0-9]+", "-", conversation_id).strip("-").lower()[:64] or "chat"
+    for item in payload.get("items") or []:
+        if isinstance(item, dict) and item.get("conversation_id") == wanted:
+            return item
+    return None
+
+
+def latest_memory_review_gap_for_source(root: Path, source_ref: str) -> dict[str, Any] | None:
+    memory_outbox = root / ".aios" / "outbox" / "memoryOS"
+    if not memory_outbox.exists():
+        return None
+    for result_path in sorted(memory_outbox.glob("mdrev-*.memoryOS.result.json"), key=lambda path: path.stat().st_mtime, reverse=True)[:200]:
+        payload = read_json_file(root, relative_ref(root, result_path))
+        if not isinstance(payload, dict):
+            continue
+        review = payload.get("review_request") if isinstance(payload.get("review_request"), dict) else {}
+        if str(review.get("source_artifact") or "") != source_ref:
+            continue
+        if str(review.get("review_decision") or "") != "needs_more_evidence":
+            continue
+        draft_id = str(review.get("draft_id") or "").strip()
+        if not draft_id:
+            continue
+        return {
+            "draft_id": draft_id,
+            "review_result": relative_ref(root, result_path),
+            "review_decision": "needs_more_evidence",
+            "memory_object_id": review.get("memory_object_id"),
+            "review_id": review.get("review_id"),
+        }
+    return None
+
+
+def assigned_agent_for_fallback(item: dict[str, Any]) -> str:
+    chair = item.get("chair") if isinstance(item.get("chair"), dict) else {}
+    for value in (chair.get("mode"), item.get("substrate")):
+        agent = str(value or "").strip()
+        if agent in {"codex", "claude", "gemini", "local"}:
+            return agent
+        if agent in {"local_llm", "ollama", "ollama_qwen"}:
+            return "local"
+    return "claude"
+
+
+def build_capability_fallback_preview_response(root: Path, item: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    flags = item.get("flags") if isinstance(item.get("flags"), list) else []
+    if "failed_provider" not in flags:
+        return 409, {"ok": False, "reason": "conversation_has_no_failed_provider_flag"}
+    capability_root = root / "CapabilityOS"
+    if not (capability_root / "capabilityos" / "cli.py").exists():
+        return 502, {"ok": False, "reason": "capabilityos_cli_missing"}
+    conversation_id = str(item.get("conversation_id") or "").strip()
+    failure_statuses = [str(value) for value in (item.get("provider_failure_statuses") or []) if str(value).strip()]
+    assigned_agent = assigned_agent_for_fallback(item)
+    task = (
+        "AIOS chat provider fallback after "
+        + (", ".join(failure_statuses) if failure_statuses else "provider failure")
+    )
+    command = [
+        sys.executable,
+        "-m",
+        "capabilityos.cli",
+        "provider-route",
+        "--task",
+        task,
+        "--assigned-agent",
+        assigned_agent,
+        "--observations-inbox",
+        "../.aios/outbox",
+        "--json",
+    ]
+    raw = run_command(capability_root, command, timeout=60)
+    parsed = parse_json_stdout(raw)
+    if raw["returncode"] != 0 or not isinstance(parsed, dict):
+        return 502, {
+            "ok": False,
+            "reason": "capability_fallback_preview_failed",
+            "returncode": raw["returncode"],
+            "stderr_tail": str(raw.get("stderr") or "")[-1200:],
+            "stdout_tail": str(raw.get("stdout") or "")[-1200:],
+            "timed_out": raw.get("timed_out", False),
+        }
+    return 200, {
+        "ok": True,
+        "schema_version": "aios.capability_fallback_preview.v1",
+        "conversation_id": conversation_id,
+        "assigned_agent": assigned_agent,
+        "failure_statuses": failure_statuses,
+        "execution_started": False,
+        "route_plan": parsed,
+        "redacted_previews": {
+            "last_user": item.get("last_user_preview") or "",
+            "last_response": item.get("last_response_preview") or "",
+        },
+    }
+
+
+def build_capability_fallback_review_response(root: Path, item: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    flags = item.get("flags") if isinstance(item.get("flags"), list) else []
+    if "failed_provider" not in flags:
+        return 409, {"ok": False, "reason": "conversation_has_no_failed_provider_flag"}
+    conversation_id = str(item.get("conversation_id") or "").strip()
+    failure_statuses = [str(value) for value in (item.get("provider_failure_statuses") or []) if str(value).strip()]
+    artifact_paths = item.get("artifact_paths") if isinstance(item.get("artifact_paths"), dict) else {}
+    source_artifacts: dict[str, str] = {}
+    for key in ("gate_chair_turns", "provider_turns", "gate_decision", "cost", "run_state"):
+        ref = str(artifact_paths.get(key) or "").strip()
+        if ref and safe_artifact_ref(root, ref):
+            source_artifacts[key] = ref
+    if not source_artifacts:
+        return 409, {"ok": False, "reason": "no_safe_failure_artifacts"}
+
+    dispatch_id = f"chfb-{stable_hash(conversation_id + '|' + '|'.join(failure_statuses) + '|' + now_iso())[:16]}"
+    request_ref = f".aios/capability_fallback_reviews/{dispatch_id}/request.json"
+    packet_ref = f".aios/inbox/CapabilityOS/{dispatch_id}.CapabilityOS.json"
+    result_ref = f".aios/outbox/CapabilityOS/{dispatch_id}.CapabilityOS.result.json"
+    source_allowed = list(source_artifacts.values())
+    packet = {
+        "schema_version": "aios.dispatch.v1",
+        "result_schema_version": "aios.dispatch.result.v1",
+        "dispatch_id": dispatch_id,
+        "contract_id": "CHAT-HISTORY-FALLBACK-REVIEW",
+        "contract_path": "docs/AIOS_CHAT.md",
+        "created_at": now_iso(),
+        "target_repo": "CapabilityOS",
+        "agent": "capabilityos-router",
+        "status": "sent",
+        "goal": "Recommend a provider/tool fallback route for an AIOS chat turn that recorded provider or Gate Chair failure evidence.",
+        "control_plane": {
+            "root": "myworld",
+            "rule": "myworld requests route recommendation; CapabilityOS recommends only and does not execute providers or tools",
+        },
+        "source_conversation_id": conversation_id,
+        "failure_statuses": failure_statuses,
+        "source_artifacts": source_artifacts,
+        "redacted_previews": {
+            "last_user": item.get("last_user_preview") or "",
+            "last_response": item.get("last_response_preview") or "",
+        },
+        "must_produce": [
+            "CapabilityOS recommendation-only fallback route",
+            "provider fallback order with reason codes",
+            "bad provider/tool evidence cited from source_artifacts",
+            "stop conditions for credential, privacy, and verifier gaps",
+        ],
+        "scope": {
+            "repos": ["CapabilityOS"],
+            "allowed_files": [
+                "CapabilityOS/capabilityos/catalog.py",
+                "CapabilityOS/capabilityos/cli.py",
+                "CapabilityOS/capabilityos/observation.py",
+                "CapabilityOS/capabilityos/schema.py",
+                "CapabilityOS/tests/test_cli.py",
+                "CapabilityOS/tests/test_observation.py",
+                "CapabilityOS/docs/AGENT_WORKLOG.md",
+                *source_allowed,
+            ],
+            "forbidden_files": [
+                ".env",
+                "raw exports",
+                "provider auth files",
+                "private provider logs",
+                ".aios/chat/*/messages.jsonl",
+                "memoryOS/memory/objects.jsonl",
+            ],
+        },
+        "verification_commands": [
+            {
+                "command": "python -m capabilityos.cli provider-route --task \"AIOS chat provider fallback after Gate Chair/provider failure\" --assigned-agent claude --observations-inbox ../.aios/outbox --json",
+                "cwd": "/home/user/workspaces/jaewon/myworld/CapabilityOS",
+            }
+        ],
+        "return_to": result_ref,
+        "stop_conditions": [
+            "privacy_violation",
+            "capabilityos_executes_provider",
+            "source_artifact_missing",
+            "fallback_without_reason_codes",
+            "verifier_gap_not_reported",
+        ],
+    }
+    receipt = {
+        "schema_version": "aios.capability_fallback_review.v1",
+        "request_id": dispatch_id,
+        "dispatch_id": dispatch_id,
+        "created_at": packet["created_at"],
+        "status": "sent_to_CapabilityOS_inbox",
+        "conversation_id": conversation_id,
+        "failure_statuses": failure_statuses,
+        "artifact_paths": {
+            "request": request_ref,
+            "packet": packet_ref,
+            "return_to": result_ref,
+        },
+        "execution_started": False,
+        "next_action": "CapabilityOS_watcher_recommends_fallback_route",
+        "stop_conditions": packet["stop_conditions"],
+    }
+    write_json(root / request_ref, {**packet, "artifact_paths": receipt["artifact_paths"]})
+    write_json(root / packet_ref, packet)
+    append_jsonl(root / ".aios" / "state" / "capability_fallback_reviews.jsonl", receipt)
+    return 200, {"ok": True, "receipt": receipt}
+
+
+def build_chat_history_action_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    conversation_id = str(payload.get("conversation_id") or "").strip()
+    action = str(payload.get("action") or "").strip()
+    if action not in {"capability_fallback_preview", "capability_fallback_review", "memory_rereview"}:
+        return 400, {"ok": False, "reason": "chat_history_action_invalid"}
+    if action != "capability_fallback_preview" and not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "chat_history_action_without_confirmation"}
+    if not conversation_id:
+        return 400, {"ok": False, "reason": "conversation_id_missing"}
+    item = chat_history_item(root, conversation_id)
+    if item is None:
+        return 404, {"ok": False, "reason": "conversation_not_found"}
+    flags = item.get("flags") if isinstance(item.get("flags"), list) else []
+    if action == "capability_fallback_preview":
+        return build_capability_fallback_preview_response(root, item)
+    if action == "capability_fallback_review":
+        return build_capability_fallback_review_response(root, item)
+
+    if "memory_review_needed" not in flags:
+        return 409, {"ok": False, "reason": "conversation_has_no_memory_review_gap"}
+    artifact_paths = item.get("artifact_paths") if isinstance(item.get("artifact_paths"), dict) else {}
+    source_ref = str(artifact_paths.get("memory_drafts") or "").strip()
+    gap = latest_memory_review_gap_for_source(root, source_ref)
+    if not source_ref or gap is None:
+        return 409, {"ok": False, "reason": "memory_review_gap_not_resolvable"}
+    return build_memory_draft_review_response(
+        root,
+        {
+            "source_artifact": source_ref,
+            "draft_id": gap["draft_id"],
+            "confirm": True,
+        },
+    )
+
+
 def build_gate_chair_probe_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
     message = str(payload.get("message") or "나에 대한 기억은 ?").strip()
     if not message:
@@ -629,8 +1970,9 @@ def build_gate_chair_probe_response(root: Path, payload: dict[str, Any]) -> tupl
 
 
 def build_gate_chair_eval_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    candidate_matrix = bool(payload.get("candidate_matrix"))
     mode = str(payload.get("mode") or "both").strip()
-    if mode not in {"both", "internal", "current"}:
+    if not candidate_matrix and mode not in {"both", "internal", "current"}:
         return 400, {"ok": False, "reason": "gate_chair_eval_mode_invalid", "allowed_modes": ["both", "internal", "current"]}
     prompts = payload.get("prompts")
     command = [
@@ -638,10 +1980,20 @@ def build_gate_chair_eval_response(root: Path, payload: dict[str, Any]) -> tuple
         "scripts/aios_gate_chair_eval.py",
         "--root",
         root.as_posix(),
-        "--mode",
-        mode,
         "--json",
     ]
+    if candidate_matrix:
+        command.append("--candidate-matrix")
+        candidates = payload.get("candidates")
+        if isinstance(candidates, list):
+            for candidate in candidates[:8]:
+                candidate_text = str(candidate or "").strip()
+                if candidate_text:
+                    command.extend(["--candidate", candidate_text])
+        if payload.get("request_memory_review"):
+            command.append("--request-memory-review")
+    else:
+        command.extend(["--mode", mode])
     if isinstance(prompts, list):
         for prompt in prompts[:8]:
             text = str(prompt or "").strip()
@@ -660,9 +2012,25 @@ def build_gate_chair_eval_response(root: Path, payload: dict[str, Any]) -> tuple
             "stdout_tail": str(raw.get("stdout") or "")[-1200:],
             "timed_out": raw.get("timed_out", False),
         }
+    if parsed.get("schema_version") == "aios.gate_chair_candidate_matrix.v1":
+        return 200, {
+            "ok": True,
+            "schema_version": "aios.gate_chair_eval_api.v1",
+            "report_kind": "candidate_matrix",
+            "matrix_id": parsed.get("matrix_id"),
+            "recommendation": parsed.get("recommendation"),
+            "promotion_ready": bool(parsed.get("promotion_ready")),
+            "baseline": parsed.get("baseline") or {},
+            "candidates": parsed.get("candidates") or [],
+            "best_candidate": parsed.get("best_candidate"),
+            "report_path": parsed.get("report_path"),
+            "prompt_count": parsed.get("prompt_count"),
+            "request_memory_review": bool(parsed.get("request_memory_review")),
+        }
     return 200, {
         "ok": True,
         "schema_version": "aios.gate_chair_eval_api.v1",
+        "report_kind": "single_eval",
         "eval_id": parsed.get("eval_id"),
         "verdict": parsed.get("verdict"),
         "scores": parsed.get("scores") or {},
@@ -850,10 +2218,18 @@ def make_control_handler(root: Path) -> type[http.server.SimpleHTTPRequestHandle
             if self.path == "/api/health":
                 json_response(self, {"ok": True, "schema_version": SCHEMA_VERSION, "root": root.as_posix()})
                 return
+            if self.path == "/api/visual_workflow":
+                status, body = build_visual_workflow_response(root)
+                json_response(self, body, status=status)
+                return
+            if self.path.startswith("/api/chat_history"):
+                status, body = build_chat_history_response(root)
+                json_response(self, body, status=status)
+                return
             super().do_GET()
 
         def do_POST(self) -> None:  # noqa: N802 - http.server hook
-            if self.path not in {"/api/ask", "/api/goal_bar", "/api/session", "/api/chat", "/api/gate_chair_probe", "/api/gate_chair_eval", "/api/gate_chair_runtime", "/api/gate_chair_promote", "/api/promote_session", "/api/artifact", "/api/memory_draft_review"}:
+            if self.path not in {"/api/ask", "/api/goal_bar", "/api/session", "/api/chat", "/api/chat_history_action", "/api/gate_chair_probe", "/api/gate_chair_eval", "/api/gate_chair_runtime", "/api/gate_chair_promote", "/api/promote_session", "/api/promote_chat_route", "/api/promote_friction_seed", "/api/promote_visual_fix", "/api/genesis_break_frame_seed", "/api/materialize_promotion_contract", "/api/materialize_ask_contract", "/api/contract_review_action", "/api/artifact", "/api/memory_draft_review", "/api/memory_review_evidence"}:
                 json_response(self, {"ok": False, "reason": "not_found"}, status=404)
                 return
             try:
@@ -878,8 +2254,24 @@ def make_control_handler(root: Path) -> type[http.server.SimpleHTTPRequestHandle
                 status, body = build_session_response(root, payload)
             elif self.path == "/api/promote_session":
                 status, body = build_session_promotion_response(root, payload)
+            elif self.path == "/api/promote_chat_route":
+                status, body = build_chat_route_promotion_response(root, payload)
+            elif self.path == "/api/promote_friction_seed":
+                status, body = build_friction_seed_promotion_response(root, payload)
+            elif self.path == "/api/promote_visual_fix":
+                status, body = build_visual_fix_promotion_response(root, payload)
+            elif self.path == "/api/genesis_break_frame_seed":
+                status, body = build_genesis_break_frame_seed_response(root, payload)
+            elif self.path == "/api/materialize_promotion_contract":
+                status, body = build_promotion_contract_materialization_response(root, payload)
+            elif self.path == "/api/materialize_ask_contract":
+                status, body = build_ask_contract_materialization_response(root, payload)
+            elif self.path == "/api/contract_review_action":
+                status, body = build_contract_review_action_response(root, payload)
             elif self.path == "/api/chat":
                 status, body = build_chat_response(root, payload)
+            elif self.path == "/api/chat_history_action":
+                status, body = build_chat_history_action_response(root, payload)
             elif self.path == "/api/gate_chair_probe":
                 status, body = build_gate_chair_probe_response(root, payload)
             elif self.path == "/api/gate_chair_eval":
@@ -892,6 +2284,8 @@ def make_control_handler(root: Path) -> type[http.server.SimpleHTTPRequestHandle
                 status, body = build_artifact_response(root, payload)
             elif self.path == "/api/memory_draft_review":
                 status, body = build_memory_draft_review_response(root, payload)
+            elif self.path == "/api/memory_review_evidence":
+                status, body = build_memory_review_evidence_response(root, payload)
             else:
                 status, body = build_ask_response(root, payload)
             json_response(self, body, status=status)

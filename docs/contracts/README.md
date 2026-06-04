@@ -29,6 +29,22 @@ MemoryOS, CapabilityOS, GenesisOS, and Hive Mind placeholders. Proposals may
 leave those fields as `pending_or_not_required`; accepted contracts should
 either fill them or explicitly say why that OS has no role.
 
+For AIOS self-development contracts, add a compact 5-persona note under the
+same section:
+
+```md
+### 5-Persona Use
+- Hive / Wrapper: provider route, fallback, or single-provider justification
+- MemoryOS / Retriever: `rtrace_...`, selected memory ids, `signal_coverage`
+- CapabilityOS / Router: recommendation, selected route, fallback/deviation
+- GenesisOS / Philosophy: critic branch, alternative, or escape vector
+- MyWorld / Sovereign: founder/operator authority and override path
+```
+
+If one persona has no role, say why. Missing-by-silence becomes an advisory
+gap in `scripts/aios_persona_audit.py`; a justified absence remains reviewable
+without rewriting history.
+
 ## Work Packets
 
 A work packet is a single, durable dispatch from the control plane to one specific agent (e.g. `codex@hivemind`, `codex@memoryOS`, `claude@myworld` for review). Every dispatch lives as an entry in the `## Work Packets` section of the contract that authorized it — never in chat alone.
@@ -266,3 +282,5 @@ in a `governance_theater` state.
 | ASC-0169 | hivemind-aios-packet-runner | closed | Let Hive Mind consume AIOS hivemind inbox packets through its own provider-loop runner instead of relying only on the MyWorld shell child watcher. |
 | ASC-0170 | hivemind-scoped-writable-provider-execution | closed | Open Hive Mind writable provider execution only behind AIOS packet scope, explicit execution request, and operator grant. |
 | ASC-0171 | hivemind-permissioned-dangerous-provider-execution | closed | Allow Hive Mind to represent Codex dangerous full-access provider execution only as an explicit AIOS danger route with operator grant, irreversible authority, and proof receipts. |
+| ASC-0187 | capabilityos-browser-visual-verification-route | closed | Add a recommendation-only CapabilityOS route for browser visual verification after Firefox screenshot timeout exposed a routing gap. |
+| ASC-0188 | gate-chair-conversational-activation-policy | closed | Let external Gate Chair candidates become operator-promotable when they match or beat the internal baseline with no runtime failures, while preserving timeout evidence as MemoryOS drafts. |

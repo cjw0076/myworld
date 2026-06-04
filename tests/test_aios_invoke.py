@@ -42,7 +42,7 @@ class AiosInvokeTest(unittest.TestCase):
         module = load_module()
         genesis = {"schema_version": "genesisos.v1", "authority": "speculative_only", "branches": [{}, {}, {}, {}, {}]}
         capability = {"contract": "capabilityos.recommendations.v1", "recommendation_only": True, "recommendations": []}
-        memory = {"decisions": [{"id": "mem-1"}], "retrieval_trace_id": "trace-1"}
+        memory = {"decisions": [{"id": "mem-1"}], "retrieval_trace_id": "rtrace_fixture", "signal_coverage": 1.0}
 
         def fake_run_json(command, *, cwd, timeout=60):
             text = " ".join(command)
@@ -73,6 +73,9 @@ class AiosInvokeTest(unittest.TestCase):
         self.assertEqual(envelope["executor_assignment"]["default_executor"], "codex")
         self.assertEqual(envelope["role_statuses"]["memory"], "passed")
         self.assertEqual(envelope["role_artifacts"]["hive_execution_plan"], receipt["artifact_paths"]["hive"])
+        context_pack = (ROOT / receipt["artifact_paths"]["memory_context_pack"]).read_text(encoding="utf-8")
+        self.assertIn("trace_id: rtrace_fixture", context_pack)
+        self.assertIn("signal_coverage: 1.0", context_pack)
 
     def test_missing_genesis_cli_fails_receipt(self) -> None:
         module = load_module()

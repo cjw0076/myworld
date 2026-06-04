@@ -169,6 +169,7 @@ def memory_artifacts(root: Path, goal: str) -> tuple[str, dict[str, Any], str, l
                 "- MemoryOS context build returned JSON.",
                 f"- selected_memory_ids: {json.dumps(selected_ids, ensure_ascii=False)}",
                 f"- trace_id: {payload.get('retrieval_trace_id') or payload.get('trace_id') or ''}",
+                f"- signal_coverage: {payload.get('signal_coverage', 'not_reported')}",
                 "",
             ]
         )

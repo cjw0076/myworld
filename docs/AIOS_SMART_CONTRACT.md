@@ -93,6 +93,13 @@ These fields can be `pending_or_not_required` in a proposal. The point is to
 make missing OS participation visible before acceptance, without making seed
 generation execute work or accept memories.
 
+Persona-axis note: for work meant to dogfood AIOS itself, the role evidence
+section should also say whether the contract uses the five cognitive roles:
+Hive=Wrapper, MemoryOS=Retriever, CapabilityOS=Router, GenesisOS=Philosophy,
+MyWorld=Sovereign. If a role is skipped, write the reason explicitly. The
+persona audit treats an explicit justified absence differently from silent
+worker-mode drift in later review.
+
 ## Invariants
 
 - Hive Mind owns execution authority.

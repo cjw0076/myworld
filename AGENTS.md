@@ -11,6 +11,7 @@ Before working from the `myworld/` workspace root, read these files:
 7. `docs/AIOS_AGENT_LEDGER.md`
 8. `docs/AIOS_AGENT_SELF_LOOP.md` — how to keep your work going without operator re-prompt
 9. The role file for the repo you are touching:
+   - `docs/agents/CODEX_UI_AGENT.md`
    - `docs/agents/HIVEMIND_AGENT.md`
    - `docs/agents/MEMORYOS_AGENT.md`
    - `docs/agents/CAPABILITYOS_AGENT.md`
@@ -31,6 +32,11 @@ owning lower repo.
 Codex's primary control-plane duty is to search, retrieve context, route
 capabilities, issue precise work packets, verify evidence, and propose better
 AIOS methods when the current loop cannot close.
+
+Current delegated focus: Codex should primarily own AIOS design, UI/UX,
+frontend, and visual verification work for the Control Center and chat
+surfaces. Non-UI child-repo implementation should normally be dispatched to
+the owning repo agent and then collected, not absorbed into direct Codex work.
 
 Codex CLI absorption rule:
 

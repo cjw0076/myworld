@@ -1370,6 +1370,135 @@ def load_latest_asks(root: Path) -> dict[str, Any]:
     return {"latest": rows[:5], "total": len(rows)}
 
 
+def offline_user_title(packet: dict[str, Any]) -> str:
+    for key in ("question", "task", "summary", "observed", "expected"):
+        value = packet.get(key)
+        if value:
+            return str(value)
+    return str(packet.get("packet_type") or "offline user packet")
+
+
+def offline_user_next_action(packet: dict[str, Any]) -> str:
+    packet_type = str(packet.get("packet_type") or "")
+    if packet_type == "unknown.frontier.question":
+        return "route frontier through GenesisOS/CapabilityOS before guessing"
+    if packet_type == "user.offline_task":
+        return "wait for bounded user@offline observation"
+    if packet_type == "field_observation":
+        return "send to MemoryOS draft review"
+    if packet_type == "contradiction":
+        return "open follow-up contract candidate"
+    return "inspect packet"
+
+
+def load_offline_user_memory_draft_index(root: Path) -> dict[str, dict[str, Any]]:
+    draft_path = root / ".aios" / "chat" / "offline-user" / "memory_drafts.json"
+    payload = read_json(draft_path)
+    drafts = payload.get("memory_drafts") if isinstance(payload, dict) else None
+    if not isinstance(drafts, list):
+        return {}
+    source_artifact = safe_promotion_ref(root, draft_path)
+    review_index = load_memory_draft_review_index(root)
+    evidence_index = load_memory_review_evidence_index(root)
+    rows: dict[str, dict[str, Any]] = {}
+    for index, draft in enumerate(drafts):
+        if not isinstance(draft, dict):
+            continue
+        draft_id = str(draft.get("id") or f"offline-user:{index}")
+        raw_refs = [str(ref) for ref in draft.get("raw_refs") or [] if isinstance(ref, str)]
+        provenance = draft.get("provenance") if isinstance(draft.get("provenance"), dict) else {}
+        source_packet = str(provenance.get("source_packet") or "")
+        content = " ".join(str(draft.get("content") or "").split())
+        for packet_ref in raw_refs + ([source_packet] if source_packet else []):
+            if not packet_ref:
+                continue
+            review = review_index.get((source_artifact, draft_id), {})
+            evidence = evidence_index.get((source_artifact, draft_id), {})
+            rows[packet_ref] = {
+                "memory_draft_title": content[:260],
+                "memory_draft_created_at": str(provenance.get("created_at") or ""),
+                "memory_draft_next_question": str(provenance.get("next_question") or ""),
+                "memory_draft_source": source_artifact,
+                "memory_draft_id": draft_id,
+                "memory_draft_type": str(draft.get("type") or "memory_draft"),
+                "memory_review_state": review.get("review_state") or "operator_review_required",
+                "memory_review_result": review.get("review_result") or "",
+                "memory_review_request_id": review.get("request_id") or "",
+                "memory_review_result_ref": review.get("review_result_ref") or "",
+                "evidence_count": int(evidence.get("evidence_count") or 0),
+                "latest_evidence_ref": evidence.get("latest_evidence_ref") or "",
+                "latest_evidence_note": evidence.get("latest_evidence_note") or "",
+                "latest_evidence_artifact": evidence.get("latest_evidence_artifact") or "",
+                "latest_evidence_at": evidence.get("latest_evidence_at") or "",
+            }
+    return rows
+
+
+def load_offline_user_packets(root: Path) -> dict[str, Any]:
+    inbox = root / ".aios" / "inbox" / "memoryOS"
+    memory_draft_index = load_offline_user_memory_draft_index(root)
+    rows: list[dict[str, Any]] = []
+    matched_packet_refs: set[str] = set()
+    for packet_path in inbox.glob("*.json") if inbox.exists() else []:
+        packet = read_json(packet_path)
+        if not isinstance(packet, dict):
+            continue
+        if packet.get("schema_version") != "aios.offline_user_agent_packet.v1":
+            continue
+        review_policy = packet.get("review_policy") if isinstance(packet.get("review_policy"), dict) else {}
+        packet_ref = safe_promotion_ref(root, packet_path)
+        matched_packet_refs.add(packet_ref)
+        rows.append(
+            {
+                "packet_type": packet.get("packet_type") or "unknown",
+                "contract_id": packet.get("contract_id") or "",
+                "created_at": packet.get("created_at") or "",
+                "status": packet.get("status") or "draft",
+                "title": offline_user_title(packet),
+                "privacy_boundary": packet.get("privacy_boundary") or "",
+                "stop_condition": packet.get("stop_condition") or "",
+                "next_question": packet.get("next_question") or "",
+                "next_action": offline_user_next_action(packet),
+                "path": packet_ref,
+                "draft_first": review_policy.get("draft_first") is True,
+                "auto_accept": review_policy.get("auto_accept") is True,
+                "mtime": packet_path.stat().st_mtime,
+                **memory_draft_index.get(packet_ref, {}),
+            }
+        )
+    for packet_ref, draft_row in memory_draft_index.items():
+        if packet_ref in matched_packet_refs:
+            continue
+        draft_type = str(draft_row.get("memory_draft_type") or "field_observation")
+        if draft_type != "field_observation":
+            continue
+        rows.append(
+            {
+                "packet_type": "field_observation",
+                "contract_id": "ASC-0210",
+                "created_at": draft_row.get("memory_draft_created_at") or "",
+                "status": "draft",
+                "title": draft_row.get("memory_draft_title") or "offline user field observation",
+                "privacy_boundary": "",
+                "stop_condition": "",
+                "next_question": draft_row.get("memory_draft_next_question") or "",
+                "next_action": offline_user_next_action({"packet_type": "field_observation"}),
+                "path": draft_row.get("memory_draft_source") or packet_ref,
+                "source_packet": packet_ref,
+                "draft_first": True,
+                "auto_accept": False,
+                "mtime": (root / str(draft_row.get("memory_draft_source") or "")).stat().st_mtime
+                if (root / str(draft_row.get("memory_draft_source") or "")).exists()
+                else 0,
+                **draft_row,
+            }
+        )
+    rows.sort(key=lambda row: (row.get("created_at") or "", row.get("mtime") or 0), reverse=True)
+    for row in rows:
+        row.pop("mtime", None)
+    return {"latest": rows[:5], "total": len(rows)}
+
+
 def next_contract_id(root: Path) -> str:
     highest = 0
     for path in (root / "docs" / "contracts").glob("ASC-*.md"):
@@ -1503,18 +1632,26 @@ def load_promotions(root: Path) -> dict[str, Any]:
 
 def load_memory_draft_review_index(root: Path) -> dict[tuple[str, str], dict[str, Any]]:
     index: dict[tuple[str, str], dict[str, Any]] = {}
+    def newer_or_equal(candidate: str, existing: dict[str, Any]) -> bool:
+        existing_ts = str(existing.get("reviewed_at") or existing.get("requested_at") or "")
+        return not existing_ts or str(candidate or "") >= existing_ts
+
     for row in read_jsonl_rows(root / ".aios" / "state" / "memory_draft_reviews.jsonl"):
         source = str(row.get("source_artifact") or "")
         draft_id = str(row.get("draft_id") or "")
         if not source or not draft_id:
             continue
-        index[(source, draft_id)] = {
+        key = (source, draft_id)
+        requested_at = str(row.get("created_at") or "")
+        if not newer_or_equal(requested_at, index.get(key, {})):
+            continue
+        index[key] = {
             "request_id": row.get("request_id") or "",
             "request_status": row.get("status") or "sent",
             "review_state": "review_requested",
             "review_result": "",
             "review_result_ref": ((row.get("artifact_paths") or {}).get("return_to") or ""),
-            "requested_at": row.get("created_at") or "",
+            "requested_at": requested_at,
         }
 
     outbox = root / ".aios" / "outbox" / "memoryOS"
@@ -1531,6 +1668,9 @@ def load_memory_draft_review_index(root: Path) -> dict[tuple[str, str], dict[str
             continue
         key = (source, draft_id)
         existing = index.get(key, {})
+        reviewed_at = str(payload.get("executed_at") or "")
+        if not newer_or_equal(reviewed_at, existing):
+            continue
         decision = str(review.get("review_decision") or "")
         index[key] = {
             **existing,
@@ -1539,7 +1679,7 @@ def load_memory_draft_review_index(root: Path) -> dict[tuple[str, str], dict[str
             "review_state": "review_result_ready" if payload.get("status") == "passed" else "review_result_attention",
             "review_result": decision,
             "review_result_ref": safe_promotion_ref(root, result_path),
-            "reviewed_at": payload.get("executed_at") or "",
+            "reviewed_at": reviewed_at,
         }
     return index
 
@@ -2686,6 +2826,7 @@ def build_snapshot(root: Path) -> dict[str, Any]:
         "stop_lanes": load_stop_lanes(root),
         "invocations": invocations,
         "asks": load_latest_asks(root),
+        "offline_user": load_offline_user_packets(root),
         "promotions": load_promotions(root),
         "memory_draft_queue": load_chat_memory_draft_queue(root),
         "genesis_lens": genesis_lens,

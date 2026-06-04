@@ -55,6 +55,14 @@ Closed when: a graph-control run on the live store reports
 without budget-exhausting at step 1, and a follow-up run demonstrably
 advances the cursor.
 
+## Verification Gate
+
+```bash
+cd memoryOS
+python -m py_compile memoryos/store.py memoryos/cli.py memoryos/schema.py
+python -m unittest tests.test_graph_control tests.test_schema -v
+```
+
 ## Stop Conditions
 
 - If the live store genuinely has 0 governable memories, say so explicitly
@@ -118,3 +126,12 @@ objects were ever counted, exactly the stop condition this contract named.
 
 memoryOS commit: see `docs/AGENT_WORKLOG.md`. ASC-0194's Named Exit is now
 satisfied; ASC-0194 closed in the same operator pass.
+
+### Dispatch closeout
+
+- dispatch result: `.aios/outbox/memoryOS/asc-0202.memoryOS.result.json`
+  passed 2026-05-20T16:25:41+09:00 after adding the repo-scoped
+  dispatch-safe `Verification Gate`.
+- watcher evidence: `python -m py_compile memoryos/store.py memoryos/cli.py
+  memoryos/schema.py`; `python -m unittest tests.test_graph_control
+  tests.test_schema -v` from `memoryOS/` (16 tests passed).

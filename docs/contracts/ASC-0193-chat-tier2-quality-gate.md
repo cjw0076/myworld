@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0193
 slug: chat-tier2-quality-gate
-status: accepted
+status: closed
 goal: Design and build the tier-2 quality gate for the chat router — a post-generation check that escalates a misrouted or under-delivered turn to a stronger chair, once, with a named exit.
 created: 2026-05-17 22:15 KST
 accepted: 2026-05-17 22:20 KST
+closed: 2026-05-17 23:08 KST
 acceptance_authority: founder — "구현 들어가자".
 proposed_by: claude@myworld
 origin: ASC-0192 follow-on. Founder: "tier 2 품질 게이트부터 설계하자." Tier-1 (classify_intent) routes a turn; nothing yet catches a successful-but-weak response from a cheap route.
@@ -95,3 +96,34 @@ at-most-once bound is tested.
   judge bug); record the judge error.
 - Escalation target unavailable → deliver the original with `quality:
   degraded`, do not loop.
+
+## Close Evidence
+
+- Implementation:
+  - `scripts/aios_chat_router.py` adds deterministic adequacy signals, selective
+    LLM judging, at-most-once escalation to `qwen3:30b-a3b`, quality-gate
+    envelope fields, and `.aios/chat/<conversation>/quality_gate.jsonl`
+    evidence for non-pass outcomes.
+  - `tests/test_aios_chat_router.py` covers deterministic signals, eligibility,
+    and provider-output sanitization exposed by live dogfood.
+- Live escalation smoke:
+  - command:
+    `AIOS_LOCAL_AGENT_COMMAND="printf 'Done.'" AIOS_CHAT_PROVIDER_TIMEOUT=10 python scripts/aios_chat_router.py --conversation asc-0193-live-smoke-clean-v2 --message '@ollama AIOS Control Center의 MemoryOS 시각화가 실제 retrieval trace와 provenance를 더 잘 보여주도록 구현 계획을 세워줘. 단계, 검증, 실패 조건을 포함해줘.' --json`
+  - result: envelope used `chosen_substrate: ollama_qwen`, `intent:
+    multi_step`, `quality_gate.verdict: escalated_pass`,
+    `quality_gate.escalated: true`, and `quality_gate.escalated_model:
+    qwen3:30b-a3b`.
+  - artifacts:
+    `.aios/chat/asc-0193-live-smoke-clean-v2/messages.jsonl`,
+    `.aios/chat/asc-0193-live-smoke-clean-v2/gate_decisions/ac7e3dfca39ffe0c.json`,
+    `.aios/chat/asc-0193-live-smoke-clean-v2/quality_gate.jsonl`,
+    `.aios/invocations/chat-11e6bc95360fd969/receipt.json`.
+- Dogfood fix: the first live smoke showed escalated local model output carrying
+  terminal control sequences and a `Thinking...` scratch block. The sanitizer
+  now applies terminal cursor erase, removes ANSI/control bytes, removes the
+  leading thinking block, and reflows soft-wrapped output before persistence.
+- Verification:
+  - `python -m unittest tests.test_aios_chat_router.Tier2QualityGateTest -v`
+    passed 7/7 after the sanitizer fix.
+  - The live smoke output no longer exposed ANSI escape bytes or the explicit
+    thinking block in the final response.

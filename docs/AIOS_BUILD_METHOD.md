@@ -130,6 +130,27 @@ The goal is not to keep the OSes as diagrams. The goal is to use them, observe
 where they fail, and improve the contracts until AIOS can run the loop with
 less operator effort and more evidence.
 
+## Visual App Workflow
+
+For app and interface work, AIOS uses a screenshot-first loop:
+
+1. Capture or select a reference image before changing the interface.
+2. Inspect the image and name the visible discomfort or missing affordance.
+3. Implement the smallest UI change that addresses that discomfort.
+4. Capture an after screenshot or a degraded visual-verification receipt.
+5. Record the reference, after image, receipt, and next visual gap in the
+   worklog or result packet.
+
+If browser screenshot capture fails, do not treat the UI as verified. Preserve
+the failed `aios.visual_verification.v1` receipt, route the gap through
+CapabilityOS, and use the best available prior screenshot only as a temporary
+reference.
+
+Codex is the default owner for this visual loop in MyWorld. Hive Mind and child
+repo agents may execute non-UI implementation, but Codex should keep the user
+interface honest: what changed, what the user can see, which OS produced which
+evidence, and what still feels awkward.
+
 ## Monitor Rule
 
 Codex should keep a control-plane monitor running conceptually even when no

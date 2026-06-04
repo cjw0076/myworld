@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0190
 slug: hivemind-verification-autofire
-status: accepted
+status: closed
 goal: Make Hive Mind run verification auto-fire at run completion so provider-loop runs are self-verified instead of leaving verdict=not_run.
 created: 2026-05-17 18:50 KST
 accepted: 2026-05-17 18:50 KST
+closed: 2026-05-17 23:00 KST
 acceptance_authority: claude@myworld operator — audit gap #5; operator-level wiring fix in hivemind, no escalation rule triggered (no new capability, no privacy change, no external authority).
 origin: The 2026-05-17 internal-state audit, gap #5 — hivemind has 404 passing tests and a real verification gate, but verification is "wired but not auto-firing on provider-loop runs (verdict: not_run)". A verification gate that does not fire is not a gate.
 ---
@@ -67,3 +68,25 @@ Wire the existing verification gate into the run-completion path so it
 auto-fires; ensure the receipt schema carries the verdict; add a test that a
 completed provider-loop run has a non-`not_run` verdict. Report back with the
 receipt of one real run as evidence.
+
+## Close Evidence
+
+- `hivemind` commit: `df897d6 Close ASC-0190 provider verification auto-fire`
+- dispatch result: `.aios/outbox/hivemind/asc-0190-r2.hivemind.result.json`
+  reports `status: passed`.
+- child-repo evidence: `hivemind/docs/AGENT_WORKLOG.md` records an unmocked
+  local provider-loop smoke run `run_20260517_210818_176acc` with
+  `verdict=passed`, verification artifact
+  `.runs/run_20260517_210818_176acc/verification.yaml`,
+  `source_verdict=pass`, and `issues_count=0`.
+- verifier propagation: `hivemind/aios_packet_runner.py` returns `verdict` and
+  `verification`; `hivemind/provider_loop.py` writes `last_verification`; failed
+  or degraded verification now holds the packet runner result instead of
+  reading as success.
+- verification commands:
+  - `cd hivemind && python -m pytest tests/test_provider_loop.py tests/test_aios_packet_runner.py tests/test_run_validation.py -q`
+    passed 30/30.
+  - `cd hivemind && python -m pytest -q` passed 404/404.
+  - `cd hivemind && git diff --check` passed before commit.
+- monitor result after child commit: `python scripts/aios_local_app.py status --json`
+  reported `monitor_health: clear`.

@@ -1,0 +1,197 @@
+{
+  "schema_version": "aios.web_research_receipt.v1",
+  "receipt_id": "ASC-0209-production-readiness-web-evidence",
+  "task": "Research current public evidence for AI agent production-readiness primitives and compare them to current AIOS readiness.",
+  "executed_at": "2026-05-20T17:53:00+09:00",
+  "executed_by": "codex@myworld",
+  "route_contract": "capabilityos.web_research_route.v1",
+  "recommendation_only": true,
+  "capabilityos_executed_network": false,
+  "route": {
+    "capability_id": "cap_web_research_route",
+    "route_steps": [
+      "query",
+      "freshness_check",
+      "open",
+      "extract",
+      "synthesize"
+    ],
+    "source_policy": {
+      "prefer": [
+        "official_docs",
+        "primary_research",
+        "original_framework_docs"
+      ],
+      "citation_required": true,
+      "compare_dates_for_current_topics": true
+    },
+    "privacy_policy": {
+      "sent_to_web": [
+        "public framework names",
+        "public production-readiness concepts",
+        "generic AIOS production-readiness question"
+      ],
+      "not_sent_to_web": [
+        "secrets",
+        "tokens",
+        "raw private exports",
+        "personal data",
+        "provider auth files"
+      ]
+    }
+  },
+  "queries": [
+    "OpenAI Agents SDK tracing guardrails handoffs official documentation production agents",
+    "LangGraph production agents persistence human in the loop observability official docs",
+    "Microsoft AutoGen AgentOps observability official documentation multi agent framework production",
+    "Anthropic multi-agent research effective agents evaluations observability 2025"
+  ],
+  "sources": [
+    {
+      "source_id": "S1",
+      "title": "Tracing - OpenAI Agents SDK",
+      "url": "https://openai.github.io/openai-agents-python/tracing/",
+      "publisher": "OpenAI",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "OpenAI Agents SDK tracing records LLM generations, tool calls, handoffs, guardrails, and custom events during agent runs.",
+        "The docs position traces as useful for debugging, visualization, and production monitoring.",
+        "The tracing docs warn that sensitive data capture is configurable and defaults must be considered."
+      ]
+    },
+    {
+      "source_id": "S2",
+      "title": "Guardrails - OpenAI Agents SDK",
+      "url": "https://openai.github.io/openai-agents-js/guides/guardrails/",
+      "publisher": "OpenAI",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "OpenAI documents input, output, and tool guardrails with tripwire-style blocking behavior.",
+        "The docs note workflow boundary limits: agent-level guardrails do not automatically cover every handoff or hosted tool path.",
+        "Production AIOS should treat guardrails as explicit per-tool and per-route policy, not as ambient prompt safety."
+      ]
+    },
+    {
+      "source_id": "S3",
+      "title": "Persistence - LangGraph",
+      "url": "https://docs.langchain.com/oss/python/langgraph/persistence",
+      "publisher": "LangChain",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "LangGraph persistence saves graph state as checkpoints at each execution step.",
+        "The persistence layer enables human-in-the-loop workflows, memory, time travel, and fault tolerance.",
+        "Production AIOS should preserve resumable checkpoints and replayable state, not only final result packets."
+      ]
+    },
+    {
+      "source_id": "S4",
+      "title": "Human-in-the-loop - LangChain",
+      "url": "https://docs.langchain.com/oss/python/langchain/human-in-the-loop",
+      "publisher": "LangChain",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "LangChain HITL middleware pauses risky tool calls, saves graph state, and resumes after approve, edit, reject, or respond decisions.",
+        "The docs recommend persistent checkpointers such as Postgres-backed savers for production rather than in-memory test savers.",
+        "AIOS operator checkpoints match the pattern conceptually but need user-facing approval and durable resume UX before real-user production."
+      ]
+    },
+    {
+      "source_id": "S5",
+      "title": "Going to production - Deep Agents",
+      "url": "https://docs.langchain.com/oss/javascript/deepagents/going-to-production",
+      "publisher": "LangChain",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "The production guide names persistent memory, sandboxes, resilience middleware, deployment, multi-tenancy, authentication, credentials, async, and durability as production concerns.",
+        "The guide distinguishes thread, user, and assistant scopes for memory and file access.",
+        "AIOS needs a release topology and identity boundary before it should be described as production for general users."
+      ]
+    },
+    {
+      "source_id": "S6",
+      "title": "Agent Monitoring and Debugging with AgentOps - AutoGen",
+      "url": "https://microsoft.github.io/autogen/0.2/docs/ecosystem/agentops/",
+      "publisher": "Microsoft AutoGen",
+      "source_type": "official_docs",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "AutoGen documents agent monitoring around session replays, metrics, cost, latency, failures, multi-agent interactions, tool usage, and security signals.",
+        "The page lists loop detection, custom reporting, benchmark testing, and prompt-injection or secret-leak detection as agent operations features.",
+        "AIOS has monitor and receipts but still needs release-grade cost, latency, replay, failure taxonomy, and support surfaces."
+      ]
+    },
+    {
+      "source_id": "S7",
+      "title": "How we built our multi-agent research system",
+      "url": "https://www.anthropic.com/engineering/multi-agent-research-system",
+      "publisher": "Anthropic",
+      "source_type": "engineering_post",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "Anthropic argues multi-agent systems help breadth-first research by parallelizing independent exploration with separate context windows.",
+        "The post reports internal evaluation improvement for multi-agent research over a single-agent baseline.",
+        "This supports AIOS using LLM debate and web researcher dispatch for architecture analysis, but it does not prove product readiness."
+      ]
+    },
+    {
+      "source_id": "S8",
+      "title": "The 2025 AI Agent Index",
+      "url": "https://aiagentindex.mit.edu/data/2025-AI-Agent-Index.pdf",
+      "publisher": "MIT / AI Agent Index",
+      "source_type": "primary_research",
+      "accessed_at": "2026-05-20",
+      "claims": [
+        "The index evaluates deployed agentic systems across product overview, company accountability, architecture, autonomy and control, ecosystem interaction, evaluation, and safety.",
+        "The paper reports transparency gaps around safety, evaluation, and societal impact information for deployed agent developers.",
+        "AIOS production claims should explicitly document safety, evaluation, autonomy, ecosystem interaction, and accountability rather than relying on internal completion labels."
+      ]
+    }
+  ],
+  "synthesis_claims": [
+    {
+      "claim": "Current public production guidance for agents consistently treats tracing, observability, guardrails, human approval, persistence, identity, credentials, sandboxing, and durability as production primitives.",
+      "source_ids": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6"
+      ]
+    },
+    {
+      "claim": "AIOS already has several operator-grade primitives: contracts, dispatch packets, result receipts, monitor checks, provider routing, and challenge loops.",
+      "source_ids": [
+        "S1",
+        "S3",
+        "S6"
+      ]
+    },
+    {
+      "claim": "AIOS should not yet be called real-user production-ready because external product usage, first-run onboarding, durable upgrade and rollback, user-facing approval, supportable failure taxonomy, and release topology remain unproven.",
+      "source_ids": [
+        "S4",
+        "S5",
+        "S6",
+        "S8"
+      ]
+    },
+    {
+      "claim": "Using multiple LLM agents for this architectural review is justified for breadth-first analysis, but production readiness still requires evidence from real user workflows and release operations.",
+      "source_ids": [
+        "S7",
+        "S8"
+      ]
+    }
+  ],
+  "limitations": [
+    "This receipt records public evidence and local synthesis only; it does not import facts into MemoryOS as accepted memory.",
+    "The network browsing was performed by codex@myworld using the session web tool, not by CapabilityOS executing network actions.",
+    "The production-readiness conclusion also depends on local AIOS state observed in this session, including ASC-0205 closeout and deferred ASC-0208."
+  ]
+}

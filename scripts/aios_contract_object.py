@@ -27,6 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+SCHEMA_VERSION = "aios.contract_object.v0"
 
 # --- State machine -----------------------------------------------------------
 
@@ -107,7 +108,9 @@ class ProviderRoute:
 @dataclass
 class AuthorityScope:
     """Non-filesystem, non-provider scopes (cross-cutting authority)."""
+    device_authority: str = "delegated"  # delegated | readonly | none
     network: bool = False
+    receipts_required: bool = True
     secrets_paths: list[str] = field(default_factory=list)  # explicit secret-bearing files allowed
     user_checkpoints_required: list[str] = field(default_factory=list)  # step ids requiring human
     expires_at: str | None = None  # ISO ts; None = no expiry, but operator should set
@@ -161,6 +164,7 @@ class MemoryEffect:
 class ContractObject:
     contract_id: str
     goal: str
+    schema_version: str = SCHEMA_VERSION
     state: str = "proposed"
     workspace_root: str = ""
 
@@ -187,11 +191,20 @@ class ContractObject:
 
     def validate(self) -> list[str]:
         errors: list[str] = []
+        if self.schema_version != SCHEMA_VERSION:
+            errors.append(f"schema_version must be {SCHEMA_VERSION}")
         if self.state not in STATES:
             errors.append(f"state '{self.state}' not in {STATES}")
         if not self.goal.strip():
             errors.append("goal is empty")
-        step_ids = {s.id for s in self.steps}
+        step_ids: set[str] = set()
+        for s in self.steps:
+            if not s.id.strip():
+                errors.append("step id is empty")
+            if s.id in step_ids:
+                errors.append(f"duplicate step_id '{s.id}'")
+            step_ids.add(s.id)
+            errors.extend(self.authorize_step(s))
         for r in self.receipts:
             if r.step_id not in step_ids:
                 errors.append(f"receipt references unknown step_id '{r.step_id}'")
@@ -276,6 +289,7 @@ class ContractObject:
         return cls(
             contract_id=data["contract_id"],
             goal=data["goal"],
+            schema_version=data.get("schema_version", SCHEMA_VERSION),
             state=data.get("state", "proposed"),
             workspace_root=data.get("workspace_root", ""),
             authority_scope=_load_dc(AuthorityScope, data.get("authority_scope", {})),
@@ -314,6 +328,145 @@ def new_contract_id(prefix: str = "co") -> str:
     return f"{prefix}-" + uuid.uuid4().hex[:12]
 
 
+def personal_files_specimen(
+    *,
+    goal: str,
+    input_root: str,
+    output_root: str,
+    deny_paths: list[str],
+    provider: str,
+    local_llm: str,
+    workspace_root: str = "",
+) -> ContractObject:
+    """Build the first outside-domain specimen: privacy-gated file organization.
+
+    This does not touch files. It creates the runtime object AIOS should execute
+    later: inspect -> propose taxonomy -> checkpoint -> write plan/manifest ->
+    move/copy only after approval -> draft memory effects.
+    """
+    contract = ContractObject(
+        contract_id=new_contract_id("co-personal-files"),
+        goal=goal,
+        workspace_root=workspace_root,
+    )
+    contract.authority_scope = AuthorityScope(
+        device_authority="delegated",
+        network=False,
+        receipts_required=True,
+        user_checkpoints_required=[
+            "plan_review",
+            "before_file_mutation",
+            "memory_writeback_review",
+        ],
+    )
+    contract.filesystem_scope = FilesystemScope(
+        read_paths=[_ensure_scope_prefix(input_root), _ensure_scope_prefix(output_root)],
+        write_paths=[_ensure_scope_prefix(output_root)],
+        move_paths=[_ensure_scope_prefix(input_root), _ensure_scope_prefix(output_root)],
+        delete_paths=[],
+        deny_paths=[_ensure_scope_prefix(p) for p in deny_paths],
+    )
+    contract.provider_routes = [
+        ProviderRoute(provider=provider, auth_mode="session", role="planner", notes="frontier planning and final synthesis"),
+        ProviderRoute(provider=local_llm, auth_mode="none", role="summarizer", notes="local/private filename clustering and cheap critique"),
+    ]
+    contract.capability_route = {
+        "recommended_tools": ["fs.read", "local_llm", "fs.write", "fs.move"],
+        "forbidden_tools": ["fs.delete", "web"],
+        "route_reason": "privacy-gated local organization should not use network and should not delete files in v0",
+    }
+    contract.genesis_challenge = {
+        "question": "Are we organizing user files for retrieval value, or merely imposing our taxonomy?",
+        "required_before": "plan_review",
+    }
+    contract.steps = [
+        Step(
+            id="inventory",
+            description="Read only metadata/listing under input_root; do not open denied paths.",
+            tool="fs.read",
+            inputs={"path": _ensure_scope_prefix(input_root), "mode": "metadata_only"},
+            expects="file inventory receipt with counts, extensions, and candidate clusters",
+        ),
+        Step(
+            id="local_cluster",
+            description="Use local LLM or deterministic rules to cluster filenames and shallow metadata.",
+            tool=f"provider.{local_llm}",
+            inputs={"source": "step:inventory", "privacy": "local_only"},
+            expects="candidate taxonomy with uncertainty labels",
+        ),
+        Step(
+            id="plan_review",
+            description="Present proposed organization plan and wait for user approval.",
+            tool="user.checkpoint",
+            inputs={"source": "step:local_cluster"},
+            expects="approved, revised, or rejected organization plan",
+            requires_checkpoint=True,
+        ),
+        Step(
+            id="write_manifest",
+            description="Write an organization manifest before any file mutation.",
+            tool="fs.write",
+            inputs={"path": _ensure_scope_prefix(output_root) + "AIOS_ORGANIZATION_MANIFEST.json"},
+            expects="manifest receipt with planned moves/copies and rollback map",
+        ),
+        Step(
+            id="before_file_mutation",
+            description="Require explicit checkpoint before move/copy operations.",
+            tool="user.checkpoint",
+            inputs={"source": "step:write_manifest"},
+            expects="explicit approval to mutate file layout",
+            requires_checkpoint=True,
+        ),
+        Step(
+            id="apply_moves",
+            description="Apply approved move/copy operations. No deletion in v0.",
+            tool="fs.move",
+            inputs={"src": _ensure_scope_prefix(input_root), "dst": _ensure_scope_prefix(output_root), "delete": False},
+            expects="mutation receipt with every touched path and rollback instruction",
+        ),
+        Step(
+            id="verify_layout",
+            description="Verify the resulting layout against the manifest.",
+            tool="fs.read",
+            inputs={"path": _ensure_scope_prefix(output_root), "mode": "metadata_only"},
+            expects="verification receipt proving expected files are present",
+        ),
+        Step(
+            id="memory_writeback_review",
+            description="Draft reusable organization preferences without private file bodies.",
+            tool="user.checkpoint",
+            inputs={"source": "step:verify_layout"},
+            expects="approval/rejection of memory draft candidates",
+            requires_checkpoint=True,
+        ),
+    ]
+    contract.evals = [
+        Eval(name="no_denied_paths_touched", check="receipts contain no path matching filesystem_scope.deny_paths"),
+        Eval(name="no_delete_operations", check="no receipt records fs.delete or destructive move"),
+        Eval(name="manifest_before_mutation", check="write_manifest receipt timestamp precedes apply_moves"),
+        Eval(name="user_approved_mutation", check="before_file_mutation checkpoint approved"),
+        Eval(name="layout_verified", check="verify_layout receipt success=true"),
+    ]
+    contract.memory_effects = [
+        MemoryEffect(
+            target="memoryOS.draft",
+            op="draft",
+            content_ref="step:memory_writeback_review",
+            note="Only durable preferences and taxonomy decisions; no private filenames unless user approves.",
+        )
+    ]
+    contract.next_state = "accepted"
+    return contract
+
+
+def _ensure_scope_prefix(path: str) -> str:
+    if not path:
+        return path
+    if path.endswith("/") or path.endswith("**"):
+        return path
+    return path + "/"
+
+
 # --- CLI ---------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
@@ -325,6 +478,17 @@ def main(argv: list[str] | None = None) -> int:
     new_p.add_argument("--goal", required=True)
     new_p.add_argument("--id", default=None)
     new_p.add_argument("--workspace-root", default="")
+
+    spec_p = sub.add_parser("specimen", help="emit a task-specific ContractObject specimen")
+    spec_sub = spec_p.add_subparsers(dest="specimen_cmd", required=True)
+    personal_p = spec_sub.add_parser("personal-files", help="privacy-gated personal file organization specimen")
+    personal_p.add_argument("--goal", default="Organize personal files into a retrievable, reversible structure")
+    personal_p.add_argument("--input-root", required=True)
+    personal_p.add_argument("--output-root", required=True)
+    personal_p.add_argument("--deny-path", action="append", default=[])
+    personal_p.add_argument("--provider", default="codex")
+    personal_p.add_argument("--local-llm", default="ollama_local")
+    personal_p.add_argument("--workspace-root", default="")
 
     val_p = sub.add_parser("validate", help="validate an existing ContractObject JSON")
     val_p.add_argument("path", type=Path)
@@ -345,6 +509,19 @@ def main(argv: list[str] | None = None) -> int:
         co = ContractObject(
             contract_id=args.id or new_contract_id(),
             goal=args.goal,
+            workspace_root=args.workspace_root,
+        )
+        print(co.to_json())
+        return 0
+
+    if args.cmd == "specimen" and args.specimen_cmd == "personal-files":
+        co = personal_files_specimen(
+            goal=args.goal,
+            input_root=args.input_root,
+            output_root=args.output_root,
+            deny_paths=args.deny_path,
+            provider=args.provider,
+            local_llm=args.local_llm,
             workspace_root=args.workspace_root,
         )
         print(co.to_json())
