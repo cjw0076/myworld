@@ -31,7 +31,11 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.commit_guard.v1"
 
 _RAW = re.compile(r"^:\d+ (\d+) [0-9a-f]+ [0-9a-f]+ (\w)\t(.+)$")
-_JUNK_NAME = re.compile(r"^\.?\d+$")  # "0", "1", ".2" — accidental redirect/temp artifacts
+# Accidental-artifact names. Only ever flagged together with a 0-byte size
+# (see analyze), which keeps false positives near zero. Covers redirect numerals
+# ("0"), editor/OS temp files, and "untitled" scratch files (gemini review #3).
+_JUNK_NAME = re.compile(r"^\.?\d+$|~$|\.(swp|swo|orig|bak|tmp)$", re.I)
+_JUNK_EXACT = {".ds_store", "thumbs.db", "untitled", "untitled.md", "untitled.txt"}
 
 
 def gitmodules_paths(root: Path) -> set[str]:
@@ -40,7 +44,8 @@ def gitmodules_paths(root: Path) -> set[str]:
 
 
 def is_junk_name(path: str) -> bool:
-    return bool(_JUNK_NAME.match(Path(path).name))
+    name = Path(path).name
+    return bool(_JUNK_NAME.search(name)) or name.lower() in _JUNK_EXACT
 
 
 def analyze(entries: list[dict], submodule_paths: set[str]) -> list[dict]:

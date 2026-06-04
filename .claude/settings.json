@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cat .claude/AIOS_HARNESS.md"
+            "command": "bash scripts/aios_session_brief.sh"
           }
         ]
       }

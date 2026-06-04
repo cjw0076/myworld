@@ -34,6 +34,22 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 - Append a self-observation entry at session end (ASC-0066 corpus).
 - Carry reversible risk decisively; escalate only irreversible + privacy.
 
+## Known gaps (external review, gemini 2026-06-05 — codex was rate-limited)
+
+Cross-substrate review of this harness (per feedback_use_all_substrates_not_own_head)
+surfaced gaps Claude missed. Done: hook made active (live state injected via
+`scripts/aios_session_brief.sh`); commit-guard junk detection broadened. Open:
+
+- **Enforcement vs prose (highest):** skills' Hard Rules + the 4-OS ritual are
+  advisory — an agent can ignore them. True "실수 반복 방지" needs a blocking
+  layer (a PreToolUse/MCP "ritual_lock" gating decision-actions until 4-OS
+  traces exist). Deferred — blocking can break flow, so it is a founder posture
+  decision, not an autonomous default.
+- **commit_guard parsing:** `git diff --raw` regex is non-standard → consider
+  `git status --porcelain=v2`. Also no binary/large-blob accidental-commit check.
+- **memory audit:** no dangling-provenance check (memory whose source file was
+  moved/deleted) — add a ref-integrity validator.
+
 ## Growing this harness
 
 New repeated task or mistake → add a skill here (match `.claude/skills/devil-advocate`

@@ -43,8 +43,15 @@ class CommitGuardTests(unittest.TestCase):
         self.assertTrue(guard.is_junk_name("0"))
         self.assertTrue(guard.is_junk_name("dir/12"))
         self.assertTrue(guard.is_junk_name(".3"))
+        # broadened (gemini review #3): editor/OS temp + untitled scratch
+        self.assertTrue(guard.is_junk_name("foo.swp"))
+        self.assertTrue(guard.is_junk_name("app.js~"))
+        self.assertTrue(guard.is_junk_name("notes.orig"))
+        self.assertTrue(guard.is_junk_name("Untitled.md"))
+        self.assertTrue(guard.is_junk_name("dir/.DS_Store"))
         self.assertFalse(guard.is_junk_name("app.js"))
         self.assertFalse(guard.is_junk_name("README"))
+        self.assertFalse(guard.is_junk_name("untitled_form.tsx"))
 
 
 if __name__ == "__main__":
