@@ -600,6 +600,7 @@ Build the loop.
             self.assertEqual(data["friction_radar"]["items"][0]["contracts"][0]["signatures"][0]["signature"], "mono-language")
             self.assertEqual(data["friction_radar"]["items"][1]["related_dispatches"][0]["dispatch_id"], "asc-0223")
             self.assertEqual(data["friction_radar"]["items"][1]["related_dispatches"][0]["latest_status"], "released")
+            self.assertEqual(data["friction_radar"]["items"][1]["alert_entries"], ["?? .tmp_uri_cleanroom_seed.md"])
             self.assertEqual(data["os_observatory"]["memory"]["nodes"], 2)
             self.assertEqual(data["os_observatory"]["memory"]["edges"], 1)
             self.assertEqual(data["os_observatory"]["memory"]["accepted"], 1)

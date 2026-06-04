@@ -127,11 +127,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "total": 6
   },
   "completion": {
-    "checked_at": "2026-06-05T01:51:03+09:00",
+    "checked_at": "2026-06-05T01:54:30+09:00",
     "criteria": [
       {
         "criterion": "1. autopoietic loop closed + always-on",
-        "evidence": "round controller running=True, last_round=2026-06-05T01:50:22+09:00, dream+local_operator organs ran=True",
+        "evidence": "round controller running=True, last_round=2026-06-05T01:53:44+09:00, dream+local_operator organs ran=True",
         "met": true
       },
       {
@@ -5243,7 +5243,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hivemind"
         ],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
+        "timestamp": "2026-06-05T01:53:41+09:00"
       },
       {
         "collected": [],
@@ -5254,7 +5254,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
+        "timestamp": "2026-06-05T01:53:41+09:00"
       },
       {
         "collected": [],
@@ -5265,7 +5265,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
+        "timestamp": "2026-06-05T01:53:41+09:00"
       },
       {
         "collected": [],
@@ -5276,7 +5276,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
+        "timestamp": "2026-06-05T01:53:41+09:00"
       },
       {
         "collected": [
@@ -5393,118 +5393,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:44:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:44:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:45:44+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:45:44+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:45:44+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:45:44+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:46:28+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:46:28+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:46:28+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:46:28+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:47:16+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:47:16+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:47:16+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:47:16+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:07+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:07+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
         "timestamp": "2026-06-05T01:48:07+09:00"
       },
       {
@@ -5597,6 +5485,118 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "skipped",
         "timestamp": "2026-06-05T01:50:20+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:10+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:11+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:11+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:11+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:56+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:56+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:56+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:51:56+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:52:48+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:52:48+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:52:48+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:52:48+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:53:41+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:53:41+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:53:41+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:53:41+09:00"
       }
     ],
     "total": 240
@@ -5604,6 +5604,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
   "friction_radar": {
     "items": [
       {
+        "alert_entries": [
+          "?? .tmp_uri_cleanroom_seed.md"
+        ],
         "code": "repo_dirty",
         "contracts": [],
         "need": "hold_for_repo_owner_triage",
@@ -5640,6 +5643,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "weak_personas": []
       },
       {
+        "alert_entries": [],
         "code": "genesis_prompt_prison_advisory",
         "contracts": [
           {
@@ -5730,6 +5734,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "weak_personas": []
       },
       {
+        "alert_entries": [],
         "code": "persona_axis_advisory",
         "contracts": [],
         "need": "review_5_persona_axis",
@@ -5764,7 +5769,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "queued": 0,
     "schema_version": "aios.frontier_queue.v1"
   },
-  "generated_at": "2026-06-05T01:50:54+09:00",
+  "generated_at": "2026-06-05T01:54:25+09:00",
   "genesis_lens": {
     "authority": "speculative_only",
     "branches": [
@@ -7189,7 +7194,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "severity": "info"
       }
     ],
-    "generated_at": "2026-06-05T01:50:47+09:00",
+    "generated_at": "2026-06-05T01:54:18+09:00",
     "health": "attention",
     "next_actions": [
       {
@@ -7348,7 +7353,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         }
       ],
       "contracts_scored": 20,
-      "generated_at": "2026-06-05T01:50:47+09:00",
+      "generated_at": "2026-06-05T01:54:18+09:00",
       "per_contract": [
         {
           "contract_id": "ASC-0193",
@@ -7854,7 +7859,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "window": 20
     },
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-06-05T01:50:47+09:00",
+    "snapshot_generated_at": "2026-06-05T01:54:17+09:00",
     "watched": {
       "alerts": 1,
       "contracts": 221,
@@ -9976,7 +9981,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-06-05T01:50:22+09:00",
+    "generated_at": "2026-06-05T01:53:44+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "hold_for_goal_stop_conditions",
@@ -10026,7 +10031,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "helpers_folded": 5,
           "note": "observation history folded into helper catalog observation_count; CapabilityOS recommend now ranks by actual verified usage",
-          "ran_at": "2026-06-05T01:50:18+09:00",
+          "ran_at": "2026-06-05T01:53:35+09:00",
           "schema": "aios.capability_feedback.v1"
         },
         "returncode": 0,
@@ -10071,7 +10076,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-06-05T01:50:20+09:00",
+          "generated_at": "2026-06-05T01:53:41+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -10224,7 +10229,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "kept_active": 14,
           "note": "stale packets (contract closed) archived to .aios/archive/inbox/ — append-only, never deleted; open/missing-contract packets left for operator review",
-          "ran_at": "2026-06-05T01:50:18+09:00",
+          "ran_at": "2026-06-05T01:53:35+09:00",
           "schema": "aios.dispatch_reconcile.v1"
         },
         "returncode": 0,
@@ -10233,7 +10238,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "dream": {
-        "age_seconds": 1590,
+        "age_seconds": 1787,
         "name": "dream",
         "reason": "recent_dream",
         "status": "skipped"
@@ -10246,12 +10251,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "monitor_findings": 3,
             "monitor_health": "attention",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-06-05T01:50:11+09:00",
+            "policy_generated_at": "2026-06-05T01:53:26+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-06-05T01:50:17+09:00",
+          "generated_at": "2026-06-05T01:53:34+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -10617,7 +10622,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "librarian": {
-        "age_seconds": 1589,
+        "age_seconds": 1786,
         "name": "librarian",
         "reason": "recent_tend",
         "status": "skipped"
@@ -11636,7 +11641,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               ]
             }
           ],
-          "generated_at": "2026-06-05T01:50:18+09:00",
+          "generated_at": "2026-06-05T01:53:36+09:00",
           "in_flight_count": 2,
           "open_contract_count": 4,
           "open_contract_order": [
@@ -11646,7 +11651,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0180-hive-debate-aios-hosting-trust-model.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1788618
+              "wait_seconds": 1788816
             },
             {
               "contract_id": "ASC-0212",
@@ -11654,7 +11659,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0212-aios-mcp-native.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356618
+              "wait_seconds": 1356816
             },
             {
               "contract_id": "ASC-0213",
@@ -11662,7 +11667,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0213-closure-quality-gate.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356618
+              "wait_seconds": 1356816
             },
             {
               "contract_id": "ASC-0214",
@@ -11670,7 +11675,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0214-aios-dogfooding-gap.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356618
+              "wait_seconds": 1356816
             }
           ],
           "operator_only_prefixes": [
@@ -11890,7 +11895,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "severity": "info"
             }
           ],
-          "generated_at": "2026-06-05T01:50:11+09:00",
+          "generated_at": "2026-06-05T01:53:25+09:00",
           "health": "attention",
           "next_actions": [
             {
@@ -12049,7 +12054,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               }
             ],
             "contracts_scored": 20,
-            "generated_at": "2026-06-05T01:50:11+09:00",
+            "generated_at": "2026-06-05T01:53:25+09:00",
             "per_contract": [
               {
                 "contract_id": "ASC-0193",
@@ -12555,7 +12560,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "window": 20
           },
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-06-05T01:50:11+09:00",
+          "snapshot_generated_at": "2026-06-05T01:53:25+09:00",
           "watched": {
             "alerts": 1,
             "contracts": 221,
@@ -12602,7 +12607,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "verified_good": 389
             }
           ],
-          "ran_at": "2026-06-05T01:50:18+09:00",
+          "ran_at": "2026-06-05T01:53:35+09:00",
           "schema": "aios.self_evolve.v1",
           "waiting": 0
         },
@@ -12616,7 +12621,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "verify",
         "parsed": {
           "method": "deterministic structural checks — not an LLM judging an LLM",
-          "ran_at": "2026-06-05T01:50:17+09:00",
+          "ran_at": "2026-06-05T01:53:35+09:00",
           "receipts": [],
           "schema": "aios.verify.v1",
           "verified_bad": 0,

@@ -4,6 +4,23 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 01:58 KST — codex — friction radar dirty entry visibility
+
+- status: done
+- scope: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_control_snapshot.py`,
+  regenerated control snapshot data, `docs/AIOS_AGENT_LEDGER.md`, and this
+  worklog.
+- result: Control Center friction radar now shows monitor dirty entries as
+  `alert_entries`. The active MemoryOS card contains both
+  `?? .tmp_uri_cleanroom_seed.md` and the related `asc-0223` dispatch context.
+- evidence: `python -m unittest tests.test_aios_control_snapshot -v` passed
+  17/17; `python -m py_compile scripts/aios_control_snapshot.py` and
+  `node --check apps/control/app.js` passed. Live generated snapshot printed
+  `[('memoryOS', ['?? .tmp_uri_cleanroom_seed.md'], 'asc-0223')]`.
+- boundary: did not touch MemoryOS state and did not suppress the dirty alert.
+  This improves operator actionability only.
+
 ## 2026-06-05 01:52 KST — codex — friction radar dispatch context
 
 - status: done

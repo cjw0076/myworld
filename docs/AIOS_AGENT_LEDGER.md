@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 01:58 KST — codex@myworld — friction radar dirty entry visibility
+
+- when: 2026-06-05 01:58 KST
+- repo: myworld
+- agent: codex@myworld
+- role: Control Center / monitor surface implementation
+- goal: make repo-dirty friction radar cards show the exact dirty status
+  entries alongside related dispatch context.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_control_snapshot.py`,
+  regenerated `apps/control/aios-control-snapshot.json`,
+  `apps/control/aios-control-data.js`, `docs/AGENT_WORKLOG.md`, and this
+  ledger.
+- decision: friction radar items now preserve monitor `alert.entries` as
+  `alert_entries`, and the Control Center renders those entries as compact code
+  rows before related dispatch context.
+- evidence: focused snapshot tests passed 17/17; Python and JS syntax checks
+  passed. Live generated snapshot reports
+  `memoryOS -> ["?? .tmp_uri_cleanroom_seed.md"] -> asc-0223`.
+- boundary: this is operator visibility only. It does not modify, delete,
+  commit, or suppress MemoryOS local work.
+- next: MemoryOS provenance cleanup can be decided from one radar card without
+  opening raw monitor JSON.
+- status: done
+
 ## 2026-06-05 01:52 KST — codex@myworld — friction radar dispatch context
 
 - when: 2026-06-05 01:52 KST

@@ -3637,6 +3637,7 @@ body {
 
 .friction-contract-list,
 .friction-dispatch-list,
+.friction-entry-list,
 .friction-persona-list,
 .friction-action-row {
   display: grid;
@@ -3656,6 +3657,15 @@ body {
 .friction-contract-row > strong,
 .friction-dispatch-row > strong {
   font-size: 13px;
+}
+
+.friction-entry-list code {
+  padding: 6px 8px;
+  border: 1px solid #dce7f3;
+  border-radius: 6px;
+  background: #f8fbff;
+  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 .friction-action-row {

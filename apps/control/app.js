@@ -2764,6 +2764,14 @@
           el("span", "", text(item.reason, "No reason recorded")),
           el("small", "", text(item.source, "monitor"))
         );
+        const alertEntries = (item.alert_entries || []).slice(0, 5);
+        if (alertEntries.length) {
+          const entryList = el("div", "friction-entry-list");
+          alertEntries.forEach((entry) => {
+            entryList.append(el("code", "", text(entry, "entry")));
+          });
+          card.append(entryList);
+        }
         const contracts = (item.contracts || []).slice(0, 3);
         if (contracts.length) {
           const list = el("div", "friction-contract-list");
