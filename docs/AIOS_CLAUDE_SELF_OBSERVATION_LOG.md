@@ -547,3 +547,19 @@ AIOS가 이것을 흡수하려면:
 - new_invariant_or_pattern_discovered:
   - **memory write-back must never fail a closed run** — the sink is wrapped so a memoryOS outage degrades to a queued packet, never reverts a verified closeout. Variant of named-exit at the cognition layer.
 - self-correction-of-prior-observation: none.
+
+## 2026-06-05 14:20 KST — claude@myworld — absorption-delta A/B probe (bare vs +AIOS) on a real uri task
+
+- session_id: autonomous-dev goal session (post commit c598f61)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 10:15:25:35:0 / ~50min
+- tools_used: aios_retrieve, aios_route, aios_challenge(x2), aios_observe, Agent(x2 parallel isolated arms), Bash, Write
+- tools_NOT_used (CLI gap): aios_helper_run (no local helper invoked); no Hive plan-only (probe was measurement, not dispatch)
+- substrate_specific_behaviors_observed:
+  - Ran a clean A/B by spawning two ISOLATED subagents with identical task + repo/web access, sole difference = whether the AIOS organ loop runs. This isolates "does AIOS shape behavior" from "did it read the repo."
+  - GenesisOS aios_challenge was the only organ producing positive behavior-delta: assumption-negation caught a factual frame error (컴공 standalone vs 융합학부 전공) and forced status:draft; time-frozen critique produced dated staleness footers.
+  - MemoryOS aios_retrieve returned NULL for the product task — repo checked-in docs (CLAUDE.md, LEGAL_ETHICAL_GUARDRAILS.md, festival-data.ts HARD RULE) supplied the clean-room guardrail, which the BARE arm also picked up. So current "AIOS shapes behavior" ≈ "repo docs shape any reader" + one challenge organ.
+- failures_recovered: predicted hypothesis ("bare fabricates, AIOS saves") was refuted by the bare arm's competent clean-room behavior; reframed finding honestly rather than forcing the predicted narrative.
+- failures_escalated_to_founder: none (reversible measurement under autonomous-dev goal)
+- key_decision: scored delta as positive-but-small + concentrated in GenesisOS; concluded the "AIOS만 남는다" moat cannot rest on MemoryOS recall while it returns null on product tasks — quantifies ASC-0214 dogfooding gap with evidence.
+- new_invariant_or_pattern_discovered: ABSORPTION-DELTA PROBE as a reusable method — to test if AIOS adds value, hold repo access constant across two arms and vary only the organ loop; null-delta on an organ = that organ is theater for that task class. MemoryOS is currently theater for product-domain tasks (empty graph).
+- self-correction-of-prior-observation: refines memory project_aios_production_gap — the gap is not "9 holes" generically but specifically: MemoryOS holds 0 product-domain accepted memories, so retrieve cannot change behavior. Fill-the-graph is the highest-leverage next move, not more kernel polish.

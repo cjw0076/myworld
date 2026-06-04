@@ -74,6 +74,71 @@ class AiosMemoryRetrievalAuditTests(unittest.TestCase):
             self.assertEqual(payload["hits"], 2)
             self.assertTrue(all(case.get("trace_id") for case in payload["cases"]))
 
+    def add_product_object(self, root: Path) -> str:
+        sys.path.insert(0, MEMORYOS.as_posix())
+        from memoryos.schema import make_memory_object
+        from memoryos.store import GraphStore
+
+        store = GraphStore(root)
+        store.ensure()
+        product = make_memory_object(
+            "decision",
+            "URI public-content sourcing: clean-room pointer-first, zero fabrication.",
+            "claude",
+            "URI",
+            ["uri/docs/CAMPUS_WIKI_SEED.md:1"],
+            confidence=0.8,
+            status="accepted",
+        )
+        store.append_memory_objects([product])
+        return product.id
+
+    def test_is_internal_classification(self) -> None:
+        sys.path.insert(0, (ROOT / "scripts").as_posix())
+        import aios_memory_retrieval_audit as audit
+
+        self.assertTrue(audit._is_internal("AIOS"))
+        self.assertTrue(audit._is_internal("hivemind"))
+        self.assertTrue(audit._is_internal("Hive Mind"))
+        self.assertTrue(audit._is_internal("memoryOS"))
+        self.assertFalse(audit._is_internal("URI"))
+        self.assertFalse(audit._is_internal(None))
+
+    def test_domain_coverage_alarm_when_only_internal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            memory_root = Path(tmp) / "memory-root"
+            first_id, _ = self.make_store(memory_root)
+
+            payload = self.run_audit(memory_root, "--case", f"AIOS완성 공진화::{first_id}")
+
+            cov = payload["domain_coverage"]
+            self.assertEqual(cov["status"], "ok")
+            self.assertEqual(cov["product"], 0)
+            self.assertEqual(cov["internal"], cov["total_accepted"])
+            self.assertTrue(cov["inward_growth_alarm"])
+
+    def test_domain_coverage_counts_product(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            memory_root = Path(tmp) / "memory-root"
+            self.make_store(memory_root)
+            product_id = self.add_product_object(memory_root)
+
+            # project filter on --case defaults to AIOS, so the URI object need
+            # not be retrieved here — this test asserts coverage, not the hit.
+            payload = self.run_audit(
+                memory_root,
+                "--min-rate",
+                "0",
+                "--case",
+                f"uri clean-room sourcing::{product_id}",
+            )
+
+            cov = payload["domain_coverage"]
+            self.assertEqual(cov["product"], 1)
+            self.assertFalse(cov["inward_growth_alarm"])
+            self.assertAlmostEqual(cov["product_coverage"], 1 / cov["total_accepted"], places=3)
+            self.assertIn("URI", cov["by_project"])
+
     def test_audit_explains_task_filtered_miss(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             memory_root = Path(tmp) / "memory-root"

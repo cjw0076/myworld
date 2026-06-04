@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Audit whether accepted MemoryOS records are retrievable by context build."""
+"""Audit whether accepted MemoryOS records are retrievable by context build.
+
+Also audits DOMAIN COVERAGE of accepted memory: what fraction of accepted
+objects is product-domain (outside AIOS) vs AIOS-internal (the 5 OS + control
+plane). An absorption-delta probe (2026-06-05) found accepted memory was
+100% AIOS-internal (0 product) — retrieve returned null on any product task
+because the graph only remembered AIOS's own plumbing. `inward_growth_alarm`
+fires when product coverage is 0, surfacing the founder-override pathology
+(AIOS remembering only itself) as a standing metric rather than a one-off
+diagnosis. See memory project_memoryos_inward_growth_finding.
+"""
 
 from __future__ import annotations
 
@@ -41,7 +51,34 @@ DEFAULT_CASES: tuple[RetrievalCase, ...] = (
         "Claude CLI Codex local LLM provider 흡수",
         ("mem_001f6d5191fb8e51", "mem_1f18cea463eed9fd"),
     ),
+    # Product-domain probe (project URI). Guards against the inward-growth
+    # regression: if this misses, accepted product memory has gone empty again.
+    RetrievalCase(
+        "uri campus wiki clean-room seed sourcing scholarship 울산대",
+        ("mem_0c66b6db9ac73100",),
+        project="URI",
+    ),
 )
+
+
+# AIOS-internal = the five sibling OS + the control plane. Anything else
+# (URI and any future product/testbed) counts as product-domain coverage.
+INTERNAL_PROJECTS = frozenset(
+    p.casefold()
+    for p in (
+        "AIOS",
+        "myworld",
+        "hivemind",
+        "Hive Mind",
+        "memoryOS",
+        "CapabilityOS",
+        "GenesisOS",
+    )
+)
+
+
+def _is_internal(project: Any) -> bool:
+    return str(project or "").casefold() in INTERNAL_PROJECTS
 
 
 def parse_case(value: str) -> RetrievalCase:
@@ -153,11 +190,57 @@ def run_context_case(memoryos_dir: Path, memory_root: Path, case: RetrievalCase)
     }
 
 
+def accepted_domain_coverage(memoryos_dir: Path, memory_root: Path) -> dict[str, Any]:
+    """Classify accepted memory objects as AIOS-internal vs product-domain."""
+    command = [
+        sys.executable,
+        "-m",
+        "memoryos.cli",
+        "--root",
+        memory_root.as_posix(),
+        "drafts",
+        "list",
+        "--status",
+        "accepted",
+        "--json",
+    ]
+    result = subprocess.run(
+        command, cwd=memoryos_dir, text=True, capture_output=True, check=False
+    )
+    if result.returncode != 0:
+        return {"status": "error", "stderr": result.stderr.strip()[:1000]}
+    try:
+        objects = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        return {"status": "error", "stderr": str(exc)}
+    by_project: dict[str, int] = {}
+    internal = product = 0
+    for obj in objects:
+        project = str(obj.get("project") or "?")
+        by_project[project] = by_project.get(project, 0) + 1
+        if _is_internal(project):
+            internal += 1
+        else:
+            product += 1
+    total = internal + product
+    coverage = product / total if total else 0.0
+    return {
+        "status": "ok",
+        "total_accepted": total,
+        "internal": internal,
+        "product": product,
+        "product_coverage": round(coverage, 4),
+        "by_project": dict(sorted(by_project.items(), key=lambda kv: -kv[1])),
+        "inward_growth_alarm": total > 0 and product == 0,
+    }
+
+
 def run_audit(memoryos_dir: Path, memory_root: Path, cases: tuple[RetrievalCase, ...]) -> dict[str, Any]:
     rows = [run_context_case(memoryos_dir, memory_root, case) for case in cases]
     hits = sum(1 for row in rows if row.get("hit"))
     total = len(rows)
     rate = hits / total if total else 0.0
+    coverage = accepted_domain_coverage(memoryos_dir, memory_root)
     return {
         "schema_version": SCHEMA_VERSION,
         "memoryos_dir": memoryos_dir.as_posix(),
@@ -167,6 +250,7 @@ def run_audit(memoryos_dir: Path, memory_root: Path, cases: tuple[RetrievalCase,
         "misses": total - hits,
         "retrieval_rate": round(rate, 4),
         "passed": rate >= 0.5,
+        "domain_coverage": coverage,
         "cases": rows,
     }
 
@@ -195,6 +279,13 @@ def main(argv: list[str] | None = None) -> int:
             f"rate={result['retrieval_rate']} hits={result['hits']}/{result['total_cases']} "
             f"passed={str(result['passed']).lower()}"
         )
+        cov = result.get("domain_coverage") or {}
+        if cov.get("status") == "ok":
+            print(
+                f"  domain_coverage product={cov['product']}/{cov['total_accepted']} "
+                f"({cov['product_coverage']}) internal={cov['internal']} "
+                f"inward_growth_alarm={str(cov['inward_growth_alarm']).lower()}"
+            )
         for row in result["cases"]:
             print(
                 f"- {row['status']} query={row['query']!r} "
