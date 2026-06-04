@@ -12,6 +12,11 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 
 ## Standing checks (run, don't trust prose)
 
+- **Commit guard:** `python scripts/aios_commit_guard.py` (run with staged
+  changes) — catches an embedded git repo staged as a gitlink with no
+  `.gitmodules` entry (broken submodule on clone) and 0-byte junk files like
+  `0`. Both bit us this session. Non-blocking by default; wireable as a git
+  pre-commit hook (`git config core.hooksPath`) once the operator opts in.
 - **Inward-growth alarm:** `python scripts/aios_memory_retrieval_audit.py` —
   product-domain memory coverage + `inward_growth_alarm`. Accepted memory that
   is 100% AIOS-internal = retrieve returns null on real work.
