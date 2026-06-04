@@ -580,3 +580,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: encode multi-step rituals as skills, quick guards as "standing checks" in the brief, and enforcement as a SessionStart hook — not everything needs to be a skill (avoid harness bloat mirroring contract bloat).
 - new_invariant_or_pattern_discovered: HARNESS-FROM-SELFOBS loop — the self-observation log is not just ASC-0066 training corpus, it is the live backlog for harness engineering: any pattern that recurs ≥2 entries is a packaging candidate (skill if multi-step ritual, hook if it must not be skipped, standing-check if a quick verify).
 - self-correction-of-prior-observation: refines the prior entry's "fill MemoryOS" takeaway — the deeper lever is packaging the rituals (incl. the memory-propose pipeline itself) so humans+agents stop re-deriving and re-erring.
+
+## 2026-06-05 19:40 KST — claude@myworld — harness battle-testing: cross-substrate review + live hook-bug fixes
+
+- session_id: autonomous-dev /loop session (continuation; founder directives: harness, use-all-substrates, take-all-risk, local-LLM)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 15:30:20:35:0 / multi-iteration
+- tools_used: codex exec (gpt-5.5, read-only review), gemini -p (review), ollama qwen3-coder:30b (gen+tool-use+review), WebSearch, HF MCP, Agent(claude-code-guide), Edit/Bash, aios_observe
+- substrate_specific_behaviors_observed:
+  - CROSS-SUBSTRATE REVIEW catches own blindspots: gemini found the enforcement-vs-prose gap; codex (gpt-5.5) found 3 real bugs in my active blocking code (a false-block + an enforcement bypass); qwen3-coder:30b review was 4/5 false positives. Accuracy ranking for code-audit: codex≈gemini >> local-30B. Routing rule: audits → strong hosted substrate; gen/draft/bulk → local.
+  - BLOCKING-HOOK HAZARD (learned by the hook blocking me twice): (1) a relative hook command path + shell-cwd drift → script not found → exit 2 → tool DENIED; the script's internal fail-open is useless if it never launches. Fix: absolute `$CLAUDE_PROJECT_DIR` path + shell-level `|| true`. (2) a broad `>` deny heuristic false-blocked any command mentioning a contract path while using `2>/dev/null`. Fix: match the write TARGET, not any write char.
+  - VERIFY-DON'T-TRUST even my own new tools: the provenance check's first "dangling" hit (docs/HANDOFF.json) was a root-ambiguity false positive (it lives in child repos) — caught by inspecting before shipping; broadened the resolver.
+- failures_recovered: session Bash blocked by my own hook → recovered via Edit (not Bash-matched) to fix settings.json; hooks reload per tool-call so the fix took effect immediately.
+- failures_escalated_to_founder: none (all reversible, founder pre-authorized risk)
+- key_decision: reverted the over-broad Bash contract-gate to a tight target-match rather than keep an enforcement that false-blocks — "a harness must never break the flow it guards" wins over maximal coverage.
+- new_invariant_or_pattern_discovered: HOOK-AUTHORING INVARIANTS — blocking hooks must (a) use absolute paths, (b) fail open at the shell level, (c) keep deny heuristics target-specific. A blocking hook that false-blocks is worse than no hook. Settings.json hooks reload per tool-call (mid-session fixes apply).
+- self-correction-of-prior-observation: the earlier "fail open inside the script" claim was insufficient — fail-open must also be at the launch/shell layer.
