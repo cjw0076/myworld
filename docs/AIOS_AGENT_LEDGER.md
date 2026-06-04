@@ -6256,6 +6256,22 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: continue with advisory GenesisOS/persona-axis monitor items; do not
   reopen ASC-0224 unless MemoryOS provenance verification regresses.
 
+## 2026-06-05T05:02+09:00 — Genesis prompt-prison advisory review split
+
+- goal: keep GenesisOS prompt-prison critique active while preventing reviewed
+  findings from repeatedly paging the monitor.
+- result: `aios_genesis_critic_dispatch.py` now emits
+  `unreviewed_flagged` and `reviewed_flagged`; monitor raises
+  `genesis_prompt_prison_advisory` only for unreviewed findings.
+- evidence: ASC-0212, ASC-0213, ASC-0214, and ASC-0215 now include structured
+  `GenesisOS Escape Review` sections. Current critic report shows
+  `unreviewed_flagged_count=0`; monitor next action now only reports
+  `persona_axis_advisory`.
+- provider review: Codex and Claude agreed the split is sound if stale or
+  boilerplate reviews remain visible; Gemini was attempted and hit capacity.
+- next: continue with persona-axis advisory; do not remove reviewed Genesis
+  signatures from report metadata.
+
 ## 2026-05-20 13:42 UTC — claude@myworld — ASC-0214 dogfood-route stale-uncited surfacing
 
 - **reference_l3_full_routines_4of4.md** (0.2d stale) — ASC-0211 L3 Transcendence Engine 4 routines 모두 enacted (2026-05-20); 가장 sharp 한 출력 모음; ASC-0211 close 의 4/5 조건

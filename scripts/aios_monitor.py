@@ -499,7 +499,12 @@ def genesis_critic_advisory(root: Path | None) -> list[dict[str, Any]]:
                 "alert": {"code": "genesis_critic_unavailable"},
             }
         ]
-    if int(report.get("flagged_count") or 0) <= 0:
+    unreviewed_count = int(
+        report["unreviewed_flagged_count"]
+        if "unreviewed_flagged_count" in report
+        else report.get("flagged_count") or 0
+    )
+    if unreviewed_count <= 0:
         return []
     return [
         {
@@ -511,9 +516,11 @@ def genesis_critic_advisory(root: Path | None) -> list[dict[str, Any]]:
             "alert": {
                 "code": "genesis_prompt_prison_advisory",
                 "flagged_count": report.get("flagged_count"),
+                "unreviewed_flagged_count": unreviewed_count,
+                "reviewed_flagged_count": report.get("reviewed_flagged_count"),
                 "scanned_count": report.get("scanned_count"),
                 "report_schema_version": report.get("schema_version"),
-                "sample": report.get("flagged", [])[:3],
+                "sample": report.get("unreviewed_flagged", report.get("flagged", []))[:3],
             },
         }
     ]

@@ -63,6 +63,58 @@ class AiosMonitorTest(unittest.TestCase):
             genesis = next(row for row in payload["repos"] if row["repo"] == "GenesisOS")
             self.assertFalse(genesis["exists"])
 
+    def test_reviewed_genesis_findings_do_not_emit_monitor_advisory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "GenesisOS").symlink_to(SCRIPT.parents[1] / "GenesisOS", target_is_directory=True)
+            contracts = root / "docs" / "contracts"
+            contracts.mkdir(parents=True)
+            (contracts / "ASC-0001-reviewed.md").write_text(
+                """---
+contract_id: ASC-0001
+status: accepted
+---
+
+AIOS dispatch monitor contract ledger cli provider repeats the same control
+plane vocabulary for a long enough body to keep the deterministic critic active.
+
+## GenesisOS Escape Review
+
+This review is advisory-only and records the prompt-prison review result.
+
+### Assumptions
+
+- Assumption 1: repeated control-plane wording is acceptable.
+- Assumption 2: a reviewed warning should remain visible but not page forever.
+
+Counter branch: negate those assumptions. If the vocabulary is trapping the
+work, use a strange alternate framing before dispatch.
+
+### Plain Language
+
+Plain language: this contract was checked for frame lock and still has one
+known stylistic risk.
+
+### Cross-Domain Frame
+
+Market analogy: reviewed risk stays on the blotter, but it does not keep
+ringing the alarm bell after the owner acknowledged it.
+
+### Time Horizons
+
+- 1h: keep the note visible.
+- 1 week: re-run after edits.
+""",
+                encoding="utf-8",
+            )
+
+            from scripts import aios_monitor as monitor
+
+            sys.path.insert(0, SCRIPT.parents[1].joinpath("scripts").as_posix())
+            findings = monitor.genesis_critic_advisory(root)
+
+            self.assertEqual([], findings)
+
     def test_generated_cache_only_repo_status_is_low_signal(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

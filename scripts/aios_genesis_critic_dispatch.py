@@ -13,6 +13,15 @@ from typing import Any
 
 SCHEMA_VERSION = "aios.genesis_critic_dispatch.v1"
 OPEN_STATUSES = {"proposed", "accepted", "active"}
+ESCAPE_REVIEW_HEADING = "## GenesisOS Escape Review"
+ESCAPE_REVIEW_REQUIRED_MARKERS = (
+    "### Assumptions",
+    "Counter branch:",
+    "### Plain Language",
+    "### Cross-Domain Frame",
+    "### Time Horizons",
+)
+ESCAPE_REVIEW_MIN_WORDS = 50
 
 
 def now_iso() -> str:
@@ -48,12 +57,40 @@ def iter_contracts(root: Path) -> list[Path]:
     return sorted((root / "docs" / "contracts").glob("ASC-*.md"))
 
 
+def extract_escape_review(body: str) -> str:
+    if ESCAPE_REVIEW_HEADING not in body:
+        return ""
+    section = body.split(ESCAPE_REVIEW_HEADING, 1)[1]
+    return section.split("\n## ", 1)[0]
+
+
+def escape_review_status(body: str) -> dict[str, Any]:
+    section = extract_escape_review(body)
+    if not section:
+        return {
+            "present": False,
+            "complete": False,
+            "missing_markers": list(ESCAPE_REVIEW_REQUIRED_MARKERS),
+            "word_count": 0,
+        }
+    missing = [marker for marker in ESCAPE_REVIEW_REQUIRED_MARKERS if marker not in section]
+    word_count = len(section.split())
+    return {
+        "present": True,
+        "complete": not missing and word_count >= ESCAPE_REVIEW_MIN_WORDS,
+        "missing_markers": missing,
+        "word_count": word_count,
+    }
+
+
 def build_report(root: Path, *, limit: int | None = None) -> dict[str, Any]:
     root = root.resolve()
     Critic = import_genesis_critic(root)
     critic = Critic()
     scanned: list[dict[str, Any]] = []
     flagged: list[dict[str, Any]] = []
+    unreviewed_flagged: list[dict[str, Any]] = []
+    reviewed_flagged: list[dict[str, Any]] = []
     paths = iter_contracts(root)
     if limit is not None:
         paths = paths[-limit:]
@@ -69,17 +106,21 @@ def build_report(root: Path, *, limit: int | None = None) -> dict[str, Any]:
             "contract_id": frontmatter.get("contract_id") or path.stem.split("-", 1)[0],
             "status": status,
             "signature_count": len(signatures),
+            "escape_review": escape_review_status(body),
         }
         scanned.append(row)
         if signatures:
-            flagged.append(
-                {
-                    **row,
-                    "confidence": payload.get("confidence"),
-                    "signatures": signatures,
-                    "escape_vectors": payload.get("escape_vectors", []),
-                }
-            )
+            flagged_row = {
+                **row,
+                "confidence": payload.get("confidence"),
+                "signatures": signatures,
+                "escape_vectors": payload.get("escape_vectors", []),
+            }
+            flagged.append(flagged_row)
+            if flagged_row["escape_review"]["complete"]:
+                reviewed_flagged.append(flagged_row)
+            else:
+                unreviewed_flagged.append(flagged_row)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now_iso(),
@@ -89,8 +130,12 @@ def build_report(root: Path, *, limit: int | None = None) -> dict[str, Any]:
         "mutated_files": [],
         "scanned_count": len(scanned),
         "flagged_count": len(flagged),
+        "unreviewed_flagged_count": len(unreviewed_flagged),
+        "reviewed_flagged_count": len(reviewed_flagged),
         "scanned": scanned,
         "flagged": flagged,
+        "unreviewed_flagged": unreviewed_flagged,
+        "reviewed_flagged": reviewed_flagged,
     }
 
 

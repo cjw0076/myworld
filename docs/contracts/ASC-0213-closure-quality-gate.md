@@ -68,6 +68,42 @@ closed when:
   닫음) [[reference_convergence_audit_routine]] 가 본 contract 도 audit
   대상으로 본다 — self-reference 함정 회피.
 
+## GenesisOS Escape Review
+
+This review is advisory-only. It prevents a quality gate from becoming another
+closure ritual that looks rigorous but only repeats the system's favorite
+words.
+
+### Assumptions
+
+- Assumption 1: a deterministic gate can improve closure quality without
+  becoming execution authority.
+- Assumption 2: convergence audit plus boundary probe is enough variety to
+  detect false closure.
+- Assumption 3: peer override preserves agency when the gate is wrong.
+
+Counter branch: negate those assumptions. If the gate becomes another
+checklist that people learn to satisfy, the better move is sampling closed
+contracts for real-world replay evidence, not adding more pre-close ceremony.
+
+### Plain Language
+
+Plain language: before a contract says "closed", AIOS should ask whether the
+claim was actually tested or just restated. The answer can warn, block, or be
+overridden, but the reason has to be visible.
+
+### Cross-Domain Frame
+
+Architecture analogy: this is a building inspection, not the building itself.
+An inspector can stop unsafe occupancy, but a stamp on paper does not prove
+the roof holds unless the inspection checked the real load path.
+
+### Time Horizons
+
+- 1h: make the gate produce a JSON envelope with pass, warn, or block.
+- 1 week: run it on at least one real closure and record override behavior.
+- 1 year: audit whether gate warnings predicted later regressions.
+
 ## Scope
 
 repos: `myworld` only. closure_gate 는 *operator 도구*, child repo

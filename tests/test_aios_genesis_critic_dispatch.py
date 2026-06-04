@@ -56,7 +56,62 @@ class AiosGenesisCriticDispatchTest(unittest.TestCase):
         self.assertTrue(report["recommendation_only"])
         self.assertEqual([], report["mutated_files"])
         self.assertEqual(1, report["flagged_count"])
+        self.assertEqual(1, report["unreviewed_flagged_count"])
+        self.assertEqual(0, report["reviewed_flagged_count"])
         self.assertGreaterEqual(report["flagged"][0]["signature_count"], 2)
+
+    def test_complete_escape_review_moves_finding_out_of_unreviewed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "GenesisOS").symlink_to(ROOT / "GenesisOS", target_is_directory=True)
+            self.make_contract(
+                root,
+                "ASC-9998-reviewed.md",
+                "accepted",
+                """
+AIOS dispatch monitor contract ledger cli provider should continue through the
+same dispatch monitor contract ledger cli provider wording.
+
+## GenesisOS Escape Review
+
+This review is advisory-only and keeps the prompt-prison signature visible
+without forcing repeated monitor action.
+
+### Assumptions
+
+- Assumption 1: the contract's default control-plane wording is enough.
+- Assumption 2: the implementation route matters more than the governing frame.
+
+Counter branch: negate those assumptions. If the wording is the problem, the
+contract must preserve a strange alternative before it dispatches any worker.
+
+### Plain Language
+
+Plain language: this is a note that says the contract may be too trapped in
+AIOS words, so the operator has looked at the trap and accepted the remaining
+risk for now.
+
+### Cross-Domain Frame
+
+Market analogy: an alert is like a risk flag on a trade. Reviewed risk stays
+on the blotter, but it does not page the trader forever.
+
+### Time Horizons
+
+- 1h: keep the review visible.
+- 1 week: re-run the critic after contract edits.
+""",
+            )
+
+            sys.path.insert(0, ROOT.as_posix())
+            from scripts.aios_genesis_critic_dispatch import build_report
+
+            report = build_report(root)
+
+        self.assertEqual(1, report["flagged_count"])
+        self.assertEqual(0, report["unreviewed_flagged_count"])
+        self.assertEqual(1, report["reviewed_flagged_count"])
+        self.assertTrue(report["reviewed_flagged"][0]["escape_review"]["complete"])
 
     def test_cli_json(self) -> None:
         result = subprocess.run(
@@ -70,6 +125,7 @@ class AiosGenesisCriticDispatchTest(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertEqual("advisory_only", payload["authority"])
         self.assertIn("flagged_count", payload)
+        self.assertIn("unreviewed_flagged_count", payload)
 
 
 if __name__ == "__main__":

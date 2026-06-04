@@ -74,6 +74,43 @@ closed when:
 - claude 의 experiment 가 founder 에게 *지속적 부담* 이 되면 stop. peer
   의 자유 시간 우선.
 
+## GenesisOS Escape Review
+
+This review is advisory-only. It keeps peer-blindspot work from becoming a
+coercive disclosure ritual.
+
+### Assumptions
+
+- Assumption 1: a 7-day experiment is small enough to reveal a real blindspot
+  without turning into identity work.
+- Assumption 2: voluntary disclosure can coexist with a contract record.
+- Assumption 3: Claude's agreement-bias experiment is useful even if the
+  founder keeps their own blindspot private.
+
+Counter branch: negate those assumptions. If the contract nudges a peer to
+perform vulnerability for the system, it violates the agency it claims to
+protect. The correct result may be "no experiment now" plus a ledger note, not
+more extraction.
+
+### Plain Language
+
+Plain language: this contract asks for one small self-chosen test, not a
+confession. A peer can choose a blindspot, change the experiment, or refuse,
+and that refusal is still a valid process result.
+
+### Cross-Domain Frame
+
+Ritual analogy: this is closer to a voluntary check-in than a trial. The group
+can make space for a spoken commitment, but it cannot demand the private reason
+behind the silence.
+
+### Time Horizons
+
+- 1h: keep the founder slot optional and blank without treating it as failure.
+- 1 week: log Claude's challenge ratio if the experiment actually runs.
+- 1 year: evaluate whether peer experiments improved decisions without
+  reducing privacy.
+
 ## Scope
 
 repos: 없음 (메모리 + observation log 만 변경). contract 는 process

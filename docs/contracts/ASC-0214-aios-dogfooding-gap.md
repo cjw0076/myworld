@@ -59,6 +59,43 @@ closed when:
 - dogfood_route 가 자기 자신의 reference 메모만 점점 만들어내는 loop
   → recursion 의심, stop.
 
+## GenesisOS Escape Review
+
+This review is advisory-only. It keeps "dogfood everything" from becoming an
+automatic contract factory.
+
+### Assumptions
+
+- Assumption 1: uncited routine output is usually a missed action, not harmless
+  background thought.
+- Assumption 2: stale reference notes deserve either a contract candidate or an
+  explicit reject decision.
+- Assumption 3: default dry-run plus operator acceptance prevents contract
+  pollution.
+
+Counter branch: negate those assumptions. If most routine output is exploratory
+scratch, forcing every stale note into a contract path will turn AIOS into a
+paperwork generator. The route must therefore preserve reject and keep-stale as
+first-class outcomes.
+
+### Plain Language
+
+Plain language: when AIOS produces a useful note, the system should not forget
+it. But remembering does not mean automatically building it; someone must
+choose build, reject, or keep watching.
+
+### Cross-Domain Frame
+
+Ecology analogy: routine outputs are seeds. A healthy system does not plant
+every seed in the same bed; it lets some germinate, composts others, and keeps
+rare seeds labeled for the right season.
+
+### Time Horizons
+
+- 1h: list stale uncited references without creating contracts.
+- 1 week: record one explicit build, reject, or keep-stale decision.
+- 1 year: measure whether dogfood routing reduced forgotten high-signal notes.
+
 ## Scope
 
 repos: `myworld` only.

@@ -5439,3 +5439,30 @@ schema_version: aios.agent_worklog.v1
   scope.
 - next: continue from monitor `watch` health; open advisory items remain
   GenesisOS prompt-prison and persona-axis review, not repo dirty cleanup.
+
+## 2026-06-05 05:02 KST — codex@myworld — Genesis advisory review loop tightened
+
+- repo: myworld
+- role: implementation
+- goal: reduce monitor noise without disabling GenesisOS prompt-prison critique.
+- changed: `scripts/aios_genesis_critic_dispatch.py`,
+  `scripts/aios_monitor.py`, `tests/test_aios_genesis_critic_dispatch.py`,
+  `tests/test_aios_monitor.py`, and Genesis escape-review sections in
+  `ASC-0212` through `ASC-0215`.
+- evidence: `codex exec` and `claude -p` reviewed the design; both supported
+  splitting `reviewed_flagged` from `unreviewed_flagged` while warning about
+  stale or boilerplate reviews. `gemini` hit model capacity/backpressure before
+  returning. `python scripts/aios_genesis_critic_dispatch.py --limit 25 --json`
+  reports `flagged_count=1`, `unreviewed_flagged_count=0`,
+  `reviewed_flagged_count=1`; `python scripts/aios_monitor.py assess --json`
+  reports only `persona_axis_advisory`.
+- decision: the critic still records all signatures, but monitor action is
+  reserved for unreviewed prompt-prison findings. A complete review requires
+  Assumptions, Counter branch, Plain Language, Cross-Domain Frame, and Time
+  Horizons with non-trivial body length.
+- risk: deterministic completeness cannot prove semantic quality; reviewed
+  findings can become stale after contract edits. Future work should add a
+  periodic semantic sample audit.
+- next: address the remaining `persona_axis_advisory` by improving role
+  evidence or marking justified absences in active/open contracts.
+- status: done

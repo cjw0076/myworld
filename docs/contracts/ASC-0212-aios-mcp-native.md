@@ -74,3 +74,41 @@ repos: `myworld` (contract + integration tests), `memoryOS` (mcp server
 - mcp SDK 설치 검증 + memoryOS MCP stdio run
 - hivemind MCP server (3rd OS)
 - 외부 MCP server 첫 연결
+
+## GenesisOS Escape Review
+
+This review is advisory-only. It keeps MCP-native work from collapsing into
+"connect every tool" just because the ecosystem is large.
+
+### Assumptions
+
+- Assumption 1: MCP is the right external boundary for AIOS because it is a
+  widely adopted tool protocol.
+- Assumption 2: exposing two OS layers as MCP servers improves AIOS
+  interoperability more than it expands attack surface.
+- Assumption 3: external MCP client evidence is more useful than another
+  internal control-plane demo.
+
+Counter branch: negate those assumptions. If MCP becomes a fashionable
+integration sink, AIOS should expose fewer tools, not more, and should prefer a
+read-only capability card over a runnable server until privacy and authority
+receipts prove the route.
+
+### Plain Language
+
+Plain language: this contract says AIOS should learn to speak the common tool
+protocol, but only through narrow, reviewable doors. A door that can write or
+read private files without a receipt is not a success.
+
+### Cross-Domain Frame
+
+Legal analogy: MCP servers are public counters in a courthouse, not keys to the
+archives. A visitor may request a document or file a draft motion, but the
+counter clerk must record authority before any sensitive room opens.
+
+### Time Horizons
+
+- 1h: verify TOOL_REGISTRY shape and keep write tools draft-only.
+- 1 week: run one external client receipt with credentials and private paths
+  excluded.
+- 1 year: treat MCP as a replaceable protocol adapter, not AIOS identity.
