@@ -80,6 +80,12 @@ ALERT_RULES = {
         "action": "commit_orphan_work_or_reset",
         "reason": "A child watcher result detected work left in a dirty repo after a failed agent attempt.",
     },
+    "dispatch_state_malformed_jsonl": {
+        "severity": "medium",
+        "owner": "myworld",
+        "action": "repair_or_reconcile_dispatch_state_log",
+        "reason": "The dispatch event log contains malformed JSONL; monitor skipped the bad line but the audit trail needs repair.",
+    },
 }
 
 
@@ -111,15 +117,27 @@ def parse_frontmatter(path: Path) -> dict[str, str]:
     return data
 
 
-def load_events(root: Path) -> list[dict[str, Any]]:
+def load_events(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     path = root / STATE_LOG
     if not path.exists():
-        return []
+        return [], []
     events: list[dict[str, Any]] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.strip():
+    alerts: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
             events.append(json.loads(line))
-    return events
+        except json.JSONDecodeError as exc:
+            alerts.append(
+                {
+                    "code": "dispatch_state_malformed_jsonl",
+                    "path": STATE_LOG.as_posix(),
+                    "line": line_number,
+                    "error": exc.msg,
+                }
+            )
+    return events, alerts
 
 
 def load_reconciliations(root: Path) -> list[dict[str, Any]]:
@@ -186,9 +204,8 @@ def is_expected_status_progression(recorded: str | None, current: str | None) ->
 
 
 def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    events = load_events(root)
+    events, alerts = load_events(root)
     rows: dict[str, dict[str, Any]] = {}
-    alerts: list[dict[str, Any]] = []
     for event in events:
         dispatch_id = normalize_dispatch_id(event.get("dispatch_id"), event.get("repo"))
         if not dispatch_id:

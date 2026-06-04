@@ -262,6 +262,33 @@ class AiosMonitorTest(unittest.TestCase):
             codes = {alert["code"] for alert in payload["alerts"]}
             self.assertNotIn("dispatch_results_pending", codes)
 
+    def test_snapshot_reports_malformed_dispatch_jsonl_without_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            good_event = {
+                "event": "created",
+                "dispatch_id": "asc-good",
+                "contract_id": "ASC-GOOD",
+                "status": "created",
+            }
+            (state / "dispatches.jsonl").write_text(
+                json.dumps(good_event) + "\n" + '{"event": "created", "dispatch_id": "broken' + "\n",
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            dispatches = {row["dispatch_id"]: row for row in payload["dispatches"]}
+            self.assertIn("asc-good", dispatches)
+            malformed = [
+                alert for alert in payload["alerts"] if alert["code"] == "dispatch_state_malformed_jsonl"
+            ]
+            self.assertEqual(1, len(malformed))
+            self.assertEqual(".aios/state/dispatches.jsonl", malformed[0]["path"])
+            self.assertEqual(2, malformed[0]["line"])
+
     def test_snapshot_tolerates_created_event_without_contract_path(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
