@@ -25,7 +25,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
-CONTRACT_RE = re.compile(r"docs/contracts/ASC-[^/]*\.md$")
+# non-anchored so it matches a contract path inside a shell command too; the
+# trailing guard avoids over-matching ASC-1.md.bak etc.
+CONTRACT_PATH = re.compile(r"docs/contracts/ASC-[^/\s]*\.md(?![\w.])")
+# shell write indicators — used to gate contract creation done via Bash, not just
+# the Write tool (else `echo x > docs/contracts/ASC-9.md` bypasses the ritual).
+WRITE_VERB = re.compile(r">>?|\btee\b|\bcp\b|\bmv\b|\bdd\b|sed\s+-i|\binstall\b")
 
 
 def deny(reason: str) -> None:
@@ -50,8 +55,10 @@ def main() -> int:
         return 0  # fail open
     tool = data.get("tool_name", "")
     ti = data.get("tool_input") or {}
+    cmd = ti.get("command") or ""
 
-    if tool == "Bash" and "git commit" in (ti.get("command") or ""):
+    # 1. commit guard
+    if tool == "Bash" and "git commit" in cmd:
         try:
             r = subprocess.run(
                 [PY, str(ROOT / "scripts" / "aios_commit_guard.py"), "--json"],
@@ -72,7 +79,14 @@ def main() -> int:
                 + "\nFix the ERROR (e.g. `git rm --cached <gitlink>`), then retry."
             )
 
-    elif tool == "Write" and CONTRACT_RE.search(ti.get("file_path") or ""):
+    # 2. contract-creation ritual gate — via the Write tool OR via a shell write
+    #    (echo > / tee / cp …), so the gate can't be bypassed through Bash.
+    creating_contract = (
+        tool == "Write" and bool(CONTRACT_PATH.search(ti.get("file_path") or ""))
+    ) or (
+        tool == "Bash" and bool(CONTRACT_PATH.search(cmd)) and bool(WRITE_VERB.search(cmd))
+    )
+    if creating_contract:
         try:
             rc = subprocess.run(
                 [PY, str(ROOT / "scripts" / "aios_ritual_gate.py"), "check", "--max-age-min", "60"],

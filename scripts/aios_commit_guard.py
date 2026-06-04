@@ -30,7 +30,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.commit_guard.v1"
 
-_RAW = re.compile(r"^:\d+ (\d+) [0-9a-f]+ [0-9a-f]+ (\w)\t(.+)$")
+# status token is \S+ so rename/copy rows (R100/C100) parse; their letter is
+# taken below. Rename/copy rows carry two tab-separated paths; we keep the dest.
+_RAW = re.compile(r"^:\d+ (\d+) [0-9a-f]+ [0-9a-f]+ (\S+)\t(.+)$")
 # Accidental-artifact names. Only ever flagged together with a 0-byte size
 # (see analyze), which keeps false positives near zero. Covers redirect numerals
 # ("0"), editor/OS temp files, and "untitled" scratch files (gemini review #3).
@@ -40,7 +42,12 @@ _JUNK_EXACT = {".ds_store", "thumbs.db", "untitled", "untitled.md", "untitled.tx
 
 def gitmodules_paths(root: Path) -> set[str]:
     text = (root / ".gitmodules").read_text() if (root / ".gitmodules").exists() else ""
-    return {m.group(1).strip() for m in re.finditer(r"^\s*path\s*=\s*(.+)$", text, re.M)}
+    # strip surrounding quotes so a quoted `path = "X"` still matches the bare
+    # path from `git diff` (else a valid submodule reads as missing → false block).
+    return {
+        m.group(1).strip().strip('"').strip("'")
+        for m in re.finditer(r"^\s*path\s*=\s*(.+?)\s*$", text, re.M)
+    }
 
 
 def is_junk_name(path: str) -> bool:
@@ -81,6 +88,22 @@ def analyze(entries: list[dict], submodule_paths: set[str]) -> list[dict]:
     return findings
 
 
+def parse_raw_line(line: str) -> dict | None:
+    """Pure parser for one `git diff --cached --raw` line. Handles A/M/D plus
+    rename/copy rows (R100/C100) whose status carries a score and which list two
+    tab-separated paths — we keep the destination path (what lands in the index)."""
+    m = _RAW.match(line)
+    if not m:
+        return None
+    dst_mode, status_tok, rest = m.group(1), m.group(2), m.group(3)
+    return {
+        "dst_mode": dst_mode,
+        "status": status_tok[0],  # R100/C100 -> R/C; A/M/D unchanged
+        "path": rest.split("\t")[-1],  # rename/copy: destination path
+        "size": None,
+    }
+
+
 def staged_entries(root: Path) -> list[dict]:
     raw = subprocess.run(
         ["git", "diff", "--cached", "--raw"],
@@ -91,15 +114,13 @@ def staged_entries(root: Path) -> list[dict]:
     )
     entries: list[dict] = []
     for line in raw.stdout.splitlines():
-        m = _RAW.match(line)
-        if not m:
+        e = parse_raw_line(line)
+        if not e:
             continue
-        dst_mode, status, path = m.group(1), m.group(2), m.group(3)
-        size = None
-        if status == "A" and dst_mode != "160000":
-            fp = root / path
-            size = fp.stat().st_size if fp.exists() else None
-        entries.append({"dst_mode": dst_mode, "status": status, "path": path, "size": size})
+        if e["status"] == "A" and e["dst_mode"] != "160000":
+            fp = root / e["path"]
+            e["size"] = fp.stat().st_size if fp.exists() else None
+        entries.append(e)
     return entries
 
 

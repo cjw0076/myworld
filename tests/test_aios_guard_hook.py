@@ -68,6 +68,22 @@ class GuardHookSafetyTests(unittest.TestCase):
         )
         self.assertIn('"permissionDecision": "deny"', out)
 
+    def test_denies_bash_contract_write_without_token(self) -> None:
+        # codex review #3: a contract created via shell write must also be gated.
+        if gate.TOKEN.exists():
+            gate.TOKEN.unlink()
+        out = run_hook(
+            {"tool_name": "Bash", "tool_input": {"command": "echo x > docs/contracts/ASC-0000-probe.md"}}
+        )
+        self.assertIn('"permissionDecision": "deny"', out)
+
+    def test_allows_bash_contract_read(self) -> None:
+        # Reading a contract (no write verb) must NOT be gated.
+        self.assertEqual(
+            run_hook({"tool_name": "Bash", "tool_input": {"command": "cat docs/contracts/ASC-0000-probe.md"}}),
+            "",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

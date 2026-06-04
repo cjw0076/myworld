@@ -39,6 +39,40 @@ class CommitGuardTests(unittest.TestCase):
         entries = [{"dst_mode": "100644", "status": "A", "path": "pkg/__init__.py", "size": 0}]
         self.assertEqual(guard.analyze(entries, submodule_paths=set()), [])
 
+    def test_parse_raw_line_add_gitlink(self) -> None:
+        e = guard.parse_raw_line(":000000 160000 0000000 d732431 A\t_tmp_embed")
+        self.assertEqual(e, {"dst_mode": "160000", "status": "A", "path": "_tmp_embed", "size": None})
+
+    def test_parse_raw_line_deletion_not_gitlink(self) -> None:
+        # codex review #1: a gitlink DELETION has dst_mode 000000, so it must NOT
+        # be flagged as a bad gitlink.
+        e = guard.parse_raw_line(":160000 000000 d732431 0000000 D\toldmod")
+        self.assertEqual(e["dst_mode"], "000000")
+        self.assertEqual(e["status"], "D")
+        self.assertEqual(guard.analyze([e], submodule_paths=set()), [])
+
+    def test_parse_raw_line_rename_gitlink_takes_dest(self) -> None:
+        # codex review #2: rename row (R100) with two paths → keep destination,
+        # still detect a renamed unregistered gitlink.
+        e = guard.parse_raw_line(":160000 160000 aaaaaaa bbbbbbb R100\toldname\tnewname")
+        self.assertEqual(e["status"], "R")
+        self.assertEqual(e["dst_mode"], "160000")
+        self.assertEqual(e["path"], "newname")
+        findings = guard.analyze([e], submodule_paths=set())
+        self.assertEqual(findings[0]["rule"], "gitlink_without_submodule")
+
+    def test_gitmodules_paths_strips_quotes(self) -> None:
+        # codex review #4: a quoted path must still match the bare git path.
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".gitmodules").write_text(
+                '[submodule "GenesisOS"]\n\tpath = "GenesisOS"\n\turl = x\n'
+                '[submodule "hivemind"]\n\tpath = hivemind\n\turl = y\n'
+            )
+            self.assertEqual(guard.gitmodules_paths(root), {"GenesisOS", "hivemind"})
+
     def test_is_junk_name(self) -> None:
         self.assertTrue(guard.is_junk_name("0"))
         self.assertTrue(guard.is_junk_name("dir/12"))
