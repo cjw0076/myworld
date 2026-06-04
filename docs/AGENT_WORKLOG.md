@@ -4,6 +4,23 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 02:12 KST — codex — ASC-0224 cleanup contract materialized
+
+- status: done
+- scope: `docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md`,
+  regenerated control snapshot data, `docs/AIOS_AGENT_LEDGER.md`, and this
+  worklog.
+- result: materialized the local monitor cleanup promotion into durable
+  proposed contract `ASC-0224`. It preserves the dirty entry
+  `?? .tmp_uri_cleanroom_seed.md`, links `asc-0223`, and scopes the next work
+  to MemoryOS owner provenance cleanup.
+- evidence: `.aios/promotions/monitor-cleanup-e862eae86110/materialization.json`
+  records `execution_started=false` and `next_action=operator_review_accept_and_dispatch`.
+  The Control Center snapshot now points the promotion at
+  `docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md`.
+- boundary: did not accept, dispatch, or execute `ASC-0224`; did not modify
+  MemoryOS local state.
+
 ## 2026-06-05 02:08 KST — codex — monitor cleanup promotion
 
 - status: done

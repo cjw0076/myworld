@@ -5,6 +5,33 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 02:12 KST — codex@myworld — ASC-0224 cleanup contract materialized
+
+- when: 2026-06-05 02:12 KST
+- repo: myworld
+- agent: codex@myworld
+- role: contract materialization / delegated operator
+- goal: turn the monitor cleanup promotion into a durable proposed ASC without
+  dispatching or mutating MemoryOS.
+- changed: `docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md`,
+  regenerated `apps/control/aios-control-snapshot.json`,
+  `apps/control/aios-control-data.js`, `docs/AGENT_WORKLOG.md`, and this
+  ledger.
+- decision: materialized `.aios/promotions/monitor-cleanup-e862eae86110` into
+  `ASC-0224` as `status=proposed`. The contract is MemoryOS-owner scoped and
+  explicitly forbids MyWorld rewriting accepted-memory state, touching
+  credentials, leaking private/raw source data, or deleting dirty entries before
+  a receipt.
+- evidence: materialization receipt exists locally at
+  `.aios/promotions/monitor-cleanup-e862eae86110/materialization.json`; Control
+  Center snapshot shows the promotion materialized to `ASC-0224` and lists the
+  contract as the latest proposed item. Monitor remains
+  `attention 1 ?? .tmp_uri_cleanroom_seed.md asc-0223`, as expected.
+- boundary: `ASC-0224` was not accepted or dispatched. MemoryOS state remains
+  untouched; execution still requires operator/owner acceptance.
+- next: MemoryOS owner can accept and dispatch `ASC-0224` when ready.
+- status: done
+
 ## 2026-06-05 02:08 KST — codex@myworld — monitor cleanup promotion
 
 - when: 2026-06-05 02:08 KST

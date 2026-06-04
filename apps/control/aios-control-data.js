@@ -1,9 +1,7 @@
 window.AIOS_CONTROL_SNAPSHOT = {
   "aios_inputs": {
     "capability_routes": [],
-    "hive_runs": [
-      "run_server"
-    ],
+    "hive_runs": [],
     "memory_traces": []
   },
   "asks": {
@@ -127,11 +125,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "total": 6
   },
   "completion": {
-    "checked_at": "2026-06-05T02:00:57+09:00",
+    "checked_at": "2026-06-05T02:04:00+09:00",
     "criteria": [
       {
         "criterion": "1. autopoietic loop closed + always-on",
-        "evidence": "round controller running=True, last_round=2026-06-05T02:00:48+09:00, dream+local_operator organs ran=True",
+        "evidence": "round controller running=True, last_round=2026-06-05T02:03:55+09:00, dream+local_operator organs ran=True",
         "met": true
       },
       {
@@ -1745,6 +1743,13 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "slug": "peer-blindspot-7day-experiments",
           "status": "proposed",
           "title": "ASC-0215 — Peer Blindspot 7-day Experiments"
+        },
+        {
+          "contract_id": "ASC-0224",
+          "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+          "slug": "memoryos-provenance-cleanup",
+          "status": "proposed",
+          "title": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld."
         }
       ]
     },
@@ -1753,7 +1758,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "closed": 186,
       "collected": 1,
       "dispatched": 0,
-      "proposed": 31
+      "proposed": 32
     }
   },
   "contracts": {
@@ -3304,18 +3309,46 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "path": "docs/contracts/ASC-0223-memoryos-product-domain-seed-review.md",
         "slug": "memoryos-product-domain-seed-review",
         "status": "closed"
+      },
+      {
+        "goal": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld.",
+        "id": "ASC-0224",
+        "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+        "slug": "memoryos-provenance-cleanup",
+        "status": "proposed"
       }
     ],
     "counts": {
       "accepted": 4,
       "closed": 186,
       "deferred": 2,
-      "proposed": 1,
+      "proposed": 2,
       "superseded": 4,
       "superseded-by-rewrite": 7,
       "withdrawn": 17
     },
     "latest": [
+      {
+        "accepted": "",
+        "closed": "",
+        "created": "2026-06-05T02:00:22+09:00",
+        "goal": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld.",
+        "id": "ASC-0224",
+        "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+        "quality_state": "review_required",
+        "quality_warnings": [],
+        "review_action": "operator_accept_or_revise",
+        "slug": "memoryos-provenance-cleanup",
+        "status": "proposed",
+        "stop_conditions": [
+          "`memoryos_owner_not_ready`",
+          "`dirty_entry_deleted_before_receipt`",
+          "`private_source_leak`",
+          "`accepted_memory_rewritten_from_myworld`",
+          "`uri_scope_leak`",
+          "`provider_auth_or_env_touched`"
+        ]
+      },
       {
         "accepted": "2026-06-05T01:34:00+09:00",
         "closed": "2026-06-05T01:43:00+09:00",
@@ -3465,32 +3498,18 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "slug": "aios-cognitive-prosthesis-layer",
         "status": "closed",
         "stop_conditions": []
-      },
-      {
-        "accepted": "2026-05-20T18:00:00+09:00",
-        "closed": "2026-05-20T18:04:00+09:00",
-        "created": "2026-05-20T18:00:00+09:00",
-        "goal": "Turn the offline user agent idea into a repeatable AIOS primitive for frontier questions, bounded field observations, and draft-first memory routing.",
-        "id": "ASC-0210",
-        "path": "docs/contracts/ASC-0210-offline-user-agent-frontier-loop.md",
-        "quality_state": "closed",
-        "quality_warnings": [],
-        "review_action": "",
-        "slug": "offline-user-agent-frontier-loop",
-        "status": "closed",
-        "stop_conditions": []
       }
     ],
     "quality_counts": {
       "accepted": 4,
       "closed": 186,
       "deferred": 2,
-      "review_required": 1,
+      "review_required": 2,
       "superseded": 4,
       "superseded-by-rewrite": 7,
       "withdrawn": 17
     },
-    "total": 221
+    "total": 222
   },
   "dispatches": {
     "by_contract": {
@@ -5243,7 +5262,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hivemind"
         ],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T02:03:52+09:00"
       },
       {
         "collected": [],
@@ -5254,7 +5273,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T02:03:05+09:00"
       },
       {
         "collected": [],
@@ -5265,7 +5284,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T02:03:05+09:00"
       },
       {
         "collected": [],
@@ -5276,7 +5295,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T02:03:05+09:00"
       },
       {
         "collected": [
@@ -5388,97 +5407,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
       }
     ],
     "timeline": [
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:11+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:11+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:56+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:52:48+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:52:48+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:52:48+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:52:48+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
-      },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
@@ -5597,6 +5525,97 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "skipped",
         "timestamp": "2026-06-05T02:00:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:01:33+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:01:33+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:01:33+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:01:33+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:02:20+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:02:20+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:02:20+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:02:20+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:03:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:03:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:03:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:03:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:03:52+09:00"
       }
     ],
     "total": 240
@@ -5769,7 +5788,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "queued": 0,
     "schema_version": "aios.frontier_queue.v1"
   },
-  "generated_at": "2026-06-05T02:00:47+09:00",
+  "generated_at": "2026-06-05T02:03:54+09:00",
   "genesis_lens": {
     "authority": "speculative_only",
     "branches": [
@@ -8937,7 +8956,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
     },
     "lanes": [
       {
-        "headline": "221 contracts / AIOS running",
+        "headline": "222 contracts / AIOS running",
         "id": "myworld",
         "label": "MyWorld",
         "role": "Sovereign control",
@@ -9664,9 +9683,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "status": "active"
     },
     "myworld": {
-      "contracts": 221,
+      "contracts": 222,
       "dispatches": 240,
-      "headline": "221 contracts / AIOS running",
+      "headline": "222 contracts / AIOS running",
       "installation": "running",
       "round": "passed",
       "status": "attention"
@@ -9680,11 +9699,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "dispatch_preview": "",
         "execution_started": false,
         "goal": "Resolve memoryOS monitor dirty state through owner-reviewed provenance cleanup.",
-        "materialization_receipt": "",
-        "materialized_contract": "",
-        "materialized_contract_id": "",
+        "materialization_receipt": ".aios/promotions/monitor-cleanup-e862eae86110/materialization.json",
+        "materialized_contract": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+        "materialized_contract_id": "ASC-0224",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "monitor-cleanup-e862eae86110",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9708,7 +9727,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "",
         "materialized_contract_id": "",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "visual-fix-ba1dc16dc777",
         "quality_evidence": ".aios/visual_verification/vis-581c0355d244/receipt.json",
         "quality_reason": "hash-scroll visual issue has a passing visual_focus harness receipt",
@@ -9732,7 +9751,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "",
         "materialized_contract_id": "",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "promotion-1d0db7e1e829-20260518T030137",
         "quality_evidence": "",
         "quality_reason": "goal_too_short_for_contract_materialization, memory_signal_coverage_zero_or_missing",
@@ -9755,7 +9774,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "docs/contracts/ASC-0199-aios-session.md",
         "materialized_contract_id": "ASC-0199",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "promotion-1d0db7e1e829-20260518T025653",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9778,7 +9797,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "docs/contracts/ASC-0198-break-genesisos-prompt-prison-frame-for-asc-0192-into-alternate-worldlines-and-a.md",
         "materialized_contract_id": "ASC-0198",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "friction-bbc06575a205-20260518T020758",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9801,7 +9820,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "docs/contracts/ASC-0186-explore-inversion-mutation-for-aios.md",
         "materialized_contract_id": "ASC-0186",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "friction-4cb4affe48a7-20260517T125016",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9824,7 +9843,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "",
         "materialized_contract_id": "",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "promotion-d776d11a39f3-20260517T121024",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9847,7 +9866,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "materialized_contract": "",
         "materialized_contract_id": "",
         "next_action": "operator_assign_asc_accept_and_dispatch",
-        "next_contract_id": "ASC-0224",
+        "next_contract_id": "ASC-0225",
         "promotion_id": "promotion-0990071087b3-20260514T031028",
         "quality_evidence": "",
         "quality_reason": "",
@@ -9861,7 +9880,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ]
       }
     ],
-    "next_contract_id": "ASC-0224",
+    "next_contract_id": "ASC-0225",
     "total": 8
   },
   "repos": {
@@ -10006,7 +10025,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-06-05T02:00:07+09:00",
+    "generated_at": "2026-06-05T02:03:07+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "hold_for_goal_stop_conditions",
@@ -10056,7 +10075,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "helpers_folded": 5,
           "note": "observation history folded into helper catalog observation_count; CapabilityOS recommend now ranks by actual verified usage",
-          "ran_at": "2026-06-05T02:00:02+09:00",
+          "ran_at": "2026-06-05T02:03:01+09:00",
           "schema": "aios.capability_feedback.v1"
         },
         "returncode": 0,
@@ -10101,7 +10120,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-06-05T02:00:05+09:00",
+          "generated_at": "2026-06-05T02:03:05+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -10254,7 +10273,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "kept_active": 14,
           "note": "stale packets (contract closed) archived to .aios/archive/inbox/ — append-only, never deleted; open/missing-contract packets left for operator review",
-          "ran_at": "2026-06-05T02:00:02+09:00",
+          "ran_at": "2026-06-05T02:03:01+09:00",
           "schema": "aios.dispatch_reconcile.v1"
         },
         "returncode": 0,
@@ -10263,7 +10282,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "dream": {
-        "age_seconds": 109,
+        "age_seconds": 288,
         "name": "dream",
         "reason": "recent_dream",
         "status": "skipped"
@@ -10276,12 +10295,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "monitor_findings": 3,
             "monitor_health": "attention",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-06-05T01:59:56+09:00",
+            "policy_generated_at": "2026-06-05T02:02:57+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-06-05T02:00:02+09:00",
+          "generated_at": "2026-06-05T02:03:01+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -10647,7 +10666,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "librarian": {
-        "age_seconds": 2174,
+        "age_seconds": 2353,
         "name": "librarian",
         "reason": "recent_tend",
         "status": "skipped"
@@ -11666,7 +11685,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               ]
             }
           ],
-          "generated_at": "2026-06-05T02:00:02+09:00",
+          "generated_at": "2026-06-05T02:03:02+09:00",
           "in_flight_count": 2,
           "open_contract_count": 4,
           "open_contract_order": [
@@ -11676,7 +11695,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0180-hive-debate-aios-hosting-trust-model.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1789202
+              "wait_seconds": 1789382
             },
             {
               "contract_id": "ASC-0212",
@@ -11684,7 +11703,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0212-aios-mcp-native.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357202
+              "wait_seconds": 1357382
             },
             {
               "contract_id": "ASC-0213",
@@ -11692,7 +11711,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0213-closure-quality-gate.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357202
+              "wait_seconds": 1357382
             },
             {
               "contract_id": "ASC-0214",
@@ -11700,7 +11719,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0214-aios-dogfooding-gap.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357202
+              "wait_seconds": 1357382
             }
           ],
           "operator_only_prefixes": [
@@ -11920,7 +11939,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "severity": "info"
             }
           ],
-          "generated_at": "2026-06-05T01:59:56+09:00",
+          "generated_at": "2026-06-05T02:02:56+09:00",
           "health": "attention",
           "next_actions": [
             {
@@ -12079,7 +12098,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               }
             ],
             "contracts_scored": 20,
-            "generated_at": "2026-06-05T01:59:56+09:00",
+            "generated_at": "2026-06-05T02:02:56+09:00",
             "per_contract": [
               {
                 "contract_id": "ASC-0193",
@@ -12585,7 +12604,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "window": 20
           },
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-06-05T01:59:55+09:00",
+          "snapshot_generated_at": "2026-06-05T02:02:56+09:00",
           "watched": {
             "alerts": 1,
             "contracts": 221,
@@ -12632,7 +12651,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "verified_good": 389
             }
           ],
-          "ran_at": "2026-06-05T02:00:02+09:00",
+          "ran_at": "2026-06-05T02:03:02+09:00",
           "schema": "aios.self_evolve.v1",
           "waiting": 0
         },
@@ -12646,7 +12665,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "verify",
         "parsed": {
           "method": "deterministic structural checks — not an LLM judging an LLM",
-          "ran_at": "2026-06-05T02:00:02+09:00",
+          "ran_at": "2026-06-05T02:03:01+09:00",
           "receipts": [],
           "schema": "aios.verify.v1",
           "verified_bad": 0,
@@ -12664,6 +12683,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "items": [
       {
         "contracts": [
+          "ASC-0224"
+        ],
+        "name": "`accepted_memory_rewritten_from_myworld`"
+      },
+      {
+        "contracts": [
           "ASC-0217"
         ],
         "name": "`child_repo_scope_leak`: child repo implementation files are changed."
@@ -12673,6 +12698,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "ASC-0216"
         ],
         "name": "`dependency_installed`: this mining task installs or vendors third-party packages."
+      },
+      {
+        "contracts": [
+          "ASC-0224"
+        ],
+        "name": "`dirty_entry_deleted_before_receipt`"
       },
       {
         "contracts": [
@@ -12706,6 +12737,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "contracts": [
+          "ASC-0224"
+        ],
+        "name": "`memoryos_owner_not_ready`"
+      },
+      {
+        "contracts": [
           "ASC-0217"
         ],
         "name": "`monitor_still_crashes`: snapshot or assess still exits due to JSON parsing."
@@ -12715,24 +12752,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "ASC-0216"
         ],
         "name": "`private_data_leak`: research artifact includes secrets, raw exports, or private provider logs."
-      },
-      {
-        "contracts": [
-          "ASC-0223"
-        ],
-        "name": "`private_source_leak`: private/raw source bodies are copied into committed artifacts."
-      },
-      {
-        "contracts": [
-          "ASC-0217"
-        ],
-        "name": "`private_state_leak`: raw `.aios` dispatch-log contents are committed or copied into docs."
-      },
-      {
-        "contracts": [
-          "ASC-0217"
-        ],
-        "name": "`record_destroyed`: local state is deleted or rewritten to hide the malformed line."
       }
     ]
   },
