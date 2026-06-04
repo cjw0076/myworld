@@ -5403,3 +5403,39 @@ schema_version: aios.agent_worklog.v1
   `python scripts/aios_contract_object.py validate /dev/stdin`.
 - next: choose exact input/output roots for the personal file organization
   proof and run only the inventory/planning/checkpoint steps first.
+
+## 2026-06-05 04:43 KST — codex@myworld — ASC-0224 cleanup dispatch closed
+
+- status: done
+- scope: `docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md`,
+  `scripts/aios_dispatch.py`, `scripts/aios_child_watcher.sh`,
+  `scripts/aios_commit_guard.py`, `scripts/aios_guard_hook.py`,
+  `tests/test_aios_dispatch.py`, `tests/test_aios_child_watcher.py`,
+  `tests/test_aios_commit_guard.py`, regenerated Control Center snapshot
+  data, and the `memoryOS` submodule pointer.
+- external/provider evidence: checked the official Git `git-status`
+  documentation for porcelain stability and `??` untracked semantics; ran
+  Gemini and Codex as independent reviewers. Gemini flagged quoted-path
+  parsing risk; Codex flagged path-only cleanup masking later same-file
+  changes. Claude timed out before returning a review. `claude`, `codex`, and
+  `gemini` CLIs are installed; common local LLM launchers were not found.
+- change: `allowed_existing_dirty` now travels in dispatch packets with an
+  automatically captured `allowed_existing_dirty_baseline` containing
+  porcelain status and SHA-256. The child watcher ignores a pre-existing dirty
+  cleanup input only when the current status and hash still match that
+  baseline; other overlapping dirty work still triggers `pending_concurrent_work`.
+- ASC-0224 execution: dispatched `asc-0224` to `memoryOS`; child watcher ran
+  `codex`, returned `status=passed`, and MemoryOS committed/pushed
+  `0b3e973` (`Resolve ASC-0224 URI seed provenance cleanup`). The prior
+  `.tmp_uri_cleanroom_seed.md` dirty entry is gone.
+- verification: `python -m unittest tests.test_aios_dispatch
+  tests.test_aios_child_watcher -v` passed 46 tests; `python -m py_compile
+  scripts/aios_dispatch.py` and `bash -n scripts/aios_child_watcher.sh`
+  passed; `git -C memoryOS diff --check` passed; `python
+  scripts/aios_monitor.py assess --json` reports health `watch` and no
+  `repo_dirty` findings.
+- caveat: MemoryOS `memoryos doctor --json` reported a pre-existing invalid
+  JSONL row in `memory/retrieval_traces.jsonl` line 11827, outside ASC-0224
+  scope.
+- next: continue from monitor `watch` health; open advisory items remain
+  GenesisOS prompt-prison and persona-axis review, not repo dirty cleanup.

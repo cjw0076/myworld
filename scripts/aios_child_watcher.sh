@@ -165,27 +165,90 @@ related_dirty_status() {
   local repo="$1"
   local status_file="$2"
   local packet="$3"
-  python3 - "$repo" "$status_file" "$packet" <<'PY'
+  local repo_dir="$4"
+  python3 - "$repo" "$status_file" "$packet" "$repo_dir" <<'PY'
+import ast
+import hashlib
 import json
 import sys
 from pathlib import Path
 
-repo, status_file, packet_path = sys.argv[1:]
+repo, status_file, packet_path, repo_dir = sys.argv[1:]
 packet = json.load(open(packet_path, encoding="utf-8"))
 allowed = packet.get("scope", {}).get("allowed_files") or []
-normalized = []
-for raw in allowed:
+allowed_existing_dirty = packet.get("scope", {}).get("allowed_existing_dirty") or []
+allowed_existing_dirty_baseline = packet.get("scope", {}).get("allowed_existing_dirty_baseline") or []
+
+def parse_path(raw: str) -> str:
+    value = raw.strip()
+    if value.startswith('"'):
+        try:
+            parsed = ast.literal_eval(value)
+        except (SyntaxError, ValueError):
+            return value
+        return str(parsed)
+    return value
+
+def normalize_repo_path(raw: str) -> str:
     value = str(raw).strip().strip("`")
-    value = value.replace("` read-only", "").replace(" read-only", "").strip()
+    if value.startswith(("?? ", "M ", "A ", "D ", "R ", "C ", "!! ")):
+        value = value[3:].strip()
+    value = parse_path(value)
     if value.startswith(f"{repo}/"):
         value = value[len(repo) + 1 :]
+    return value.rstrip("/")
+
+def sha256_file(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+normalized = []
+for raw in allowed:
+    value = normalize_repo_path(raw)
+    value = value.replace("` read-only", "").replace(" read-only", "").strip()
     if value:
         normalized.append(value.rstrip("/"))
+
+existing = set()
+for raw in allowed_existing_dirty:
+    value = normalize_repo_path(raw)
+    if value:
+        existing.add(value)
+
+baseline = {}
+for raw in allowed_existing_dirty_baseline:
+    if not isinstance(raw, dict):
+        continue
+    path = normalize_repo_path(str(raw.get("repo_path") or raw.get("path") or ""))
+    if not path:
+        continue
+    baseline[path] = {
+        "status_code": str(raw.get("status_code") or ""),
+        "sha256": raw.get("sha256"),
+    }
+
+def matches_baseline(status_code: str, path: str) -> bool:
+    if path not in existing:
+        return False
+    expected = baseline.get(path)
+    if expected is None:
+        return True
+    if expected["status_code"] != status_code:
+        return False
+    return expected["sha256"] == sha256_file(Path(repo_dir) / path)
 
 for line in Path(status_file).read_text(encoding="utf-8", errors="replace").splitlines():
     if not line.strip():
         continue
-    path = line[3:].strip() if len(line) > 3 else line.strip()
+    status_code = line[:2] if len(line) > 2 else ""
+    path = parse_path(line[3:].strip() if len(line) > 3 else line.strip())
+    if matches_baseline(status_code, path) or any(path.startswith(f"{allowed_path}/") for allowed_path in existing if matches_baseline(status_code, allowed_path)):
+        continue
     for allowed_path in normalized:
         if path == allowed_path or path.startswith(f"{allowed_path}/"):
             print(line)
@@ -763,7 +826,7 @@ run_packet() {
   rm -f "$attempts_file"
 
   local related_before
-  related_before="$(related_dirty_status "$repo" "$before_file" "$packet")"
+  related_before="$(related_dirty_status "$repo" "$before_file" "$packet" "$repo_dir")"
   if [[ -n "$related_before" ]]; then
     cp "$before_file" "$after_file"
     append_event "pending_concurrent_work" "$repo" "held" "$related_before"

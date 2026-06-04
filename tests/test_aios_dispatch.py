@@ -1,4 +1,5 @@
 import json
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -28,6 +29,10 @@ allowed_files:
 
 - `hivemind/hivemind/memory_bridge.py`
 - `memoryOS/memoryos/cli.py`
+
+allowed_existing_dirty:
+
+- `memoryOS/.tmp_uri_cleanroom_seed.md`
 
 forbidden_files:
 
@@ -459,6 +464,7 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(packet["target_repo"], "memoryOS")
             self.assertEqual(packet["contract_status"], "proposed")
             self.assertIn("memoryOS/memoryos/cli.py", packet["scope"]["allowed_files"])
+            self.assertEqual(packet["scope"]["allowed_existing_dirty"], ["memoryOS/.tmp_uri_cleanroom_seed.md"])
             self.assertEqual(packet["control_plane"]["root"], "myworld")
             self.assertIn("docs/AIOS_BUILD_METHOD.md", packet["required_reading"])
             self.assertEqual(packet["result_schema_version"], "aios.dispatch.result.v1")
@@ -466,6 +472,35 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertIn("verification_commands", packet)
             self.assertEqual(packet["action_policy"]["decision"], "allow")
             self.assertIn("allow_proposed_test_bypass", packet["action_policy"]["reason_codes"])
+
+    def test_send_captures_allowed_existing_dirty_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            memoryos = root / "memoryOS"
+            memoryos.mkdir()
+            subprocess.run(["git", "init"], cwd=memoryos, text=True, capture_output=True, check=True)
+            seed = memoryos / ".tmp_uri_cleanroom_seed.md"
+            seed.write_text("cleanup input\n", encoding="utf-8")
+            contract = root / "ASC-0999-test.md"
+            contract.write_text(CONTRACT, encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+
+            self.run_cli(root, "send", "--repo", "memoryOS", "--agent", "codex", "--allow-proposed")
+
+            packet_path = root / ".aios" / "inbox" / "memoryOS" / "asc-0999.memoryOS.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            baseline = packet["scope"]["allowed_existing_dirty_baseline"]
+            self.assertEqual(
+                baseline,
+                [
+                    {
+                        "path": "memoryOS/.tmp_uri_cleanroom_seed.md",
+                        "repo_path": ".tmp_uri_cleanroom_seed.md",
+                        "status_code": "??",
+                        "sha256": hashlib.sha256(b"cleanup input\n").hexdigest(),
+                    }
+                ],
+            )
 
     def test_send_enriches_packet_with_repo_slice(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

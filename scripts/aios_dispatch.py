@@ -8,6 +8,7 @@ not execute child repo work and does not edit child repo files.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shlex
@@ -47,6 +48,7 @@ class Contract:
     body: str
     repos: list[str]
     allowed_files: list[str]
+    allowed_existing_dirty: list[str]
     forbidden_files: list[str]
 
     @property
@@ -131,6 +133,7 @@ def read_contract(path: Path) -> Contract:
     frontmatter, body = parse_frontmatter(text)
     repos = extract_bullet_list(body, "repos")
     allowed_files = extract_bullet_list(body, "allowed_files")
+    allowed_existing_dirty = extract_bullet_list(body, "allowed_existing_dirty")
     forbidden_files = extract_bullet_list(body, "forbidden_files")
     return Contract(
         path=path,
@@ -138,8 +141,81 @@ def read_contract(path: Path) -> Contract:
         body=body,
         repos=repos,
         allowed_files=allowed_files,
+        allowed_existing_dirty=allowed_existing_dirty,
         forbidden_files=forbidden_files,
     )
+
+
+def normalize_repo_path(repo: str, raw: str) -> str:
+    value = str(raw).strip().strip("`")
+    if value.startswith(("?? ", "M ", "A ", "D ", "R ", "C ", "!! ")):
+        value = value[3:].strip()
+    if value.startswith(f"{repo}/"):
+        value = value[len(repo) + 1 :]
+    return value.rstrip("/")
+
+
+def sha256_file(path: Path) -> str | None:
+    if not path.is_file():
+        return None
+    digest = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def parse_porcelain_z(stdout: bytes) -> list[tuple[str, str]]:
+    rows: list[tuple[str, str]] = []
+    for raw_record in stdout.split(b"\0"):
+        if not raw_record:
+            continue
+        record = raw_record.decode("utf-8", errors="surrogateescape")
+        if len(record) < 4:
+            continue
+        rows.append((record[:2], record[3:]))
+    return rows
+
+
+def capture_allowed_existing_dirty_baseline(root: Path, repo: str, allowed: list[str]) -> list[dict[str, str | None]]:
+    repo_dir = root / repo
+    if not allowed or not (repo_dir / ".git").exists():
+        return []
+    baselines: list[dict[str, str | None]] = []
+    for raw in allowed:
+        repo_path = normalize_repo_path(repo, raw)
+        if not repo_path:
+            continue
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                repo_dir.as_posix(),
+                "status",
+                "--porcelain=v1",
+                "-z",
+                "--untracked-files=all",
+                "--",
+                repo_path,
+            ],
+            check=False,
+            capture_output=True,
+        )
+        status_code = ""
+        status_path = repo_path
+        if result.returncode == 0:
+            rows = parse_porcelain_z(result.stdout)
+            if rows:
+                status_code, status_path = rows[0]
+        baselines.append(
+            {
+                "path": f"{repo}/{status_path}",
+                "repo_path": status_path,
+                "status_code": status_code,
+                "sha256": sha256_file(repo_dir / status_path),
+            }
+        )
+    return baselines
 
 
 def _load_sibling(root: Path, module_name: str):
@@ -627,6 +703,11 @@ def build_packet(
         {"cwd": command["cwd"], "command": command["line"]}
         for command in extract_verification_commands(contract, repo, repo_root())
     ]
+    existing_dirty_baseline = capture_allowed_existing_dirty_baseline(
+        repo_root(),
+        repo,
+        contract.allowed_existing_dirty,
+    )
     packet = {
         "schema_version": "aios.dispatch.v1",
         "result_schema_version": "aios.dispatch.result.v1",
@@ -647,6 +728,8 @@ def build_packet(
         "scope": {
             "repos": contract.repos,
             "allowed_files": contract.allowed_files,
+            "allowed_existing_dirty": contract.allowed_existing_dirty,
+            "allowed_existing_dirty_baseline": existing_dirty_baseline,
             "forbidden_files": contract.forbidden_files,
         },
         "required_reading": [

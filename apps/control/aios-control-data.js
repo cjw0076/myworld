@@ -125,11 +125,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "total": 6
   },
   "completion": {
-    "checked_at": "2026-06-05T02:04:00+09:00",
+    "checked_at": "2026-06-05T04:42:37+09:00",
     "criteria": [
       {
         "criterion": "1. autopoietic loop closed + always-on",
-        "evidence": "round controller running=True, last_round=2026-06-05T02:03:55+09:00, dream+local_operator organs ran=True",
+        "evidence": "round controller running=True, last_round=2026-06-05T04:42:27+09:00, dream+local_operator organs ran=True",
         "met": true
       },
       {
@@ -1506,6 +1506,13 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "slug": "memoryos-product-domain-seed-review",
           "status": "closed",
           "title": "Turn the observed URI product-domain MemoryOS gap into a draft-first review task, using the existing clean-room sourcing seed without accepting memory or erasing local evidence."
+        },
+        {
+          "contract_id": "ASC-0224",
+          "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+          "slug": "memoryos-provenance-cleanup",
+          "status": "closed",
+          "title": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld."
         }
       ],
       "collected": [
@@ -1743,22 +1750,15 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "slug": "peer-blindspot-7day-experiments",
           "status": "proposed",
           "title": "ASC-0215 — Peer Blindspot 7-day Experiments"
-        },
-        {
-          "contract_id": "ASC-0224",
-          "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
-          "slug": "memoryos-provenance-cleanup",
-          "status": "proposed",
-          "title": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld."
         }
       ]
     },
     "counts": {
       "accepted": 3,
-      "closed": 186,
+      "closed": 187,
       "collected": 1,
       "dispatched": 0,
-      "proposed": 32
+      "proposed": 31
     }
   },
   "contracts": {
@@ -3315,31 +3315,31 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "id": "ASC-0224",
         "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
         "slug": "memoryos-provenance-cleanup",
-        "status": "proposed"
+        "status": "closed"
       }
     ],
     "counts": {
       "accepted": 4,
-      "closed": 186,
+      "closed": 187,
       "deferred": 2,
-      "proposed": 2,
+      "proposed": 1,
       "superseded": 4,
       "superseded-by-rewrite": 7,
       "withdrawn": 17
     },
     "latest": [
       {
-        "accepted": "",
-        "closed": "",
+        "accepted": "2026-06-05T02:18:00+09:00",
+        "closed": "2026-06-05T04:43:00+09:00",
         "created": "2026-06-05T02:00:22+09:00",
         "goal": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld.",
         "id": "ASC-0224",
         "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
-        "quality_state": "review_required",
+        "quality_state": "closed",
         "quality_warnings": [],
-        "review_action": "operator_accept_or_revise",
+        "review_action": "",
         "slug": "memoryos-provenance-cleanup",
-        "status": "proposed",
+        "status": "closed",
         "stop_conditions": [
           "`memoryos_owner_not_ready`",
           "`dirty_entry_deleted_before_receipt`",
@@ -3502,9 +3502,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
     ],
     "quality_counts": {
       "accepted": 4,
-      "closed": 186,
+      "closed": 187,
       "deferred": 2,
-      "review_required": 2,
+      "review_required": 1,
       "superseded": 4,
       "superseded-by-rewrite": 7,
       "withdrawn": 17
@@ -5237,6 +5237,17 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "statuses": [
           "released"
         ]
+      },
+      "ASC-0224": {
+        "collected": [
+          "memoryOS"
+        ],
+        "sent": [
+          "memoryOS"
+        ],
+        "statuses": [
+          "skipped"
+        ]
       }
     },
     "counts": {
@@ -5246,7 +5257,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "released": 105,
       "retried": 1,
       "sent": 3,
-      "skipped": 26
+      "skipped": 27
     },
     "latest": [
       {
@@ -5262,7 +5273,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hivemind"
         ],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:03:52+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "collected": [],
@@ -5273,7 +5284,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "collected": [],
@@ -5284,7 +5295,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "collected": [],
@@ -5295,7 +5306,22 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
+      },
+      {
+        "collected": [
+          "memoryOS"
+        ],
+        "contract_id": "ASC-0224",
+        "dispatch_id": "asc-0224",
+        "goal": "Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld.",
+        "memory_context": {},
+        "reason": "invalid_repos",
+        "sent": [
+          "memoryOS"
+        ],
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:41:49+09:00"
       },
       {
         "collected": [
@@ -5389,278 +5415,224 @@ window.AIOS_CONTROL_SNAPSHOT = {
         ],
         "status": "skipped",
         "timestamp": "2026-05-20T17:58:58+09:00"
-      },
-      {
-        "collected": [
-          "myworld"
-        ],
-        "contract_id": "ASC-0205",
-        "dispatch_id": "asc-0205",
-        "goal": "AIOS 본체 완성의 측정 가능한 정의 — 6개 Completion Criterion (CC1~CC6) 을 모두 닫는다. 각 CC는 repo에 증거가 있어야만 \"닫혔다\".",
-        "memory_context": {},
-        "reason": "invalid_repos",
-        "sent": [
-          "myworld"
-        ],
-        "status": "collected",
-        "timestamp": "2026-05-20T16:50:04+09:00"
       }
     ],
     "timeline": [
       {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
-      },
-      {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:58:29+09:00"
+        "timestamp": "2026-06-05T04:39:24+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:58:29+09:00"
+        "timestamp": "2026-06-05T04:39:24+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:58:29+09:00"
+        "timestamp": "2026-06-05T04:39:24+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:58:29+09:00"
+        "timestamp": "2026-06-05T04:39:24+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:39:24+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "collected",
+        "repo": "memoryOS",
+        "status": "collected",
+        "timestamp": "2026-06-05T04:39:59+09:00"
       },
       {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:59:18+09:00"
+        "timestamp": "2026-06-05T04:40:00+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:59:18+09:00"
+        "timestamp": "2026-06-05T04:40:00+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:59:18+09:00"
+        "timestamp": "2026-06-05T04:40:00+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:59:18+09:00"
+        "timestamp": "2026-06-05T04:40:00+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:40:00+09:00"
       },
       {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:04+09:00"
+        "timestamp": "2026-06-05T04:40:36+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:05+09:00"
+        "timestamp": "2026-06-05T04:40:36+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:05+09:00"
+        "timestamp": "2026-06-05T04:40:37+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:05+09:00"
+        "timestamp": "2026-06-05T04:40:37+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:40:37+09:00"
       },
       {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T04:41:13+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T04:41:13+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T04:41:13+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:00:46+09:00"
+        "timestamp": "2026-06-05T04:41:13+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:41:13+09:00"
       },
       {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:01:33+09:00"
+        "timestamp": "2026-06-05T04:41:49+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:01:33+09:00"
+        "timestamp": "2026-06-05T04:41:49+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:01:33+09:00"
+        "timestamp": "2026-06-05T04:41:49+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:01:33+09:00"
+        "timestamp": "2026-06-05T04:41:49+09:00"
+      },
+      {
+        "dispatch_id": "asc-0224",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T04:41:49+09:00"
       },
       {
         "dispatch_id": "asc-0180",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:02:20+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "dispatch_id": "asc-0212",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:02:20+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "dispatch_id": "asc-0213",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:02:20+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       },
       {
         "dispatch_id": "asc-0214",
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T02:02:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T02:03:05+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T02:03:52+09:00"
+        "timestamp": "2026-06-05T04:42:26+09:00"
       }
     ],
-    "total": 240
+    "total": 241
   },
   "friction_radar": {
     "items": [
-      {
-        "alert_entries": [
-          "?? .tmp_uri_cleanroom_seed.md"
-        ],
-        "code": "repo_dirty",
-        "contracts": [],
-        "need": "hold_for_repo_owner_triage",
-        "owner": "memoryOS",
-        "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-        "related_dispatches": [
-          {
-            "contract_id": "ASC-0223",
-            "current_contract_status": "closed",
-            "dispatch_id": "asc-0223",
-            "latest_reason": "closed_partial: concurrent MemoryOS evidence shows URI seed accepted; watcher held due pending_concurrent_work; provenance cleanup remains MemoryOS-local",
-            "latest_status": "released",
-            "latest_timestamp": "2026-06-05T01:42:43+09:00"
-          },
-          {
-            "contract_id": null,
-            "current_contract_status": null,
-            "dispatch_id": "mdrev-207d05a6c64b6513",
-            "latest_reason": null,
-            "latest_status": "collected",
-            "latest_timestamp": "2026-05-20T18:44:21+09:00"
-          },
-          {
-            "contract_id": null,
-            "current_contract_status": null,
-            "dispatch_id": "mdrev-6811d9802bfff477",
-            "latest_reason": null,
-            "latest_status": "collected",
-            "latest_timestamp": "2026-05-20T18:33:59+09:00"
-          }
-        ],
-        "severity": "medium",
-        "source": "monitor",
-        "weak_personas": []
-      },
       {
         "alert_entries": [],
         "code": "genesis_prompt_prison_advisory",
@@ -5775,7 +5747,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           },
           {
             "recommendation": "Keep founder/operator authority and override path explicit for vision or authority decisions.",
-            "score": 0.35,
+            "score": 0.3,
             "score_key": "sovereign_score"
           }
         ]
@@ -5788,7 +5760,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "queued": 0,
     "schema_version": "aios.frontier_queue.v1"
   },
-  "generated_at": "2026-06-05T02:03:54+09:00",
+  "generated_at": "2026-06-05T04:42:34+09:00",
   "genesis_lens": {
     "authority": "speculative_only",
     "branches": [
@@ -5838,8 +5810,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "why_it_might_matter": "The next valuable move may be to change the question."
       }
     ],
-    "source_artifact": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
-    "source_invocation": "inv-b317cdfcdde3-20260605T015710",
+    "source_artifact": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/genesis/branches.json",
+    "source_invocation": "inv-b317cdfcdde3-20260605T043902",
     "stop_conditions": [
       "no_execution_authority",
       "no_memory_acceptance",
@@ -5862,7 +5834,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_f8520e3531",
           "kind": "evidence",
-          "to": "gen_src_3ebfbb0d32"
+          "to": "gen_src_c9d0f47ce5"
         },
         {
           "from": "gen_discomfort_7962331d95",
@@ -5877,7 +5849,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_85f9d2bb39",
           "kind": "evidence",
-          "to": "gen_src_3ebfbb0d32"
+          "to": "gen_src_c9d0f47ce5"
         },
         {
           "from": "gen_discomfort_43d12883e4",
@@ -5892,7 +5864,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_cc26c594a5",
           "kind": "evidence",
-          "to": "gen_src_3ebfbb0d32"
+          "to": "gen_src_c9d0f47ce5"
         },
         {
           "from": "gen_discomfort_d37ab53a12",
@@ -5907,7 +5879,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_e034afbfdb",
           "kind": "evidence",
-          "to": "gen_src_3ebfbb0d32"
+          "to": "gen_src_c9d0f47ce5"
         },
         {
           "from": "gen_discomfort_96c5cddf95",
@@ -5922,13 +5894,13 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_b3c0f593f0",
           "kind": "evidence",
-          "to": "gen_src_3ebfbb0d32"
+          "to": "gen_src_c9d0f47ce5"
         }
       ],
       "nodes": [
         {
-          "detail": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
-          "id": "gen_src_3ebfbb0d32",
+          "detail": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/genesis/branches.json",
+          "id": "gen_src_c9d0f47ce5",
           "label": ".aios/invocations/inv-b317cdfc",
           "state": "clear",
           "type": "source",
@@ -6319,37 +6291,37 @@ window.AIOS_CONTROL_SNAPSHOT = {
       {
         "artifact_previews": {
           "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/capability/route.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
           },
           "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/dispatch/packets.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/dispatch/packets.json",
             "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
             "truncated": false
           },
           "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/genesis/branches.json",
             "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
             "truncated": true
           },
           "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/hive/execution_plan.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/hive/execution_plan.json",
             "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
             "truncated": true
           },
           "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_5a7c8c9e88a37cb0 - signal_coverage: 1.0",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_b552bc6bf71859d0 - signal_coverage: 1.0",
             "truncated": false
           },
           "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_request.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/memory/context_request.json",
             "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
             "truncated": false
           }
         },
-        "created_at": "2026-06-05T01:57:10+09:00",
+        "created_at": "2026-06-05T04:39:02+09:00",
         "degraded_receipt": {
           "missing_or_degraded_roles": [],
           "status": "not_needed",
@@ -6363,16 +6335,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "requires_verification_result": true
         },
         "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T015710",
+        "invocation_id": "inv-b317cdfcdde3-20260605T043902",
         "next_action": "dispatch_ready",
         "overall_status": "passed",
         "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_request.json"
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/memory/context_request.json"
         },
         "role_statuses": {
           "capability": "passed",
@@ -6380,42 +6352,42 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hive": "passed",
           "memory": "passed"
         },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/session_envelope.json"
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T043902/session_envelope.json"
       },
       {
         "artifact_previews": {
           "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/capability/route.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
           },
           "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/dispatch/packets.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/dispatch/packets.json",
             "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
             "truncated": false
           },
           "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/genesis/branches.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/genesis/branches.json",
             "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
             "truncated": true
           },
           "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/hive/execution_plan.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/hive/execution_plan.json",
             "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
             "truncated": true
           },
           "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_e544c4c5a58a9af3 - signal_coverage: 1.0",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_3299c7e933464b6e - signal_coverage: 1.0",
             "truncated": false
           },
           "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/memory/context_request.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/memory/context_request.json",
             "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
             "truncated": false
           }
         },
-        "created_at": "2026-06-05T01:47:01+09:00",
+        "created_at": "2026-06-05T04:28:55+09:00",
         "degraded_receipt": {
           "missing_or_degraded_roles": [],
           "status": "not_needed",
@@ -6429,16 +6401,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "requires_verification_result": true
         },
         "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T014701",
+        "invocation_id": "inv-b317cdfcdde3-20260605T042855",
         "next_action": "dispatch_ready",
         "overall_status": "passed",
         "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/memory/context_request.json"
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/memory/context_request.json"
         },
         "role_statuses": {
           "capability": "passed",
@@ -6446,42 +6418,42 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hive": "passed",
           "memory": "passed"
         },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/session_envelope.json"
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T042855/session_envelope.json"
       },
       {
         "artifact_previews": {
           "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/capability/route.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
           },
           "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/dispatch/packets.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/dispatch/packets.json",
             "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
             "truncated": false
           },
           "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/genesis/branches.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/genesis/branches.json",
             "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
             "truncated": true
           },
           "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/hive/execution_plan.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/hive/execution_plan.json",
             "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
             "truncated": true
           },
           "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_bef048a5057ba4ad - signal_coverage: 1.0",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_e9137f9ad3aec166 - signal_coverage: 1.0",
             "truncated": false
           },
           "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/memory/context_request.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/memory/context_request.json",
             "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
             "truncated": false
           }
         },
-        "created_at": "2026-06-05T01:36:54+09:00",
+        "created_at": "2026-06-05T04:18:48+09:00",
         "degraded_receipt": {
           "missing_or_degraded_roles": [],
           "status": "not_needed",
@@ -6495,16 +6467,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "requires_verification_result": true
         },
         "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T013654",
+        "invocation_id": "inv-b317cdfcdde3-20260605T041848",
         "next_action": "dispatch_ready",
         "overall_status": "passed",
         "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/memory/context_request.json"
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/memory/context_request.json"
         },
         "role_statuses": {
           "capability": "passed",
@@ -6512,42 +6484,42 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hive": "passed",
           "memory": "passed"
         },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T013654/session_envelope.json"
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T041848/session_envelope.json"
       },
       {
         "artifact_previews": {
           "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/capability/route.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
           },
           "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/dispatch/packets.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/dispatch/packets.json",
             "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
             "truncated": false
           },
           "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/genesis/branches.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/genesis/branches.json",
             "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
             "truncated": true
           },
           "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/hive/execution_plan.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/hive/execution_plan.json",
             "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
             "truncated": true
           },
           "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_f8ab64c2f5cb4866 - signal_coverage: 1.0",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_604b83d33a475398 - signal_coverage: 1.0",
             "truncated": false
           },
           "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/memory/context_request.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/memory/context_request.json",
             "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
             "truncated": false
           }
         },
-        "created_at": "2026-06-05T01:26:46+09:00",
+        "created_at": "2026-06-05T04:08:42+09:00",
         "degraded_receipt": {
           "missing_or_degraded_roles": [],
           "status": "not_needed",
@@ -6561,16 +6533,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "requires_verification_result": true
         },
         "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T012646",
+        "invocation_id": "inv-b317cdfcdde3-20260605T040842",
         "next_action": "dispatch_ready",
         "overall_status": "passed",
         "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/memory/context_request.json"
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/memory/context_request.json"
         },
         "role_statuses": {
           "capability": "passed",
@@ -6578,42 +6550,42 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hive": "passed",
           "memory": "passed"
         },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T012646/session_envelope.json"
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T040842/session_envelope.json"
       },
       {
         "artifact_previews": {
           "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/capability/route.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
           },
           "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/dispatch/packets.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/dispatch/packets.json",
             "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
             "truncated": false
           },
           "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/genesis/branches.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/genesis/branches.json",
             "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
             "truncated": true
           },
           "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/hive/execution_plan.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/hive/execution_plan.json",
             "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
             "truncated": true
           },
           "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_817648164a00b4c9 - signal_coverage: 1.0",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_a6ce2b1067a5c3aa - signal_coverage: 1.0",
             "truncated": false
           },
           "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/memory/context_request.json",
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/memory/context_request.json",
             "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
             "truncated": false
           }
         },
-        "created_at": "2026-06-05T01:16:40+09:00",
+        "created_at": "2026-06-05T03:58:36+09:00",
         "degraded_receipt": {
           "missing_or_degraded_roles": [],
           "status": "not_needed",
@@ -6627,16 +6599,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "requires_verification_result": true
         },
         "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T011640",
+        "invocation_id": "inv-b317cdfcdde3-20260605T035836",
         "next_action": "dispatch_ready",
         "overall_status": "passed",
         "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/memory/context_request.json"
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/memory/context_request.json"
         },
         "role_statuses": {
           "capability": "passed",
@@ -6644,7 +6616,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hive": "passed",
           "memory": "passed"
         },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/session_envelope.json"
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T035836/session_envelope.json"
       }
     ]
   },
@@ -7017,93 +6989,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
   "monitor": {
     "findings": [
       {
-        "action": "hold_for_repo_owner_triage",
-        "alert": {
-          "code": "repo_dirty",
-          "entries": [
-            "?? .tmp_uri_cleanroom_seed.md"
-          ],
-          "related_dispatches": [
-            {
-              "collected": [
-                "memoryOS"
-              ],
-              "contract_id": "ASC-0223",
-              "current_contract_status": "closed",
-              "dispatch_id": "asc-0223",
-              "latest_event": "memory_writeback",
-              "latest_reason": "closed_partial: concurrent MemoryOS evidence shows URI seed accepted; watcher held due pending_concurrent_work; provenance cleanup remains MemoryOS-local",
-              "latest_status": "released",
-              "latest_timestamp": "2026-06-05T01:42:43+09:00",
-              "sent": [
-                "memoryOS"
-              ]
-            },
-            {
-              "collected": [
-                "memoryOS"
-              ],
-              "contract_id": null,
-              "current_contract_status": null,
-              "dispatch_id": "mdrev-207d05a6c64b6513",
-              "latest_event": "collected",
-              "latest_reason": null,
-              "latest_status": "collected",
-              "latest_timestamp": "2026-05-20T18:44:21+09:00",
-              "sent": []
-            },
-            {
-              "collected": [
-                "memoryOS"
-              ],
-              "contract_id": null,
-              "current_contract_status": null,
-              "dispatch_id": "mdrev-6811d9802bfff477",
-              "latest_event": "collected",
-              "latest_reason": null,
-              "latest_status": "collected",
-              "latest_timestamp": "2026-05-20T18:33:59+09:00",
-              "sent": []
-            },
-            {
-              "collected": [
-                "memoryOS"
-              ],
-              "contract_id": "ASC-0202",
-              "current_contract_status": "closed",
-              "dispatch_id": "asc-0202",
-              "latest_event": "watched",
-              "latest_reason": "invalid_repos",
-              "latest_status": "passed",
-              "latest_timestamp": "2026-05-20T16:25:41+09:00",
-              "sent": [
-                "memoryOS"
-              ]
-            },
-            {
-              "collected": [
-                "memoryOS"
-              ],
-              "contract_id": "ASC-0194",
-              "current_contract_status": "closed",
-              "dispatch_id": "asc-0194",
-              "latest_event": "policy_dispatch_decision",
-              "latest_reason": "invalid_repos",
-              "latest_status": "skipped",
-              "latest_timestamp": "2026-05-18T14:31:09+09:00",
-              "sent": [
-                "memoryOS"
-              ]
-            }
-          ],
-          "repo": "memoryOS"
-        },
-        "code": "repo_dirty",
-        "owner": "memoryOS",
-        "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-        "severity": "medium"
-      },
-      {
         "action": "review_prompt_prison_escape_vectors",
         "alert": {
           "code": "genesis_prompt_prison_advisory",
@@ -7204,7 +7089,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "alert": {
           "code": "persona_axis_advisory",
           "contracts_scored": 20,
-          "persona_composite": 0.47,
+          "persona_composite": 0.45,
           "report_schema_version": "aios.persona_audit.v1"
         },
         "code": "persona_axis_advisory",
@@ -7213,15 +7098,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "severity": "info"
       }
     ],
-    "generated_at": "2026-06-05T01:56:55+09:00",
-    "health": "attention",
+    "generated_at": "2026-06-05T04:42:29+09:00",
+    "health": "watch",
     "next_actions": [
-      {
-        "action": "hold_for_repo_owner_triage",
-        "owner": "memoryOS",
-        "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-        "severity": "medium"
-      },
       {
         "action": "review_prompt_prison_escape_vectors",
         "owner": "GenesisOS",
@@ -7238,18 +7117,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "persona_axis": {
       "authority": "advisory_only",
       "contract_gaps": [
-        {
-          "contract_id": "ASC-0193",
-          "missing_personas": [
-            "retriever_score",
-            "philosophy_score"
-          ],
-          "path": "docs/contracts/ASC-0193-chat-tier2-quality-gate.md",
-          "recommendations": [
-            "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution.",
-            "Cite GenesisOS critic output, alternatives, branches, or escape vectors before convergence."
-          ]
-        },
         {
           "contract_id": "ASC-0194",
           "missing_personas": [
@@ -7369,35 +7236,25 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "recommendations": [
             "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution."
           ]
+        },
+        {
+          "contract_id": "ASC-0206",
+          "missing_personas": [
+            "retriever_score",
+            "router_score",
+            "sovereign_score"
+          ],
+          "path": "docs/contracts/ASC-0206-genesisos-completion-challenge.md",
+          "recommendations": [
+            "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution.",
+            "Cite a CapabilityOS recommendation, selected route, fallback, or documented deviation.",
+            "Keep founder/operator authority and override path explicit for vision or authority decisions."
+          ]
         }
       ],
       "contracts_scored": 20,
-      "generated_at": "2026-06-05T01:56:55+09:00",
+      "generated_at": "2026-06-05T04:42:29+09:00",
       "per_contract": [
-        {
-          "contract_id": "ASC-0193",
-          "path": "docs/contracts/ASC-0193-chat-tier2-quality-gate.md",
-          "scores": {
-            "philosophy_score": 0.0,
-            "retriever_score": 0.0,
-            "router_score": 1.0,
-            "sovereign_score": 1.0,
-            "wrapper_score": 1.0
-          },
-          "signals": {
-            "capability_route": true,
-            "founder_gate": true,
-            "genesis_philosophy": false,
-            "operator_pair": true,
-            "providers": [
-              "claude",
-              "local",
-              "ollama"
-            ],
-            "rtrace": false,
-            "vision_keywords": true
-          }
-        },
         {
           "contract_id": "ASC-0194",
           "path": "docs/contracts/ASC-0194-memoryos-graph-control-model.md",
@@ -7846,16 +7703,39 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "rtrace": false,
             "vision_keywords": true
           }
+        },
+        {
+          "contract_id": "ASC-0224",
+          "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+          "scores": {
+            "philosophy_score": 0.0,
+            "retriever_score": 0.0,
+            "router_score": 0.0,
+            "sovereign_score": 0.0,
+            "wrapper_score": 1.0
+          },
+          "signals": {
+            "capability_route": false,
+            "founder_gate": false,
+            "genesis_philosophy": false,
+            "operator_pair": false,
+            "providers": [
+              "codex",
+              "local"
+            ],
+            "rtrace": false,
+            "vision_keywords": false
+          }
         }
       ],
       "relationship_to_governance_axis": "orthogonal_advisory_axis",
       "schema_version": "aios.persona_audit.v1",
       "scores": {
-        "persona_composite": 0.47,
+        "persona_composite": 0.45,
         "philosophy_score": 0.4,
         "retriever_score": 0.05,
-        "router_score": 0.6,
-        "sovereign_score": 0.35,
+        "router_score": 0.55,
+        "sovereign_score": 0.3,
         "wrapper_score": 0.95
       },
       "weak_personas": [
@@ -7871,29 +7751,23 @@ window.AIOS_CONTROL_SNAPSHOT = {
         },
         {
           "recommendation": "Keep founder/operator authority and override path explicit for vision or authority decisions.",
-          "score": 0.35,
+          "score": 0.3,
           "score_key": "sovereign_score"
         }
       ],
       "window": 20
     },
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-06-05T01:56:55+09:00",
+    "snapshot_generated_at": "2026-06-05T04:42:29+09:00",
     "watched": {
-      "alerts": 1,
-      "contracts": 221,
-      "dispatches": 239,
+      "alerts": 0,
+      "contracts": 222,
+      "dispatches": 240,
       "reconciliations_applied": 5,
       "repos": 4
     }
   },
   "next_actions": [
-    {
-      "action": "hold_for_repo_owner_triage",
-      "owner": "memoryOS",
-      "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-      "severity": "medium"
-    },
     {
       "action": "review_prompt_prison_escape_vectors",
       "owner": "GenesisOS",
@@ -8067,27 +7941,27 @@ window.AIOS_CONTROL_SNAPSHOT = {
         }
       ],
       "gaps": 19,
-      "headline": "19 cards, 185 observations, 19 gaps",
-      "observations": 185,
+      "headline": "19 cards, 186 observations, 19 gaps",
+      "observations": 186,
       "observed_capabilities": 5,
       "provider_routes": [
         {
           "agent": "codex",
-          "confidence": 0.862069,
+          "confidence": 0.862857,
           "evidence_refs": [
             "../.aios/outbox/CapabilityOS/asc-0002.CapabilityOS.result.json",
             "../.aios/outbox/CapabilityOS/asc-0026.CapabilityOS.result.json"
           ],
           "failed": 23,
-          "observations": 172,
-          "passed": 149,
+          "observations": 173,
+          "passed": 150,
           "reason_codes": [
-            "confidence:0.862069",
-            "observed:172",
-            "passed:149",
+            "confidence:0.862857",
+            "observed:173",
+            "passed:150",
             "failed:23"
           ],
-          "score": 258,
+          "score": 259,
           "timeout": 0
         },
         {
@@ -8146,7 +8020,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "timeout": 0
         }
       ],
-      "result_files": 199,
+      "result_files": 200,
       "route_preview": {
         "edges": [
           {
@@ -8371,7 +8245,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "y": 82
           },
           {
-            "detail": "149 passed · 23 failed",
+            "detail": "150 passed · 23 failed",
             "id": "provider_codex",
             "label": "codex",
             "state": "attention",
@@ -8756,11 +8630,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
       ],
       "branches": 5,
       "headline": "5 speculative worldlines",
-      "source_invocation": "inv-b317cdfcdde3-20260605T015710",
+      "source_invocation": "inv-b317cdfcdde3-20260605T043902",
       "status": "active"
     },
     "hive": {
-      "dispatch_total": 240,
+      "dispatch_total": 241,
       "headline": "dispatch_ready",
       "hive_board": {
         "agents": [
@@ -8950,7 +8824,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "updated_at": "2026-05-16T13:32:36+09:00"
       },
       "latest_goal": "self_check verification probe",
-      "latest_invocation": "inv-b317cdfcdde3-20260605T015710",
+      "latest_invocation": "inv-b317cdfcdde3-20260605T043902",
       "next_action": "dispatch_ready",
       "status": "passed"
     },
@@ -8960,7 +8834,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "id": "myworld",
         "label": "MyWorld",
         "role": "Sovereign control",
-        "status": "attention"
+        "status": "watch"
       },
       {
         "headline": "45 accepted / 149 draft memories from 198,875 graph nodes",
@@ -8970,7 +8844,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "status": "active"
       },
       {
-        "headline": "19 cards, 185 observations, 19 gaps",
+        "headline": "19 cards, 186 observations, 19 gaps",
         "id": "capability",
         "label": "CapabilityOS",
         "role": "Search and route planner",
@@ -8997,16 +8871,16 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "edges": 306826,
       "graph_control": {
         "latest": {
-          "bound_ratio": 1.2941,
-          "captured_at": "2026-06-05T01:57:39+09:00",
+          "bound_ratio": 1.0,
+          "captured_at": "2026-06-05T04:12:56+09:00",
           "halt_auto_consolidation": true,
-          "id": "graphctlrun_1d0ac2877b2738f3",
+          "id": "graphctlrun_fcad1a77a618be8b",
           "provenance_contract_ids": [
             "ASC-0194",
             "ASC-0196"
           ],
           "queryable_surface_count": 11,
-          "raw_ingest_count": 17,
+          "raw_ingest_count": 0,
           "reclaimed_count": 22,
           "status": "stop_condition",
           "stop_conditions": [
@@ -9014,62 +8888,62 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "duplicate_proliferation"
           ]
         },
-        "run_count": 481
+        "run_count": 485
       },
       "graph_preview": {
         "edges": [
           {
-            "from": "rtrace_bfd3b7fd6c64f201",
+            "from": "rtrace_0c83bb240506674b",
             "kind": "retrieved",
             "to": "mem_0c66b6db9ac73100"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_001f6d5191fb8e51"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_4a44670b379ca4ea"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_1f18cea463eed9fd"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_d0b64430dd5da2a8"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_61910dd09950fc81"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_940ad99fcc2ed445"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_3af960f629693170"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_5012d57c2c4acbf6"
           },
           {
-            "from": "rtrace_75f10c5fc2955e7d",
+            "from": "rtrace_e0e52b40009748ec",
             "kind": "retrieved",
             "to": "mem_70c8edbf4c5c9c7b"
           },
           {
-            "from": "rtrace_58aeec049c43c6ab",
+            "from": "rtrace_2f7bef9652d56afc",
             "kind": "retrieved",
             "to": "mem_001f6d5191fb8e51"
           },
@@ -9107,24 +8981,24 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "nodes": [
           {
             "detail": "uri campus wiki clean-room seed sourcing scholarship 울산대",
-            "id": "rtrace_bfd3b7fd6c64f201",
-            "label": "r:bfd3b7fd6c64f201",
+            "id": "rtrace_0c83bb240506674b",
+            "label": "r:0c83bb240506674b",
             "type": "trace",
             "x": 13,
             "y": 18
           },
           {
             "detail": "Claude CLI Codex local LLM provider 흡수",
-            "id": "rtrace_75f10c5fc2955e7d",
-            "label": "r:75f10c5fc2955e7d",
+            "id": "rtrace_e0e52b40009748ec",
+            "label": "r:e0e52b40009748ec",
             "type": "trace",
             "x": 13,
             "y": 50
           },
           {
             "detail": "사용자 로그 작업방식 user 행동 패턴 few shot",
-            "id": "rtrace_58aeec049c43c6ab",
-            "label": "r:58aeec049c43c6ab",
+            "id": "rtrace_2f7bef9652d56afc",
+            "label": "r:2f7bef9652d56afc",
             "type": "trace",
             "x": 13,
             "y": 82
@@ -9285,8 +9159,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 1
           },
-          "created_at": "2026-06-05T01:57:12+09:00",
-          "id": "rtrace_bfd3b7fd6c64f201",
+          "created_at": "2026-06-05T04:39:04+09:00",
+          "id": "rtrace_0c83bb240506674b",
           "privacy_filter": "local",
           "query": "uri campus wiki clean-room seed sourcing scholarship 울산대",
           "role": "hive",
@@ -9324,8 +9198,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:57:12+09:00",
-          "id": "rtrace_75f10c5fc2955e7d",
+          "created_at": "2026-06-05T04:39:04+09:00",
+          "id": "rtrace_e0e52b40009748ec",
           "privacy_filter": "local",
           "query": "Claude CLI Codex local LLM provider 흡수",
           "role": "hive",
@@ -9415,8 +9289,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 3
           },
-          "created_at": "2026-06-05T01:57:12+09:00",
-          "id": "rtrace_58aeec049c43c6ab",
+          "created_at": "2026-06-05T04:39:04+09:00",
+          "id": "rtrace_2f7bef9652d56afc",
           "privacy_filter": "local",
           "query": "사용자 로그 작업방식 user 행동 패턴 few shot",
           "role": "hive",
@@ -9482,8 +9356,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:57:12+09:00",
-          "id": "rtrace_6cc111254faa1ed5",
+          "created_at": "2026-06-05T04:39:03+09:00",
+          "id": "rtrace_94a4a632104c120d",
           "privacy_filter": "local",
           "query": "founder role delegated living organism 작업방식 memoryOS",
           "role": "hive",
@@ -9570,8 +9444,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:57:11+09:00",
-          "id": "rtrace_f9c8574f424d53af",
+          "created_at": "2026-06-05T04:39:03+09:00",
+          "id": "rtrace_9b664943b6a16895",
           "privacy_filter": "local",
           "query": "AIOS완성 공진화 memoryOS capabilityOS hive mind founder directive",
           "role": "hive",
@@ -9654,8 +9528,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
         }
       ],
       "rejected": 8,
-      "retrieval_traces": 17123,
-      "retrieval_traces_with_selected": 17010,
+      "retrieval_traces": 17229,
+      "retrieval_traces_with_selected": 17116,
       "reviews": 68,
       "signals": [
         {
@@ -9676,19 +9550,19 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "label": "Retrieval traces",
           "unit": "traces",
-          "value": 17123
+          "value": 17229
         }
       ],
-      "sources": 86,
+      "sources": 87,
       "status": "active"
     },
     "myworld": {
       "contracts": 222,
-      "dispatches": 240,
+      "dispatches": 241,
       "headline": "222 contracts / AIOS running",
       "installation": "running",
       "round": "passed",
-      "status": "attention"
+      "status": "watch"
     }
   },
   "promotions": {
@@ -9896,14 +9770,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "route_count": 4
       },
       {
-        "changes": [
-          "?? .tmp_uri_cleanroom_seed.md"
-        ],
-        "dirty": true,
+        "changes": [],
+        "dirty": false,
         "exists": true,
         "goal_count": 0,
         "inbox_count": 12,
-        "outbox_count": 43,
+        "outbox_count": 44,
         "repo": "memoryOS",
         "route_count": 0
       },
@@ -9944,13 +9816,13 @@ window.AIOS_CONTROL_SNAPSHOT = {
       },
       {
         "agent": "codex@memoryOS",
-        "dirty": true,
+        "dirty": false,
         "event": "working",
         "health": "ok",
         "inbox_count": 12,
-        "outbox_count": 43,
+        "outbox_count": 44,
         "repo": "memoryOS",
-        "status_digest": "working · inbox 12 · outbox 43 · git dirty"
+        "status_digest": "working · inbox 12 · outbox 44"
       },
       {
         "agent": "codex@myworld",
@@ -10013,7 +9885,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           },
           "memoryOS": {
             "inbox": 12,
-            "outbox": 43,
+            "outbox": 44,
             "pending": 0,
             "running": false
           }
@@ -10025,7 +9897,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-06-05T02:03:07+09:00",
+    "generated_at": "2026-06-05T04:42:27+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "hold_for_goal_stop_conditions",
@@ -10050,21 +9922,21 @@ window.AIOS_CONTROL_SNAPSHOT = {
             },
             {
               "helper": "cap_helper_classify_vision_level",
-              "invocations": 580,
+              "invocations": 584,
               "verified_bad": 2,
-              "verified_good": 571
+              "verified_good": 575
             },
             {
               "helper": "cap_helper_consolidate",
-              "invocations": 489,
+              "invocations": 493,
               "verified_bad": 4,
-              "verified_good": 471
+              "verified_good": 475
             },
             {
               "helper": "cap_helper_operator_review",
-              "invocations": 477,
+              "invocations": 481,
               "verified_bad": 28,
-              "verified_good": 447
+              "verified_good": 451
             },
             {
               "helper": "cap_helper_classify_chat_intent",
@@ -10075,7 +9947,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "helpers_folded": 5,
           "note": "observation history folded into helper catalog observation_count; CapabilityOS recommend now ranks by actual verified usage",
-          "ran_at": "2026-06-05T02:03:01+09:00",
+          "ran_at": "2026-06-05T04:42:25+09:00",
           "schema": "aios.capability_feedback.v1"
         },
         "returncode": 0,
@@ -10120,7 +9992,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-06-05T02:03:05+09:00",
+          "generated_at": "2026-06-05T04:42:26+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -10182,8 +10054,15 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "error": "",
         "name": "dispatch_reconcile",
         "parsed": {
-          "archived": [],
-          "archived_stale": 0,
+          "archived": [
+            {
+              "contract": "ASC-0224",
+              "contract_status": "closed",
+              "packet": "asc-0224.memoryOS.json",
+              "repo": "memoryOS"
+            }
+          ],
+          "archived_stale": 1,
           "dry_run": false,
           "kept": [
             {
@@ -10273,7 +10152,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "kept_active": 14,
           "note": "stale packets (contract closed) archived to .aios/archive/inbox/ — append-only, never deleted; open/missing-contract packets left for operator review",
-          "ran_at": "2026-06-05T02:03:01+09:00",
+          "ran_at": "2026-06-05T04:42:24+09:00",
           "schema": "aios.dispatch_reconcile.v1"
         },
         "returncode": 0,
@@ -10282,7 +10161,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "dream": {
-        "age_seconds": 288,
+        "age_seconds": 1749,
         "name": "dream",
         "reason": "recent_dream",
         "status": "skipped"
@@ -10292,15 +10171,15 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "goal_evolution",
         "parsed": {
           "evidence": {
-            "monitor_findings": 3,
-            "monitor_health": "attention",
+            "monitor_findings": 2,
+            "monitor_health": "watch",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-06-05T02:02:57+09:00",
+            "policy_generated_at": "2026-06-05T04:42:22+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-06-05T02:03:01+09:00",
+          "generated_at": "2026-06-05T04:42:24+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -10666,7 +10545,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "librarian": {
-        "age_seconds": 2353,
+        "age_seconds": 1045,
         "name": "librarian",
         "reason": "recent_tend",
         "status": "skipped"
@@ -11685,7 +11564,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               ]
             }
           ],
-          "generated_at": "2026-06-05T02:03:02+09:00",
+          "generated_at": "2026-06-05T04:42:25+09:00",
           "in_flight_count": 2,
           "open_contract_count": 4,
           "open_contract_order": [
@@ -11695,7 +11574,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0180-hive-debate-aios-hosting-trust-model.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1789382
+              "wait_seconds": 1798945
             },
             {
               "contract_id": "ASC-0212",
@@ -11703,7 +11582,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0212-aios-mcp-native.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357382
+              "wait_seconds": 1366945
             },
             {
               "contract_id": "ASC-0213",
@@ -11711,7 +11590,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0213-closure-quality-gate.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357382
+              "wait_seconds": 1366945
             },
             {
               "contract_id": "ASC-0214",
@@ -11719,7 +11598,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0214-aios-dogfooding-gap.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1357382
+              "wait_seconds": 1366945
             }
           ],
           "operator_only_prefixes": [
@@ -11742,93 +11621,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "monitor",
         "parsed": {
           "findings": [
-            {
-              "action": "hold_for_repo_owner_triage",
-              "alert": {
-                "code": "repo_dirty",
-                "entries": [
-                  "?? .tmp_uri_cleanroom_seed.md"
-                ],
-                "related_dispatches": [
-                  {
-                    "collected": [
-                      "memoryOS"
-                    ],
-                    "contract_id": "ASC-0223",
-                    "current_contract_status": "closed",
-                    "dispatch_id": "asc-0223",
-                    "latest_event": "memory_writeback",
-                    "latest_reason": "closed_partial: concurrent MemoryOS evidence shows URI seed accepted; watcher held due pending_concurrent_work; provenance cleanup remains MemoryOS-local",
-                    "latest_status": "released",
-                    "latest_timestamp": "2026-06-05T01:42:43+09:00",
-                    "sent": [
-                      "memoryOS"
-                    ]
-                  },
-                  {
-                    "collected": [
-                      "memoryOS"
-                    ],
-                    "contract_id": null,
-                    "current_contract_status": null,
-                    "dispatch_id": "mdrev-207d05a6c64b6513",
-                    "latest_event": "collected",
-                    "latest_reason": null,
-                    "latest_status": "collected",
-                    "latest_timestamp": "2026-05-20T18:44:21+09:00",
-                    "sent": []
-                  },
-                  {
-                    "collected": [
-                      "memoryOS"
-                    ],
-                    "contract_id": null,
-                    "current_contract_status": null,
-                    "dispatch_id": "mdrev-6811d9802bfff477",
-                    "latest_event": "collected",
-                    "latest_reason": null,
-                    "latest_status": "collected",
-                    "latest_timestamp": "2026-05-20T18:33:59+09:00",
-                    "sent": []
-                  },
-                  {
-                    "collected": [
-                      "memoryOS"
-                    ],
-                    "contract_id": "ASC-0202",
-                    "current_contract_status": "closed",
-                    "dispatch_id": "asc-0202",
-                    "latest_event": "watched",
-                    "latest_reason": "invalid_repos",
-                    "latest_status": "passed",
-                    "latest_timestamp": "2026-05-20T16:25:41+09:00",
-                    "sent": [
-                      "memoryOS"
-                    ]
-                  },
-                  {
-                    "collected": [
-                      "memoryOS"
-                    ],
-                    "contract_id": "ASC-0194",
-                    "current_contract_status": "closed",
-                    "dispatch_id": "asc-0194",
-                    "latest_event": "policy_dispatch_decision",
-                    "latest_reason": "invalid_repos",
-                    "latest_status": "skipped",
-                    "latest_timestamp": "2026-05-18T14:31:09+09:00",
-                    "sent": [
-                      "memoryOS"
-                    ]
-                  }
-                ],
-                "repo": "memoryOS"
-              },
-              "code": "repo_dirty",
-              "owner": "memoryOS",
-              "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-              "severity": "medium"
-            },
             {
               "action": "review_prompt_prison_escape_vectors",
               "alert": {
@@ -11930,7 +11722,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "alert": {
                 "code": "persona_axis_advisory",
                 "contracts_scored": 20,
-                "persona_composite": 0.47,
+                "persona_composite": 0.45,
                 "report_schema_version": "aios.persona_audit.v1"
               },
               "code": "persona_axis_advisory",
@@ -11939,15 +11731,9 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "severity": "info"
             }
           ],
-          "generated_at": "2026-06-05T02:02:56+09:00",
-          "health": "attention",
+          "generated_at": "2026-06-05T04:42:22+09:00",
+          "health": "watch",
           "next_actions": [
-            {
-              "action": "hold_for_repo_owner_triage",
-              "owner": "memoryOS",
-              "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
-              "severity": "medium"
-            },
             {
               "action": "review_prompt_prison_escape_vectors",
               "owner": "GenesisOS",
@@ -11964,18 +11750,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "persona_axis": {
             "authority": "advisory_only",
             "contract_gaps": [
-              {
-                "contract_id": "ASC-0193",
-                "missing_personas": [
-                  "retriever_score",
-                  "philosophy_score"
-                ],
-                "path": "docs/contracts/ASC-0193-chat-tier2-quality-gate.md",
-                "recommendations": [
-                  "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution.",
-                  "Cite GenesisOS critic output, alternatives, branches, or escape vectors before convergence."
-                ]
-              },
               {
                 "contract_id": "ASC-0194",
                 "missing_personas": [
@@ -12095,35 +11869,25 @@ window.AIOS_CONTROL_SNAPSHOT = {
                 "recommendations": [
                   "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution."
                 ]
+              },
+              {
+                "contract_id": "ASC-0206",
+                "missing_personas": [
+                  "retriever_score",
+                  "router_score",
+                  "sovereign_score"
+                ],
+                "path": "docs/contracts/ASC-0206-genesisos-completion-challenge.md",
+                "recommendations": [
+                  "Cite a MemoryOS retrieval trace (`rtrace_...`) and positive `signal_coverage` before execution.",
+                  "Cite a CapabilityOS recommendation, selected route, fallback, or documented deviation.",
+                  "Keep founder/operator authority and override path explicit for vision or authority decisions."
+                ]
               }
             ],
             "contracts_scored": 20,
-            "generated_at": "2026-06-05T02:02:56+09:00",
+            "generated_at": "2026-06-05T04:42:22+09:00",
             "per_contract": [
-              {
-                "contract_id": "ASC-0193",
-                "path": "docs/contracts/ASC-0193-chat-tier2-quality-gate.md",
-                "scores": {
-                  "philosophy_score": 0.0,
-                  "retriever_score": 0.0,
-                  "router_score": 1.0,
-                  "sovereign_score": 1.0,
-                  "wrapper_score": 1.0
-                },
-                "signals": {
-                  "capability_route": true,
-                  "founder_gate": true,
-                  "genesis_philosophy": false,
-                  "operator_pair": true,
-                  "providers": [
-                    "claude",
-                    "local",
-                    "ollama"
-                  ],
-                  "rtrace": false,
-                  "vision_keywords": true
-                }
-              },
               {
                 "contract_id": "ASC-0194",
                 "path": "docs/contracts/ASC-0194-memoryos-graph-control-model.md",
@@ -12572,16 +12336,39 @@ window.AIOS_CONTROL_SNAPSHOT = {
                   "rtrace": false,
                   "vision_keywords": true
                 }
+              },
+              {
+                "contract_id": "ASC-0224",
+                "path": "docs/contracts/ASC-0224-resolve-memoryos-monitor-dirty-state-through-owner-reviewed-provenance-cleanup.md",
+                "scores": {
+                  "philosophy_score": 0.0,
+                  "retriever_score": 0.0,
+                  "router_score": 0.0,
+                  "sovereign_score": 0.0,
+                  "wrapper_score": 1.0
+                },
+                "signals": {
+                  "capability_route": false,
+                  "founder_gate": false,
+                  "genesis_philosophy": false,
+                  "operator_pair": false,
+                  "providers": [
+                    "codex",
+                    "local"
+                  ],
+                  "rtrace": false,
+                  "vision_keywords": false
+                }
               }
             ],
             "relationship_to_governance_axis": "orthogonal_advisory_axis",
             "schema_version": "aios.persona_audit.v1",
             "scores": {
-              "persona_composite": 0.47,
+              "persona_composite": 0.45,
               "philosophy_score": 0.4,
               "retriever_score": 0.05,
-              "router_score": 0.6,
-              "sovereign_score": 0.35,
+              "router_score": 0.55,
+              "sovereign_score": 0.3,
               "wrapper_score": 0.95
             },
             "weak_personas": [
@@ -12597,18 +12384,18 @@ window.AIOS_CONTROL_SNAPSHOT = {
               },
               {
                 "recommendation": "Keep founder/operator authority and override path explicit for vision or authority decisions.",
-                "score": 0.35,
+                "score": 0.3,
                 "score_key": "sovereign_score"
               }
             ],
             "window": 20
           },
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-06-05T02:02:56+09:00",
+          "snapshot_generated_at": "2026-06-05T04:42:22+09:00",
           "watched": {
-            "alerts": 1,
-            "contracts": 221,
-            "dispatches": 239,
+            "alerts": 0,
+            "contracts": 222,
+            "dispatches": 240,
             "reconciliations_applied": 5,
             "repos": 4
           }
@@ -12633,17 +12420,17 @@ window.AIOS_CONTROL_SNAPSHOT = {
             {
               "helper_id": "cap_helper_classify_vision_level",
               "status": "evolved",
-              "verified_good": 571
+              "verified_good": 575
             },
             {
               "helper_id": "cap_helper_consolidate",
               "status": "evolved",
-              "verified_good": 471
+              "verified_good": 475
             },
             {
               "helper_id": "cap_helper_operator_review",
               "status": "evolved",
-              "verified_good": 447
+              "verified_good": 451
             },
             {
               "helper_id": "cap_helper_classify_chat_intent",
@@ -12651,7 +12438,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "verified_good": 389
             }
           ],
-          "ran_at": "2026-06-05T02:03:02+09:00",
+          "ran_at": "2026-06-05T04:42:25+09:00",
           "schema": "aios.self_evolve.v1",
           "waiting": 0
         },
@@ -12665,7 +12452,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "verify",
         "parsed": {
           "method": "deterministic structural checks — not an LLM judging an LLM",
-          "ran_at": "2026-06-05T02:03:01+09:00",
+          "ran_at": "2026-06-05T04:42:24+09:00",
           "receipts": [],
           "schema": "aios.verify.v1",
           "verified_bad": 0,

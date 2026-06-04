@@ -6240,6 +6240,22 @@ For repo-local implementation details, also update that repo's own worklog.
 - status: closed for this slice; no automatic memory acceptance, secrets,
   `.env` content, raw exports, or provider auth logs were written.
 
+## 2026-06-05T04:43+09:00 — ASC-0224 MemoryOS provenance cleanup closed
+
+- contract: `ASC-0224`
+- dispatch: `asc-0224`
+- result: MemoryOS child watcher returned `passed`; result packet collected at
+  2026-06-05T04:39:59+09:00.
+- commits: MemoryOS `0b3e973` pushed to `origin/main`; MyWorld records the
+  submodule pointer and dispatch/watch baseline changes.
+- evidence: `allowed_existing_dirty` now includes a status/hash baseline so a
+  cleanup contract may consume its named pre-existing dirty input without
+  masking later same-file changes. Focused dispatch/watcher tests passed 46/46.
+- monitor: `python scripts/aios_monitor.py assess --json` reports health
+  `watch` and no `repo_dirty` findings after MemoryOS commit/push.
+- next: continue with advisory GenesisOS/persona-axis monitor items; do not
+  reopen ASC-0224 unless MemoryOS provenance verification regresses.
+
 ## 2026-05-20 13:42 UTC — claude@myworld — ASC-0214 dogfood-route stale-uncited surfacing
 
 - **reference_l3_full_routines_4of4.md** (0.2d stale) — ASC-0211 L3 Transcendence Engine 4 routines 모두 enacted (2026-05-20); 가장 sharp 한 출력 모음; ASC-0211 close 의 4/5 조건

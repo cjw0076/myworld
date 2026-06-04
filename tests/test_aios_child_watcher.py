@@ -455,6 +455,85 @@ class AiosChildWatcherTest(unittest.TestCase):
             self.assertTrue(data["pending_concurrent_work"])
             self.assertIn("pending_concurrent_work", data["stop_conditions_triggered"])
 
+    def test_allowed_existing_dirty_does_not_hold_cleanup_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            self.init_child_git(root)
+            worklog = root / "memoryOS" / "docs" / "AGENT_WORKLOG.md"
+            worklog.parent.mkdir(parents=True)
+            worklog.write_text("cleanup input\n", encoding="utf-8")
+            packet = json.loads(self.write_packet(root, "asc-0994").read_text(encoding="utf-8"))
+            packet["scope"]["allowed_existing_dirty"] = ["memoryOS/docs/AGENT_WORKLOG.md"]
+            packet["scope"]["allowed_existing_dirty_baseline"] = [
+                {
+                    "path": "memoryOS/docs/AGENT_WORKLOG.md",
+                    "repo_path": "docs/AGENT_WORKLOG.md",
+                    "status_code": "??",
+                    "sha256": "da773f7d127853f0ef6cf1352443bb26ea3ea3c7be94458e46e42a4f03a1aac0",
+                }
+            ]
+            (root / ".aios" / "inbox" / "memoryOS" / "asc-0994.memoryOS.json").write_text(
+                json.dumps(packet),
+                encoding="utf-8",
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            marker = root / "codex-called"
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                f"touch {marker.as_posix()}\n"
+                "exit 0\n",
+            )
+
+            result = self.run_watcher(root, bin_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            self.assertTrue(marker.exists())
+            result_path = root / ".aios" / "outbox" / "memoryOS" / "asc-0994.memoryOS.result.json"
+            data = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertNotIn("pending_concurrent_work", data["stop_conditions_triggered"])
+
+    def test_changed_allowed_existing_dirty_baseline_still_holds(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            self.init_child_git(root)
+            worklog = root / "memoryOS" / "docs" / "AGENT_WORKLOG.md"
+            worklog.parent.mkdir(parents=True)
+            worklog.write_text("changed after dispatch\n", encoding="utf-8")
+            packet = json.loads(self.write_packet(root, "asc-0995").read_text(encoding="utf-8"))
+            packet["scope"]["allowed_existing_dirty"] = ["memoryOS/docs/AGENT_WORKLOG.md"]
+            packet["scope"]["allowed_existing_dirty_baseline"] = [
+                {
+                    "path": "memoryOS/docs/AGENT_WORKLOG.md",
+                    "repo_path": "docs/AGENT_WORKLOG.md",
+                    "status_code": "??",
+                    "sha256": "da773f7d127853f0ef6cf1352443bb26ea3ea3c7be94458e46e42a4f03a1aac0",
+                }
+            ]
+            (root / ".aios" / "inbox" / "memoryOS" / "asc-0995.memoryOS.json").write_text(
+                json.dumps(packet),
+                encoding="utf-8",
+            )
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            marker = root / "codex-called"
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                f"touch {marker.as_posix()}\n"
+                "exit 0\n",
+            )
+
+            result = self.run_watcher(root, bin_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            self.assertFalse(marker.exists())
+            result_path = root / ".aios" / "outbox" / "memoryOS" / "asc-0995.memoryOS.result.json"
+            data = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(data["status"], "held")
+            self.assertIn("pending_concurrent_work", data["stop_conditions_triggered"])
+
     def test_memory_draft_review_request_writes_result_without_provider(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = self.make_root(tmp)
