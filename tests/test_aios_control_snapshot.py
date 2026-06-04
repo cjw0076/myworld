@@ -156,7 +156,28 @@ Build the loop.
                                     }
                                 ]
                             },
-                        }
+                        },
+                        {
+                            "code": "repo_dirty",
+                            "severity": "medium",
+                            "owner": "memoryOS",
+                            "action": "hold_for_repo_owner_triage",
+                            "reason": "A child repo has uncommitted changes that need owner review before new work is stacked on it.",
+                            "alert": {
+                                "repo": "memoryOS",
+                                "entries": ["?? .tmp_uri_cleanroom_seed.md"],
+                                "related_dispatches": [
+                                    {
+                                        "dispatch_id": "asc-0223",
+                                        "contract_id": "ASC-0223",
+                                        "current_contract_status": "closed",
+                                        "latest_status": "released",
+                                        "latest_reason": "closed_partial_with_followup",
+                                        "latest_timestamp": "2026-06-05T01:43:00+09:00",
+                                    }
+                                ],
+                            },
+                        },
                     ],
                     "next_actions": [{"action": "review_prompt_prison_escape_vectors", "owner": "GenesisOS", "severity": "info"}],
                 }
@@ -577,6 +598,8 @@ Build the loop.
             self.assertEqual(data["friction_radar"]["items"][0]["contracts"][0]["contract_id"], "ASC-0999")
             self.assertIn("restate as schema", data["friction_radar"]["items"][0]["contracts"][0]["escape_vectors"])
             self.assertEqual(data["friction_radar"]["items"][0]["contracts"][0]["signatures"][0]["signature"], "mono-language")
+            self.assertEqual(data["friction_radar"]["items"][1]["related_dispatches"][0]["dispatch_id"], "asc-0223")
+            self.assertEqual(data["friction_radar"]["items"][1]["related_dispatches"][0]["latest_status"], "released")
             self.assertEqual(data["os_observatory"]["memory"]["nodes"], 2)
             self.assertEqual(data["os_observatory"]["memory"]["edges"], 1)
             self.assertEqual(data["os_observatory"]["memory"]["accepted"], 1)

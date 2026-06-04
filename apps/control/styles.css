@@ -3636,13 +3636,15 @@ body {
 }
 
 .friction-contract-list,
+.friction-dispatch-list,
 .friction-persona-list,
 .friction-action-row {
   display: grid;
   gap: 7px;
 }
 
-.friction-contract-row {
+.friction-contract-row,
+.friction-dispatch-row {
   display: grid;
   gap: 5px;
   padding: 9px;
@@ -3651,7 +3653,8 @@ body {
   background: #f8fbff;
 }
 
-.friction-contract-row > strong {
+.friction-contract-row > strong,
+.friction-dispatch-row > strong {
   font-size: 13px;
 }
 

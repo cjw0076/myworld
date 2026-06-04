@@ -2829,6 +2829,20 @@
           });
           card.append(list);
         }
+        const relatedDispatches = (item.related_dispatches || []).slice(0, 3);
+        if (relatedDispatches.length) {
+          const dispatchList = el("div", "friction-dispatch-list");
+          relatedDispatches.forEach((dispatch) => {
+            const row = el("div", "friction-dispatch-row");
+            row.append(
+              el("strong", "", text(dispatch.dispatch_id, "dispatch")),
+              el("span", "", `${text(dispatch.contract_id, "no contract")} · ${text(dispatch.current_contract_status, "unknown")} · ${text(dispatch.latest_status, "unknown")}`),
+              el("small", "", text(dispatch.latest_reason || dispatch.latest_timestamp, "No dispatch reason"))
+            );
+            dispatchList.append(row);
+          });
+          card.append(dispatchList);
+        }
         const weakPersonas = (item.weak_personas || []).slice(0, 3);
         if (weakPersonas.length) {
           const personas = el("div", "friction-persona-list");

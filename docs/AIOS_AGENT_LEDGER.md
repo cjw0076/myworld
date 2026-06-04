@@ -5,6 +5,32 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 01:52 KST — codex@myworld — friction radar dispatch context
+
+- when: 2026-06-05 01:52 KST
+- repo: myworld
+- agent: codex@myworld
+- role: Control Center / monitor surface implementation
+- goal: make the new `repo_dirty.related_dispatches` monitor evidence visible
+  in the operator-facing Control Center instead of leaving it buried in raw
+  monitor JSON.
+- changed: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_control_snapshot.py`,
+  regenerated `apps/control/aios-control-snapshot.json`,
+  `apps/control/aios-control-data.js`, `docs/AGENT_WORKLOG.md`, and this
+  ledger.
+- decision: friction radar items now carry `related_dispatches`, and the UI
+  renders each linked dispatch with dispatch id, contract id, current contract
+  status, latest dispatch status, and reason/timestamp.
+- evidence: focused Control Center/local app tests passed 61/61; JS and Python
+  syntax checks passed; `git diff --check` passed. Live snapshot now reports
+  `memoryOS -> asc-0223 -> released` in `friction_radar.items`.
+- boundary: this does not hide or reconcile the MemoryOS dirty alert. It only
+  makes the existing MyWorld closeout evidence visible to operators.
+- next: MemoryOS owner can act on the visible provenance-cleanup prompt without
+  reading raw monitor JSON.
+- status: done
+
 ## 2026-06-05 01:46 KST — codex@myworld — monitor repo-dirty dispatch context
 
 - when: 2026-06-05 01:46 KST

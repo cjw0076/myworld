@@ -4,6 +4,25 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 01:52 KST — codex — friction radar dispatch context
+
+- status: done
+- scope: `scripts/aios_control_snapshot.py`, `apps/control/app.js`,
+  `apps/control/styles.css`, `tests/test_aios_control_snapshot.py`,
+  regenerated control snapshot data, `docs/AIOS_AGENT_LEDGER.md`, and this
+  worklog.
+- result: Control Center friction radar now exposes monitor
+  `related_dispatches` for repo dirty findings. The active MemoryOS dirty item
+  visibly links to `asc-0223`, showing `ASC-0223`, `closed`, `released`, and
+  the partial-close reason.
+- evidence: `python -m unittest tests.test_aios_control_snapshot
+  tests.test_aios_local_app -v` passed 61/61; `python -m py_compile
+  scripts/aios_control_snapshot.py`, `node --check apps/control/app.js`, and
+  `git diff --check` passed. Live generated snapshot contains
+  `('memoryOS', 'asc-0223')` in `friction_radar.items`.
+- boundary: did not modify MemoryOS state and did not suppress the dirty alert.
+  This is visibility only.
+
 ## 2026-06-05 01:46 KST — codex — monitor repo-dirty dispatch context
 
 - status: done

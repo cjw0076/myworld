@@ -1986,6 +1986,20 @@ def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str,
                                 "recommendation": weak.get("recommendation"),
                             }
                         )
+        related_dispatches = []
+        for dispatch in (alert.get("related_dispatches") or [])[:3]:
+            if not isinstance(dispatch, dict):
+                continue
+            related_dispatches.append(
+                {
+                    "dispatch_id": dispatch.get("dispatch_id"),
+                    "contract_id": dispatch.get("contract_id"),
+                    "current_contract_status": dispatch.get("current_contract_status"),
+                    "latest_status": dispatch.get("latest_status"),
+                    "latest_reason": dispatch.get("latest_reason"),
+                    "latest_timestamp": dispatch.get("latest_timestamp"),
+                }
+            )
         items.append(
             {
                 "source": "monitor",
@@ -1996,6 +2010,7 @@ def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str,
                 "reason": row.get("reason") or "",
                 "contracts": contracts,
                 "weak_personas": weak_personas,
+                "related_dispatches": related_dispatches,
             }
         )
     if not items:
@@ -2011,6 +2026,7 @@ def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str,
                     "reason": row.get("reason") or "",
                     "contracts": [],
                     "weak_personas": [],
+                    "related_dispatches": [],
                 }
             )
     if not items:
@@ -2023,6 +2039,7 @@ def load_friction_radar(root: Path, monitor: dict[str, Any] | None) -> dict[str,
                 "reason": "Ask AIOS for the next step, or turn the current conversation into governed work.",
                 "contracts": [],
                 "weak_personas": [],
+                "related_dispatches": [],
             }
         )
     return {"items": items}
