@@ -5466,3 +5466,27 @@ schema_version: aios.agent_worklog.v1
 - next: address the remaining `persona_axis_advisory` by improving role
   evidence or marking justified absences in active/open contracts.
 - status: done
+
+## 2026-06-05 05:00 KST — codex@myworld — Persona-axis justified absence handling
+
+- repo: myworld
+- role: implementation
+- goal: keep persona-axis advisory honest by distinguishing silent worker-mode
+  drift from explicit 5-persona role evidence or justified absence.
+- provider review: `codex exec --sandbox read-only` warned that "not required"
+  can become a scoring loophole unless waiver/evidence state is preserved
+  separately. `claude -p` timed out, `gemini -p` hit model capacity/backpressure,
+  and common local LLM launchers were not found.
+- changed: `scripts/aios_persona_audit.py`,
+  `tests/test_aios_persona_audit.py`, and regenerated Control Center snapshot
+  data.
+- result: persona audit now records `role_evidence`,
+  `justified_absences`, and strict `evidence_scores`. `scores` measure handled
+  role evidence; `evidence_scores` preserve the old strict heuristic signal so
+  documented waivers do not erase the evidence gap.
+- evidence: focused persona audit tests pass 5/5; related monitor/control
+  snapshot tests pass 37/37. Current monitor health remains `watch`, with
+  `persona_composite=0.58` and only `retriever_score` under 0.5.
+- next: future contracts should cite actual `rtrace_...` and positive
+  `signal_coverage` where MemoryOS retrieval is truly required, instead of
+  relying on justified absence.

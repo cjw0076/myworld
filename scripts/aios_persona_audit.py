@@ -28,6 +28,22 @@ PERSONA_RECOMMENDATIONS = {
     "philosophy_score": "Cite GenesisOS critic output, alternatives, branches, or escape vectors before convergence.",
     "sovereign_score": "Keep founder/operator authority and override path explicit for vision or authority decisions.",
 }
+PERSONA_ROLE_LABELS = {
+    "wrapper_score": ("hive / wrapper", "hive/wrapper", "hive mind / wrapper", "hivemind / wrapper"),
+    "retriever_score": ("memoryos / retriever", "memoryos/retriever"),
+    "router_score": ("capabilityos / router", "capabilityos/router"),
+    "philosophy_score": ("genesisos / philosophy", "genesisos/philosophy", "genesis / philosophy"),
+    "sovereign_score": ("myworld / sovereign", "myworld/sovereign"),
+}
+JUSTIFIED_ABSENCE_PATTERNS = (
+    re.compile(r"\bnot[_ -]required\b"),
+    re.compile(r"\bno\b.{0,80}\brequired\b"),
+    re.compile(r"\bnot applicable\b"),
+    re.compile(r"\bskipped because\b"),
+    re.compile(r"\bnot needed\b"),
+    re.compile(r"\bunneeded\b"),
+)
+PENDING_PLACEHOLDERS = ("pending_or_not_required", "pending_after_acceptance")
 
 
 def now_iso() -> str:
@@ -74,10 +90,48 @@ def provider_mentions(text: str) -> set[str]:
     return {provider for provider in providers if provider in lower}
 
 
+def bullet_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    current = ""
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("- ", "* ")):
+            if current:
+                blocks.append(current)
+            current = stripped
+            continue
+        if current and stripped and not stripped.startswith("#"):
+            current = f"{current} {stripped}"
+            continue
+        if current:
+            blocks.append(current)
+            current = ""
+    if current:
+        blocks.append(current)
+    return blocks
+
+
+def role_evidence_lines(text: str) -> tuple[dict[str, str], dict[str, str]]:
+    role_evidence: dict[str, str] = {}
+    justified_absences: dict[str, str] = {}
+    for stripped in bullet_blocks(text):
+        lower = stripped.lower()
+        if any(placeholder in lower for placeholder in PENDING_PLACEHOLDERS):
+            continue
+        for key, labels in PERSONA_ROLE_LABELS.items():
+            if not any(label in lower for label in labels):
+                continue
+            role_evidence.setdefault(key, stripped)
+            if any(pattern.search(lower) for pattern in JUSTIFIED_ABSENCE_PATTERNS):
+                justified_absences.setdefault(key, stripped)
+    return role_evidence, justified_absences
+
+
 def score_contract(path: Path, frontmatter: dict[str, str], body: str, root: Path) -> dict[str, Any]:
     text = f"{frontmatter}\n{body}"
     lower = text.lower()
     providers = provider_mentions(text)
+    role_evidence, justified_absences = role_evidence_lines(text)
     wrapper = len(providers) >= 2 or mentions(lower, "single-provider", "single provider justified")
     retriever = bool(re.search(r"rtrace_[a-z0-9]+", text)) and bool(
         re.search(r"signal_coverage\s*(=|>|:)\s*`?(0\.[1-9]|1\.0|1|positive)`?", lower)
@@ -91,18 +145,24 @@ def score_contract(path: Path, frontmatter: dict[str, str], body: str, root: Pat
     vision_keywords = mentions(lower, "sovereign", "founder", "dna", "living organism", "government", "cognitive architecture")
     founder_gate = mentions(lower, "founder", "human_approved: true", "human approved", "operator override")
     sovereign = operator_pair and (not vision_keywords or founder_gate)
-    scores = {
+    evidence_scores = {
         "wrapper_score": 1.0 if wrapper else 0.0,
         "retriever_score": 1.0 if retriever else 0.0,
         "router_score": 1.0 if router else 0.0,
         "philosophy_score": 1.0 if philosophy else 0.0,
         "sovereign_score": 1.0 if sovereign else 0.0,
     }
+    scores = {
+        key: 1.0 if evidence_scores[key] == 1.0 or key in role_evidence else 0.0
+        for key in PERSONA_KEYS
+    }
     return {
         "contract_id": frontmatter.get("contract_id") or path.stem.split("-", 1)[0],
         "path": path.relative_to(root).as_posix(),
         "signals": {
             "providers": sorted(providers),
+            "role_evidence": role_evidence,
+            "justified_absences": justified_absences,
             "rtrace": bool(re.search(r"rtrace_[a-z0-9]+", text)),
             "capability_route": router,
             "genesis_philosophy": philosophy,
@@ -110,6 +170,7 @@ def score_contract(path: Path, frontmatter: dict[str, str], body: str, root: Pat
             "vision_keywords": vision_keywords,
             "founder_gate": founder_gate,
         },
+        "evidence_scores": evidence_scores,
         "scores": scores,
     }
 
@@ -127,7 +188,12 @@ def build_report(root: Path, *, window: int = 20) -> dict[str, Any]:
         key: mean([float(row["scores"][key]) for row in rows])
         for key in PERSONA_KEYS
     }
+    evidence_scores = {
+        key: mean([float(row["evidence_scores"][key]) for row in rows])
+        for key in PERSONA_KEYS
+    }
     scores["persona_composite"] = mean([scores[key] for key in PERSONA_KEYS])
+    evidence_scores["persona_composite"] = mean([evidence_scores[key] for key in PERSONA_KEYS])
     weak_personas = [
         {
             "score_key": key,
@@ -157,10 +223,12 @@ def build_report(root: Path, *, window: int = 20) -> dict[str, Any]:
         "window": window,
         "contracts_scored": len(rows),
         "scores": scores,
+        "evidence_scores": evidence_scores,
         "weak_personas": weak_personas,
         "contract_gaps": contract_gaps[:10],
         "per_contract": rows,
         "relationship_to_governance_axis": "orthogonal_advisory_axis",
+        "score_semantics": "scores measure handled role evidence; evidence_scores preserve strict heuristic evidence only.",
     }
 
 

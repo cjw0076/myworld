@@ -92,6 +92,45 @@ class PersonaAuditTest(unittest.TestCase):
         self.assertIn("retriever_score", report["contract_gaps"][0]["missing_personas"])
         self.assertTrue(report["contract_gaps"][0]["recommendations"])
 
+    def test_explicit_role_evidence_and_justified_absence_count_as_handled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_contract(
+                root,
+                "ASC-0004-role-evidence.md",
+                "\n".join(
+                    [
+                        "## AIOS Role Evidence",
+                        "",
+                        "### 5-Persona Use",
+                        "",
+                        "- Hive / Wrapper: codex@myworld single-provider justified.",
+                        "- MemoryOS / Retriever: no retrieval trace required;",
+                        "  repo-local fixture.",
+                        "- CapabilityOS / Router: no new tool route required; local pytest only.",
+                        "- GenesisOS / Philosophy: discomfort identified before closure.",
+                        "- MyWorld / Sovereign: operator retains override for cognitive architecture.",
+                    ]
+                ),
+            )
+
+            report = build_report(root, window=20)
+
+        self.assertEqual(1.0, report["scores"]["wrapper_score"])
+        self.assertEqual(1.0, report["scores"]["retriever_score"])
+        self.assertEqual(1.0, report["scores"]["router_score"])
+        self.assertEqual(1.0, report["scores"]["philosophy_score"])
+        self.assertEqual(1.0, report["scores"]["sovereign_score"])
+        self.assertEqual(0.0, report["evidence_scores"]["retriever_score"])
+        self.assertEqual(0.0, report["evidence_scores"]["router_score"])
+        self.assertEqual([], report["contract_gaps"])
+        signals = report["per_contract"][0]["signals"]
+        self.assertIn("retriever_score", signals["justified_absences"])
+        self.assertIn("router_score", signals["justified_absences"])
+        self.assertIn("repo-local fixture", signals["justified_absences"]["retriever_score"])
+        self.assertIn("philosophy_score", signals["role_evidence"])
+        self.assertIn("sovereign_score", signals["role_evidence"])
+
     def test_cli_assert_keys(self) -> None:
         result = subprocess.run(
             [

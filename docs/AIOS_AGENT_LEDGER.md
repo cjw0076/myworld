@@ -6272,6 +6272,26 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: continue with persona-axis advisory; do not remove reviewed Genesis
   signatures from report metadata.
 
+## 2026-06-05T05:00+09:00 — Persona-axis justified absence handling
+
+- goal: distinguish explicit 5-persona role evidence and justified absence
+  from silent persona-axis drift.
+- result: persona audit now reports `role_evidence`, `justified_absences`, and
+  strict `evidence_scores`; monitor composite improved to 0.58 while preserving
+  the strict evidence composite at 0.45.
+- evidence: `python -m unittest tests.test_aios_persona_audit
+  tests.test_aios_monitor tests.test_aios_control_snapshot -v` passed 37/37;
+  `python scripts/aios_persona_audit.py --window 20 --json --assert-keys
+  weak_personas,contract_gaps,persona_composite,evidence_scores,justified_absences,role_evidence`
+  passed; `python scripts/aios_monitor.py assess --json` reports health
+  `watch`.
+- provider review: Codex warned to preserve waiver state separately from strict
+  proof; Claude timed out, Gemini hit capacity/backpressure, and local LLM
+  launchers were unavailable.
+- next: close the remaining retriever weakness by adding real MemoryOS
+  retrieval traces for contracts where retrieval is required, not by broadening
+  waiver phrases.
+
 ## 2026-05-20 13:42 UTC — claude@myworld — ASC-0214 dogfood-route stale-uncited surfacing
 
 - **reference_l3_full_routines_4of4.md** (0.2d stale) — ASC-0211 L3 Transcendence Engine 4 routines 모두 enacted (2026-05-20); 가장 sharp 한 출력 모음; ASC-0211 close 의 4/5 조건
