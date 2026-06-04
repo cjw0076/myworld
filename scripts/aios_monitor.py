@@ -211,6 +211,19 @@ def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, A
         if not dispatch_id:
             continue
         row = rows.setdefault(str(dispatch_id), {"dispatch_id": dispatch_id, "sent": [], "collected": []})
+        row["latest_event"] = event.get("event")
+        has_status = event.get("status") is not None
+        if has_status:
+            row["latest_status"] = event.get("status")
+        elif "latest_status" not in row:
+            row["latest_status"] = None
+        if has_status and event.get("reason") is not None:
+            row["latest_reason"] = event.get("reason")
+        elif "latest_reason" not in row:
+            row["latest_reason"] = None
+        row["latest_timestamp"] = event.get("timestamp")
+        if event.get("contract_id") and not row.get("contract_id"):
+            row["contract_id"] = event.get("contract_id")
         if event.get("event") == "created":
             row.update(
                 {
@@ -265,6 +278,30 @@ def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, A
         if missing:
             alerts.append({"code": "dispatch_results_pending", "dispatch_id": row["dispatch_id"], "repos": missing})
     return list(rows.values()), alerts
+
+
+def related_repo_dispatches(dispatches: list[dict[str, Any]], repo: str, limit: int = 5) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in dispatches:
+        sent = {str(item) for item in row.get("sent") or []}
+        collected = {str(item) for item in row.get("collected") or []}
+        if repo not in sent and repo not in collected:
+            continue
+        rows.append(
+            {
+                "dispatch_id": row.get("dispatch_id"),
+                "contract_id": row.get("contract_id"),
+                "current_contract_status": row.get("current_contract_status"),
+                "latest_event": row.get("latest_event"),
+                "latest_status": row.get("latest_status"),
+                "latest_reason": row.get("latest_reason"),
+                "latest_timestamp": row.get("latest_timestamp"),
+                "sent": sorted(sent),
+                "collected": sorted(collected),
+            }
+        )
+    rows.sort(key=lambda item: str(item.get("latest_timestamp") or ""), reverse=True)
+    return rows[:limit]
 
 
 def git_status(root: Path, repo: str) -> dict[str, Any]:
@@ -337,7 +374,14 @@ def snapshot(root: Path) -> dict[str, Any]:
     repo_by_name = {repo["repo"]: repo for repo in repos}
     for repo in repos:
         if repo["dirty"]:
-            alerts.append({"code": "repo_dirty", "repo": repo["repo"], "entries": repo["entries"]})
+            alerts.append(
+                {
+                    "code": "repo_dirty",
+                    "repo": repo["repo"],
+                    "entries": repo["entries"],
+                    "related_dispatches": related_repo_dispatches(dispatches, str(repo["repo"])),
+                }
+            )
         if repo.get("generated_cache_entries"):
             alerts.append(
                 {

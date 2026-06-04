@@ -4,6 +4,23 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 01:46 KST — codex — monitor repo-dirty dispatch context
+
+- status: done
+- scope: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: `repo_dirty` alerts now carry `related_dispatches` for the dirty
+  child repo, including dispatch id, contract id, current contract status,
+  latest status, latest reason, timestamp, sent repos, and collected repos.
+  Status-less helper events no longer erase the last meaningful dispatch
+  status/reason.
+- evidence: `python -m unittest tests.test_aios_monitor -v` passed 14/14.
+  Live snapshot shows the `memoryOS` dirty alert linked to `asc-0223` with
+  `current_contract_status=closed` and `latest_status=released`.
+- boundary: did not suppress the dirty alert and did not edit MemoryOS state.
+  The remaining owner task is still MemoryOS provenance cleanup for
+  `.tmp_uri_cleanroom_seed.md`.
+
 ## 2026-06-05 01:43 KST — codex — ASC-0223 concurrent MemoryOS evidence recorded
 
 - status: closed_partial_with_followup

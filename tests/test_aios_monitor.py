@@ -415,6 +415,78 @@ class AiosMonitorTest(unittest.TestCase):
             self.assertIn("orphan_dirty_post_failure", alerts)
             self.assertEqual("memoryOS", alerts["orphan_dirty_post_failure"]["repo"])
 
+    def test_repo_dirty_alert_includes_related_dispatch_context(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = root / "memoryOS"
+            repo.mkdir()
+            subprocess.run(["git", "init"], cwd=repo, text=True, capture_output=True, check=True)
+            (repo / ".tmp_uri_cleanroom_seed.md").write_text("seed\n", encoding="utf-8")
+            contract_dir = root / "docs" / "contracts"
+            contract_dir.mkdir(parents=True)
+            contract = contract_dir / "ASC-0223-test.md"
+            contract.write_text(
+                "---\ncontract_id: ASC-0223\nstatus: closed\naccepted: now\nclosed: now\n---\n",
+                encoding="utf-8",
+            )
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            events = [
+                {
+                    "event": "created",
+                    "dispatch_id": "asc-0223",
+                    "contract_id": "ASC-0223",
+                    "contract_path": "docs/contracts/ASC-0223-test.md",
+                    "contract_status": "accepted",
+                    "status": "created",
+                    "timestamp": "2026-06-05T01:34:00+09:00",
+                },
+                {
+                    "event": "sent",
+                    "dispatch_id": "asc-0223",
+                    "repo": "memoryOS",
+                    "status": "sent",
+                    "timestamp": "2026-06-05T01:35:00+09:00",
+                },
+                {
+                    "event": "collected",
+                    "dispatch_id": "asc-0223.memoryOS",
+                    "repo": "memoryOS",
+                    "status": "collected",
+                    "timestamp": "2026-06-05T01:36:00+09:00",
+                },
+                {
+                    "event": "released",
+                    "dispatch_id": "asc-0223",
+                    "status": "released",
+                    "reason": "closed_partial_with_followup",
+                    "timestamp": "2026-06-05T01:43:00+09:00",
+                },
+                {
+                    "event": "memory_writeback",
+                    "dispatch_id": "asc-0223",
+                    "ok": True,
+                    "reason": "disabled_by_flag",
+                    "skipped": True,
+                    "timestamp": "2026-06-05T01:43:01+09:00",
+                },
+            ]
+            (state / "dispatches.jsonl").write_text(
+                "\n".join(json.dumps(event) for event in events) + "\n",
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            alerts = {alert["code"]: alert for alert in payload["alerts"]}
+            dirty = alerts["repo_dirty"]
+            self.assertEqual("memoryOS", dirty["repo"])
+            self.assertEqual("asc-0223", dirty["related_dispatches"][0]["dispatch_id"])
+            self.assertEqual("ASC-0223", dirty["related_dispatches"][0]["contract_id"])
+            self.assertEqual("closed", dirty["related_dispatches"][0]["current_contract_status"])
+            self.assertEqual("released", dirty["related_dispatches"][0]["latest_status"])
+            self.assertEqual("closed_partial_with_followup", dirty["related_dispatches"][0]["latest_reason"])
+
     def test_status_reports_latest_snapshot(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 01:46 KST — codex@myworld — monitor repo-dirty dispatch context
+
+- when: 2026-06-05 01:46 KST
+- repo: myworld
+- agent: codex@myworld
+- role: monitor implementation / delegated operator
+- goal: make repeated child-repo dirty alerts actionable without hiding them or
+  mutating child repo work.
+- changed: `scripts/aios_monitor.py`, `tests/test_aios_monitor.py`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- decision: `repo_dirty` alerts now include recent `related_dispatches` for
+  the dirty repo. Dispatch rows preserve latest status/reason from status
+  events so status-less helper events such as `memory_writeback` do not erase a
+  prior `released` close reason.
+- evidence: focused monitor tests passed 14/14. Live snapshot for `memoryOS`
+  dirty state now links the alert to `asc-0223` / `ASC-0223` with
+  `current_contract_status=closed`, `latest_status=released`, and the
+  partial-close reason.
+- boundary: the alert is not reconciled or suppressed. `memoryOS` remains
+  dirty/ahead and owner-owned; MyWorld only improves observability.
+- next: MemoryOS owner can use the attached dispatch context to decide whether
+  `.tmp_uri_cleanroom_seed.md` remains the source artifact or migrates to a
+  checked-in provenance artifact.
+- status: done
+
 ## 2026-06-05 01:43 KST — codex@myworld — ASC-0223 concurrent MemoryOS evidence
 
 - when: 2026-06-05 01:43 KST
