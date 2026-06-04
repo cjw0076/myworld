@@ -9,6 +9,8 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 | **`/aios-decide`** | before any non-trivial decision (contract, pivot, dispatch) | the 4-OS query getting silently skipped ("이번도 skip — 반복 gap") |
 | **`/aios-memory-propose`** | a durable fact worth remembering (recall returned null) | raw `.memlang` → 0 blocks; silent/bulk auto-accept (DNA inv. 2) |
 | **`/absorption-probe`** | "does this OS/organ actually help?" | claiming AIOS helps without measuring; faith over evidence |
+| **`/local-llm-agent`** | offload gen/bulk/private work to a local model | ignoring the dual-5090 box; reinstalling already-present ollama |
+| **`/multi-substrate-review`** | review own work / consequential decision | solving from one frozen model; acting on unverified substrate output |
 
 ## Standing checks (run, don't trust prose)
 
