@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -235,12 +236,77 @@ def accepted_domain_coverage(memoryos_dir: Path, memory_root: Path) -> dict[str,
     }
 
 
+# Provenance ref-integrity (gemini review #5): flag accepted memory whose
+# DURABLE evidence file is gone. Ephemeral run artifacts (.runs/.agent/.aios/…)
+# are transient by design — checking them would be pure noise, so they're skipped.
+_EPHEMERAL = (".runs", ".agent", ".aios", ".local", "node_modules", "__pycache__", ".git/")
+_REF_ID = re.compile(r"^(src_|node_|mem_|rtrace|run_)")
+
+
+def durable_ref_path(ref: str) -> str | None:
+    """Cleaned durable file path to existence-check, or None to skip (ids, urls,
+    ephemeral run artifacts, non-paths). Strips #L.. / ;meta / :line suffixes."""
+    if "://" in ref or _REF_ID.match(ref) or "/" not in ref:
+        return None
+    path = re.split(r"[#;]", ref, maxsplit=1)[0]
+    path = re.sub(r":\d+(-\d+)?$", "", path).strip()
+    if not path or any(seg in path for seg in _EPHEMERAL):
+        return None
+    return path
+
+
+def ref_exists(path: str, roots: list[Path]) -> bool:
+    if path.startswith("/"):
+        return Path(path).exists()
+    return any((root / path).exists() for root in roots)
+
+
+def accepted_provenance_integrity(memoryos_dir: Path, memory_root: Path) -> dict[str, Any]:
+    command = [
+        sys.executable, "-m", "memoryos.cli", "--root", memory_root.as_posix(),
+        "drafts", "list", "--status", "accepted", "--json",
+    ]
+    result = subprocess.run(command, cwd=memoryos_dir, text=True, capture_output=True, check=False)
+    if result.returncode != 0:
+        return {"status": "error", "stderr": result.stderr.strip()[:1000]}
+    try:
+        objects = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        return {"status": "error", "stderr": str(exc)}
+    # Refs are root-ambiguous (e.g. bare `docs/HANDOFF.json` may live in a child
+    # repo). Resolve against ROOT, its parent, and each sibling git repo so we
+    # only flag evidence that exists nowhere reachable — not mere root ambiguity.
+    roots = [ROOT, ROOT.parent]
+    try:
+        roots += [p for p in ROOT.iterdir() if p.is_dir() and (p / ".git").exists()]
+    except OSError:
+        pass
+    checked = 0
+    dangling: list[dict[str, str]] = []
+    for obj in objects:
+        for ref in obj.get("raw_refs") or []:
+            path = durable_ref_path(str(ref))
+            if path is None:
+                continue
+            checked += 1
+            if not ref_exists(path, roots):
+                dangling.append({"id": obj.get("id", "?"), "ref": path})
+    return {
+        "status": "ok",
+        "durable_refs_checked": checked,
+        "dangling_count": len(dangling),
+        "dangling": dangling[:20],
+        "ok": not dangling,
+    }
+
+
 def run_audit(memoryos_dir: Path, memory_root: Path, cases: tuple[RetrievalCase, ...]) -> dict[str, Any]:
     rows = [run_context_case(memoryos_dir, memory_root, case) for case in cases]
     hits = sum(1 for row in rows if row.get("hit"))
     total = len(rows)
     rate = hits / total if total else 0.0
     coverage = accepted_domain_coverage(memoryos_dir, memory_root)
+    provenance = accepted_provenance_integrity(memoryos_dir, memory_root)
     return {
         "schema_version": SCHEMA_VERSION,
         "memoryos_dir": memoryos_dir.as_posix(),
@@ -251,6 +317,7 @@ def run_audit(memoryos_dir: Path, memory_root: Path, cases: tuple[RetrievalCase,
         "retrieval_rate": round(rate, 4),
         "passed": rate >= 0.5,
         "domain_coverage": coverage,
+        "provenance_integrity": provenance,
         "cases": rows,
     }
 
@@ -285,6 +352,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"  domain_coverage product={cov['product']}/{cov['total_accepted']} "
                 f"({cov['product_coverage']}) internal={cov['internal']} "
                 f"inward_growth_alarm={str(cov['inward_growth_alarm']).lower()}"
+            )
+        prov = result.get("provenance_integrity") or {}
+        if prov.get("status") == "ok":
+            print(
+                f"  provenance_integrity dangling={prov['dangling_count']}/"
+                f"{prov['durable_refs_checked']} durable refs"
             )
         for row in result["cases"]:
             print(

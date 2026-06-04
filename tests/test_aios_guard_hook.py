@@ -84,6 +84,17 @@ class GuardHookSafetyTests(unittest.TestCase):
             "",
         )
 
+    def test_allows_bash_mention_with_unrelated_redirect(self) -> None:
+        # Regression: a command that mentions a contract path but whose redirect
+        # targets something else (2>/dev/null) must NOT be gated (the original
+        # WRITE_VERB heuristic false-blocked these).
+        self.assertEqual(
+            run_hook(
+                {"tool_name": "Bash", "tool_input": {"command": "grep foo docs/contracts/ASC-1-x.md 2>/dev/null"}}
+            ),
+            "",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

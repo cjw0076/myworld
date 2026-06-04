@@ -139,6 +139,32 @@ class AiosMemoryRetrievalAuditTests(unittest.TestCase):
             self.assertAlmostEqual(cov["product_coverage"], 1 / cov["total_accepted"], places=3)
             self.assertIn("URI", cov["by_project"])
 
+    def test_durable_ref_path(self) -> None:
+        sys.path.insert(0, (ROOT / "scripts").as_posix())
+        import aios_memory_retrieval_audit as audit
+
+        # skipped: urls, ids, ephemeral run artifacts, non-paths
+        self.assertIsNone(audit.durable_ref_path("aios://memory-draft/123"))
+        self.assertIsNone(audit.durable_ref_path("src_f007c0049be329e5"))
+        self.assertIsNone(audit.durable_ref_path("mem_517caac18c12b2b0"))
+        self.assertIsNone(audit.durable_ref_path(".runs/run_x/final_report.md"))
+        self.assertIsNone(audit.durable_ref_path(".agent/pingpong/logs/claude.log"))
+        self.assertIsNone(audit.durable_ref_path("README"))  # no slash
+        # durable: suffixes stripped
+        self.assertEqual(
+            audit.durable_ref_path("myworld/memoryOS/docs/TODO.md#L1-L9;signals=a,b"),
+            "myworld/memoryOS/docs/TODO.md",
+        )
+        self.assertEqual(audit.durable_ref_path("docs/contracts/ASC-TEST.md:12"), "docs/contracts/ASC-TEST.md")
+        self.assertEqual(audit.durable_ref_path("uri/src/lib/festival-data.ts"), "uri/src/lib/festival-data.ts")
+
+    def test_ref_exists(self) -> None:
+        sys.path.insert(0, (ROOT / "scripts").as_posix())
+        import aios_memory_retrieval_audit as audit
+
+        self.assertTrue(audit.ref_exists("scripts/aios_commit_guard.py", [ROOT]))
+        self.assertFalse(audit.ref_exists("docs/THIS_DOES_NOT_EXIST_zzz.md", [ROOT]))
+
     def test_audit_explains_task_filtered_miss(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             memory_root = Path(tmp) / "memory-root"

@@ -49,12 +49,23 @@ PreToolUse hook (matcher `Bash|Write`) that BLOCKS:
 It FAILS OPEN on any internal error (a hook bug never freezes work). Edits to
 existing contracts (status flips) are not gated — only `Write` creation is.
 
-Open:
+Done (codex review, 2026-06-05): raw-diff parser handles rename/copy + full
+status token; `.gitmodules` quote-stripping (was a false-block bug); contract
+gate also covers Bash shell-writes. Done (memory audit): `provenance_integrity`
+check flags accepted memory whose DURABLE evidence file is gone (ephemeral run
+artifacts skipped; resolves against ROOT + parent + sibling repos).
 
-- **commit_guard parsing:** `git diff --raw` regex is non-standard → consider
-  `git status --porcelain=v2`. Also no binary/large-blob accidental-commit check.
-- **memory audit:** no dangling-provenance check (memory whose source file was
-  moved/deleted) — add a ref-integrity validator.
+**Hook-authoring hazards (learned the hard way, 2026-06-05 — a live hook blocked
+the session twice):**
+- Hook `command` MUST use an absolute path (`$CLAUDE_PROJECT_DIR/...`) and end
+  with `|| true` — a relative path breaks when the shell cwd drifts, and a
+  launch failure (exit≠0) BLOCKS the tool (the script's internal fail-open does
+  not help if the script never launches).
+- Keep deny heuristics TIGHT. A broad `>` match false-blocked any command that
+  merely mentioned a contract path while using `2>/dev/null`. Match the write
+  TARGET, not any write char.
+
+Open: no binary/large-blob accidental-commit check in commit_guard.
 
 ## Growing this harness
 

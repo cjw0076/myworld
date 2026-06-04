@@ -25,12 +25,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PY = sys.executable
-# non-anchored so it matches a contract path inside a shell command too; the
-# trailing guard avoids over-matching ASC-1.md.bak etc.
+# Write-tool target path (trailing guard avoids ASC-1.md.bak etc.).
 CONTRACT_PATH = re.compile(r"docs/contracts/ASC-[^/\s]*\.md(?![\w.])")
-# shell write indicators — used to gate contract creation done via Bash, not just
-# the Write tool (else `echo x > docs/contracts/ASC-9.md` bypasses the ritual).
-WRITE_VERB = re.compile(r">>?|\btee\b|\bcp\b|\bmv\b|\bdd\b|sed\s+-i|\binstall\b")
+# Bash contract CREATION: a redirect/tee whose target IS a contract path. Must be
+# tight — matching any `>` in a command that merely mentions a contract path
+# false-blocks innocuous commands (e.g. `... 2>/dev/null`). Only `> <contract>` /
+# `>> <contract>` / `tee <contract>` count.
+BASH_CONTRACT_WRITE = re.compile(r"(?:>>?|\btee\b)\s+\S*docs/contracts/ASC-[^/\s]*\.md")
 
 
 def deny(reason: str) -> None:
@@ -84,7 +85,7 @@ def main() -> int:
     creating_contract = (
         tool == "Write" and bool(CONTRACT_PATH.search(ti.get("file_path") or ""))
     ) or (
-        tool == "Bash" and bool(CONTRACT_PATH.search(cmd)) and bool(WRITE_VERB.search(cmd))
+        tool == "Bash" and bool(BASH_CONTRACT_WRITE.search(cmd))
     )
     if creating_contract:
         try:
