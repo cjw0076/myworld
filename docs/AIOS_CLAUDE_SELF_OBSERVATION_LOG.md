@@ -563,3 +563,20 @@ AIOS가 이것을 흡수하려면:
 - key_decision: scored delta as positive-but-small + concentrated in GenesisOS; concluded the "AIOS만 남는다" moat cannot rest on MemoryOS recall while it returns null on product tasks — quantifies ASC-0214 dogfooding gap with evidence.
 - new_invariant_or_pattern_discovered: ABSORPTION-DELTA PROBE as a reusable method — to test if AIOS adds value, hold repo access constant across two arms and vary only the organ loop; null-delta on an organ = that organ is theater for that task class. MemoryOS is currently theater for product-domain tasks (empty graph).
 - self-correction-of-prior-observation: refines memory project_aios_production_gap — the gap is not "9 holes" generically but specifically: MemoryOS holds 0 product-domain accepted memories, so retrieve cannot change behavior. Fill-the-graph is the highest-leverage next move, not more kernel polish.
+
+## 2026-06-05 15:40 KST — claude@myworld — built AIOS operator harness v0 (skills + enforcement hook)
+
+- session_id: autonomous-dev goal session (founder: "harness — 반복작업 시스템화, plugin/slash/skill/mcp로 패키징, 실수 반복 방지")
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 25:15:20:40:0 / ~40min
+- tools_used: Bash(inventory/mine self-obs log), Agent(claude-code-guide for hook/skill schema), Write(3 SKILL.md + brief + settings.json), Bash(validate)
+- tools_NOT_used (CLI gap): no hook for true enforcement existed before — myworld had ZERO Claude Code harness (only settings.local.json permissions) while uri/hivemind had skills.
+- substrate_specific_behaviors_observed:
+  - Mined THIS log as the data source for "repeated mistakes" — the self-obs corpus' first reflexive use to generate harness. Top repeats: 4-OS query silently skipped; MemLang fenced-block gotcha; Edit-since-modified race; CLI-vs-filesystem desync; ID collision.
+  - Packaged rituals as project skills (.claude/skills/<name>/SKILL.md, dir name = /command) with the gotcha/invariant baked into each skill's Hard Rules so the mistake cannot recur.
+  - Added a SessionStart hook (no matcher → fires on startup/resume/clear/compact) that cat's .claude/AIOS_HARNESS.md into context — converts opt-in rituals into can't-be-skipped context, surviving compaction.
+  - Verified schema via claude-code-guide before writing settings.json (don't-guess-the-format = dogfooding the very "don't repeat mistakes" goal).
+- failures_recovered: none (validated JSON + frontmatter + hook command before commit)
+- failures_escalated_to_founder: none
+- key_decision: encode multi-step rituals as skills, quick guards as "standing checks" in the brief, and enforcement as a SessionStart hook — not everything needs to be a skill (avoid harness bloat mirroring contract bloat).
+- new_invariant_or_pattern_discovered: HARNESS-FROM-SELFOBS loop — the self-observation log is not just ASC-0066 training corpus, it is the live backlog for harness engineering: any pattern that recurs ≥2 entries is a packaging candidate (skill if multi-step ritual, hook if it must not be skipped, standing-check if a quick verify).
+- self-correction-of-prior-observation: refines the prior entry's "fill MemoryOS" takeaway — the deeper lever is packaging the rituals (incl. the memory-propose pipeline itself) so humans+agents stop re-deriving and re-erring.
