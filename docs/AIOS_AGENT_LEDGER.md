@@ -5,6 +5,29 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 01:43 KST — codex@myworld — ASC-0223 concurrent MemoryOS evidence
+
+- when: 2026-06-05 01:43 KST
+- repo: myworld
+- agent: codex@myworld
+- contract: `docs/contracts/ASC-0223-memoryos-product-domain-seed-review.md`
+- decision: close `ASC-0223` as partial-with-followup. The dispatched watcher
+  result stayed `held` because of concurrent MemoryOS local work, but MemoryOS
+  search independently proves the same URI seed is already review-accepted as
+  `mem_0c66b6db9ac73100`.
+- evidence: `python -m memoryos.cli --root . search "URI clean-room sourcing
+  rule" --json` returned `mem_0c66b6db9ac73100` with `project=URI`,
+  `base_status=draft`, `effective_status=accepted`, `reviewer=claude@myworld`,
+  and pointer refs only. `drafts list --status all --project URI --json`
+  returned the same object and `latest_review.action=approve`.
+- boundary: MyWorld did not delete, rewrite, commit, or push MemoryOS local
+  work. `memoryOS` remains `ahead 11` with
+  `?? .tmp_uri_cleanroom_seed.md`; provenance cleanup belongs to MemoryOS.
+- next: route a MemoryOS-local cleanup/retrieval-regression slice only after
+  the owner resolves whether the temp seed should remain as source artifact or
+  be migrated.
+- status: closed_partial_with_followup
+
 ## 2026-06-05 01:34 KST — codex@myworld — ASC-0223 MemoryOS product-domain seed review
 
 - when: 2026-06-05 01:34 KST

@@ -1,10 +1,10 @@
 ---
 contract_id: ASC-0223
 slug: memoryos-product-domain-seed-review
-status: accepted
+status: closed
 created: 2026-06-05T01:34:00+09:00
 accepted: 2026-06-05T01:34:00+09:00
-closed:
+closed: 2026-06-05T01:43:00+09:00
 accepted_by: codex_delegated_operator
 human_approved: true
 goal: Turn the observed URI product-domain MemoryOS gap into a draft-first review task, using the existing clean-room sourcing seed without accepting memory or erasing local evidence.
@@ -190,3 +190,32 @@ python scripts/aios_monitor.py assess --json
 - current exit:
   `held` because MemoryOS already has concurrent local work around the exact
   seed file. No MemoryOS seed was deleted, accepted, or rewritten by MyWorld.
+
+## Concurrent MemoryOS Evidence
+
+After the watcher returned `held`, MyWorld verified that the same URI seed had
+already moved through a MemoryOS draft/review path outside this dispatch:
+
+- MemoryOS search returned `mem_0c66b6db9ac73100` for
+  `URI clean-room sourcing rule`.
+- The memory object is `project=URI`, `type=decision`, `base_status=draft`,
+  `effective_status=accepted`, and `status=accepted`.
+- `latest_review` records `action=approve`, `reviewer=claude@myworld`, and
+  `captured_at=2026-06-05T01:28:57+09:00`.
+- The memory preserves pointer refs only:
+  `uri/src/lib/festival-data.ts`,
+  `uri/docs/LEGAL_ETHICAL_GUARDRAILS.md`, and
+  `uri/docs/CAMPUS_WIKI_SEED_ULSAN_2026-06-05.md`.
+
+This closes the product-domain retrieval gap for this seed, but the close is
+partial for the dispatch contract itself: `asc-0223` did not produce the
+requested 1h/1w/1y split because the watcher correctly stopped at
+`pending_concurrent_work`.
+
+## Follow-Up
+
+Leave `memoryOS/.tmp_uri_cleanroom_seed.md` untouched until the MemoryOS owner
+decides whether the accepted memory's `source_artifact_id` should continue to
+point at that temp file or be migrated to a checked-in source artifact. The next
+work should be MemoryOS-local provenance cleanup, not MyWorld rewriting
+MemoryOS state.

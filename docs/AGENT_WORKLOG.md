@@ -4,6 +4,23 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 01:43 KST — codex — ASC-0223 concurrent MemoryOS evidence recorded
+
+- status: closed_partial_with_followup
+- scope: `docs/contracts/ASC-0223-memoryos-product-domain-seed-review.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: verified that the URI clean-room seed is already searchable as
+  MemoryOS accepted memory `mem_0c66b6db9ac73100`, with a draft base status and
+  `claude@myworld` approval review. The original `asc-0223` watcher result
+  remains valid as a concurrency hold, not as a product-domain memory failure.
+- evidence: MemoryOS CLI search for `URI clean-room sourcing rule` returned the
+  accepted URI decision memory and pointer-only refs. `drafts list --status all
+  --project URI --json` returned the same object and review metadata.
+- boundary: did not alter MemoryOS local state, did not delete
+  `.tmp_uri_cleanroom_seed.md`, and did not touch URI source files.
+- next: MemoryOS owner should decide whether the temp seed remains as the
+  source artifact or should be migrated into a checked-in provenance artifact.
+
 ## 2026-06-05 01:34 KST — codex — ASC-0223 MemoryOS product-domain seed review issued
 
 - trigger: active goal "자율개발"; monitor still reports `memoryOS` dirty due
