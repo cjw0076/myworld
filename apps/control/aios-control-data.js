@@ -127,11 +127,11 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "total": 6
   },
   "completion": {
-    "checked_at": "2026-06-05T01:57:12+09:00",
+    "checked_at": "2026-06-05T02:00:57+09:00",
     "criteria": [
       {
         "criterion": "1. autopoietic loop closed + always-on",
-        "evidence": "round controller running=True, last_round=2026-06-05T01:53:44+09:00, dream+local_operator organs ran=True",
+        "evidence": "round controller running=True, last_round=2026-06-05T02:00:48+09:00, dream+local_operator organs ran=True",
         "met": true
       },
       {
@@ -5243,7 +5243,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "hivemind"
         ],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
+        "timestamp": "2026-06-05T02:00:46+09:00"
       },
       {
         "collected": [],
@@ -5254,7 +5254,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
+        "timestamp": "2026-06-05T02:00:46+09:00"
       },
       {
         "collected": [],
@@ -5265,7 +5265,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
+        "timestamp": "2026-06-05T02:00:46+09:00"
       },
       {
         "collected": [],
@@ -5276,7 +5276,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "reason": "invalid_repos",
         "sent": [],
         "status": "skipped",
-        "timestamp": "2026-06-05T01:53:41+09:00"
+        "timestamp": "2026-06-05T02:00:46+09:00"
       },
       {
         "collected": [
@@ -5393,118 +5393,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "event": "policy_dispatch_decision",
         "repo": null,
         "status": "skipped",
-        "timestamp": "2026-06-05T01:48:07+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:07+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:50+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:50+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:50+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:48:50+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:49:34+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:49:34+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:49:34+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:49:34+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0214",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:50:20+09:00"
-      },
-      {
-        "dispatch_id": "asc-0180",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:10+09:00"
-      },
-      {
-        "dispatch_id": "asc-0212",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
-        "timestamp": "2026-06-05T01:51:11+09:00"
-      },
-      {
-        "dispatch_id": "asc-0213",
-        "event": "policy_dispatch_decision",
-        "repo": null,
-        "status": "skipped",
         "timestamp": "2026-06-05T01:51:11+09:00"
       },
       {
@@ -5597,6 +5485,118 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "repo": null,
         "status": "skipped",
         "timestamp": "2026-06-05T01:53:41+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:58:29+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:58:29+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:58:29+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:58:29+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:59:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:59:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:59:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T01:59:18+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:04+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:05+09:00"
+      },
+      {
+        "dispatch_id": "asc-0180",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0212",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0213",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:46+09:00"
+      },
+      {
+        "dispatch_id": "asc-0214",
+        "event": "policy_dispatch_decision",
+        "repo": null,
+        "status": "skipped",
+        "timestamp": "2026-06-05T02:00:46+09:00"
       }
     ],
     "total": 240
@@ -5769,7 +5769,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
     "queued": 0,
     "schema_version": "aios.frontier_queue.v1"
   },
-  "generated_at": "2026-06-05T01:57:04+09:00",
+  "generated_at": "2026-06-05T02:00:47+09:00",
   "genesis_lens": {
     "authority": "speculative_only",
     "branches": [
@@ -5819,8 +5819,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "why_it_might_matter": "The next valuable move may be to change the question."
       }
     ],
-    "source_artifact": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/genesis/branches.json",
-    "source_invocation": "inv-b317cdfcdde3-20260605T014701",
+    "source_artifact": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
+    "source_invocation": "inv-b317cdfcdde3-20260605T015710",
     "stop_conditions": [
       "no_execution_authority",
       "no_memory_acceptance",
@@ -5843,7 +5843,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_f8520e3531",
           "kind": "evidence",
-          "to": "gen_src_d9cca0add8"
+          "to": "gen_src_3ebfbb0d32"
         },
         {
           "from": "gen_discomfort_7962331d95",
@@ -5858,7 +5858,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_85f9d2bb39",
           "kind": "evidence",
-          "to": "gen_src_d9cca0add8"
+          "to": "gen_src_3ebfbb0d32"
         },
         {
           "from": "gen_discomfort_43d12883e4",
@@ -5873,7 +5873,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_cc26c594a5",
           "kind": "evidence",
-          "to": "gen_src_d9cca0add8"
+          "to": "gen_src_3ebfbb0d32"
         },
         {
           "from": "gen_discomfort_d37ab53a12",
@@ -5888,7 +5888,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_e034afbfdb",
           "kind": "evidence",
-          "to": "gen_src_d9cca0add8"
+          "to": "gen_src_3ebfbb0d32"
         },
         {
           "from": "gen_discomfort_96c5cddf95",
@@ -5903,13 +5903,13 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "from": "gen_seed_b3c0f593f0",
           "kind": "evidence",
-          "to": "gen_src_d9cca0add8"
+          "to": "gen_src_3ebfbb0d32"
         }
       ],
       "nodes": [
         {
-          "detail": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/genesis/branches.json",
-          "id": "gen_src_d9cca0add8",
+          "detail": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
+          "id": "gen_src_3ebfbb0d32",
           "label": ".aios/invocations/inv-b317cdfc",
           "state": "clear",
           "type": "source",
@@ -6300,6 +6300,72 @@ window.AIOS_CONTROL_SNAPSHOT = {
       {
         "artifact_previews": {
           "capability_route": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/capability/route.json",
+            "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
+            "truncated": true
+          },
+          "dispatch_packets": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/dispatch/packets.json",
+            "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
+            "truncated": false
+          },
+          "genesis": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
+            "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
+            "truncated": true
+          },
+          "hive_execution_plan": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/hive/execution_plan.json",
+            "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
+            "truncated": true
+          },
+          "memory_context_pack": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_pack.md",
+            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_5a7c8c9e88a37cb0 - signal_coverage: 1.0",
+            "truncated": false
+          },
+          "memory_request": {
+            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_request.json",
+            "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
+            "truncated": false
+          }
+        },
+        "created_at": "2026-06-05T01:57:10+09:00",
+        "degraded_receipt": {
+          "missing_or_degraded_roles": [],
+          "status": "not_needed",
+          "stop_conditions_triggered": []
+        },
+        "executor_assignment": {
+          "default_executor": "codex",
+          "execution_owner": "hivemind",
+          "mode": "bounded_worker_packet",
+          "requires_dispatch_packet": true,
+          "requires_verification_result": true
+        },
+        "goal": "self_check verification probe",
+        "invocation_id": "inv-b317cdfcdde3-20260605T015710",
+        "next_action": "dispatch_ready",
+        "overall_status": "passed",
+        "role_artifacts": {
+          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/capability/route.json",
+          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/dispatch/packets.json",
+          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/genesis/branches.json",
+          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/hive/execution_plan.json",
+          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_pack.md",
+          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/memory/context_request.json"
+        },
+        "role_statuses": {
+          "capability": "passed",
+          "genesis": "passed",
+          "hive": "passed",
+          "memory": "passed"
+        },
+        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T015710/session_envelope.json"
+      },
+      {
+        "artifact_previews": {
+          "capability_route": {
             "path": ".aios/invocations/inv-b317cdfcdde3-20260605T014701/capability/route.json",
             "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
             "truncated": true
@@ -6560,72 +6626,6 @@ window.AIOS_CONTROL_SNAPSHOT = {
           "memory": "passed"
         },
         "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T011640/session_envelope.json"
-      },
-      {
-        "artifact_previews": {
-          "capability_route": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/capability/route.json",
-            "preview": "{ \"contract\": \"capabilityos.recommendations.v1\", \"observed_capabilities\": 0, \"recommendation_only\": true, \"recommendations\": [ { \"actions\": [ \"run\", \"inspect\", \"verify\", \"demo\", \"memory-loop\" ], \"confidence\": 0.8, \"cost\": \"free\", \"description\": \"Creates AIOS runs, schedules agents, verifies artifacts, and records execution receipts.\", \"domains\": [ \"aios\", \"hivemind\", \"execution\", \"verification\", \"run\" ], \"evidence_refs\": [ \"../hivemind/README.md\", \"../docs/contracts/ASC-0001-memoryos-hivemind-loop.md\", \"../.aios/ou",
-            "truncated": true
-          },
-          "dispatch_packets": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/dispatch/packets.json",
-            "preview": "{ \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"packets\": [ { \"mode\": \"local_cli\", \"role\": \"divergence\", \"target_repo\": \"GenesisOS\" }, { \"mode\": \"degraded_allowed\", \"role\": \"context\", \"target_repo\": \"memoryOS\" }, { \"mode\": \"recommendation_only\", \"role\": \"route\", \"target_repo\": \"CapabilityOS\" }, { \"mode\": \"plan_only\", \"role\": \"execution_plan\", \"target_repo\": \"hivemind\" } ], \"schema_version\": \"aios.dispatch_packets.v1\", \"status\": \"draft\" }",
-            "truncated": false
-          },
-          "genesis": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/genesis/branches.json",
-            "preview": "{ \"authority\": \"speculative_only\", \"branches\": [ { \"branch_id\": \"inversion-self-check-verification-probe\", \"contract_seed\": \"Explore `inversion` mutation for: self_check verification probe\", \"premise\": \"Assume the stated goal is a symptom, not the target.\", \"risk\": \"Speculative branch. Requires MyWorld contract before execution.\", \"type\": \"inversion\", \"what_it_breaks\": \"Breaks literal prompt obedience.\", \"why_it_might_matter\": \"The useful system may be the one that refuses premature completion.\" }, { \"branch_id\": \"",
-            "truncated": true
-          },
-          "hive_execution_plan": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/hive/execution_plan.json",
-            "preview": "{ \"candidate_provider\": \"capabilityos_recommended\", \"candidate_worker\": \"hive.provider_loop\", \"contract_id\": null, \"execute_allowed\": false, \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"owner_repo\": \"hivemind\", \"plan_only\": true, \"schema_version\": \"aios.hive_execution_plan.v1\", \"stop_conditions\": [ \"missing_required_artifact\", \"scope_violation\", \"provider_backpressure\", \"verification_gate_failed\" ], \"user_patterns\": { \"patterns\": [ { \"confidence\": 0.78, \"evidence_refs\": [ \"docs/",
-            "truncated": true
-          },
-          "memory_context_pack": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/memory/context_pack.md",
-            "preview": "# Context pack Task: self_check verification probe Role: hive ## Source - MemoryOS context build returned JSON. - selected_memory_ids: [\"mem_940ad99fcc2ed445\", \"mem_4a44670b379ca4ea\", \"mem_5012d57c2c4acbf6\", \"mem_561d7633490e0f56\"] - trace_id: rtrace_bd4bdabb141d5ca6 - signal_coverage: 1.0",
-            "truncated": false
-          },
-          "memory_request": {
-            "path": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/memory/context_request.json",
-            "preview": "{ \"auto_accept\": false, \"for_role\": \"hive\", \"goal_hash\": \"b317cdfcdde3326aca091197d4c0ea3a7b06ff0bdb9fbe13ef867fb8555ae553\", \"project\": \"AIOS\", \"requested_outputs\": [ \"context_pack.md\", \"retrieval_trace\" ], \"schema_version\": \"aios.memory_context_request.v1\", \"task\": \"self_check verification probe\" }",
-            "truncated": false
-          }
-        },
-        "created_at": "2026-06-05T01:06:33+09:00",
-        "degraded_receipt": {
-          "missing_or_degraded_roles": [],
-          "status": "not_needed",
-          "stop_conditions_triggered": []
-        },
-        "executor_assignment": {
-          "default_executor": "codex",
-          "execution_owner": "hivemind",
-          "mode": "bounded_worker_packet",
-          "requires_dispatch_packet": true,
-          "requires_verification_result": true
-        },
-        "goal": "self_check verification probe",
-        "invocation_id": "inv-b317cdfcdde3-20260605T010633",
-        "next_action": "dispatch_ready",
-        "overall_status": "passed",
-        "role_artifacts": {
-          "capability_route": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/capability/route.json",
-          "dispatch_packets": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/dispatch/packets.json",
-          "genesis": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/genesis/branches.json",
-          "hive_execution_plan": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/hive/execution_plan.json",
-          "memory_context_pack": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/memory/context_pack.md",
-          "memory_request": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/memory/context_request.json"
-        },
-        "role_statuses": {
-          "capability": "passed",
-          "genesis": "passed",
-          "hive": "passed",
-          "memory": "passed"
-        },
-        "session_envelope": ".aios/invocations/inv-b317cdfcdde3-20260605T010633/session_envelope.json"
       }
     ]
   },
@@ -8737,7 +8737,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       ],
       "branches": 5,
       "headline": "5 speculative worldlines",
-      "source_invocation": "inv-b317cdfcdde3-20260605T014701",
+      "source_invocation": "inv-b317cdfcdde3-20260605T015710",
       "status": "active"
     },
     "hive": {
@@ -8931,7 +8931,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "updated_at": "2026-05-16T13:32:36+09:00"
       },
       "latest_goal": "self_check verification probe",
-      "latest_invocation": "inv-b317cdfcdde3-20260605T014701",
+      "latest_invocation": "inv-b317cdfcdde3-20260605T015710",
       "next_action": "dispatch_ready",
       "status": "passed"
     },
@@ -8978,78 +8978,79 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "edges": 306826,
       "graph_control": {
         "latest": {
-          "bound_ratio": 1.0,
-          "captured_at": "2026-06-05T01:23:22+09:00",
+          "bound_ratio": 1.2941,
+          "captured_at": "2026-06-05T01:57:39+09:00",
           "halt_auto_consolidation": true,
-          "id": "graphctlrun_3f485f32a4612bb8",
+          "id": "graphctlrun_1d0ac2877b2738f3",
           "provenance_contract_ids": [
             "ASC-0194",
             "ASC-0196"
           ],
-          "queryable_surface_count": 0,
-          "raw_ingest_count": 0,
-          "reclaimed_count": 0,
-          "status": "budget_exhausted",
+          "queryable_surface_count": 11,
+          "raw_ingest_count": 17,
+          "reclaimed_count": 22,
+          "status": "stop_condition",
           "stop_conditions": [
-            "budget_exhausted"
+            "semantic_drift",
+            "duplicate_proliferation"
           ]
         },
-        "run_count": 480
+        "run_count": 481
       },
       "graph_preview": {
         "edges": [
           {
-            "from": "rtrace_748367c3bac09f42",
+            "from": "rtrace_bfd3b7fd6c64f201",
             "kind": "retrieved",
             "to": "mem_0c66b6db9ac73100"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_001f6d5191fb8e51"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_4a44670b379ca4ea"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_1f18cea463eed9fd"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_d0b64430dd5da2a8"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_61910dd09950fc81"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_940ad99fcc2ed445"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_3af960f629693170"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_5012d57c2c4acbf6"
           },
           {
-            "from": "rtrace_a37cd970a245314d",
+            "from": "rtrace_75f10c5fc2955e7d",
             "kind": "retrieved",
             "to": "mem_70c8edbf4c5c9c7b"
           },
           {
-            "from": "rtrace_0e9a6866685ebcf6",
+            "from": "rtrace_58aeec049c43c6ab",
             "kind": "retrieved",
             "to": "mem_001f6d5191fb8e51"
           },
@@ -9087,24 +9088,24 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "nodes": [
           {
             "detail": "uri campus wiki clean-room seed sourcing scholarship 울산대",
-            "id": "rtrace_748367c3bac09f42",
-            "label": "r:748367c3bac09f42",
+            "id": "rtrace_bfd3b7fd6c64f201",
+            "label": "r:bfd3b7fd6c64f201",
             "type": "trace",
             "x": 13,
             "y": 18
           },
           {
             "detail": "Claude CLI Codex local LLM provider 흡수",
-            "id": "rtrace_a37cd970a245314d",
-            "label": "r:a37cd970a245314d",
+            "id": "rtrace_75f10c5fc2955e7d",
+            "label": "r:75f10c5fc2955e7d",
             "type": "trace",
             "x": 13,
             "y": 50
           },
           {
             "detail": "사용자 로그 작업방식 user 행동 패턴 few shot",
-            "id": "rtrace_0e9a6866685ebcf6",
-            "label": "r:0e9a6866685ebcf6",
+            "id": "rtrace_58aeec049c43c6ab",
+            "label": "r:58aeec049c43c6ab",
             "type": "trace",
             "x": 13,
             "y": 82
@@ -9265,8 +9266,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 1
           },
-          "created_at": "2026-06-05T01:47:04+09:00",
-          "id": "rtrace_748367c3bac09f42",
+          "created_at": "2026-06-05T01:57:12+09:00",
+          "id": "rtrace_bfd3b7fd6c64f201",
           "privacy_filter": "local",
           "query": "uri campus wiki clean-room seed sourcing scholarship 울산대",
           "role": "hive",
@@ -9304,8 +9305,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:47:04+09:00",
-          "id": "rtrace_a37cd970a245314d",
+          "created_at": "2026-06-05T01:57:12+09:00",
+          "id": "rtrace_75f10c5fc2955e7d",
           "privacy_filter": "local",
           "query": "Claude CLI Codex local LLM provider 흡수",
           "role": "hive",
@@ -9395,8 +9396,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 3
           },
-          "created_at": "2026-06-05T01:47:04+09:00",
-          "id": "rtrace_0e9a6866685ebcf6",
+          "created_at": "2026-06-05T01:57:12+09:00",
+          "id": "rtrace_58aeec049c43c6ab",
           "privacy_filter": "local",
           "query": "사용자 로그 작업방식 user 행동 패턴 few shot",
           "role": "hive",
@@ -9462,8 +9463,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:47:03+09:00",
-          "id": "rtrace_d8093281e4cbae15",
+          "created_at": "2026-06-05T01:57:12+09:00",
+          "id": "rtrace_6cc111254faa1ed5",
           "privacy_filter": "local",
           "query": "founder role delegated living organism 작업방식 memoryOS",
           "role": "hive",
@@ -9550,8 +9551,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "privacy_filtered": 0,
             "selected": 10
           },
-          "created_at": "2026-06-05T01:47:03+09:00",
-          "id": "rtrace_93dcaed05f5c10dc",
+          "created_at": "2026-06-05T01:57:11+09:00",
+          "id": "rtrace_f9c8574f424d53af",
           "privacy_filter": "local",
           "query": "AIOS완성 공진화 memoryOS capabilityOS hive mind founder directive",
           "role": "hive",
@@ -9634,8 +9635,8 @@ window.AIOS_CONTROL_SNAPSHOT = {
         }
       ],
       "rejected": 8,
-      "retrieval_traces": 17117,
-      "retrieval_traces_with_selected": 17004,
+      "retrieval_traces": 17123,
+      "retrieval_traces_with_selected": 17010,
       "reviews": 68,
       "signals": [
         {
@@ -9656,7 +9657,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         {
           "label": "Retrieval traces",
           "unit": "traces",
-          "value": 17117
+          "value": 17123
         }
       ],
       "sources": 86,
@@ -9673,6 +9674,30 @@ window.AIOS_CONTROL_SNAPSHOT = {
   },
   "promotions": {
     "items": [
+      {
+        "contract_seed": ".aios/promotions/monitor-cleanup-e862eae86110/contract_seed.md",
+        "created_at": "2026-06-05T02:00:22+09:00",
+        "dispatch_preview": "",
+        "execution_started": false,
+        "goal": "Resolve memoryOS monitor dirty state through owner-reviewed provenance cleanup.",
+        "materialization_receipt": "",
+        "materialized_contract": "",
+        "materialized_contract_id": "",
+        "next_action": "operator_assign_asc_accept_and_dispatch",
+        "next_contract_id": "ASC-0224",
+        "promotion_id": "monitor-cleanup-e862eae86110",
+        "quality_evidence": "",
+        "quality_reason": "",
+        "quality_state": "actionable",
+        "receipt": ".aios/promotions/monitor-cleanup-e862eae86110/promotion.json",
+        "session_envelope_ref": "",
+        "status": "proposed_contract_seed",
+        "stop_conditions": [
+          "accepted_contract_missing",
+          "memoryos_owner_not_ready",
+          "executor_runs_without_dispatch_packet"
+        ]
+      },
       {
         "contract_seed": ".aios/promotions/visual-fix-ba1dc16dc777/contract_seed.md",
         "created_at": "2026-05-18T03:35:25+09:00",
@@ -9837,7 +9862,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       }
     ],
     "next_contract_id": "ASC-0224",
-    "total": 7
+    "total": 8
   },
   "repos": {
     "items": [
@@ -9981,7 +10006,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
       "timed_out": false
     },
     "failed_steps": [],
-    "generated_at": "2026-06-05T01:53:44+09:00",
+    "generated_at": "2026-06-05T02:00:07+09:00",
     "mode": "control_only",
     "recommended_next": {
       "action": "hold_for_goal_stop_conditions",
@@ -10006,21 +10031,21 @@ window.AIOS_CONTROL_SNAPSHOT = {
             },
             {
               "helper": "cap_helper_classify_vision_level",
-              "invocations": 579,
+              "invocations": 580,
               "verified_bad": 2,
-              "verified_good": 570
+              "verified_good": 571
             },
             {
               "helper": "cap_helper_consolidate",
-              "invocations": 488,
+              "invocations": 489,
               "verified_bad": 4,
-              "verified_good": 470
+              "verified_good": 471
             },
             {
               "helper": "cap_helper_operator_review",
-              "invocations": 476,
+              "invocations": 477,
               "verified_bad": 28,
-              "verified_good": 446
+              "verified_good": 447
             },
             {
               "helper": "cap_helper_classify_chat_intent",
@@ -10031,7 +10056,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "helpers_folded": 5,
           "note": "observation history folded into helper catalog observation_count; CapabilityOS recommend now ranks by actual verified usage",
-          "ran_at": "2026-06-05T01:53:35+09:00",
+          "ran_at": "2026-06-05T02:00:02+09:00",
           "schema": "aios.capability_feedback.v1"
         },
         "returncode": 0,
@@ -10076,7 +10101,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "dispatch_loop",
         "parsed": {
           "actions": [],
-          "generated_at": "2026-06-05T01:53:41+09:00",
+          "generated_at": "2026-06-05T02:00:05+09:00",
           "mode": "apply",
           "observations": [
             {
@@ -10229,7 +10254,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
           ],
           "kept_active": 14,
           "note": "stale packets (contract closed) archived to .aios/archive/inbox/ — append-only, never deleted; open/missing-contract packets left for operator review",
-          "ran_at": "2026-06-05T01:53:35+09:00",
+          "ran_at": "2026-06-05T02:00:02+09:00",
           "schema": "aios.dispatch_reconcile.v1"
         },
         "returncode": 0,
@@ -10238,7 +10263,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "dream": {
-        "age_seconds": 1787,
+        "age_seconds": 109,
         "name": "dream",
         "reason": "recent_dream",
         "status": "skipped"
@@ -10251,12 +10276,12 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "monitor_findings": 3,
             "monitor_health": "attention",
             "policy_decision_count": 40,
-            "policy_generated_at": "2026-06-05T01:53:26+09:00",
+            "policy_generated_at": "2026-06-05T01:59:56+09:00",
             "radar_candidate_count": 60,
             "readiness_level": 6,
             "readiness_level_name": "L6 repeatable"
           },
-          "generated_at": "2026-06-05T01:53:34+09:00",
+          "generated_at": "2026-06-05T02:00:02+09:00",
           "goal": {
             "anti_cheat_checks": [
               "Do not count docs-only work as progress when the goal requires execution.",
@@ -10622,7 +10647,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "timed_out": false
       },
       "librarian": {
-        "age_seconds": 1786,
+        "age_seconds": 2174,
         "name": "librarian",
         "reason": "recent_tend",
         "status": "skipped"
@@ -11641,7 +11666,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               ]
             }
           ],
-          "generated_at": "2026-06-05T01:53:36+09:00",
+          "generated_at": "2026-06-05T02:00:02+09:00",
           "in_flight_count": 2,
           "open_contract_count": 4,
           "open_contract_order": [
@@ -11651,7 +11676,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0180-hive-debate-aios-hosting-trust-model.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1788816
+              "wait_seconds": 1789202
             },
             {
               "contract_id": "ASC-0212",
@@ -11659,7 +11684,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0212-aios-mcp-native.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356816
+              "wait_seconds": 1357202
             },
             {
               "contract_id": "ASC-0213",
@@ -11667,7 +11692,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0213-closure-quality-gate.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356816
+              "wait_seconds": 1357202
             },
             {
               "contract_id": "ASC-0214",
@@ -11675,7 +11700,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "path": "docs/contracts/ASC-0214-aios-dogfooding-gap.md",
               "priority_reason": "operator_fifo",
               "status": "accepted",
-              "wait_seconds": 1356816
+              "wait_seconds": 1357202
             }
           ],
           "operator_only_prefixes": [
@@ -11895,7 +11920,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "severity": "info"
             }
           ],
-          "generated_at": "2026-06-05T01:53:25+09:00",
+          "generated_at": "2026-06-05T01:59:56+09:00",
           "health": "attention",
           "next_actions": [
             {
@@ -12054,7 +12079,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               }
             ],
             "contracts_scored": 20,
-            "generated_at": "2026-06-05T01:53:25+09:00",
+            "generated_at": "2026-06-05T01:59:56+09:00",
             "per_contract": [
               {
                 "contract_id": "ASC-0193",
@@ -12560,7 +12585,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
             "window": 20
           },
           "schema_version": "aios.monitor.assessment.v1",
-          "snapshot_generated_at": "2026-06-05T01:53:25+09:00",
+          "snapshot_generated_at": "2026-06-05T01:59:55+09:00",
           "watched": {
             "alerts": 1,
             "contracts": 221,
@@ -12589,17 +12614,17 @@ window.AIOS_CONTROL_SNAPSHOT = {
             {
               "helper_id": "cap_helper_classify_vision_level",
               "status": "evolved",
-              "verified_good": 570
+              "verified_good": 571
             },
             {
               "helper_id": "cap_helper_consolidate",
               "status": "evolved",
-              "verified_good": 470
+              "verified_good": 471
             },
             {
               "helper_id": "cap_helper_operator_review",
               "status": "evolved",
-              "verified_good": 446
+              "verified_good": 447
             },
             {
               "helper_id": "cap_helper_classify_chat_intent",
@@ -12607,7 +12632,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
               "verified_good": 389
             }
           ],
-          "ran_at": "2026-06-05T01:53:35+09:00",
+          "ran_at": "2026-06-05T02:00:02+09:00",
           "schema": "aios.self_evolve.v1",
           "waiting": 0
         },
@@ -12621,7 +12646,7 @@ window.AIOS_CONTROL_SNAPSHOT = {
         "name": "verify",
         "parsed": {
           "method": "deterministic structural checks — not an LLM judging an LLM",
-          "ran_at": "2026-06-05T01:53:35+09:00",
+          "ran_at": "2026-06-05T02:00:02+09:00",
           "receipts": [],
           "schema": "aios.verify.v1",
           "verified_bad": 0,

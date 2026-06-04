@@ -2859,6 +2859,42 @@
             `AIOS monitor finding을 MemoryOS owner 작업으로 정리해줘. owner=${text(item.owner, "unknown")} need=${text(item.need, "review")} dirty_entries=${alertEntries.join(" | ")} related_dispatch=${text(firstDispatch.dispatch_id, "none")} contract=${text(firstDispatch.contract_id, "none")} status=${text(firstDispatch.current_contract_status, "unknown")} latest=${text(firstDispatch.latest_status, "unknown")} reason=${text(firstDispatch.latest_reason || item.reason, "")}. child repo 변경을 직접 덮어쓰지 말고 provenance cleanup 계약/검증 gate/stop condition을 제안해줘.`,
             "friction-plan-cleanup"
           ));
+          const promote = el("button", "friction-propose-cleanup", "Propose Cleanup");
+          promote.type = "button";
+          const promoteStatus = el("small", "friction-propose-status", "");
+          promote.addEventListener("click", async () => {
+            promote.disabled = true;
+            promoteStatus.textContent = "Creating cleanup seed";
+            try {
+              const response = await fetch("/api/promote_monitor_cleanup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  confirm: true,
+                  owner: item.owner,
+                  need: item.need,
+                  reason: item.reason,
+                  alert_entries: alertEntries,
+                  related_dispatches: relatedDispatches,
+                }),
+              });
+              const payload = await response.json();
+              if (!response.ok || !payload.ok) {
+                promoteStatus.textContent = payload.reason || "Cleanup promotion blocked";
+                return;
+              }
+              const receipt = payload.receipt || {};
+              const paths = receipt.artifact_paths || {};
+              promoteStatus.textContent = `Promotion ready: ${text(paths.contract_seed, receipt.promotion_id)}`;
+              const open = artifactPreviewControl(paths.contract_seed, "friction-open-contract");
+              if (open) actionRow.append(open);
+            } catch (_error) {
+              promoteStatus.textContent = "Cleanup promotion API unavailable";
+            } finally {
+              promote.disabled = false;
+            }
+          });
+          actionRow.append(promote, promoteStatus);
           card.append(actionRow);
         }
         const weakPersonas = (item.weak_personas || []).slice(0, 3);

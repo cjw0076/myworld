@@ -421,6 +421,153 @@ def build_visual_fix_promotion_response(root: Path, payload: dict[str, Any]) -> 
     return 200, {"ok": True, "receipt": promotion}
 
 
+def render_monitor_cleanup_contract_seed(payload: dict[str, Any], receipt_ref: str) -> str:
+    owner = str(payload.get("owner") or "memoryOS")
+    need = str(payload.get("need") or "hold_for_repo_owner_triage")
+    reason = str(payload.get("reason") or "Monitor reported child repo dirty state.")
+    entries = [str(entry) for entry in (payload.get("alert_entries") or [])[:10]]
+    dispatches = [item for item in (payload.get("related_dispatches") or [])[:5] if isinstance(item, dict)]
+    entry_text = "\n".join(f"- `{entry}`" for entry in entries) or "- `no_dirty_entry_recorded`"
+    dispatch_text = "\n".join(
+        "- `{dispatch_id}` contract=`{contract_id}` status=`{contract_status}` latest=`{latest_status}` reason=`{latest_reason}`".format(
+            dispatch_id=str(dispatch.get("dispatch_id") or "unknown"),
+            contract_id=str(dispatch.get("contract_id") or "unknown"),
+            contract_status=str(dispatch.get("current_contract_status") or "unknown"),
+            latest_status=str(dispatch.get("latest_status") or "unknown"),
+            latest_reason=str(dispatch.get("latest_reason") or ""),
+        )
+        for dispatch in dispatches
+    ) or "- `no_related_dispatch_recorded`"
+    return f"""---
+contract_id: ASC-XXXX
+slug: memoryos-provenance-cleanup
+status: proposed
+goal: Resolve a MemoryOS repo-dirty monitor finding through owner-reviewed provenance cleanup without mutating child repo state from MyWorld.
+created: {now_iso()}
+accepted:
+closed:
+origin: AIOS monitor friction radar cleanup action
+promotion_receipt: {receipt_ref}
+---
+
+# ASC-XXXX MemoryOS Provenance Cleanup
+
+## Why Now
+
+The AIOS monitor reports a child-repo dirty finding that is already linked to
+prior dispatch context. This seed turns that visible evidence into a
+MemoryOS-owned cleanup/review contract.
+
+- owner: `{owner}`
+- monitor_need: `{need}`
+- monitor_reason: {reason}
+- promotion_receipt: `{receipt_ref}`
+
+## Dirty Entries
+
+{entry_text}
+
+## Related Dispatch Context
+
+{dispatch_text}
+
+## Scope
+
+repos:
+
+- `memoryOS`
+- `myworld` only for result collection and ledger closeout
+
+allowed_files:
+
+- MemoryOS provenance/source-artifact records needed to resolve the dirty entry
+- MemoryOS repo-local worklog
+- `.aios/outbox/memoryOS/*.result.json`
+- MyWorld ledger/worklog closeout after MemoryOS returns evidence
+
+forbidden_files:
+
+- `.env`
+- `.env.*`
+- provider auth files
+- raw exports
+- private history stores
+- URI implementation files unless a separate accepted URI contract authorizes them
+- MyWorld rewriting MemoryOS accepted-memory state directly
+
+## Required Work
+
+- Inspect the dirty entries without deleting them first.
+- Decide whether each entry is an intended source artifact, should be migrated
+  to a checked-in provenance artifact, or should remain held for operator
+  review.
+- Preserve pointer-only source references; do not copy private/raw source
+  bodies into committed artifacts.
+- Return a result packet with `passed`, `held`, or `failed`, including evidence
+  and the exact files touched.
+
+## Verification Gate
+
+```bash
+git -C memoryOS status --short --branch
+python scripts/aios_monitor.py assess --json
+```
+
+## Stop Conditions
+
+- `memoryos_owner_not_ready`
+- `dirty_entry_deleted_before_receipt`
+- `private_source_leak`
+- `accepted_memory_rewritten_from_myworld`
+- `uri_scope_leak`
+- `provider_auth_or_env_touched`
+"""
+
+
+def build_monitor_cleanup_promotion_response(root: Path, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+    if not payload.get("confirm"):
+        return 409, {"ok": False, "reason": "confirmation_required", "stop_condition": "monitor_cleanup_promotion_without_confirmation"}
+    owner = str(payload.get("owner") or "").strip()
+    if not owner:
+        return 400, {"ok": False, "reason": "owner_required"}
+    entries = [str(entry) for entry in (payload.get("alert_entries") or [])[:10]]
+    related = [item for item in (payload.get("related_dispatches") or [])[:5] if isinstance(item, dict)]
+    if not entries and not related:
+        return 409, {"ok": False, "reason": "monitor_cleanup_evidence_missing"}
+
+    seed_basis = json.dumps({"owner": owner, "entries": entries, "related": related}, sort_keys=True)
+    promotion_id = "monitor-cleanup-" + stable_hash(seed_basis)[:12]
+    receipt_ref = f".aios/promotions/{promotion_id}/promotion.json"
+    contract_seed_ref = f".aios/promotions/{promotion_id}/contract_seed.md"
+    receipt = {
+        "schema_version": PROMOTION_SCHEMA,
+        "promotion_id": promotion_id,
+        "status": "proposed_contract_seed",
+        "created_at": now_iso(),
+        "goal": f"Resolve {owner} monitor dirty state through owner-reviewed provenance cleanup.",
+        "source": "aios_monitor_friction_radar",
+        "source_monitor": {
+            "owner": owner,
+            "need": payload.get("need"),
+            "reason": payload.get("reason"),
+            "alert_entries": entries,
+            "related_dispatches": related,
+        },
+        "artifact_paths": {
+            "receipt": receipt_ref,
+            "contract_seed": contract_seed_ref,
+        },
+        "materialization_recommended": True,
+        "quality_warnings": [],
+        "execution_started": False,
+        "next_action": "operator_assign_asc_accept_and_dispatch",
+        "stop_conditions": ["accepted_contract_missing", "memoryos_owner_not_ready", "executor_runs_without_dispatch_packet"],
+    }
+    write_json(root / receipt_ref, receipt)
+    write_text(root / contract_seed_ref, render_monitor_cleanup_contract_seed(payload, receipt_ref).rstrip() + "\n")
+    return 200, {"ok": True, "receipt": receipt}
+
+
 def build_visual_workflow_response(root: Path) -> tuple[int, dict[str, Any]]:
     screenshot_root = root / ".aios" / "screenshots"
     screenshots = sorted(screenshot_root.glob("*.png"), key=lambda path: path.stat().st_mtime, reverse=True) if screenshot_root.exists() else []
@@ -2229,7 +2376,7 @@ def make_control_handler(root: Path) -> type[http.server.SimpleHTTPRequestHandle
             super().do_GET()
 
         def do_POST(self) -> None:  # noqa: N802 - http.server hook
-            if self.path not in {"/api/ask", "/api/goal_bar", "/api/session", "/api/chat", "/api/chat_history_action", "/api/gate_chair_probe", "/api/gate_chair_eval", "/api/gate_chair_runtime", "/api/gate_chair_promote", "/api/promote_session", "/api/promote_chat_route", "/api/promote_friction_seed", "/api/promote_visual_fix", "/api/genesis_break_frame_seed", "/api/materialize_promotion_contract", "/api/materialize_ask_contract", "/api/contract_review_action", "/api/artifact", "/api/memory_draft_review", "/api/memory_review_evidence"}:
+            if self.path not in {"/api/ask", "/api/goal_bar", "/api/session", "/api/chat", "/api/chat_history_action", "/api/gate_chair_probe", "/api/gate_chair_eval", "/api/gate_chair_runtime", "/api/gate_chair_promote", "/api/promote_session", "/api/promote_chat_route", "/api/promote_friction_seed", "/api/promote_visual_fix", "/api/promote_monitor_cleanup", "/api/genesis_break_frame_seed", "/api/materialize_promotion_contract", "/api/materialize_ask_contract", "/api/contract_review_action", "/api/artifact", "/api/memory_draft_review", "/api/memory_review_evidence"}:
                 json_response(self, {"ok": False, "reason": "not_found"}, status=404)
                 return
             try:
@@ -2260,6 +2407,8 @@ def make_control_handler(root: Path) -> type[http.server.SimpleHTTPRequestHandle
                 status, body = build_friction_seed_promotion_response(root, payload)
             elif self.path == "/api/promote_visual_fix":
                 status, body = build_visual_fix_promotion_response(root, payload)
+            elif self.path == "/api/promote_monitor_cleanup":
+                status, body = build_monitor_cleanup_promotion_response(root, payload)
             elif self.path == "/api/genesis_break_frame_seed":
                 status, body = build_genesis_break_frame_seed_response(root, payload)
             elif self.path == "/api/materialize_promotion_contract":

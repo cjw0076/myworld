@@ -159,6 +159,7 @@ class AiosLocalAppTest(unittest.TestCase):
         self.assertIn('fetch("/api/promote_session"', app_js)
         self.assertIn('fetch("/api/promote_chat_route"', chat_js)
         self.assertIn('fetch("/api/promote_friction_seed"', app_js)
+        self.assertIn('fetch("/api/promote_monitor_cleanup"', app_js)
         self.assertIn('fetch("/api/genesis_break_frame_seed"', app_js)
         self.assertIn('fetch("/api/materialize_promotion_contract"', app_js)
         self.assertIn('fetch("/api/materialize_ask_contract"', app_js)
@@ -177,6 +178,8 @@ class AiosLocalAppTest(unittest.TestCase):
         self.assertIn("Break Frame", app_js)
         self.assertIn("Plan Cleanup", app_js)
         self.assertIn("friction-plan-cleanup", app_js)
+        self.assertIn("Propose Cleanup", app_js)
+        self.assertIn("friction-propose-cleanup", app_js)
         self.assertIn("provenance cleanup", app_js)
         self.assertIn('fetch("/api/memory_draft_review"', app_js)
         self.assertIn('fetch("/api/memory_review_evidence"', app_js)
@@ -812,6 +815,45 @@ class AiosLocalAppTest(unittest.TestCase):
             copied_text = copied.read_text(encoding="utf-8")
             self.assertIn("Promotion Receipt", copied_text)
             self.assertIn("source_seed: `.aios/chat/demo/friction_contract_seed.md`", copied_text)
+
+    def test_monitor_cleanup_promotion_writes_contract_seed(self) -> None:
+        module = load_local_app_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            status, payload = module.build_monitor_cleanup_promotion_response(
+                root,
+                {
+                    "confirm": True,
+                    "owner": "memoryOS",
+                    "need": "hold_for_repo_owner_triage",
+                    "reason": "A child repo has uncommitted changes.",
+                    "alert_entries": ["?? .tmp_uri_cleanroom_seed.md"],
+                    "related_dispatches": [
+                        {
+                            "dispatch_id": "asc-0223",
+                            "contract_id": "ASC-0223",
+                            "current_contract_status": "closed",
+                            "latest_status": "released",
+                            "latest_reason": "closed_partial_with_followup",
+                        }
+                    ],
+                },
+            )
+
+            self.assertEqual(status, 200)
+            self.assertTrue(payload["ok"])
+            receipt = payload["receipt"]
+            self.assertFalse(receipt["execution_started"])
+            self.assertEqual(receipt["source"], "aios_monitor_friction_radar")
+            self.assertEqual(receipt["source_monitor"]["alert_entries"], ["?? .tmp_uri_cleanroom_seed.md"])
+            seed = root / receipt["artifact_paths"]["contract_seed"]
+            self.assertTrue(seed.exists())
+            seed_text = seed.read_text(encoding="utf-8")
+            self.assertIn("origin: AIOS monitor friction radar cleanup action", seed_text)
+            self.assertIn("`?? .tmp_uri_cleanroom_seed.md`", seed_text)
+            self.assertIn("`asc-0223` contract=`ASC-0223` status=`closed` latest=`released`", seed_text)
+            self.assertIn("accepted_memory_rewritten_from_myworld", seed_text)
 
     def test_promotion_contract_materialization_writes_proposed_contract(self) -> None:
         module = load_local_app_module()

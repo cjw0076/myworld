@@ -5,6 +5,32 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 02:08 KST — codex@myworld — monitor cleanup promotion
+
+- when: 2026-06-05 02:08 KST
+- repo: myworld
+- agent: codex@myworld
+- role: Control Center promotion/API implementation
+- goal: let a monitor friction radar dirty finding produce a reviewable
+  cleanup contract seed without directly mutating child repo state.
+- changed: `scripts/aios_local_app.py`, `apps/control/app.js`,
+  `tests/test_aios_local_app.py`, regenerated control snapshot data,
+  `docs/AGENT_WORKLOG.md`, and this ledger.
+- decision: added `/api/promote_monitor_cleanup` and a `Propose Cleanup`
+  control on friction radar cards with dirty entries or related dispatches. The
+  API writes a promotion receipt and `contract_seed.md` under `.aios/promotions`
+  with MemoryOS owner scope, dirty entries, related dispatch context, forbidden
+  private/auth files, and stop conditions.
+- evidence: focused local app/control snapshot tests passed 62/62; Python and
+  JS syntax checks passed; `git diff --check` passed. Live smoke created
+  `.aios/promotions/monitor-cleanup-e862eae86110/contract_seed.md` from the
+  current `memoryOS` dirty finding.
+- boundary: `.aios/promotions/...` is local ignored runtime state. No MemoryOS
+  file was modified, committed, deleted, or pushed.
+- next: operator or MemoryOS owner can materialize the promotion into an ASC
+  when ready, then dispatch it to MemoryOS.
+- status: done
+
 ## 2026-06-05 02:03 KST — codex@myworld — friction radar cleanup action
 
 - when: 2026-06-05 02:03 KST

@@ -4,6 +4,25 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 02:08 KST — codex — monitor cleanup promotion
+
+- status: done
+- scope: `scripts/aios_local_app.py`, `apps/control/app.js`,
+  `tests/test_aios_local_app.py`, regenerated control snapshot data,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: added `/api/promote_monitor_cleanup` and a `Propose Cleanup` button
+  for friction radar cards with dirty entries or related dispatch context. The
+  generated seed scopes MemoryOS provenance cleanup, preserves dirty entries
+  and dispatch context, forbids private/auth/raw-source leakage, and keeps
+  execution stopped until operator ASC acceptance/dispatch.
+- evidence: `python -m unittest tests.test_aios_local_app
+  tests.test_aios_control_snapshot -v` passed 62/62; `python -m py_compile
+  scripts/aios_local_app.py scripts/aios_control_snapshot.py`,
+  `node --check apps/control/app.js`, and `git diff --check` passed. Live smoke
+  created `.aios/promotions/monitor-cleanup-e862eae86110/contract_seed.md`.
+- boundary: local promotion artifact only; MemoryOS state remains untouched and
+  monitor still reports the dirty entry.
+
 ## 2026-06-05 02:03 KST — codex — friction radar cleanup action
 
 - status: done
