@@ -38,13 +38,19 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 
 Cross-substrate review of this harness (per feedback_use_all_substrates_not_own_head)
 surfaced gaps Claude missed. Done: hook made active (live state injected via
-`scripts/aios_session_brief.sh`); commit-guard junk detection broadened. Open:
+`scripts/aios_session_brief.sh`); commit-guard junk detection broadened.
 
-- **Enforcement vs prose (highest):** skills' Hard Rules + the 4-OS ritual are
-  advisory — an agent can ignore them. True "실수 반복 방지" needs a blocking
-  layer (a PreToolUse/MCP "ritual_lock" gating decision-actions until 4-OS
-  traces exist). Deferred — blocking can break flow, so it is a founder posture
-  decision, not an autonomous default.
+**ENFORCEMENT (done — founder: "진짜 AIOS를 위해서 모든 리스크 감수"):** the
+harness is no longer advisory prose. `scripts/aios_guard_hook.py` is a
+PreToolUse hook (matcher `Bash|Write`) that BLOCKS:
+- a `git commit` when `aios_commit_guard` finds an ERROR (gitlink-without-submodule);
+- creating a contract (`Write` to `docs/contracts/ASC-*.md`) until a fresh 4-OS
+  ritual token exists (`aios_ritual_gate.py record`, done by `/aios-decide`).
+It FAILS OPEN on any internal error (a hook bug never freezes work). Edits to
+existing contracts (status flips) are not gated — only `Write` creation is.
+
+Open:
+
 - **commit_guard parsing:** `git diff --raw` regex is non-standard → consider
   `git status --porcelain=v2`. Also no binary/large-blob accidental-commit check.
 - **memory audit:** no dangling-provenance check (memory whose source file was

@@ -43,6 +43,11 @@ Run all four; do not stop early. Prefer the `aios` MCP tools (they wrap the OS):
    before committing.
 4. **Hive — verify the plan.** `python scripts/aios_invoke.py --goal "<chosen
    action>" --plan-only --json`. Cite the invocation receipt.
+5. **Record the ritual token** so enforcement lets the decision land:
+   `python scripts/aios_ritual_gate.py record --note "<decision>"`. The
+   PreToolUse gate (aios_guard_hook.py) blocks creating a contract
+   (`docs/contracts/ASC-*.md`) until a fresh (<60min) token exists — this is
+   what makes the ritual enforced, not advisory.
 
 Then state the decision with the four citations inline.
 

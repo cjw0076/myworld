@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 scripts/aios_guard_hook.py"
+          }
+        ]
+      }
     ]
   }
 }
