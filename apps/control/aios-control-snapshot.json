@@ -127,7 +127,7 @@
     "total": 6
   },
   "completion": {
-    "checked_at": "2026-06-05T01:54:30+09:00",
+    "checked_at": "2026-06-05T01:57:12+09:00",
     "criteria": [
       {
         "criterion": "1. autopoietic loop closed + always-on",
@@ -5769,7 +5769,7 @@
     "queued": 0,
     "schema_version": "aios.frontier_queue.v1"
   },
-  "generated_at": "2026-06-05T01:54:25+09:00",
+  "generated_at": "2026-06-05T01:57:04+09:00",
   "genesis_lens": {
     "authority": "speculative_only",
     "branches": [
@@ -7194,7 +7194,7 @@
         "severity": "info"
       }
     ],
-    "generated_at": "2026-06-05T01:54:18+09:00",
+    "generated_at": "2026-06-05T01:56:55+09:00",
     "health": "attention",
     "next_actions": [
       {
@@ -7353,7 +7353,7 @@
         }
       ],
       "contracts_scored": 20,
-      "generated_at": "2026-06-05T01:54:18+09:00",
+      "generated_at": "2026-06-05T01:56:55+09:00",
       "per_contract": [
         {
           "contract_id": "ASC-0193",
@@ -7859,7 +7859,7 @@
       "window": 20
     },
     "schema_version": "aios.monitor.assessment.v1",
-    "snapshot_generated_at": "2026-06-05T01:54:17+09:00",
+    "snapshot_generated_at": "2026-06-05T01:56:55+09:00",
     "watched": {
       "alerts": 1,
       "contracts": 221,

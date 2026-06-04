@@ -5,6 +5,30 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 02:03 KST — codex@myworld — friction radar cleanup action
+
+- when: 2026-06-05 02:03 KST
+- repo: myworld
+- agent: codex@myworld
+- role: Control Center action surface implementation
+- goal: turn the visible `memoryOS` dirty/provenance context into a bounded
+  operator action without mutating the child repo.
+- changed: `apps/control/app.js`, `tests/test_aios_local_app.py`, regenerated
+  control snapshot data, `docs/AGENT_WORKLOG.md`, and this ledger.
+- decision: friction radar cards with dirty entries or related dispatches now
+  render a `Plan Cleanup` chat action. The prompt includes owner, need, dirty
+  entries, related dispatch, contract, status, latest status, and reason, and
+  explicitly asks for a MemoryOS-owner provenance cleanup contract/gates/stop
+  conditions instead of direct child repo overwrite.
+- evidence: `node --check apps/control/app.js` passed; focused local app tests
+  passed 44/44; focused control snapshot tests passed 17/17; `git diff --check`
+  passed. Live monitor/control snapshot still reports
+  `memoryOS -> ["?? .tmp_uri_cleanroom_seed.md"] -> asc-0223`.
+- boundary: no MemoryOS files were edited, committed, deleted, or pushed.
+- next: use the `Plan Cleanup` action to draft the MemoryOS-local provenance
+  cleanup slice when the owner is ready.
+- status: done
+
 ## 2026-06-05 01:58 KST — codex@myworld — friction radar dirty entry visibility
 
 - when: 2026-06-05 01:58 KST

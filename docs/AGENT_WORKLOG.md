@@ -4,6 +4,24 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 02:03 KST — codex — friction radar cleanup action
+
+- status: done
+- scope: `apps/control/app.js`, `tests/test_aios_local_app.py`, regenerated
+  control snapshot data, `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: friction radar cards with dirty entries or related dispatch context
+  now show a `Plan Cleanup` chat action. For the current MemoryOS card, the
+  prompt carries `?? .tmp_uri_cleanroom_seed.md`, `asc-0223`, `ASC-0223`,
+  `closed`, `released`, and the partial-close reason into a bounded cleanup
+  planning request.
+- evidence: `node --check apps/control/app.js` passed; `python -m unittest
+  tests.test_aios_local_app -v` passed 44/44; `python -m unittest
+  tests.test_aios_control_snapshot -v` passed 17/17; `git diff --check`
+  passed; live snapshot still reports
+  `[('memoryOS', ['?? .tmp_uri_cleanroom_seed.md'], 'asc-0223')]`.
+- boundary: UI action only; did not touch MemoryOS local state or suppress the
+  monitor alert.
+
 ## 2026-06-05 01:58 KST — codex — friction radar dirty entry visibility
 
 - status: done

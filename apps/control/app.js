@@ -2851,6 +2851,16 @@
           });
           card.append(dispatchList);
         }
+        if (alertEntries.length || relatedDispatches.length) {
+          const firstDispatch = relatedDispatches[0] || {};
+          const actionRow = el("div", "friction-action-row");
+          actionRow.append(chatPromptButton(
+            "Plan Cleanup",
+            `AIOS monitor finding을 MemoryOS owner 작업으로 정리해줘. owner=${text(item.owner, "unknown")} need=${text(item.need, "review")} dirty_entries=${alertEntries.join(" | ")} related_dispatch=${text(firstDispatch.dispatch_id, "none")} contract=${text(firstDispatch.contract_id, "none")} status=${text(firstDispatch.current_contract_status, "unknown")} latest=${text(firstDispatch.latest_status, "unknown")} reason=${text(firstDispatch.latest_reason || item.reason, "")}. child repo 변경을 직접 덮어쓰지 말고 provenance cleanup 계약/검증 gate/stop condition을 제안해줘.`,
+            "friction-plan-cleanup"
+          ));
+          card.append(actionRow);
+        }
         const weakPersonas = (item.weak_personas || []).slice(0, 3);
         if (weakPersonas.length) {
           const personas = el("div", "friction-persona-list");
