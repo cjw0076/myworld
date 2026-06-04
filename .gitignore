@@ -6,7 +6,12 @@
 .hivemind/
 .memoryos/
 .agent/
-.claude/
+# Claude Code — track the shared AIOS operator harness, ignore local-only state
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+!.claude/AIOS_HARNESS.md
+!.claude/settings.json
 
 # Python
 __pycache__/
