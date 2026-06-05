@@ -32,6 +32,81 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: MemoryOS owner can accept and dispatch `ASC-0224` when ready.
 - status: done
 
+## 2026-06-05 05:39 KST — codex@chat-dacon-aibias — leaderboard-first lane pivot
+
+- when: 2026-06-05 05:39 KST
+- repo: `/home/user/workspaces/jaewon/dacon/aibias` (owned by dacon child repo context)
+- agent: codex@chat-dacon-aibias
+- role: execution bootstrap / experiment iteration
+- goal: pivot from "submission automation only" to leaderboard-maximizing modeling work.
+- evidence/actions:
+  - Rechecked data and discovered `/tmp/dacon236722_data/train/train.csv` initially
+    contained only 1 labeled row (header + 1), while `/tmp/dacon236722_data/open.zip` holds
+    full test (8,500 rows) and only 1 train image/row.
+  - Extracted archive to `/tmp/dacon236722_full` and confirmed
+    `test/test.csv` has 8,500 rows and 8,500 images; leaderboard scores of top
+    teams are ~0.995+ while user-provided `test_submit_...` baseline was ~0.3408.
+  - Attempted local baseline inference with Hugging Face stack:
+    - installed `torch` (CPU first, then CUDA build), `transformers`, `sentence-transformers`, `numpy`.
+    - `transformers` originally upgraded to 5.10.2 required `torch.float8_e8m0fnu`, incompatible with
+      torch 2.6.0 in this env.
+    - downgraded to `transformers==4.55.0` to restore `flan-t5-small` loading on torch 2.6.0.
+  - Attempted large-batch scoring with `flan-t5-small` generation via `/tmp/predict_flan.py`
+    on prompt format `"Choose the best answer index (0/1/2)"`.
+    - generation path was blocked on runtime because CUDA build reports
+      `RTX 5090 (sm_120) not compatible with installed torch CUDA kernels`
+      and `no kernel image is available for execution on the device`.
+    - cross-encoder runs (`cross-encoder/ms-marco-MiniLM-L-6-v2`) also triggered the same
+      CUDA kernel mismatch when torch attempted GPU execution.
+  - Practical implication: this container cannot execute currently installed torch build
+    on available 5090 GPU; CPU fallback is required unless torch build is updated to support sm_120
+    or another inference provider/runtime is introduced.
+- decision:
+  - Not yet producing a finalized leaderboard submission from local VLM/T5 generation in this
+    run due the above GPU runtime mismatch.
+  - Next execution path is to either (a) keep CPU-only inference with strict speed-aware batching,
+    or (b) route to a provider-backed inference path (Gemini/Claude/local toolchain) before more
+    leaderboard attempts.
+- next: preserve this run note as handoff evidence; if continuing, resume from
+  `/tmp/predict_flan.py` and convert to deterministic CPU-batched inference or
+  external provider judge mode.
+- status: blocked / pivot required
+
+## 2026-06-05 06:44 KST — codex@chat-dacon-aibias — leaderboard-first lane iteration log
+
+- when: 2026-06-05 06:44 KST
+- repo: `/home/user/workspaces/jaewon/dacon/aibias` (owned by dacon child repo context)
+- agent: codex@chat-dacon-aibias
+- role: execution bootstrap / inference loop
+- goal: keep leaderboard work moving under CPU-only constraints and keep API evidence in ledger.
+- reasoning:
+  - The previous GPU path was blocked by the local torch build mismatch (`RTX 5090 (sm_120) unsupported by installed torch kernels`), so model choice had to remain CPU-safe.
+  - `cross-encoder/ms-marco-MiniLM-L-6-v2` was kept as the primary ranker because it is lightweight and already working locally without GPU; adding an optional NLI branch improves control on close calls while not breaking baseline flow.
+  - A fresh local baseline output was still generated because only that path can produce complete candidate scores until model serving changes.
+- evidence/actions:
+  - Verified `submission_236722_cross.csv` exists with 8,500 rows at
+    `/home/user/workspaces/jaewon/dacon/aibias`.
+  - Label distribution remained balanced (`0`: 2,834 / `1`: 2,817 / `2`: 2,849), matching prior local run expectations.
+  - Re-checked token store and test data path:
+    - `/home/user/.config/aibias/dacon/token` exists with restrictive mode.
+    - `/tmp/dacon236722_full/test/test.csv` exists with 8,500 rows.
+  - Top public board scrape still shows rank 1 around score `1.0`; no public entry for `leaderboard_system`.
+  - `submit_236722.sh` remained unchanged; submissions continue to fail on API response gating:
+    - `artifacts/dacon_submit_20260604_200347.json`: `message=wrong`, `data=403`
+    - `artifacts/dacon_submit_20260604_200433.json`: `message=wrong`, `data=4`
+    - `artifacts/dacon_submit_20260604_200446.json`: `message=wrong`, `data=4`
+    - `artifacts/dacon_submit_20260604_201507.json`: `message=ok`, `data=0.3408333333333333`
+    - `artifacts/dacon_submit_20260604_202044.json`: `message=wrong`, `data=4`
+    - `artifacts/dacon_submit_20260604_202356.json`: `message=ok`, `data=0.3408333333333333`
+    - `artifacts/dacon_submit_20260604_202437.json`: `message=ok`, `data=0.3408333333333333`
+    - `artifacts/dacon_submit_20260604_213903.json`: `message=wrong`, `data=403`
+  - `predict_236722_crossencoder.py` now contains optional uncertainty-triggered NLI rerank arguments
+    (`--use-nli-fallback`, `--nli-margin`), preserving the baseline behavior by default.
+- decision:
+  - No further model changes in this turn. The immediate blocker is submit authorization/path consistency, not ranking logic.
+- next: verify the API token session with DACON (`leaderboard_system`) or rotate token, then retry submission; if API is stable, run the NLI fallback variant (`--use-nli-fallback`) on the same file and compare score deltas before deeper model experiments.
+- status: blocked / auth
+
 ## 2026-06-05 02:08 KST — codex@myworld — monitor cleanup promotion
 
 - when: 2026-06-05 02:08 KST
