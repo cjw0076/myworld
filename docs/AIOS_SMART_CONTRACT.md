@@ -29,6 +29,14 @@ permissions, required artifacts, validation gates, and stop conditions.
     "responsibility": "recommend_capabilities",
     "must_produce": ["capability_plan", "fallback_plan", "risk_notes"]
   },
+  "substrate_surface_knowledge": {
+    "substrate_level": "none | primitive | runtime | provider_process | os_service",
+    "surface_type": "chat | contract | plugin | mcp | dispatch | direct_hive_execution",
+    "knowledge_scope": "local_only | memoryos_context | web_primary_sources | multi_model_review | external_system_dissection",
+    "authority": "recommendation_only | draft_only | speculative_only | execute_with_receipt | dangerous_opt_in",
+    "owner_repo": "myworld | hivemind | memoryOS | CapabilityOS | GenesisOS | child_repo",
+    "required_receipts": ["..."]
+  },
   "operator": {
     "responsibility": "release_revise_cancel",
     "checkpoint_required": true
@@ -43,6 +51,36 @@ permissions, required artifacts, validation gates, and stop conditions.
   ]
 }
 ```
+
+## Substrate / Surface / Knowledge Gate
+
+Every non-trivial contract should decide how deep the work is allowed to go
+before execution begins. Use `docs/AIOS_SUBSTRATE_BOUNDARY.md` as the detailed
+classifier.
+
+Required fields for contracts that touch tools, providers, external knowledge,
+memory, process lifecycle, or child repo execution:
+
+| Field | Allowed Values | Meaning |
+| --- | --- | --- |
+| `substrate_level` | `none`, `primitive`, `runtime`, `provider_process`, `os_service` | How close the work gets to AIOS/process substrate. |
+| `surface_type` | `chat`, `contract`, `plugin`, `mcp`, `dispatch`, `direct_hive_execution` | The operator/agent-facing interface being created or used. |
+| `knowledge_scope` | `local_only`, `memoryos_context`, `web_primary_sources`, `multi_model_review`, `external_system_dissection` | What knowledge may influence the decision. |
+| `authority` | `recommendation_only`, `draft_only`, `speculative_only`, `execute_with_receipt`, `dangerous_opt_in` | What the route may do without another contract. |
+| `owner_repo` | `myworld`, `hivemind`, `memoryOS`, `CapabilityOS`, `GenesisOS`, or named child repo | Which repo owns the slice. |
+| `required_receipts` | list | Evidence required before release. |
+
+Boundary invariants:
+
+- CapabilityOS recommends; it does not execute tools, bind plugins, install
+  packages, or handle credentials.
+- MemoryOS is draft-first; it does not accept external or provider-derived
+  knowledge without review.
+- GenesisOS challenges frames and assumptions; it does not select final truth
+  or take execution authority.
+- Hive Mind executes bounded work and verifies receipts.
+- `dangerous_opt_in` requires explicit operator acceptance and must not be the
+  default for autonomous development.
 
 ## Contract Flow
 

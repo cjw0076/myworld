@@ -53,6 +53,14 @@ AIOS must assign work by strength:
     "routes": ["aios://capability/..."],
     "external_resources": ["plugin:hugging_face.paper_search"]
   },
+  "substrate_surface_knowledge": {
+    "substrate_level": "none | primitive | runtime | provider_process | os_service",
+    "surface_type": "chat | contract | plugin | mcp | dispatch | direct_hive_execution",
+    "knowledge_scope": "local_only | memoryos_context | web_primary_sources | multi_model_review | external_system_dissection",
+    "authority": "recommendation_only | draft_only | speculative_only | execute_with_receipt | dangerous_opt_in",
+    "owner_repo": "...",
+    "required_receipts": []
+  },
   "genesis_reframe": {
     "status": "used",
     "frictions": ["..."],

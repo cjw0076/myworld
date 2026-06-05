@@ -5,6 +5,35 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 19:54 KST — codex@myworld — ASC-0225 substrate boundary classifier
+
+- repo: myworld
+- role: architecture / contract boundary proposal
+- goal: answer whether AIOS should touch process/OS substrate, use
+  agent-friendly plugins/contracts, or pull broad external knowledge before
+  autonomous work expands scope.
+- changed: `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0225-substrate-boundary-classifier.md`,
+  `docs/AIOS_SMART_CONTRACT.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/AIOS_BUILD_METHOD.md`, `docs/AIOS_PRODUCTION_PRAXIS.md`,
+  `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: local docs reviewed; external architecture evidence checked from
+  MCP architecture and OpenAI Agents SDK guardrail/tracing docs; Volta subagent
+  review returned the same recommendation to default to plugin/contract
+  surfaces, reserve process/OS substrate for runtime guarantees, and treat
+  broad external knowledge as cited context/evidence rather than execution
+  authority.
+- decision: AIOS should own a narrow kernel for authority, lifecycle,
+  isolation, receipt integrity, rollback, and privacy. Most capabilities should
+  enter through CapabilityOS/plugin/contract surfaces. External knowledge
+  should enter as evidence, context packs, memory drafts, or Genesis challenge
+  notes, then change contracts before execution.
+- risk: proposed classifier is docs/policy only until a follow-up command or
+  dispatch gate enforces the fields mechanically.
+- next: accept `ASC-0225` or create a follow-up implementation contract for a
+  machine-readable boundary classifier.
+- status: proposed
+
 ## 2026-06-05 02:12 KST — codex@myworld — ASC-0224 cleanup contract materialized
 
 - when: 2026-06-05 02:12 KST

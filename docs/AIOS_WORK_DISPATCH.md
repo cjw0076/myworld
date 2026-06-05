@@ -105,6 +105,24 @@ For each meaningful task, `myworld` should produce:
 
 If ownership is unclear, stop and create an operator checkpoint.
 
+## Substrate / Surface / Knowledge Decision Table
+
+Before `myworld` drafts or sends a packet, classify the work with
+`docs/AIOS_SUBSTRATE_BOUNDARY.md`.
+
+| Signal | Route To | Default Authority |
+| --- | --- | --- |
+| Process lifecycle, PID survival, watcher, provider process wrapping, sandbox, filesystem authority, rollback, receipt integrity | `hivemind` execution substrate or `myworld` primitive contract | `execute_with_receipt` only after contract acceptance |
+| Tool, plugin, MCP server, API, skill, package, provider choice, fallback ordering | `CapabilityOS` | `recommendation_only` |
+| Prior decisions, project history, private context, provenance, review lifecycle | `memoryOS` | `draft_only` until reviewed |
+| External research, current public docs, papers, benchmarks, current provider/API behavior | CapabilityOS route plus cited evidence; MemoryOS draft if durable | `speculative_only` until verified |
+| Assumption mutation, semantic ambiguity, prompt-prison critique, alternate worldlines | `GenesisOS` | `speculative_only` |
+| Product or code implementation | owning child repo through dispatch/Hive | `execute_with_receipt` after scope gate |
+
+If a task asks for "all tools/models/knowledge," do not expand authority by
+default. Expand `knowledge_scope` and `specialist_assignment`; keep execution
+bound to receipts and owner repos.
+
 ## Automation Skeleton
 
 The first automation layer is file-based. `myworld` writes packets and state;

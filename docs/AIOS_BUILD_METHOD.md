@@ -43,6 +43,13 @@ Every meaningful AIOS task should move through this loop:
    Ask CapabilityOS for capability options, fallback plans, tool constraints,
    and route risks when execution choices matter.
 
+3a. Classify substrate depth
+   Before execution scope expands, apply `docs/AIOS_SUBSTRATE_BOUNDARY.md`.
+   Decide `substrate_level`, `surface_type`, `knowledge_scope`, `authority`,
+   `owner_repo`, and `required_receipts`. Default to plugin/contract surfaces;
+   escalate to process/OS substrate only for authority, lifecycle, isolation,
+   persistence, receipt integrity, rollback, or privacy guarantees.
+
 4. Contract
    Write or reference an AIOS smart contract with exact owner repos, files,
    required artifacts, verification gates, and stop conditions.

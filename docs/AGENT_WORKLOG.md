@@ -4,6 +4,33 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 19:54 KST — codex — ASC-0225 substrate boundary classifier proposed
+
+- status: proposed
+- scope: `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0225-substrate-boundary-classifier.md`,
+  `docs/AIOS_SMART_CONTRACT.md`, `docs/AIOS_WORK_DISPATCH.md`,
+  `docs/AIOS_BUILD_METHOD.md`, `docs/AIOS_PRODUCTION_PRAXIS.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: added the AIOS substrate boundary classifier and wired the same gate
+  fields into the smart-contract template, dispatch decision table, build
+  method, and production praxis envelope. The classifier separates kernel
+  primitives, Hive execution substrate, CapabilityOS/plugin routing,
+  MemoryOS/external knowledge, and GenesisOS challenge.
+- evidence: external source check used MCP architecture docs and OpenAI Agents
+  SDK guardrail/tracing docs; Volta subagent review independently recommended
+  the same default of plugin/contract surfaces with OS-level substrate as an
+  exception. Claude and Gemini CLI live calls were attempted earlier in this
+  goal turn but were limited by weekly/quota limits; Codex CLI `--help` probe
+  succeeded and was recorded separately.
+- boundary: `ASC-0225` remains `status: proposed`; no child repo
+  implementation files, provider credentials, raw private exports, or runtime
+  artifacts were modified.
+- next: if accepted, implement a small machine-readable
+  `aios_boundary_classifier` command that emits `layer`, `owner`,
+  `authority`, `required_receipts`, and stop conditions from a natural-language
+  question.
+
 ## 2026-06-05 02:12 KST — codex — ASC-0224 cleanup contract materialized
 
 - status: done
