@@ -8,10 +8,16 @@ is unavailable.
 
 ## Current Observation
 
-As of 2026-05-13 KST, the interactive Codex session can read, patch, test,
-dispatch, and collect AIOS work. The external `codex` binary requires a local
-PIN when called from a TTY. Without that interactive PIN path, non-interactive
-provider calls fail before Codex can even print help:
+As of 2026-06-05 KST, the interactive Codex session can read, patch, test,
+dispatch, and collect AIOS work, and the external `codex --help` command now
+prints the command summary without requiring a local PIN in this workspace.
+This means AIOS wrappers should treat `codex --help` as an auth/capability
+probe whose result can change by installed CLI version or local auth state, not
+as a permanently failing command.
+
+Earlier, on 2026-05-13 KST, the external `codex` binary required a local PIN
+when called from a TTY. Without that interactive PIN path, non-interactive
+provider calls failed before Codex could even print help:
 
 ```text
 codex --help
@@ -20,10 +26,12 @@ codex --help
 접근 거부.
 ```
 
-This is not a normal empty output. AIOS should classify it as
-`pin_required_noninteractive` with localized `auth_denied_korean` symptoms
-under provider backpressure, then route through a fallback or an operator
-unlock checkpoint instead of waiting for the same provider to produce work.
+This historical symptom is not a normal empty output. AIOS should classify the
+older failure shape as `pin_required_noninteractive` with localized
+`auth_denied_korean` symptoms under provider backpressure, then route through a
+fallback or an operator unlock checkpoint instead of waiting for the same
+provider to produce work. When `codex --help` succeeds, wrappers can continue
+to a bounded non-interactive `codex exec` probe before dispatching real work.
 
 Do not store the PIN in AIOS docs, dispatch packets, contracts, or provider
 logs. If AIOS later needs unattended Codex execution, that requires a reviewed
