@@ -6518,3 +6518,25 @@ For repo-local implementation details, also update that repo's own worklog.
   not as the task itself.
 - next: continue tightening broad radar/document hits into precise owner TODOs,
   dispatch packets, or contract seeds before allowing execution authority.
+
+## 2026-06-06T06:59+09:00 — goal evolution product P0 refinement
+
+- goal: keep autonomous goal evolution pointed at concrete owner work instead
+  of stale Hive surfaces, broad worklogs, or legacy TUI docs.
+- changed: legacy Hive surface docs now block with
+  `legacy_surface_source_requires_triage`; `HIVE_PRODUCT_EVALUATION.md` now
+  refines to the first `Next Product P0` numbered item before contract
+  autodraft.
+- evidence: focused tests passed 23/23 across goal candidate refinement,
+  source hygiene, goal evolution, contract autodraft, and boundary classifier.
+  `py_compile` and `git diff --check` passed. Live goal evolution now
+  recommends
+  `myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md#next-product-p0-1` with
+  task `Policy-gate or replace the unsafe Claude execute workaround before
+  adding broader automation`; autodraft dry-run proposes `ASC-0228` without
+  writing it.
+- monitor: `python scripts/aios_monitor.py assess --json` reports `watch`
+  only for the existing info-level `persona_axis_advisory`.
+- next: dispatch or accept the proposed Hive/MyWorld contract only with a
+  bounded policy gate for the unsafe Claude execute workaround; do not broaden
+  automation until that P0 is closed with receipts.

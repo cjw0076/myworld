@@ -8,6 +8,7 @@ from aios_goal_sources import parse_frontmatter, resolve_path
 PRIVATE_PREFIXES = ("_from_desktop/", "dain/", "minyoung/")
 HISTORY_SOURCE_NAMES = {"AGENT_WORKLOG.md", "comms_log.md", "COMPACT_HANDOFF.md"}
 INDEX_SOURCE_NAMES = {"VISION_GRAPH.md"}
+LEGACY_SURFACE_SOURCE_NAMES = {"TUI_HARNESS.md"}
 INDEX_SOURCE_PATHS = {"docs/AIOS_AGENT_LEDGER.md", "docs/contracts/README.md"}
 REFERENCE_SOURCE_PATHS = {
     "docs/AIOS_BUILD_METHOD.md",
@@ -69,3 +70,18 @@ def is_provider_transcript_source(root: Path, raw_path: str) -> bool:
         and any(marker in head for marker in attachment_markers)
         and any(marker in lower for marker in thinking_markers)
     )
+
+
+def is_legacy_surface_source(root: Path, raw_path: str) -> bool:
+    path = resolve_path(root, raw_path)
+    if not path.exists() or path.suffix != ".md":
+        return False
+    if path.name in LEGACY_SURFACE_SOURCE_NAMES:
+        return True
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    lower = text.lower()
+    legacy_markers = ("retire `hive tui`", "legacy terminal", "legacy composer", "retired legacy")
+    return "hive tui" in lower and any(marker in lower for marker in legacy_markers)
