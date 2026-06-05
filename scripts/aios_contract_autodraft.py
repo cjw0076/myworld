@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-"""Draft proposed AIOS smart contracts from goal evolution plans."""
-
 from __future__ import annotations
 
 import argparse
@@ -16,10 +14,11 @@ if str(ROOT_FOR_IMPORTS) not in sys.path:
     sys.path.insert(0, str(ROOT_FOR_IMPORTS))
 
 from scripts.aios_goal_evolution import build_plan  # noqa: E402
+from scripts.aios_boundary_classifier import payload as boundary_payload  # noqa: E402
 
 
 SCHEMA_VERSION = "aios.contract_autodraft.v1"
-REPO_NAMES = {"myworld", "hivemind", "memoryOS", "CapabilityOS"}
+REPO_NAMES = {"myworld", "hivemind", "memoryOS", "CapabilityOS", "GenesisOS"}
 
 
 def now_kst_label() -> str:
@@ -52,13 +51,14 @@ def draft_contract(plan: dict[str, Any], contract_id: str) -> dict[str, Any]:
         raise ValueError("recommended candidate is blocked")
 
     slug = slugify(str(rec.get("path") or rec.get("candidate_task") or "goal-contract"))
-    domain = str(rec.get("domain") or "myworld")
-    repos = [domain] if domain in REPO_NAMES else ["myworld"]
     task = " ".join(str(rec.get("candidate_task") or "").split())
     if not task:
         raise ValueError("recommended candidate has no task")
+    boundary = boundary_payload(task)
+    domain = str(rec.get("domain") or "myworld")
+    repos = contract_repos(domain, str(boundary["owner_repo"]))
 
-    body = render_contract_body(plan, contract_id, slug, repos, task)
+    body = render_contract_body(plan, contract_id, slug, repos, task, boundary)
     return {
         "schema_version": SCHEMA_VERSION,
         "contract_id": contract_id,
@@ -74,7 +74,25 @@ def draft_contract(plan: dict[str, Any], contract_id: str) -> dict[str, Any]:
     }
 
 
-def render_contract_body(plan: dict[str, Any], contract_id: str, slug: str, repos: list[str], task: str) -> str:
+def contract_repos(domain: str, boundary_owner: str) -> list[str]:
+    selected: list[str] = []
+    if domain in REPO_NAMES:
+        selected.append(domain)
+    else:
+        selected.append("myworld")
+    if boundary_owner in REPO_NAMES and boundary_owner not in selected:
+        selected.append(boundary_owner)
+    return selected
+
+
+def render_contract_body(
+    plan: dict[str, Any],
+    contract_id: str,
+    slug: str,
+    repos: list[str],
+    task: str,
+    boundary: dict[str, str | list[str]],
+) -> str:
     rec = plan["recommendation"]
     evidence = plan.get("evidence") or {}
     repo_lines = "\n".join(f"- `{repo}`" for repo in repos)
@@ -90,6 +108,7 @@ def render_contract_body(plan: dict[str, Any], contract_id: str, slug: str, repo
         ]
     )
     role_evidence = render_aios_role_evidence_section()
+    boundary_gate = render_boundary_gate(task, boundary, str(rec.get("domain") or "myworld"))
     return f"""---
 contract_id: {contract_id}
 slug: {slug}
@@ -141,6 +160,8 @@ forbidden_files:
 
 - No source role unless the accepted contract explicitly assigns one.
 
+{boundary_gate}
+
 {role_evidence}
 
 ## Verification Gate
@@ -174,6 +195,35 @@ Pass criteria:
 - alignment_reasons: `{', '.join(rec.get('alignment_reasons') or [])}`
 - blocked_reasons: `{', '.join(rec.get('blocked_reasons') or [])}`
 """
+
+
+def render_boundary_gate(task: str, boundary: dict[str, str | list[str]], domain: str) -> str:
+    stop_conditions = list(boundary["stop_conditions"])
+    if domain != boundary["owner_repo"]:
+        stop_conditions.append("boundary_owner_differs_from_recommendation_domain")
+    return f"""## Substrate / Surface / Knowledge Gate
+
+- schema_version: `{boundary['schema_version']}`
+- layer: `{boundary['layer']}`
+- owner_repo: `{boundary['owner_repo']}`
+- substrate_level: `{boundary['substrate_level']}`
+- surface_type: `{boundary['surface_type']}`
+- knowledge_scope: `{boundary['knowledge_scope']}`
+- authority: `{boundary['authority']}`
+- next_contract_kind: `{boundary['next_contract_kind']}`
+
+required_receipts:
+
+{bullet_lines(boundary["required_receipts"])}
+
+boundary_stop_conditions:
+
+{bullet_lines(stop_conditions)}
+"""
+
+
+def bullet_lines(values: list[str] | tuple[str, ...]) -> str:
+    return "\n".join(f"- `{value}`" for value in values)
 
 
 def render_aios_role_evidence_section() -> str:

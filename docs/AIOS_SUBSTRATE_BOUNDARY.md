@@ -53,6 +53,11 @@ Unknown or underspecified prompts return `contract_clarification` with
 `authority=speculative_only`. Requests for "all models" or "all available
 knowledge" expand `knowledge_scope`, not execution authority.
 
+`scripts/aios_contract_autodraft.py` calls this classifier when rendering
+proposed contracts from goal-evolution plans. Every autodrafted contract should
+therefore include a `Substrate / Surface / Knowledge Gate` section before it
+can be accepted or dispatched.
+
 ## Kernel Owns Less Than It Can
 
 The kernel should own only:

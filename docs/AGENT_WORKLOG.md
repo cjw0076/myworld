@@ -4,6 +4,27 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 20:10 KST — codex — ASC-0227 autodraft boundary gate closed
+
+- status: closed
+- scope: `scripts/aios_contract_autodraft.py`,
+  `tests/test_aios_contract_autodraft.py`, `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0227-autodraft-boundary-gate.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: contract autodraft now calls the boundary classifier and renders a
+  `Substrate / Surface / Knowledge Gate` section in generated proposed
+  contracts. This makes substrate level, surface type, knowledge scope,
+  authority, required receipts, and stop conditions visible before acceptance.
+- evidence: red test first failed because autodrafts lacked the gate; focused
+  tests for autodraft and boundary classifier then passed 12/12. `py_compile`
+  passed for both scripts. `scripts/aios_contract_autodraft.py` remains 250
+  pure LOC.
+- boundary: autodrafts still remain `status: proposed` and `auto_accept=false`.
+  No child repo implementation, CapabilityOS catalog, Hive process code,
+  provider credentials, raw exports, or private history stores were changed.
+- next: use contract autodraft output as the next accepted-work candidate only
+  after operator/dispatch policy review.
+
 ## 2026-06-05 20:06 KST — codex — ASC-0226 boundary classifier CLI closed
 
 - status: closed

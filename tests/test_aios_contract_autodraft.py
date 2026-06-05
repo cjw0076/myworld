@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "aios_contract_autodraft.py"
 
 
-def sample_plan(blocked: bool = False) -> dict:
+def sample_plan(blocked: bool = False, domain: str = "myworld", task: str | None = None) -> dict:
+    candidate_task = task or "turn a goal recommendation into a proposed contract draft."
     return {
         "schema_version": "aios.goal_evolution.v1",
         "generated_at": "2026-05-12T19:00:00+09:00",
@@ -20,8 +21,8 @@ def sample_plan(blocked: bool = False) -> dict:
         "evidence": {"monitor_health": "clear", "readiness_level_name": "L6 repeatable"},
         "recommendation": {
             "path": "goal:test_autodraft_surface",
-            "domain": "myworld",
-            "candidate_task": "turn a goal recommendation into a proposed contract draft.",
+            "domain": domain,
+            "candidate_task": candidate_task,
             "policy_decision": "goal_preferred",
             "policy_reason": "test fixture",
             "alignment_reasons": ["goal_preferred_next"],
@@ -48,10 +49,38 @@ class AiosContractAutodraftTest(unittest.TestCase):
         self.assertIn("### CapabilityOS", draft["body"])
         self.assertIn("### GenesisOS", draft["body"])
         self.assertIn("### Hive Mind", draft["body"])
+        self.assertIn("## Substrate / Surface / Knowledge Gate", draft["body"])
+        self.assertIn("schema_version: `aios.boundary_classifier.v1`", draft["body"])
+        self.assertIn("authority: `", draft["body"])
+        self.assertIn("required_receipts:", draft["body"])
 
     def test_draft_contract_rejects_blocked_recommendation(self) -> None:
         with self.assertRaises(ValueError):
             draft_contract(sample_plan(blocked=True), "ASC-0991")
+
+    def test_draft_contract_includes_boundary_owner_repo_when_domain_differs(self) -> None:
+        draft = draft_contract(
+            sample_plan(task="daemonize local LLM background cognition with PID survival"),
+            "ASC-0993",
+        )
+
+        self.assertIn("- `myworld`", draft["body"])
+        self.assertIn("- `hivemind`", draft["body"])
+        self.assertIn("owner_repo: `hivemind`", draft["body"])
+        self.assertIn("`boundary_owner_differs_from_recommendation_domain`", draft["body"])
+
+    def test_draft_contract_honors_genesisos_domain_and_boundary(self) -> None:
+        draft = draft_contract(
+            sample_plan(
+                domain="GenesisOS",
+                task="mutate assumptions and create counter branches before execution",
+            ),
+            "ASC-0994",
+        )
+
+        self.assertIn("- `GenesisOS`", draft["body"])
+        self.assertIn("owner_repo: `GenesisOS`", draft["body"])
+        self.assertNotIn("- `myworld`\n\nallowed_files", draft["body"])
 
     def test_cli_writes_contract_to_requested_output_dir(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

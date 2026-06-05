@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 20:10 KST — codex@myworld — ASC-0227 autodraft boundary gate
+
+- repo: myworld
+- role: implementation / autonomous contract drafting hardening
+- goal: make goal-evolution contract drafts include substrate/surface/knowledge
+  boundary evidence by default.
+- changed: `scripts/aios_contract_autodraft.py`,
+  `tests/test_aios_contract_autodraft.py`, `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0227-autodraft-boundary-gate.md`,
+  `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: `python -m unittest tests.test_aios_contract_autodraft
+  tests.test_aios_boundary_classifier -v` passed 10/10 after a red test
+  confirmed the missing boundary gate and later caught the ownership mismatch.
+  `python -m py_compile
+  scripts/aios_contract_autodraft.py scripts/aios_boundary_classifier.py`
+  passed. `scripts/aios_contract_autodraft.py` remains 250 pure LOC.
+- decision: autodrafted contracts now render `## Substrate / Surface /
+  Knowledge Gate` using `aios.boundary_classifier.v1`, while remaining
+  proposed-only and non-dispatched.
+- risk: classifier quality is still rule-based; accepted contracts must still
+  be reviewed by operator/policy gates before dispatch.
+- next: run contract autodraft for the next goal-evolution recommendation and
+  review the boundary gate before acceptance.
+- status: closed
+
 ## 2026-06-05 20:06 KST — codex@myworld — ASC-0226 boundary classifier CLI
 
 - repo: myworld
