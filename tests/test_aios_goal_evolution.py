@@ -159,6 +159,53 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             self.assertIn("stale_hive_radar_gap_source", radar_gap["blocked_reasons"])
             self.assertNotEqual(data["recommendation"]["path"], "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md")
 
+    def test_goal_plan_blocks_provider_transcript_source_before_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            goal_path = self.write_fixture(root)
+            radar_path = root / "docs" / "AIOS_TASK_RADAR.md"
+            radar_path.write_text(
+                RADAR
+                + "| 120 | hivemind | `myworld/hivemind/docs/my_world.md` | `hivemind:12,next:12,verify:12` | issue a Hive Mind packet for execution, harness, or verification follow-up |\n",
+                encoding="utf-8",
+            )
+            transcript = root / "hivemind" / "docs" / "my_world.md"
+            transcript.write_text(
+                "\n".join(["ChatGPT", "", "gemini.md", "파일", "", "2초 동안 생각함", "네 연구의 North Star를 잡아줘."])
+                + "\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_plan(root, goal_path, "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            by_path = {item["path"]: item for item in data["top_candidates"]}
+            transcript_candidate = by_path["myworld/hivemind/docs/my_world.md"]
+            self.assertIn("provider_transcript_source_requires_triage", transcript_candidate["blocked_reasons"])
+            self.assertNotEqual(data["recommendation"]["path"], "myworld/hivemind/docs/my_world.md")
+
+    def test_goal_plan_blocks_vision_graph_index_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            goal_path = self.write_fixture(root)
+            radar_path = root / "docs" / "AIOS_TASK_RADAR.md"
+            radar_path.write_text(
+                RADAR
+                + "| 120 | hivemind | `myworld/hivemind/docs/VISION_GRAPH.md` | `hivemind:12,next:12,verify:12` | issue a Hive Mind packet for execution, harness, or verification follow-up |\n",
+                encoding="utf-8",
+            )
+            vision_graph = root / "hivemind" / "docs" / "VISION_GRAPH.md"
+            vision_graph.write_text("# Vision Graph\n\nUse it as the graph-like index before opening large source files.\n", encoding="utf-8")
+
+            result = self.run_plan(root, goal_path, "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            by_path = {item["path"]: item for item in data["top_candidates"]}
+            self.assertIn("index_source_requires_triage", by_path["myworld/hivemind/docs/VISION_GRAPH.md"]["blocked_reasons"])
+            self.assertNotEqual(data["recommendation"]["path"], "myworld/hivemind/docs/VISION_GRAPH.md")
+
     def test_goal_plan_blocks_closed_contract_and_private_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

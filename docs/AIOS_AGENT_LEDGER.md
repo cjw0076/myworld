@@ -6502,3 +6502,19 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: use the proposed-only contract autodraft result for the next bounded
   Hive/MyWorld contract, but keep stale radar-gap and closed TODO references
   blocked unless a fresh unchecked owner task appears.
+
+## 2026-06-05T20:33+09:00 — goal evolution source hygiene extended
+
+- goal: prevent goal evolution from turning raw provider transcripts or
+  graph/index documents into executable Hive contract candidates.
+- changed: added a dedicated source-hygiene module for goal evolution candidate
+  filtering. Provider transcript/import-style markdown now blocks with
+  `provider_transcript_source_requires_triage`; `VISION_GRAPH.md` and other
+  index sources block with `index_source_requires_triage` before autodraft.
+- evidence: `hivemind/docs/my_world.md` begins as a ChatGPT transcript with
+  attachment markers and personal research discussion, so it is no longer
+  allowed to produce a direct Hive execution contract. `VISION_GRAPH.md`
+  describes itself as a graph-like index and is now treated as triage input,
+  not as the task itself.
+- next: continue tightening broad radar/document hits into precise owner TODOs,
+  dispatch packets, or contract seeds before allowing execution authority.
