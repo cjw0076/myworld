@@ -4,6 +4,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from aios_goal_refinements import concrete_product_eval_candidate
 from aios_goal_source_hygiene import (
     is_closed_contract_source,
     is_history_or_index_source,
@@ -14,7 +15,6 @@ from aios_goal_source_hygiene import (
 from aios_goal_sources import Goal, RadarRow, resolve_path
 HIVE_RADAR_GAP_PATH = "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md"
 HIVE_TODO_PATH = "myworld/hivemind/docs/TODO.md"
-HIVE_PRODUCT_EVAL_PATH = "myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md"
 HIVE_RADAR_TODO_PATTERNS = (
     ("hive-evaluate", ("hive evaluate", "hive subagents review")),
     ("semantic-verifier", ("semantic verifier", "high-risk runs")),
@@ -95,46 +95,6 @@ def concrete_hive_radar_candidate(root: Path, base: dict[str, Any]) -> dict[str,
         refined["source_path"] = base.get("path")
         return refined
     return None
-
-
-def concrete_product_eval_candidate(root: Path, base: dict[str, Any]) -> dict[str, Any] | None:
-    if base.get("path") != HIVE_PRODUCT_EVAL_PATH:
-        return None
-    item = first_numbered_item(resolve_path(root, HIVE_PRODUCT_EVAL_PATH), "Next Product P0")
-    if not item:
-        return None
-    refined = dict(base)
-    refined["path"] = f"{HIVE_PRODUCT_EVAL_PATH}#next-product-p0-1"
-    refined["candidate_task"] = item.rstrip(".")
-    refined["goal_score"] = int(base.get("goal_score") or 0) + 50
-    refined["policy_reason"] = "refined from Hive product evaluation to first concrete P0"
-    refined["alignment_reasons"] = list(base.get("alignment_reasons") or []) + ["concrete_product_eval_p0"]
-    refined["source_path"] = base.get("path")
-    return refined
-
-
-def first_numbered_item(path: Path, heading: str) -> str | None:
-    if not path.exists():
-        return None
-    in_section = False
-    item: list[str] = []
-    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        stripped = raw.strip()
-        if stripped == f"## {heading}":
-            in_section = True
-            continue
-        if in_section and stripped.startswith("## "):
-            return " ".join(item) if item else None
-        if in_section:
-            match = re.match(r"1\.\s+(.+)", stripped)
-            if match:
-                item.append(match.group(1).strip())
-                continue
-            if item and stripped and not re.match(r"\d+\.\s+", stripped):
-                item.append(stripped)
-            elif item:
-                return " ".join(item)
-    return " ".join(item) if item else None
 
 
 def concrete_candidate(root: Path, base: dict[str, Any]) -> dict[str, Any] | None:

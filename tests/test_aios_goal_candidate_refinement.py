@@ -41,6 +41,36 @@ class AiosGoalCandidateRefinementTest(unittest.TestCase):
             self.assertIn("broader automation", refined["candidate_task"])
             self.assertIn("concrete_product_eval_p0", refined["alignment_reasons"])
 
+    def test_product_evaluation_candidate_skips_closed_p0_item(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "hivemind" / "docs" / "HIVE_PRODUCT_EVALUATION.md"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "# Hive Mind Product Evaluation\n\n"
+                "## Next Product P0\n\n"
+                "1. [closed via ASC-0228] Policy-gate or replace the unsafe Claude execute workaround before adding\n"
+                "   broader automation.\n"
+                "2. Harden DAG step result handling: local/provider failures must not become\n"
+                "   completed steps.\n",
+                encoding="utf-8",
+            )
+            base = {
+                "path": "myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md",
+                "candidate_task": "issue a Hive Mind packet for execution, harness, or verification follow-up",
+                "goal_score": 183,
+                "alignment_reasons": ["verification_signal"],
+            }
+
+            refined = concrete_product_eval_candidate(root, base)
+
+            self.assertIsNotNone(refined)
+            assert refined is not None
+            self.assertEqual(refined["path"], "myworld/hivemind/docs/HIVE_PRODUCT_EVALUATION.md#next-product-p0-2")
+            self.assertIn("Harden DAG step result handling", refined["candidate_task"])
+            self.assertIn("completed steps", refined["candidate_task"])
+            self.assertNotIn("closed via", refined["candidate_task"])
+
 
 if __name__ == "__main__":
     unittest.main()
