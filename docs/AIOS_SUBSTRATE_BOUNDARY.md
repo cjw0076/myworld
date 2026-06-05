@@ -26,6 +26,33 @@ Use this order. The first matching layer owns the work.
 If more than one layer applies, create a praxis envelope or smart contract that
 names each role. Do not silently collapse the layers into one broad worker.
 
+## Classifier CLI
+
+Use the machine-readable classifier before drafting or dispatching ambiguous
+autonomous work:
+
+```bash
+python scripts/aios_boundary_classifier.py \
+  --question "Should AIOS daemonize local LLM background cognition?" \
+  --json
+```
+
+The JSON receipt uses `aios.boundary_classifier.v1` and returns:
+
+- `layer`
+- `owner_repo`
+- `substrate_level`
+- `surface_type`
+- `knowledge_scope`
+- `authority`
+- `required_receipts`
+- `stop_conditions`
+- `next_contract_kind`
+
+Unknown or underspecified prompts return `contract_clarification` with
+`authority=speculative_only`. Requests for "all models" or "all available
+knowledge" expand `knowledge_scope`, not execution authority.
+
 ## Kernel Owns Less Than It Can
 
 The kernel should own only:

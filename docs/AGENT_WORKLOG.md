@@ -4,6 +4,28 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-05 20:06 KST — codex — ASC-0226 boundary classifier CLI closed
+
+- status: closed
+- scope: `scripts/aios_boundary_classifier.py`,
+  `tests/test_aios_boundary_classifier.py`, `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0226-boundary-classifier-cli.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, and this worklog.
+- result: implemented `python scripts/aios_boundary_classifier.py --question
+  ... --json` with `aios.boundary_classifier.v1` output. The classifier maps
+  prompts to kernel primitive, Hive execution substrate, CapabilityOS
+  plugin/MCP route, MemoryOS knowledge route, GenesisOS challenge, or
+  clarification.
+- evidence: TDD red confirmed the missing script failed; focused CLI tests pass
+  7/7. Kepler subagent reviewed edge cases and emphasized that "all
+  models/tools/knowledge" must expand evidence scope rather than execution
+  authority; the CLI locks that behavior with a multi-model test.
+- boundary: no child repo implementation files, provider credentials, raw
+  exports, private history stores, CapabilityOS catalog, or Hive process
+  implementation were changed.
+- next: use the classifier output before drafting the next autonomous
+  implementation contract.
+
 ## 2026-06-05 19:54 KST — codex — ASC-0225 substrate boundary classifier proposed
 
 - status: proposed

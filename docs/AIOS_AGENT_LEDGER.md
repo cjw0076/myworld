@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-05 20:06 KST — codex@myworld — ASC-0226 boundary classifier CLI
+
+- repo: myworld
+- role: implementation / control-plane classifier
+- goal: turn the ASC-0225 substrate/surface/knowledge boundary into a
+  machine-readable CLI for future autonomous contract drafting.
+- changed: `scripts/aios_boundary_classifier.py`,
+  `tests/test_aios_boundary_classifier.py`, `docs/AIOS_SUBSTRATE_BOUNDARY.md`,
+  `docs/contracts/ASC-0226-boundary-classifier-cli.md`,
+  `docs/AGENT_WORKLOG.md`, and this ledger.
+- evidence: `python -m unittest tests.test_aios_boundary_classifier -v`
+  passed 7/7 after a red run that failed because the script did not exist.
+  Live smoke returned `layer=execution_substrate`, `owner_repo=hivemind`,
+  and `authority=execute_with_receipt` for local LLM daemonization. Kepler
+  subagent review supplied additional edge cases; multi-model review now
+  remains `authority=recommendation_only`.
+- decision: unknown prompts classify as `contract_clarification` instead of
+  execution. Multi-model/all-knowledge requests expand `knowledge_scope` but
+  do not expand authority.
+- risk: classifier is rule-based and conservative; it should guide contract
+  drafting, not replace operator acceptance or Hive verification.
+- next: call `scripts/aios_boundary_classifier.py --json` before the next
+  autonomous implementation contract.
+- status: closed
+
 ## 2026-06-05 19:54 KST — codex@myworld — ASC-0225 substrate boundary classifier
 
 - repo: myworld
