@@ -5,6 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.aios_goal_evolution import Goal, stop_conditions
+
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "aios_goal_evolution.py"
 
@@ -136,6 +138,27 @@ class AiosGoalEvolutionTest(unittest.TestCase):
             self.assertIn("semantic verifier", data["recommendation"]["candidate_task"])
             self.assertIn("concrete_hive_todo", data["recommendation"]["alignment_reasons"])
 
+    def test_goal_plan_blocks_stale_hive_radar_gap_when_todos_are_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            goal_path = self.write_fixture(root)
+            todo_path = root / "hivemind" / "docs" / "TODO.md"
+            todo_path.write_text(
+                todo_path.read_text(encoding="utf-8")
+                .replace("- [ ] Add first-class `hive evaluate`", "- [x] Add first-class `hive evaluate`")
+                .replace("- [ ] Add semantic verifier", "- [x] Add semantic verifier"),
+                encoding="utf-8",
+            )
+
+            result = self.run_plan(root, goal_path, "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            by_path = {item["path"]: item for item in data["top_candidates"]}
+            radar_gap = by_path["myworld/hivemind/docs/RADAR_GAP_TRIAGE.md"]
+            self.assertIn("stale_hive_radar_gap_source", radar_gap["blocked_reasons"])
+            self.assertNotEqual(data["recommendation"]["path"], "myworld/hivemind/docs/RADAR_GAP_TRIAGE.md")
+
     def test_goal_plan_blocks_closed_contract_and_private_paths(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -178,6 +201,30 @@ class AiosGoalEvolutionTest(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("Quality Function", result.stderr)
+
+    def test_info_only_monitor_watch_does_not_stop_goal_evolution(self) -> None:
+        goal = Goal(
+            path=Path("docs/goals/AIOS-GOAL-TEST.md"),
+            frontmatter={"goal_id": "AIOS-GOAL-TEST", "status": "active"},
+            body="",
+            quality_function=["increase_repeatability: keep loops moving."],
+            anti_cheat_checks=[],
+            preferred_next=[],
+        )
+        monitor = {
+            "health": "watch",
+            "findings": [
+                {
+                    "code": "persona_axis_advisory",
+                    "severity": "info",
+                }
+            ],
+        }
+        recommendation = {"blocked": False}
+
+        stops = stop_conditions(goal, monitor, {"ready": True}, recommendation)
+
+        self.assertNotIn("monitor_not_clear", stops)
 
 
 if __name__ == "__main__":

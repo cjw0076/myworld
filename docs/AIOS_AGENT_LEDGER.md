@@ -6481,3 +6481,24 @@ For repo-local implementation details, also update that repo's own worklog.
   Knowledge Gate. Do not let multi-model consensus, provider availability, or
   broad research evidence bypass contract authority, owner boundaries, or
   receipts.
+
+## 2026-06-05T20:28+09:00 — goal evolution advisory-stop and stale-radar tightening
+
+- goal: keep autonomous goal evolution moving on non-blocking advisory monitor
+  findings while preventing closed Hive TODO signals from re-entering
+  contract autodraft.
+- changed: split the oversized goal evolution planner into focused source,
+  candidate, plan, and stop-condition modules; `aios_goal_evolution.py` is now
+  a thin CLI wrapper. Info-only monitor `watch` findings no longer emit
+  `monitor_not_clear`; Hive radar-gap sources are blocked as
+  `stale_hive_radar_gap_source` when their concrete Hive TODO refinements are
+  already closed.
+- evidence: focused tests passed 19/19 across goal evolution, contract
+  autodraft, and boundary classifier; py_compile passed for the refactored
+  modules; `git diff --check` passed. Live goal evolution now emits
+  `stop_conditions=[]` despite the advisory persona-axis monitor item, and
+  contract autodraft dry-run produces proposed-only `ASC-0228` for the next
+  non-stale Hive candidate.
+- next: use the proposed-only contract autodraft result for the next bounded
+  Hive/MyWorld contract, but keep stale radar-gap and closed TODO references
+  blocked unless a fresh unchecked owner task appears.
