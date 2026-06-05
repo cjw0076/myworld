@@ -38,18 +38,56 @@ SAMPLE = [
 ]
 
 
-def generate_plan(assignments: list[dict], today: str) -> str:
+def generate_plan(assignments: list[dict], today: str) -> tuple[str, list[dict]]:
     prompt = (
         f"오늘은 {today}. 다음은 한 대학생의 이번 주 과제/시험 목록(JSON)이다.\n"
         f"{json.dumps(assignments, ensure_ascii=False)}\n\n"
-        "마감 임박도와 난이도를 고려해 오늘부터 날짜별로 무엇을 해야 하는지 "
-        "구체적 행동계획을 한국어로 작성하라. 각 날짜 블록은 간결하게, 각 항목에 "
-        "'왜 지금'을 한 줄로. 마감 역산으로 가장 급한 것을 앞에. 군더더기 없이."
+        "먼저 기계가 읽을 스케줄을 fenced ```json 블록으로 출력하라: "
+        '[{"date":"YYYY-MM-DD","course":"<입력의 course 그대로>","task":"..."}] '
+        "— 오늘부터 각 과제 마감일 이내로 배분(course 이름은 입력과 정확히 동일하게). "
+        "그 다음 사람이 읽을 한국어 행동계획을 날짜별로, 각 항목에 '왜 지금' 한 줄로 "
+        "간결하게. 마감 역산으로 급한 것부터."
     )
     body = json.dumps({"model": SUBSTRATE, "prompt": prompt, "stream": False}).encode()
     req = urllib.request.Request(OLLAMA_URL, data=body, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=180) as resp:
-        return json.loads(resp.read()).get("response", "").strip()
+        text = json.loads(resp.read()).get("response", "").strip()
+    return text, extract_schedule(text)
+
+
+def extract_schedule(text: str) -> list[dict]:
+    """Leniently pull the first JSON array of schedule entries out of the model
+    output. Returns [] if absent/unparseable — verification then flags it."""
+    import re
+
+    m = re.search(r"\[\s*\{.*?\}\s*\]", text, re.S)
+    if not m:
+        return []
+    try:
+        data = json.loads(m.group(0))
+    except json.JSONDecodeError:
+        return []
+    return [d for d in data if isinstance(d, dict) and d.get("course") and d.get("date")]
+
+
+def verify_schedule(schedule: list[dict], assignments: list[dict], today: str) -> dict:
+    """Deterministic date-consistency check — the RIGHT tool for date logic, which
+    LLMs get wrong (qwen muddled a due-date). LLM plans; code verifies."""
+    by_course: dict[str, list[str]] = {}
+    for e in schedule:
+        by_course.setdefault(str(e["course"]), []).append(str(e["date"]))
+    violations = []
+    for a in assignments:
+        course, due = a["course"], a["due"]
+        dates = sorted(by_course.get(course, []))
+        if not dates:
+            violations.append({"course": course, "issue": "not scheduled"})
+            continue
+        if dates[-1] > due:  # ISO dates compare lexicographically = chronologically
+            violations.append({"course": course, "issue": f"last work {dates[-1]} is AFTER due {due}"})
+        if dates[0] < today:
+            violations.append({"course": course, "issue": f"work {dates[0]} is BEFORE today {today}"})
+    return {"ok": not violations, "violations": violations, "courses_scheduled": len(by_course)}
 
 
 def genesis_critique(plan: str) -> dict:
@@ -78,7 +116,8 @@ def genesis_critique(plan: str) -> dict:
 
 
 def run(assignments: list[dict], today: str) -> dict:
-    plan = generate_plan(assignments, today)
+    plan, schedule = generate_plan(assignments, today)
+    verification = verify_schedule(schedule, assignments, today)
     critique = genesis_critique(plan)
     return {
         "schema_version": SCHEMA_VERSION,
@@ -87,8 +126,10 @@ def run(assignments: list[dict], today: str) -> dict:
         "substrate_note": "local ollama on dual RTX 5090 — free, private, no provider dependency",
         "assignments": assignments,
         "plan": plan,
+        "schedule": schedule,
+        "verification": verification,
         "genesis_critique": critique,
-        "provenance": "plan generated locally; inputs + substrate id recorded for MemoryOS draft",
+        "provenance": "local gen + deterministic date-verify; inputs + substrate id recorded for MemoryOS draft",
     }
 
 
@@ -116,9 +157,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(receipt, ensure_ascii=False, indent=2))
     else:
+        v = receipt["verification"]
         print(f"=== Deadline Copilot (substrate: {receipt['substrate']}, {today}) ===\n")
         print(receipt["plan"])
-        print(f"\n[genesis_critique: {receipt['genesis_critique']['status']}] "
+        verdict = "PASS" if v["ok"] else "FLAGGED " + "; ".join(
+            f"{x['course']}: {x['issue']}" for x in v["violations"]
+        )
+        print(f"\n[date-verify: {verdict}] [genesis: {receipt['genesis_critique']['status']}] "
               f"[receipt: .aios/copilot/receipt-{stamp}.json]")
     return 0
 
