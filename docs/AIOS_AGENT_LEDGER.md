@@ -6455,3 +6455,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - **reference_orchestration_landscape_2026.md** (0.2d stale) — "2026 multi-agent orchestration 시장 — LangGraph 우세, Temporal 결합, AutoGen→AG2, Claude Agent SDK; AIOS 와의 추상화 레이어 차이"
 
   Each above requires explicit operator decision within 7 days: (a) new ASC contract / (b) ledger-reject reason / (c) explicit keep-stale.
+
+## 2026-06-05T20:20+09:00 — substrate/plugin/knowledge boundary checkpoint
+
+- goal: answer the founder boundary question: whether AIOS should touch deep
+  process/OS substrate, remain agent-friendly plugins, or require all
+  available knowledge.
+- decision: keep AIOS plugin/control-plane first. Use process/OS substrate only
+  for authority enforcement, isolation, lifecycle control, quotas, kill/retry,
+  secret boundaries, and audit/provenance receipts. Treat multi-model,
+  web-research, local-LLM, classic, and cross-domain evidence as knowledge
+  scope, not execution authority.
+- evidence: boundary classifier routed the question to
+  `execution_substrate`/Hive with `execute_with_receipt`, but contract
+  autodraft was held by `monitor_not_clear`. Web comparison used Kubernetes
+  CRI, VS Code extension host, and Chrome Manifest V3 patterns: deep runtime
+  or worker boundaries sit behind stable interfaces, while most user-facing
+  capabilities remain extension/plugin surfaces.
+- provider evidence: Claude CLI was unavailable due weekly limit; Gemini CLI
+  was unavailable due quota exhaustion; local Ollama was not installed. The
+  side-agent review independently recommended the same split: substrate
+  enforces permission, plugins expand capability, knowledge increases
+  confidence.
+- next: new contracts should continue carrying a Substrate / Plugin /
+  Knowledge Gate. Do not let multi-model consensus, provider availability, or
+  broad research evidence bypass contract authority, owner boundaries, or
+  receipts.
