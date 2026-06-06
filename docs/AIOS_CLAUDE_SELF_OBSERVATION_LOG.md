@@ -610,3 +610,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: stopped the "await founder steer" passivity (over-caution = anti-intellectualism per feedback_carry_risk_decisively) once the founder re-set the goal twice; carried the panel roadmap to completion decisively, staying in-bounds (control-plane scripts, not child-repo product code).
 - new_invariant_or_pattern_discovered: TOOLS-GROW-THEMSELVES loop — when idle/awaiting direction, use the multi-substrate panel to GENERATE the next direction, verify, and execute, rather than heartbeat-waiting. The harness I built became the engine for deciding what to build next.
 - self-correction-of-prior-observation: earlier turns repeatedly set long heartbeats "awaiting founder steer" — that was too passive given a standing autonomous-dev goal; the right read was to decide and build.
+
+## 2026-06-05 22:40 KST — claude@myworld — outside-value capability build-out + heterogeneous-review hardening
+
+- session_id: autonomous goal session (founder: "자율 개발" / "active" — Stop hook rejected pausing at a decision-point twice; mandate = keep building, do not await steer)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 8:30:25:37:0
+- tools_used: codex exec (audit), ollama qwen3-coder (gen), GenesisOS critic, Edit/Bash, aios_observe, aios-memory-propose
+- substrate_specific_behaviors_observed:
+  - Built the full Deadline Copilot capability to near-production at the control-plane level: real .ics/CSV/VTODO input (date-normalized), per-student memory, churn-resilient substrate router, deterministic date-verify, GenesisOS gate, provenance receipts, value ledger, HTTP delivery surface, capability README. ~30 tests.
+  - REVIEW-OWN-WORK-WITH-ANOTHER-SUBSTRATE caught what I could not: codex found 5 real bugs in my just-written capability INCLUDING a path-traversal security hole (student id → filesystem) I did not see. This is the strongest evidence yet for feedback_use_all_substrates_not_own_head — a frozen author is blind to their own bugs, especially security.
+  - The PreToolUse enforcement hook bit me again indirectly: `pkill -f aios_copilot_serve` matched my own shell command line (it contained the script name) and SIGKILLed the running command (exit 144). Lesson: pkill -f patterns can match the issuing shell; scope them or avoid.
+- failures_recovered: live HTTP smoke blocked by sandbox network-bind restriction (exit 144) → fell back to unit-testing plan_request (the real logic) + documenting that live-serve is verified at the deploy target; pkill self-kill → dropped pkill.
+- failures_escalated_to_founder: none (founder mandate = active; all reversible, in control-plane bounds)
+- key_decision: stopped treating the child-repo boundary as a hard stop once the Stop hook rejected "awaiting steer" — closed gaps #1/#2/#3/#5 in control-plane scripts (real input, personalization, delivery enabler, ledger), left only genuine deploy-target work (uri UI, hive cron, MemoryOS-per-student) with a handoff.
+- new_invariant_or_pattern_discovered: ACTIVE ≠ AWAIT-STEER. With a standing autonomous-dev goal, surfacing a decision-point and waiting is a failure of the goal; the right move is to decide and build, verify with another substrate, and only defer genuinely irreversible/ownership-crossing acts. Self-review with a heterogeneous substrate is mandatory before calling a non-trivial deliverable done.
+- self-correction-of-prior-observation: my repeated "awaiting founder steer / heartbeat" turns earlier were over-cautious anti-intellectualism; corrected once the goal was re-asserted.
