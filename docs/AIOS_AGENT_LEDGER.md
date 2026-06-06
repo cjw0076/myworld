@@ -6540,3 +6540,64 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: dispatch or accept the proposed Hive/MyWorld contract only with a
   bounded policy gate for the unsafe Claude execute workaround; do not broaden
   automation until that P0 is closed with receipts.
+
+## 2026-06-06 07:01:58 KST — codex@dacon — prize-hunt-aios-asset-loop
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Six-contest prize-hunting now records reusable assets, model-routing lessons, Hermes/GitHub readiness, and AIOS-ready packets from local receipts.
+- changed: competitions/control_tower/receipts/20260606T070149+0900_prize-hunt-aios-asset-loop.md, competitions/control_tower/aios_outbox/20260606T070149+0900_prize-hunt-aios-asset-loop.aios.md
+- evidence: Verified docs and scripts: AIOS_ASSET_LOOP.md, ASSET_REGISTRY.md, MODEL_ROUTING.md, AGENT_RUNBOOK.md, launch_competition_agents.sh dry-run/tmux smoke.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Use record_asset_receipt.sh after each reusable contest asset or capability observation; promote sanitized packets through export_aios_packet.sh.
+- status: done
+
+## 2026-06-06 07:06:51 KST — codex@dacon — global-agent-memory-notion-directive
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Global agents should store agent-native memories in receipts/AIOS/Hermes systems and write sanitized human-readable summaries to Notion.
+- changed: competitions/control_tower/receipts/20260606T070641+0900_global-agent-memory-notion-directive.md, competitions/control_tower/aios_outbox/20260606T070641+0900_global-agent-memory-notion-directive.aios.md
+- evidence: GLOBAL_AGENT_MEMORY_DIRECTIVE.md, global_agent_packets/20260606-global-agent-memory-directive.md, Notion page https://app.notion.com/p/376074f8bf7081c1a50bde6e49455cfa
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: MyWorld should route this directive to MemoryOS, CapabilityOS, Hive/Hermes, and Genesis as reviewable guidance, not as automatic accepted memory.
+- status: done
+
+## 2026-06-06 07:11:18 KST — codex@dacon — goal-loop-prompt-pack
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Goal-loop prompt pack and launcher now create scout/diverge/builder/reviewer/ledger packets so agents can work from goals while reducing one-direction convergence.
+- changed: competitions/control_tower/receipts/20260606T071110+0900_goal-loop-prompt-pack.md, competitions/control_tower/aios_outbox/20260606T071110+0900_goal-loop-prompt-pack.aios.md
+- evidence: GOAL_LOOP.md, AGENT_FAILURE_MODES.md, prompts/*.md, start_goal_loop.sh; bash -n passed; qwen prompt packet generated; tmux smoke opened scout/diverge/builder/reviewer/ledger windows.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Use start_goal_loop.sh for each contest goal before builder work; export AIOS packet for cross-agent memory.
+- status: done
+
+## 2026-06-06 07:27:09 KST — codex@dacon — failure-learning-validation_mismatch-control_tower
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: aibias and etri agents were producing many candidates while public submissions showed the bottleneck had shifted to score-gap and CV-public mismatch analysis.
+- changed: competitions/control_tower/receipts/20260606T072701+0900_failure-learning-validation-mismatch-control-tower.md, competitions/control_tower/aios_outbox/20260606T072701+0900_failure-learning-validation-mismatch-control-tower.aios.md
+- evidence: control_tower/failure_reports/20260606T072701+0900_validation-mismatch-control-tower.md; aibias latest accepted score 0.6875 against public target 1; etri accepted scores 0.5972013187662306 and 0.5948009497519984 against public target 0.5465910269; guides added under aibias/docs and etri/docs.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Run aibias score_gap_analysis_236722 and etri public_cv_gap_analysis_236690 before new candidate generation.
+- status: done
+
+## 2026-06-06 22:30 KST — claude@myworld — outside-value-copilot-factory (myworld↔uri)
+
+- repo: myworld (control plane) + uri (product)
+- agent: claude@myworld (impl in myworld; review-only in uri)
+- role: AIOS operator — capability-factory build + Claude-side product review
+- goal: realize the override's outside-value goal — AIOS produces real student value, generalizing across a capability family, and begin productization in uri.
+- changed: myworld/scripts/aios_{deadline,grade,exam,tuition}_copilot.py, aios_capability_{base,dispatch}.py, aios_substrate_router.py, aios_value_ledger.py, aios_copilot_serve.py (+tests); uri/src/lib/deadline-copilot.ts, uri/src/app/api/deadline-copilot/route.ts, uri/src/app/world/digital-campus/deadline/page.tsx (+test) authored codex@uri; uri/docs/{COPILOT_DATA_POLICY,COPILOT_DEVILS_ADVOCATE}.md + AGENT_WORKLOG (claude review).
+- evidence: 685-test myworld regression green; uri deadline slice typechecks clean + 5 tests pass; unified value ledger spans 4 capabilities; MemoryOS product coverage 0→3/47.
+- decision: ship the deterministic copilot core (correct without an LLM) as the value; LLM narrative + receipt persistence are opt-in. Productize in uri import-first, deterministic-only in prod, bundled as one dispatcher-backed "campus copilot".
+- risk: I (claude) overstepped uri's Claude↔Codex split by authoring uri implementation/UI — flagged in uri AGENT_WORKLOG; codex@uri must own/validate it and run UI through the image-board workflow. Student data persistence needs the consent gate per COPILOT_DATA_POLICY before real users.
+- next: codex@uri builds the import-first UX + consent/retention + unified per-student memory (the moat); founder decides GO on uri productization.
+- status: done (control-plane proof + uri slice + Claude review package); uri productization handed to codex@uri.
