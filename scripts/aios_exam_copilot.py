@@ -25,8 +25,11 @@ from aios_deadline_copilot import extract_schedule, norm_date, parse_ical
 SCHEMA_VERSION = "aios.exam_copilot.v1"
 
 
-def generate_prep(exams: list[dict], today: str) -> tuple[str, list[dict], str | None, list[dict]]:
+def generate_prep(
+    exams: list[dict], today: str, feedback: str = ""
+) -> tuple[str, list[dict], str | None, list[dict]]:
     prompt = (
+        f"{feedback}"
         f"오늘은 {today}. 다음은 한 대학생의 시험 일정(JSON, due=시험일)이다.\n"
         f"{json.dumps(exams, ensure_ascii=False)}\n\n"
         "각 시험 전에 집중 공부(deep-work) 블록을 배치하라. 먼저 기계용 스케줄을 fenced "
@@ -65,11 +68,27 @@ def verify_prep(prep: list[dict], exams: list[dict], today: str) -> dict:
     return {"ok": not violations, "violations": violations, "exams": len(exams)}
 
 
-def run(exams: list[dict], today: str) -> dict:
-    plan, prep, served, trail = generate_prep(exams, today)
-    verification = verify_prep(prep, exams, today)
+def run(exams: list[dict], today: str, max_tries: int = 2) -> dict:
+    # self-repair loop (same as deadline copilot): exam prep is LLM-proposed, so
+    # if a block lands on/after its exam or before today, feed the violations back
+    # and regenerate until the deterministic verify passes (or max_tries).
+    feedback = ""
+    attempt = 0
+    plan, prep, served, trail = "", [], None, []
+    verification: dict = {"ok": False, "violations": []}
+    for attempt in range(1, max_tries + 1):
+        plan, prep, served, trail = generate_prep(exams, today, feedback)
+        verification = verify_prep(prep, exams, today)
+        if verification["ok"]:
+            break
+        feedback = (
+            "이전 시도가 prep 날짜 규칙을 위반했다: "
+            + "; ".join(f"{v['course']} {v['issue']}" for v in verification["violations"])
+            + ". 반드시 고쳐 다시 작성하라.\n"
+        )
     return {
         "schema_version": SCHEMA_VERSION,
+        "verify_attempts": attempt,
         "generated_at": today,
         "substrate": served,
         "routing_trail": trail,
