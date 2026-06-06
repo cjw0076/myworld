@@ -101,6 +101,44 @@ class InputAdapterTests(unittest.TestCase):
         self.assertEqual(out[0]["due"], "2026-06-09")
 
 
+class NormDateAndSecurityTests(unittest.TestCase):
+    def test_norm_date(self) -> None:
+        self.assertEqual(c.norm_date("2026-6-2"), "2026-06-02")
+        self.assertEqual(c.norm_date("20260608"), "2026-06-08")
+        self.assertEqual(c.norm_date("20260610T090000Z"), "2026-06-10")
+        self.assertIsNone(c.norm_date("2026-13-40"))
+        self.assertIsNone(c.norm_date("garbage"))
+        self.assertIsNone(c.norm_date(""))
+
+    def test_verify_normalizes_nonpadded(self) -> None:
+        v = c.verify_schedule(
+            [{"date": "2026-6-7", "course": "자료구조"}],
+            [{"course": "자료구조", "title": "x", "due": "2026-6-8"}],
+            "2026-6-5",
+        )
+        self.assertTrue(v["ok"])  # 06-07 within [06-05, 06-08] after normalization
+
+    def test_verify_flags_invalid_due(self) -> None:
+        v = c.verify_schedule(
+            [{"date": "2026-06-07", "course": "c"}],
+            [{"course": "c", "title": "x", "due": "nope"}],
+            "2026-06-05",
+        )
+        self.assertFalse(v["ok"])
+        self.assertTrue(any("invalid due" in x["issue"] for x in v["violations"]))
+
+    def test_ical_prefers_due_over_dtstart(self) -> None:
+        ics = "BEGIN:VTODO\nSUMMARY:HW\nDTSTART:20260601\nDUE:20260610\nCATEGORIES:CS\nEND:VTODO\n"
+        out = c.parse_ical(ics)
+        self.assertEqual(out[0]["due"], "2026-06-10")
+
+    def test_student_dir_blocks_traversal(self) -> None:
+        base = (c.ROOT / ".aios" / "copilot").resolve()
+        d = c.student_dir("../../etc/passwd").resolve()
+        self.assertTrue(str(d).startswith(str(base)))
+        self.assertEqual(d.parent, base)  # exactly one safe segment under copilot
+
+
 class PerStudentMemoryTests(unittest.TestCase):
     def test_empty_dir_no_context(self) -> None:
         import tempfile

@@ -20,13 +20,32 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import time
+from datetime import date
 from pathlib import Path
 
 import aios_substrate_router as router
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def norm_date(value) -> str | None:
+    """Normalize a date-ish string to a VALID YYYY-MM-DD, or None if unparseable
+    (codex review #1/#3: raw string compares break on non-padded/invalid dates)."""
+    if not value:
+        return None
+    parts = [p for p in re.split(r"[^0-9]", str(value).strip()) if p]
+    try:
+        if len(parts) >= 3 and len(parts[0]) == 4:
+            return date(int(parts[0]), int(parts[1]), int(parts[2])).isoformat()
+        digits = "".join(ch for ch in str(value) if ch.isdigit())
+        if len(digits) >= 8:
+            return date(int(digits[0:4]), int(digits[4:6]), int(digits[6:8])).isoformat()
+    except ValueError:
+        return None
+    return None
 SCHEMA_VERSION = "aios.deadline_copilot.v1"
 SUBSTRATE = "qwen3-coder:30b"
 # churn-resilient fallback chain (preferred → backups), all local
@@ -77,20 +96,27 @@ def extract_schedule(text: str) -> list[dict]:
 def verify_schedule(schedule: list[dict], assignments: list[dict], today: str) -> dict:
     """Deterministic date-consistency check — the RIGHT tool for date logic, which
     LLMs get wrong (qwen muddled a due-date). LLM plans; code verifies."""
+    today_n = norm_date(today) or today
     by_course: dict[str, list[str]] = {}
     for e in schedule:
-        by_course.setdefault(str(e["course"]), []).append(str(e["date"]))
+        d = norm_date(e.get("date"))
+        if d:
+            by_course.setdefault(str(e.get("course")), []).append(d)
     violations = []
     for a in assignments:
-        course, due = a["course"], a["due"]
-        dates = sorted(by_course.get(course, []))
+        course = a["course"]
+        due = norm_date(a.get("due"))
+        if not due:
+            violations.append({"course": course, "issue": f"invalid due date {a.get('due')!r}"})
+            continue
+        dates = sorted(by_course.get(course, []))  # normalized ISO → lexicographic = chronological
         if not dates:
             violations.append({"course": course, "issue": "not scheduled"})
             continue
-        if dates[-1] > due:  # ISO dates compare lexicographically = chronologically
+        if dates[-1] > due:
             violations.append({"course": course, "issue": f"last work {dates[-1]} is AFTER due {due}"})
-        if dates[0] < today:
-            violations.append({"course": course, "issue": f"work {dates[0]} is BEFORE today {today}"})
+        if dates[0] < today_n:
+            violations.append({"course": course, "issue": f"work {dates[0]} is BEFORE today {today_n}"})
     return {"ok": not violations, "violations": violations, "courses_scheduled": len(by_course)}
 
 
@@ -152,30 +178,33 @@ def _unfold(text: str) -> list[str]:
     return out
 
 
-def _ical_date(val: str) -> str:
-    digits = "".join(ch for ch in val if ch.isdigit())[:8]
-    return f"{digits[0:4]}-{digits[4:6]}-{digits[6:8]}" if len(digits) >= 8 else val.strip()
-
-
 def parse_ical(text: str) -> list[dict]:
+    # VEVENT/VTODO: prefer DUE, then DTEND, then DTSTART for the deadline
+    # (codex review #2); normalize all dates.
     assignments: list[dict] = []
     cur: dict = {}
     in_event = False
     for line in _unfold(text):
         s = line.strip()
-        if s == "BEGIN:VEVENT":
+        if s in ("BEGIN:VEVENT", "BEGIN:VTODO"):
             in_event, cur = True, {}
-        elif s == "END:VEVENT":
-            if in_event and cur.get("title") and cur.get("due"):
-                cur.setdefault("course", cur["title"][:24])
-                assignments.append(cur)
+        elif s in ("END:VEVENT", "END:VTODO"):
+            due = cur.get("_due") or cur.get("_dtend") or cur.get("_dtstart")
+            if in_event and cur.get("title") and due:
+                assignments.append(
+                    {"course": cur.get("course") or cur["title"][:24], "title": cur["title"], "due": due}
+                )
             in_event, cur = False, {}
         elif not in_event:
             continue
         elif s.startswith("SUMMARY:"):
             cur["title"] = s[len("SUMMARY:"):].strip()
-        elif s.startswith("DTSTART"):
-            cur["due"] = _ical_date(s.split(":", 1)[1]) if ":" in s else cur.get("due")
+        elif s.startswith("DUE") and ":" in s:
+            cur["_due"] = norm_date(s.split(":", 1)[1])
+        elif s.startswith("DTEND") and ":" in s:
+            cur["_dtend"] = norm_date(s.split(":", 1)[1])
+        elif s.startswith("DTSTART") and ":" in s:
+            cur["_dtstart"] = norm_date(s.split(":", 1)[1])
         elif s.startswith("CATEGORIES:"):
             cur["course"] = s[len("CATEGORIES:"):].split(",")[0].strip()
     return assignments
@@ -189,9 +218,9 @@ def parse_csv(text: str) -> list[dict]:
     for row in csv.DictReader(io.StringIO(text)):
         low = {(k or "").lower().strip(): (v or "").strip() for k, v in row.items()}
         title = low.get("title") or low.get("assignment") or low.get("summary")
-        due = low.get("due") or low.get("date") or low.get("deadline")
+        due = norm_date(low.get("due") or low.get("date") or low.get("deadline"))
         if title and due:
-            out.append({"course": low.get("course") or title[:24], "title": title, "due": due[:10]})
+            out.append({"course": low.get("course") or title[:24], "title": title, "due": due})
     return out
 
 
@@ -206,7 +235,9 @@ def load_assignments(args: argparse.Namespace) -> list[dict]:
 
 
 def student_dir(student: str | None) -> Path:
-    return ROOT / ".aios" / "copilot" / (student or "_default")
+    # sanitize: prevent path traversal via student id (codex review #4)
+    safe = re.sub(r"[^A-Za-z0-9_.-]", "_", student or "")[:64].lstrip(".")
+    return ROOT / ".aios" / "copilot" / (safe or "_default")
 
 
 def load_prior_context(directory: Path) -> str:

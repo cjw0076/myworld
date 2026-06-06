@@ -44,6 +44,12 @@ class SubstrateRouterTests(unittest.TestCase):
         self.assertEqual(res["substrate"], "m2")
         self.assertEqual(res["trail"][0]["result"], "not installed")
 
+    def test_unreachable_daemon_fails_fast(self) -> None:
+        r.list_local_models = lambda: []  # ollama down / no models
+        res = r.generate("p", prefer=["m1", "m2"])
+        self.assertFalse(res["ok"])
+        self.assertEqual(res["trail"][0]["substrate"], "ollama")
+
     def test_empty_falls_through(self) -> None:
         r.generate_local = lambda model, prompt, timeout=180: "" if model == "m1" else "text"
         res = r.generate("p", prefer=["m1", "m2"])

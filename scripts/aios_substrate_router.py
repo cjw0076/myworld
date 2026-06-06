@@ -48,6 +48,9 @@ def generate(prompt: str, prefer: list[str] | None = None, timeout: int = 180) -
     available = set(list_local_models())
     chain = prefer or DEFAULT_CHAIN
     trail: list[dict] = []
+    if not available:  # daemon unreachable / no models → fail fast, no timeout storm (codex #5)
+        return {"ok": False, "substrate": None, "text": "",
+                "trail": [{"substrate": "ollama", "result": "unreachable or no models"}]}
     for model in chain:
         if available and model not in available:
             trail.append({"substrate": model, "result": "not installed"})
