@@ -20,53 +20,50 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.value_ledger.v1"
-DEFAULT_DIR = ROOT / ".aios" / "copilot"
+DEFAULT_DIR = ROOT / ".aios"  # whole capability family (copilot/grade/exam/…)
 
 
 def load_receipts(directory: Path) -> list[dict]:
     out: list[dict] = []
     for fp in sorted(directory.rglob("receipt-*.json")):  # rglob: include per-student subdirs
         try:
-            out.append(json.loads(fp.read_text()))
+            r = json.loads(fp.read_text())
         except (OSError, json.JSONDecodeError):
             continue
+        if isinstance(r, dict) and r.get("schema_version"):  # real capability receipts only
+            out.append(r)
     return out
 
 
-def aggregate(receipts: list[dict]) -> dict:
-    total = len(receipts)
-    base = {
-        "schema_version": SCHEMA_VERSION,
-        "total_outputs": total,
-        "verify_pass": 0,
-        "verify_pass_rate": 0.0,
-        "genesis_ok": 0,
-        "genesis_ok_rate": 0.0,
-        "substrate_distribution": {},
-        "churn_fallback_events": 0,
-    }
-    if not total:
-        return base
-    verify_pass = sum(1 for r in receipts if (r.get("verification") or {}).get("ok"))
-    genesis_ok = sum(1 for r in receipts if (r.get("genesis_critique") or {}).get("status") == "ok")
-    subs = Counter(r.get("substrate") or "unknown" for r in receipts)
-    # a fallback happened when something before the served substrate failed/was absent
+def _metrics(rs: list[dict]) -> dict:
+    """Per-capability metrics, tolerant of each capability's receipt shape
+    (rates computed only over receipts that actually have that gate)."""
+    verifiable = [r for r in rs if "verification" in r]
+    gens = [r for r in rs if "genesis_critique" in r]
+    subs = Counter(r.get("substrate") or "unknown" for r in rs)
     fallbacks = sum(
-        1
-        for r in receipts
-        if any(t.get("result") != "ok" for t in (r.get("routing_trail") or [])[:-1])
+        1 for r in rs if any(t.get("result") != "ok" for t in (r.get("routing_trail") or [])[:-1])
     )
-    base.update(
-        {
-            "verify_pass": verify_pass,
-            "verify_pass_rate": round(verify_pass / total, 4),
-            "genesis_ok": genesis_ok,
-            "genesis_ok_rate": round(genesis_ok / total, 4),
-            "substrate_distribution": dict(sorted(subs.items(), key=lambda kv: -kv[1])),
-            "churn_fallback_events": fallbacks,
-        }
-    )
-    return base
+    return {
+        "outputs": len(rs),
+        "verify_pass": sum(1 for r in verifiable if (r.get("verification") or {}).get("ok")),
+        "verify_of": len(verifiable),
+        "genesis_ok": sum(1 for r in gens if (r.get("genesis_critique") or {}).get("status") == "ok"),
+        "genesis_of": len(gens),
+        "substrate_distribution": dict(sorted(subs.items(), key=lambda kv: -kv[1])),
+        "churn_fallback_events": fallbacks,
+    }
+
+
+def aggregate(receipts: list[dict]) -> dict:
+    by_cap: dict[str, list[dict]] = {}
+    for r in receipts:
+        by_cap.setdefault(r.get("schema_version") or "unknown", []).append(r)
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "total_outputs": len(receipts),
+        "capabilities": {cap: _metrics(rs) for cap, rs in sorted(by_cap.items())},
+    }
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -82,14 +79,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.json:
         print(json.dumps(led, ensure_ascii=False, indent=2, sort_keys=True))
     else:
-        print(
-            f"value_ledger outputs={led['total_outputs']} "
-            f"verify_pass={led['verify_pass']}/{led['total_outputs']} ({led['verify_pass_rate']}) "
-            f"genesis_ok={led['genesis_ok']}/{led['total_outputs']} ({led['genesis_ok_rate']}) "
-            f"churn_fallbacks={led['churn_fallback_events']}"
-        )
-        for sub, n in led["substrate_distribution"].items():
-            print(f"  substrate {sub}: {n}")
+        print(f"value_ledger total_outputs={led['total_outputs']} across {len(led['capabilities'])} capabilities")
+        for cap, m in led["capabilities"].items():
+            print(
+                f"  {cap}: outputs={m['outputs']} "
+                f"verify={m['verify_pass']}/{m['verify_of']} genesis={m['genesis_ok']}/{m['genesis_of']} "
+                f"churn={m['churn_fallback_events']} subs={m['substrate_distribution']}"
+            )
     return 0
 
 
