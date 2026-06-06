@@ -54,6 +54,18 @@ class DispatchTests(unittest.TestCase):
         self.assertEqual(cap, "tuition")
         self.assertEqual(receipt["n"], 1)
 
+    def test_deadline_threads_student_memory(self) -> None:
+        orig_lpc = deadline.load_prior_context
+        captured: dict = {}
+        deadline.load_prior_context = lambda _dir: 'PRIOR'
+        deadline.run = lambda items, today, prior='': (captured.update(prior=prior) or {'ok': True})
+        try:
+            cap, _ = d.dispatch({'csv': 'course,title,due\nCS,t,2026-06-10\n', 'student': 'kim'}, '2026-06-06')
+        finally:
+            deadline.load_prior_context = orig_lpc
+        self.assertEqual(cap, 'deadline')
+        self.assertEqual(captured['prior'], 'PRIOR')
+
     def test_unknown_returns_error(self) -> None:
         cap, receipt = d.dispatch({"csv": "x,y,z\n"}, "2026-06-06")
         self.assertIsNone(cap)

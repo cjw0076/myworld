@@ -56,7 +56,9 @@ def dispatch(payload: dict, today: str) -> tuple[str | None, dict]:
     cap = detect_capability(payload)
     if cap == "deadline":
         items = deadline.parse_ical(payload["ical"]) if payload.get("ical") else deadline.parse_csv(payload.get("csv", ""))
-        return cap, deadline.run(items, today, "")
+        student = payload.get("student")
+        prior = deadline.load_prior_context(deadline.student_dir(student)) if student else ""
+        return cap, deadline.run(items, today, prior)
     if cap == "exam":
         return cap, exam.run(exam.parse_ical(payload["ical"]), today)
     if cap == "grade":
@@ -71,6 +73,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--csv", type=Path)
     p.add_argument("--ical", type=Path)
     p.add_argument("--kind", choices=["exam"], help="for .ics: treat as exam prep")
+    p.add_argument("--student", default=None, help="student id → per-student memory (deadline)")
     p.add_argument("--today", default=None)
     p.add_argument("--json", action="store_true")
     return p
@@ -85,6 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         payload["csv"] = args.csv.read_text(encoding="utf-8")
     if args.kind:
         payload["kind"] = args.kind
+    if args.student:
+        payload["student"] = args.student
     today = args.today or time.strftime("%Y-%m-%d")
 
     cap, receipt = dispatch(payload, today)
