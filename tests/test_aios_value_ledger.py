@@ -16,10 +16,10 @@ class AggregateTests(unittest.TestCase):
     def test_groups_by_capability(self) -> None:
         receipts = [
             {"schema_version": "aios.deadline_copilot.v1", "substrate": "qwen3-coder:30b",
-             "verification": {"ok": True}, "genesis_critique": {"status": "ok"},
+             "verification": {"ok": True}, "genesis_critique": {"status": "ok"}, "verify_attempts": 2,
              "routing_trail": [{"substrate": "qwen3-coder:30b", "result": "ok"}]},
             {"schema_version": "aios.deadline_copilot.v1", "substrate": "qwen3:30b-a3b",
-             "verification": {"ok": False}, "genesis_critique": {"status": "ok"},
+             "verification": {"ok": False}, "genesis_critique": {"status": "ok"}, "verify_attempts": 1,
              "routing_trail": [{"substrate": "qwen3-coder:30b", "result": "error: down"},
                                {"substrate": "qwen3:30b-a3b", "result": "ok"}]},
             # a different capability with no verification/genesis fields (grade-shaped)
@@ -32,6 +32,7 @@ class AggregateTests(unittest.TestCase):
         dl = a["capabilities"]["aios.deadline_copilot.v1"]
         self.assertEqual(dl["outputs"], 2)
         self.assertEqual((dl["verify_pass"], dl["verify_of"]), (1, 2))
+        self.assertEqual((dl["repaired"], dl["repaired_of"]), (1, 2))  # one needed a re-gen
         self.assertEqual(dl["churn_fallback_events"], 1)
         gr = a["capabilities"]["aios.grade_copilot.v1"]
         self.assertEqual((gr["verify_pass"], gr["verify_of"]), (0, 0))  # no verify gate → not counted

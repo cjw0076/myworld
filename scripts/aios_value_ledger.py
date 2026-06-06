@@ -44,12 +44,16 @@ def _metrics(rs: list[dict]) -> dict:
     fallbacks = sum(
         1 for r in rs if any(t.get("result") != "ok" for t in (r.get("routing_trail") or [])[:-1])
     )
+    repairable = [r for r in rs if "verify_attempts" in r]
     return {
         "outputs": len(rs),
         "verify_pass": sum(1 for r in verifiable if (r.get("verification") or {}).get("ok")),
         "verify_of": len(verifiable),
         "genesis_ok": sum(1 for r in gens if (r.get("genesis_critique") or {}).get("status") == "ok"),
         "genesis_of": len(gens),
+        # how often the deterministic verifier had to drive a re-generation (>1 attempt)
+        "repaired": sum(1 for r in repairable if int(r.get("verify_attempts") or 1) > 1),
+        "repaired_of": len(repairable),
         "substrate_distribution": dict(sorted(subs.items(), key=lambda kv: -kv[1])),
         "churn_fallback_events": fallbacks,
     }
@@ -83,7 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         for cap, m in led["capabilities"].items():
             print(
                 f"  {cap}: outputs={m['outputs']} "
-                f"verify={m['verify_pass']}/{m['verify_of']} genesis={m['genesis_ok']}/{m['genesis_of']} "
+                f"verify={m['verify_pass']}/{m['verify_of']} repaired={m['repaired']}/{m['repaired_of']} "
+                f"genesis={m['genesis_ok']}/{m['genesis_of']} "
                 f"churn={m['churn_fallback_events']} subs={m['substrate_distribution']}"
             )
     return 0
