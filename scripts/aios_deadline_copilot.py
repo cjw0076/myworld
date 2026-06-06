@@ -141,11 +141,30 @@ def genesis_critique(plan: str) -> dict:
         return {"status": "unavailable", "detail": str(exc)[:200]}
 
 
-def run(assignments: list[dict], today: str, prior_context: str = "") -> dict:
-    plan, schedule, served, trail = generate_plan(assignments, today, prior_context)
-    verification = verify_schedule(schedule, assignments, today)
+def run(assignments: list[dict], today: str, prior_context: str = "", max_tries: int = 2) -> dict:
+    # self-repair loop: the deterministic verifier drives re-generation — if the
+    # plan violates a deadline, feed the violations back and retry until it passes
+    # (or max_tries). The capability produces a VALID plan, not just a flagged one.
+    feedback = ""
+    attempt = 0
+    plan = ""
+    schedule: list[dict] = []
+    served: str | None = None
+    trail: list[dict] = []
+    verification: dict = {"ok": False, "violations": []}
+    for attempt in range(1, max_tries + 1):
+        plan, schedule, served, trail = generate_plan(assignments, today, prior_context + feedback)
+        verification = verify_schedule(schedule, assignments, today)
+        if verification["ok"]:
+            break
+        feedback = (
+            " 이전 시도가 마감/날짜 규칙을 위반했다: "
+            + "; ".join(f"{v['course']} {v['issue']}" for v in verification["violations"])
+            + ". 이를 반드시 고쳐 다시 작성하라."
+        )
     critique = genesis_critique(plan)
     return {
+        "verify_attempts": attempt,
         "schema_version": SCHEMA_VERSION,
         "generated_at": today,
         "substrate": served,

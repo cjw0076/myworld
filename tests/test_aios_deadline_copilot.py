@@ -166,5 +166,35 @@ class PerStudentMemoryTests(unittest.TestCase):
         self.assertTrue(c.student_dir("kim").name == "kim")
 
 
+class RepairLoopTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self._gp, self._gc = c.generate_plan, c.genesis_critique
+        c.genesis_critique = lambda plan: {"status": "skipped"}
+
+    def tearDown(self) -> None:
+        c.generate_plan, c.genesis_critique = self._gp, self._gc
+
+    def test_repairs_until_valid(self) -> None:
+        calls = {"n": 0}
+
+        def gp(assignments, today, ctx=""):
+            calls["n"] += 1
+            if calls["n"] == 1:  # bad: work after the due date
+                return "bad", [{"date": "2026-06-20", "course": "자료구조"}], "qwen3-coder:30b", []
+            return "good", [{"date": "2026-06-07", "course": "자료구조"}], "qwen3-coder:30b", []
+
+        c.generate_plan = gp
+        receipt = c.run([{"course": "자료구조", "title": "x", "due": "2026-06-08"}], "2026-06-06")
+        self.assertTrue(receipt["verification"]["ok"])
+        self.assertEqual(receipt["verify_attempts"], 2)
+        self.assertEqual(receipt["plan"], "good")
+
+    def test_stops_at_max_tries(self) -> None:
+        c.generate_plan = lambda a, t, ctx="": ("bad", [{"date": "2026-06-20", "course": "자료구조"}], "x", [])
+        receipt = c.run([{"course": "자료구조", "title": "x", "due": "2026-06-08"}], "2026-06-06", max_tries=2)
+        self.assertFalse(receipt["verification"]["ok"])
+        self.assertEqual(receipt["verify_attempts"], 2)
+
+
 if __name__ == "__main__":
     unittest.main()
