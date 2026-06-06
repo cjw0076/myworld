@@ -25,7 +25,7 @@ DEFAULT_DIR = ROOT / ".aios" / "copilot"
 
 def load_receipts(directory: Path) -> list[dict]:
     out: list[dict] = []
-    for fp in sorted(directory.glob("receipt-*.json")):
+    for fp in sorted(directory.rglob("receipt-*.json")):  # rglob: include per-student subdirs
         try:
             out.append(json.loads(fp.read_text()))
         except (OSError, json.JSONDecodeError):

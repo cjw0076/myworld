@@ -40,8 +40,12 @@ SAMPLE = [
 ]
 
 
-def generate_plan(assignments: list[dict], today: str) -> tuple[str, list[dict], str | None, list[dict]]:
+def generate_plan(
+    assignments: list[dict], today: str, prior_context: str = ""
+) -> tuple[str, list[dict], str | None, list[dict]]:
+    context_line = f"[지난 맥락] {prior_context}\n" if prior_context else ""
     prompt = (
+        f"{context_line}"
         f"오늘은 {today}. 다음은 한 대학생의 이번 주 과제/시험 목록(JSON)이다.\n"
         f"{json.dumps(assignments, ensure_ascii=False)}\n\n"
         "먼저 기계가 읽을 스케줄을 fenced ```json 블록으로 출력하라: "
@@ -115,8 +119,8 @@ def genesis_critique(plan: str) -> dict:
         return {"status": "unavailable", "detail": str(exc)[:200]}
 
 
-def run(assignments: list[dict], today: str) -> dict:
-    plan, schedule, served, trail = generate_plan(assignments, today)
+def run(assignments: list[dict], today: str, prior_context: str = "") -> dict:
+    plan, schedule, served, trail = generate_plan(assignments, today, prior_context)
     verification = verify_schedule(schedule, assignments, today)
     critique = genesis_critique(plan)
     return {
@@ -124,6 +128,7 @@ def run(assignments: list[dict], today: str) -> dict:
         "generated_at": today,
         "substrate": served,
         "routing_trail": trail,
+        "prior_context": prior_context,
         "substrate_note": "churn-resilient local fallback chain on dual RTX 5090 — free, private, no provider dependency",
         "assignments": assignments,
         "plan": plan,
@@ -200,11 +205,37 @@ def load_assignments(args: argparse.Namespace) -> list[dict]:
     return SAMPLE
 
 
+def student_dir(student: str | None) -> Path:
+    return ROOT / ".aios" / "copilot" / (student or "_default")
+
+
+def load_prior_context(directory: Path) -> str:
+    """One-line continuity summary from a student's prior receipts — per-student
+    memory, uri's '나를 아는 에이전트' thesis (the copilot remembers you)."""
+    receipts = sorted(directory.glob("receipt-*.json")) if directory.exists() else []
+    courses: list[str] = []
+    last_date = ""
+    for fp in receipts[-5:]:
+        try:
+            r = json.loads(fp.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        last_date = r.get("generated_at", last_date)
+        for a in r.get("assignments", []):
+            course = a.get("course")
+            if course and course not in courses:
+                courses.append(course)
+    if not courses:
+        return ""
+    return f"이전 계획에서 다룬 과목: {', '.join(courses[:8])} (최근 {last_date}). 연속성 고려."
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--assignments", type=Path, help="JSON list of {course,title,due}")
     p.add_argument("--ical", type=Path, help=".ics export (LMS/calendar) of deadlines")
     p.add_argument("--csv", type=Path, help="CSV with course,title,due columns")
+    p.add_argument("--student", default=None, help="student id — enables per-student memory/personalization")
     p.add_argument("--today", default=None, help="YYYY-MM-DD (default: system date)")
     p.add_argument("--json", action="store_true")
     return p
@@ -214,9 +245,10 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     assignments = load_assignments(args)
     today = args.today or time.strftime("%Y-%m-%d")
-    receipt = run(assignments, today)
+    out_dir = student_dir(getattr(args, "student", None))
+    prior = load_prior_context(out_dir)
+    receipt = run(assignments, today, prior)
 
-    out_dir = ROOT / ".aios" / "copilot"
     out_dir.mkdir(parents=True, exist_ok=True)
     stamp = time.strftime("%Y%m%dT%H%M%S")
     (out_dir / f"receipt-{stamp}.json").write_text(
@@ -232,8 +264,9 @@ def main(argv: list[str] | None = None) -> int:
         verdict = "PASS" if v["ok"] else "FLAGGED " + "; ".join(
             f"{x['course']}: {x['issue']}" for x in v["violations"]
         )
+        cont = "yes" if receipt.get("prior_context") else "no"
         print(f"\n[date-verify: {verdict}] [genesis: {receipt['genesis_critique']['status']}] "
-              f"[receipt: .aios/copilot/receipt-{stamp}.json]")
+              f"[continuity: {cont}] [receipt: {out_dir.name}/receipt-{stamp}.json]")
     return 0
 
 

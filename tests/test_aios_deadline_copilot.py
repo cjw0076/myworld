@@ -101,5 +101,32 @@ class InputAdapterTests(unittest.TestCase):
         self.assertEqual(out[0]["due"], "2026-06-09")
 
 
+class PerStudentMemoryTests(unittest.TestCase):
+    def test_empty_dir_no_context(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as t:
+            self.assertEqual(c.load_prior_context(Path(t)), "")
+
+    def test_summarizes_prior_courses(self) -> None:
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as t:
+            d = Path(t)
+            (d / "receipt-1.json").write_text(
+                json.dumps({"generated_at": "2026-06-01",
+                            "assignments": [{"course": "자료구조"}, {"course": "선형대수"}]})
+            )
+            ctx = c.load_prior_context(d)
+            self.assertIn("자료구조", ctx)
+            self.assertIn("선형대수", ctx)
+            self.assertIn("2026-06-01", ctx)
+
+    def test_student_dir_isolation(self) -> None:
+        self.assertNotEqual(c.student_dir("kim"), c.student_dir("lee"))
+        self.assertTrue(c.student_dir("kim").name == "kim")
+
+
 if __name__ == "__main__":
     unittest.main()
