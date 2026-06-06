@@ -595,3 +595,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: reverted the over-broad Bash contract-gate to a tight target-match rather than keep an enforcement that false-blocks — "a harness must never break the flow it guards" wins over maximal coverage.
 - new_invariant_or_pattern_discovered: HOOK-AUTHORING INVARIANTS — blocking hooks must (a) use absolute paths, (b) fail open at the shell level, (c) keep deny heuristics target-specific. A blocking hook that false-blocks is worse than no hook. Settings.json hooks reload per tool-call (mid-session fixes apply).
 - self-correction-of-prior-observation: the earlier "fail open inside the script" claim was insufficient — fail-open must also be at the launch/shell layer.
+
+## 2026-06-05 21:30 KST — claude@myworld — first outside-domain value loop (produce→resilient→verify→measure)
+
+- session_id: autonomous goal session (founder: "자율 개발" then "active" — keep developing, don't await steer)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 10:25:30:35:0
+- tools_used: /multi-substrate-review (codex+gemini+qwen panel), ollama qwen3-coder (gen), GenesisOS critic, Edit/Bash, aios_observe
+- substrate_specific_behaviors_observed:
+  - Generated DIRECTION via my own /multi-substrate-review skill instead of waiting for the founder: panel converged (codex strong+concrete, qwen echoing) on "ship a uri student-utility flow through the AIOS stack". Claude-verified, then built it.
+  - Built the full panel roadmap in one arc: #1 Deadline Copilot (4-organ flow), #2 substrate-router/failover gate (churn-survival, local-first fallback, real demo: missing model → next), #3 value ledger (auditable metric). produce → resilient → verify → measure.
+  - Applied the routing rule on a real flow: LLM plans, CODE verifies (deterministic date-check caught what qwen muddled). Right tool per task, not one model for everything.
+- failures_recovered: v1 copilot muddled a due-date → added a deterministic verify organ rather than trusting the LLM; the verify gate now flags such errors (proven by tests).
+- failures_escalated_to_founder: none (founder explicitly signaled "active / keep going")
+- key_decision: stopped the "await founder steer" passivity (over-caution = anti-intellectualism per feedback_carry_risk_decisively) once the founder re-set the goal twice; carried the panel roadmap to completion decisively, staying in-bounds (control-plane scripts, not child-repo product code).
+- new_invariant_or_pattern_discovered: TOOLS-GROW-THEMSELVES loop — when idle/awaiting direction, use the multi-substrate panel to GENERATE the next direction, verify, and execute, rather than heartbeat-waiting. The harness I built became the engine for deciding what to build next.
+- self-correction-of-prior-observation: earlier turns repeatedly set long heartbeats "awaiting founder steer" — that was too passive given a standing autonomous-dev goal; the right read was to decide and build.

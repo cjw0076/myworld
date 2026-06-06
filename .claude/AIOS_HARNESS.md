@@ -12,6 +12,19 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 | **`/local-llm-agent`** | offload gen/bulk/private work to a local model | ignoring the dual-5090 box; reinstalling already-present ollama |
 | **`/multi-substrate-review`** | review own work / consequential decision | solving from one frozen model; acting on unverified substrate output |
 
+## Outside-value capabilities (the override's goal — AIOS produces external value)
+
+The first end-to-end outside-domain value loop, built 2026-06-05 (panel #1–#3):
+- `scripts/aios_deadline_copilot.py` — student assignments → failover-routed local
+  gen → deterministic date-verify → GenesisOS critique → provenance receipt.
+- `scripts/aios_substrate_router.py` — provider-failover gate: ordered substrate
+  chain (local-first), falls back on failure, records served substrate + trail
+  (the moat: survive provider churn, no hard dependency).
+- `scripts/aios_value_ledger.py` — aggregates receipts into a value signal
+  (verify-pass rate, genesis rate, substrate mix, churn fallbacks).
+Pattern = produce → resilient → verify → measure, all on local substrate. The
+production flow belongs in uri/hivemind; these are the control-plane proofs.
+
 ## Standing checks (run, don't trust prose)
 
 - **Commit guard:** `python scripts/aios_commit_guard.py` (run with staged
