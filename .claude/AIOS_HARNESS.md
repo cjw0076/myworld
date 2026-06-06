@@ -21,22 +21,24 @@ Pipeline = real-input → failover-routed local-gen → **deterministic-verify**
 (LLM proposes, CODE checks the exact part) → GenesisOS gate → provenance receipt
 → personalize → measure. All on local substrate (free, private, churn-resilient).
 
-Shared parts:
-- `scripts/aios_substrate_router.py` — provider-failover gate (local-first chain,
-  fast-fail, records served substrate + trail). The moat: no hard provider dep.
-- `scripts/aios_value_ledger.py` — receipts → value signal.
+Architecture (layered):
+`aios_capability_dispatch.py` (operating layer — detects input → routes) →
+4 capabilities (shared `aios_capability_base.py`: generate + write_receipt) →
+`aios_substrate_router.py` (failover gate, local-first, no hard provider dep) →
+local LLM. Plus `aios_value_ledger.py` (unified value signal across the family)
+and `aios_copilot_serve.py` (HTTP delivery surface).
 
-Capabilities (each reuses the above; ~7 unit tests each):
-- `scripts/aios_deadline_copilot.py` — deadlines (.ics/CSV) → dated plan; verify =
-  date-consistency. + HTTP surface (`aios_copilot_serve.py`), per-student memory.
-- `scripts/aios_grade_copilot.py` — grade CSV → recovery plan; verify = exact
-  weighted-grade arithmetic (needed-on-remaining). LLM never computes grades.
+Capabilities (each = one domain prompt + one **deterministic verifier**; ~5-7 tests):
+- `aios_deadline_copilot.py` — deadlines (.ics/CSV) → plan; verify = date-consistency. + per-student memory.
+- `aios_grade_copilot.py` — grade CSV → recovery; verify = exact weighted-grade math.
+- `aios_exam_copilot.py` — exam .ics → prep blocks; verify = prep-before-exam logic.
+- `aios_tuition_copilot.py` — bursar CSV → cashflow; verify = payment/overdue math.
 
-**To add capability N+3** (e.g. Exam Readiness, Tuition Cashflow — codex panel):
-reuse `router.generate` + write a pure deterministic-verify for that domain's
-hard part (calendar overlap, payment math) + emit a receipt. The deterministic
-step is the trust anchor; the LLM only writes narrative. Production (uri UI, hive
-cron, MemoryOS-per-student) is deploy-target — see AIOS_OUTSIDE_VALUE_HANDOFF.
+**To add capability #5**: import `aios_capability_base`, write a domain prompt +
+a pure deterministic verifier (the trust anchor — LLM proposes, code checks the
+exact part), emit a receipt, add a `detect_capability` branch. ~50 lines.
+Production (uri UI, hive cron, MemoryOS-per-student) is deploy-target — see
+AIOS_OUTSIDE_VALUE_HANDOFF + AIOS_DEADLINE_COPILOT.
 
 ## Standing checks (run, don't trust prose)
 
