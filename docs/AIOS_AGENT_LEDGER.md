@@ -5,6 +5,33 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-07 01:54 KST — codex@myworld — ASC-0233 provider output disagreements
+
+- repo: myworld + hivemind
+- role: autonomous implementation / Hive verifier hardening
+- goal: close Hive Product P0 #6 by extracting structured disagreement records
+  from executed provider outputs, not only debate round previews.
+- changed: `docs/contracts/ASC-0233-...p0-6.md`,
+  `hivemind/hivemind/provider_disagreements.py`, thin Hive CLI glue,
+  focused tests, and Hive product/worklog docs.
+- evidence: CapabilityOS recommended `cap_hivemind_execution_harness`
+  recommendation-only; subagent review confirmed the missing producer for
+  debate-outside provider output disagreements; red tests caught missing CLI
+  registration, ignored partial provider outputs, and missing stdout fallback.
+  Focused Hive tests passed 4/4; wider provider/projection/inspection/
+  validation suite passed 71/71; py_compile and `git diff --check` passed;
+  Hive public release gate passed 19/19 with artifact root
+  `.hivemind/release/20260607_015539`.
+- decision: `provider-disagreements` writes a privacy-safe
+  `provider_output_disagreements.json` report and merges structured records
+  into `disagreements.json`; raw provider bodies are read only for internal
+  comparison and are not included in reports.
+- risk: Current disagreement axes are heuristic labels reused from Hive debate;
+  future semantic comparison should require verifier-backed evidence before
+  raising authority.
+- next: commit/push ASC-0233, then continue to Product P0 #7.
+- status: done
+
 ## 2026-06-07 01:52 KST — codex@myworld — ASC-0232 route-quality fallback validation
 
 - repo: myworld + hivemind
