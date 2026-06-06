@@ -22,13 +22,15 @@ import argparse
 import json
 import subprocess
 import time
-import urllib.request
 from pathlib import Path
+
+import aios_substrate_router as router
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.deadline_copilot.v1"
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
 SUBSTRATE = "qwen3-coder:30b"
+# churn-resilient fallback chain (preferred → backups), all local
+SUBSTRATE_CHAIN = [SUBSTRATE, "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
 GENESIS = ROOT / "GenesisOS"
 
 SAMPLE = [
@@ -38,7 +40,7 @@ SAMPLE = [
 ]
 
 
-def generate_plan(assignments: list[dict], today: str) -> tuple[str, list[dict]]:
+def generate_plan(assignments: list[dict], today: str) -> tuple[str, list[dict], str | None, list[dict]]:
     prompt = (
         f"오늘은 {today}. 다음은 한 대학생의 이번 주 과제/시험 목록(JSON)이다.\n"
         f"{json.dumps(assignments, ensure_ascii=False)}\n\n"
@@ -48,11 +50,9 @@ def generate_plan(assignments: list[dict], today: str) -> tuple[str, list[dict]]
         "그 다음 사람이 읽을 한국어 행동계획을 날짜별로, 각 항목에 '왜 지금' 한 줄로 "
         "간결하게. 마감 역산으로 급한 것부터."
     )
-    body = json.dumps({"model": SUBSTRATE, "prompt": prompt, "stream": False}).encode()
-    req = urllib.request.Request(OLLAMA_URL, data=body, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=180) as resp:
-        text = json.loads(resp.read()).get("response", "").strip()
-    return text, extract_schedule(text)
+    res = router.generate(prompt, prefer=SUBSTRATE_CHAIN)
+    text = res["text"]
+    return text, extract_schedule(text), res["substrate"], res["trail"]
 
 
 def extract_schedule(text: str) -> list[dict]:
@@ -116,14 +116,15 @@ def genesis_critique(plan: str) -> dict:
 
 
 def run(assignments: list[dict], today: str) -> dict:
-    plan, schedule = generate_plan(assignments, today)
+    plan, schedule, served, trail = generate_plan(assignments, today)
     verification = verify_schedule(schedule, assignments, today)
     critique = genesis_critique(plan)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": today,
-        "substrate": SUBSTRATE,
-        "substrate_note": "local ollama on dual RTX 5090 — free, private, no provider dependency",
+        "substrate": served,
+        "routing_trail": trail,
+        "substrate_note": "churn-resilient local fallback chain on dual RTX 5090 — free, private, no provider dependency",
         "assignments": assignments,
         "plan": plan,
         "schedule": schedule,
