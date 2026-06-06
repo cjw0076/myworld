@@ -58,5 +58,48 @@ class ExtractScheduleTests(unittest.TestCase):
         self.assertEqual(len(out), 1)  # first dropped (no course)
 
 
+class InputAdapterTests(unittest.TestCase):
+    def test_parse_ical(self) -> None:
+        ics = (
+            "BEGIN:VCALENDAR\r\n"
+            "BEGIN:VEVENT\r\n"
+            "SUMMARY:과제 3: 이진탐색트리\r\n"
+            "DTSTART;VALUE=DATE:20260608\r\n"
+            "CATEGORIES:자료구조\r\n"
+            "END:VEVENT\r\n"
+            "BEGIN:VEVENT\r\n"
+            "SUMMARY:중간고사\r\n"
+            "DTSTART:20260610T090000Z\r\n"
+            "CATEGORIES:선형대수,exam\r\n"
+            "END:VEVENT\r\n"
+            "END:VCALENDAR\r\n"
+        )
+        out = c.parse_ical(ics)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0], {"title": "과제 3: 이진탐색트리", "due": "2026-06-08", "course": "자료구조"})
+        self.assertEqual(out[1]["due"], "2026-06-10")
+        self.assertEqual(out[1]["course"], "선형대수")  # first category only
+
+    def test_parse_ical_unfolds_long_summary(self) -> None:
+        # RFC5545 fold = CRLF + a single space; unfolding removes exactly that space.
+        ics = "BEGIN:VEVENT\nSUMMARY:매우 긴 과제\n 제목이어짐\nDTSTART:20260612\nEND:VEVENT\n"
+        out = c.parse_ical(ics)
+        self.assertEqual(out[0]["title"], "매우 긴 과제제목이어짐")
+        self.assertEqual(out[0]["due"], "2026-06-12")
+
+    def test_parse_csv(self) -> None:
+        csv_text = "course,title,due\n자료구조,과제3,2026-06-08\n선형대수,중간고사,2026-06-10\n"
+        out = c.parse_csv(csv_text)
+        self.assertEqual(len(out), 2)
+        self.assertEqual(out[0], {"course": "자료구조", "title": "과제3", "due": "2026-06-08"})
+
+    def test_parse_csv_case_insensitive_and_skips_incomplete(self) -> None:
+        csv_text = "Course,Assignment,Deadline\nCS,HW1,2026-06-09\n,Orphan,\n"
+        out = c.parse_csv(csv_text)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["title"], "HW1")
+        self.assertEqual(out[0]["due"], "2026-06-09")
+
+
 if __name__ == "__main__":
     unittest.main()

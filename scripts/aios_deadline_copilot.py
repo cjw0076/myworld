@@ -134,9 +134,77 @@ def run(assignments: list[dict], today: str) -> dict:
     }
 
 
+# --- real-input adapters (production gap #1): a student exports their LMS /
+# calendar deadlines as .ics, or a simple CSV — no external deps. ---
+def _unfold(text: str) -> list[str]:
+    """RFC5545 line unfolding: continuation lines begin with space/tab."""
+    out: list[str] = []
+    for line in text.splitlines():
+        if line[:1] in (" ", "\t") and out:
+            out[-1] += line[1:]
+        else:
+            out.append(line)
+    return out
+
+
+def _ical_date(val: str) -> str:
+    digits = "".join(ch for ch in val if ch.isdigit())[:8]
+    return f"{digits[0:4]}-{digits[4:6]}-{digits[6:8]}" if len(digits) >= 8 else val.strip()
+
+
+def parse_ical(text: str) -> list[dict]:
+    assignments: list[dict] = []
+    cur: dict = {}
+    in_event = False
+    for line in _unfold(text):
+        s = line.strip()
+        if s == "BEGIN:VEVENT":
+            in_event, cur = True, {}
+        elif s == "END:VEVENT":
+            if in_event and cur.get("title") and cur.get("due"):
+                cur.setdefault("course", cur["title"][:24])
+                assignments.append(cur)
+            in_event, cur = False, {}
+        elif not in_event:
+            continue
+        elif s.startswith("SUMMARY:"):
+            cur["title"] = s[len("SUMMARY:"):].strip()
+        elif s.startswith("DTSTART"):
+            cur["due"] = _ical_date(s.split(":", 1)[1]) if ":" in s else cur.get("due")
+        elif s.startswith("CATEGORIES:"):
+            cur["course"] = s[len("CATEGORIES:"):].split(",")[0].strip()
+    return assignments
+
+
+def parse_csv(text: str) -> list[dict]:
+    import csv
+    import io
+
+    out: list[dict] = []
+    for row in csv.DictReader(io.StringIO(text)):
+        low = {(k or "").lower().strip(): (v or "").strip() for k, v in row.items()}
+        title = low.get("title") or low.get("assignment") or low.get("summary")
+        due = low.get("due") or low.get("date") or low.get("deadline")
+        if title and due:
+            out.append({"course": low.get("course") or title[:24], "title": title, "due": due[:10]})
+    return out
+
+
+def load_assignments(args: argparse.Namespace) -> list[dict]:
+    if getattr(args, "ical", None):
+        return parse_ical(args.ical.read_text(encoding="utf-8"))
+    if getattr(args, "csv", None):
+        return parse_csv(args.csv.read_text(encoding="utf-8"))
+    if args.assignments:
+        return json.loads(args.assignments.read_text())
+    return SAMPLE
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--assignments", type=Path, help="JSON list of {course,title,due}")
+    p.add_argument("--ical", type=Path, help=".ics export (LMS/calendar) of deadlines")
+    p.add_argument("--csv", type=Path, help="CSV with course,title,due columns")
     p.add_argument("--today", default=None, help="YYYY-MM-DD (default: system date)")
     p.add_argument("--json", action="store_true")
     return p
@@ -144,7 +212,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    assignments = json.loads(args.assignments.read_text()) if args.assignments else SAMPLE
+    assignments = load_assignments(args)
     today = args.today or time.strftime("%Y-%m-%d")
     receipt = run(assignments, today)
 
