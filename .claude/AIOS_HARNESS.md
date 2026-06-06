@@ -14,16 +14,29 @@ known mistakes. Each skill below encodes a ritual + its gotchas. Invoke with
 
 ## Outside-value capabilities (the override's goal — AIOS produces external value)
 
-The first end-to-end outside-domain value loop, built 2026-06-05 (panel #1–#3):
-- `scripts/aios_deadline_copilot.py` — student assignments → failover-routed local
-  gen → deterministic date-verify → GenesisOS critique → provenance receipt.
-- `scripts/aios_substrate_router.py` — provider-failover gate: ordered substrate
-  chain (local-first), falls back on failure, records served substrate + trail
-  (the moat: survive provider churn, no hard dependency).
-- `scripts/aios_value_ledger.py` — aggregates receipts into a value signal
-  (verify-pass rate, genesis rate, substrate mix, churn fallbacks).
-Pattern = produce → resilient → verify → measure, all on local substrate. The
-production flow belongs in uri/hivemind; these are the control-plane proofs.
+A reusable **capability factory** (a generic pipeline → cheap to add new student
+value tools), built 2026-06-05:
+
+Pipeline = real-input → failover-routed local-gen → **deterministic-verify**
+(LLM proposes, CODE checks the exact part) → GenesisOS gate → provenance receipt
+→ personalize → measure. All on local substrate (free, private, churn-resilient).
+
+Shared parts:
+- `scripts/aios_substrate_router.py` — provider-failover gate (local-first chain,
+  fast-fail, records served substrate + trail). The moat: no hard provider dep.
+- `scripts/aios_value_ledger.py` — receipts → value signal.
+
+Capabilities (each reuses the above; ~7 unit tests each):
+- `scripts/aios_deadline_copilot.py` — deadlines (.ics/CSV) → dated plan; verify =
+  date-consistency. + HTTP surface (`aios_copilot_serve.py`), per-student memory.
+- `scripts/aios_grade_copilot.py` — grade CSV → recovery plan; verify = exact
+  weighted-grade arithmetic (needed-on-remaining). LLM never computes grades.
+
+**To add capability N+3** (e.g. Exam Readiness, Tuition Cashflow — codex panel):
+reuse `router.generate` + write a pure deterministic-verify for that domain's
+hard part (calendar overlap, payment math) + emit a receipt. The deterministic
+step is the trust anchor; the LLM only writes narrative. Production (uri UI, hive
+cron, MemoryOS-per-student) is deploy-target — see AIOS_OUTSIDE_VALUE_HANDOFF.
 
 ## Standing checks (run, don't trust prose)
 
