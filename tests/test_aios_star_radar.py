@@ -47,5 +47,24 @@ class StarRadarPureTests(unittest.TestCase):
         self.assertIn("AIOS", p)
 
 
+    def test_load_seen(self) -> None:
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "receipt-1.json").write_text(
+                json.dumps({"candidates": [{"full_name": "a/b"}, {"full_name": "c/d"}]})
+            )
+            (d / "receipt-2.json").write_text(json.dumps({"candidates": [{"full_name": "e/f"}]}))
+            self.assertEqual(sr.load_seen(d), {"a/b", "c/d", "e/f"})
+
+    def test_load_seen_empty_dir(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(sr.load_seen(Path(tmp) / "nope"), set())
+
+
 if __name__ == "__main__":
     unittest.main()

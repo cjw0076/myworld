@@ -75,14 +75,34 @@ def distill(repo: dict) -> dict:
     return {**repo, "absorption": text.strip(), "distilled_by": served}
 
 
-def run(since: str, min_stars: int, extra: str | None, limit: int) -> dict:
+def load_seen(radar_dir: Path) -> set[str]:
+    """Repos already distilled in prior radar receipts — so periodic tracking
+    only spends the LLM on genuinely NEW projects."""
+    seen: set[str] = set()
+    if not radar_dir.exists():
+        return seen
+    for fp in radar_dir.glob("receipt-*.json"):
+        try:
+            r = json.loads(fp.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        for c in r.get("candidates", []):
+            if c.get("full_name"):
+                seen.add(c["full_name"])
+    return seen
+
+
+def run(since: str, min_stars: int, extra: str | None, limit: int, skip_seen: bool = True) -> dict:
     repos = fetch_trending(since, min_stars, extra, limit)
-    candidates = [distill(r) for r in repos]
+    seen = load_seen(ROOT / ".aios" / "star_radar") if skip_seen else set()
+    fresh = [r for r in repos if r["full_name"] not in seen]
+    candidates = [distill(r) for r in fresh]
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": time.strftime("%Y-%m-%d"),
         "query": build_query(since, min_stars, extra),
         "candidates": candidates,
+        "skipped_seen": sorted(r["full_name"] for r in repos if r["full_name"] in seen),
         "note": "draft-first — operator reviews before any MemoryOS/CapabilityOS promotion",
     }
 
@@ -93,18 +113,20 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--min-stars", type=int, default=2000)
     p.add_argument("--query", default=None, help="extra GitHub query terms (e.g. 'agent OR llm')")
     p.add_argument("--limit", type=int, default=8)
+    p.add_argument("--no-skip-seen", action="store_true", help="re-distill repos seen in prior runs")
     p.add_argument("--json", action="store_true")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    receipt = run(args.since, args.min_stars, args.query, args.limit)
+    receipt = run(args.since, args.min_stars, args.query, args.limit, skip_seen=not args.no_skip_seen)
     base.write_receipt("star_radar", receipt)
     if args.json:
         print(json.dumps(receipt, ensure_ascii=False, indent=2))
     else:
-        print(f"=== Star Radar ({receipt['query']}) ===")
+        print(f"=== Star Radar ({receipt['query']}) — {len(receipt['candidates'])} new, "
+              f"{len(receipt['skipped_seen'])} already seen ===")
         for c in receipt["candidates"]:
             print(f"\n★{c['stars']} {c['full_name']} — {c['description'][:70]}")
             print(f"  {c['absorption']}")
