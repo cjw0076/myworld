@@ -19,12 +19,10 @@ import json
 import time
 from pathlib import Path
 
-import aios_substrate_router as router
+import aios_capability_base as base
 from aios_deadline_copilot import extract_schedule, norm_date, parse_ical
 
-ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.exam_copilot.v1"
-SUBSTRATE_CHAIN = ["qwen3-coder:30b", "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
 
 
 def generate_prep(exams: list[dict], today: str) -> tuple[str, list[dict], str | None, list[dict]]:
@@ -36,8 +34,8 @@ def generate_prep(exams: list[dict], today: str) -> tuple[str, list[dict], str |
         "(모든 블록은 오늘 이후 ~ 해당 시험 전날 사이, course는 입력과 정확히 동일). 그 다음 "
         "사람용 한국어 공부 계획을 날짜별로 간결히."
     )
-    res = router.generate(prompt, prefer=SUBSTRATE_CHAIN)
-    return res["text"], extract_schedule(res["text"]), res["substrate"], res["trail"]
+    text, served, trail = base.generate(prompt)
+    return text, extract_schedule(text), served, trail
 
 
 def verify_prep(prep: list[dict], exams: list[dict], today: str) -> dict:
@@ -96,13 +94,7 @@ def main(argv: list[str] | None = None) -> int:
     exams = parse_ical(args.ical.read_text(encoding="utf-8"))
     today = args.today or time.strftime("%Y-%m-%d")
     receipt = run(exams, today)
-
-    out_dir = ROOT / ".aios" / "exam"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%dT%H%M%S")
-    (out_dir / f"receipt-{stamp}.json").write_text(
-        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _, stamp = base.write_receipt("exam", receipt)
 
     v = receipt["verification"]
     if args.json:

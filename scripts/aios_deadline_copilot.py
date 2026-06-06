@@ -26,7 +26,7 @@ import time
 from datetime import date
 from pathlib import Path
 
-import aios_substrate_router as router
+import aios_capability_base as base
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,9 +47,6 @@ def norm_date(value) -> str | None:
         return None
     return None
 SCHEMA_VERSION = "aios.deadline_copilot.v1"
-SUBSTRATE = "qwen3-coder:30b"
-# churn-resilient fallback chain (preferred → backups), all local
-SUBSTRATE_CHAIN = [SUBSTRATE, "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
 GENESIS = ROOT / "GenesisOS"
 
 SAMPLE = [
@@ -73,9 +70,8 @@ def generate_plan(
         "그 다음 사람이 읽을 한국어 행동계획을 날짜별로, 각 항목에 '왜 지금' 한 줄로 "
         "간결하게. 마감 역산으로 급한 것부터."
     )
-    res = router.generate(prompt, prefer=SUBSTRATE_CHAIN)
-    text = res["text"]
-    return text, extract_schedule(text), res["substrate"], res["trail"]
+    text, served, trail = base.generate(prompt)
+    return text, extract_schedule(text), served, trail
 
 
 def extract_schedule(text: str) -> list[dict]:

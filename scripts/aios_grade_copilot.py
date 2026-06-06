@@ -26,11 +26,9 @@ import json
 import time
 from pathlib import Path
 
-import aios_substrate_router as router
+import aios_capability_base as base
 
-ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.grade_copilot.v1"
-SUBSTRATE_CHAIN = ["qwen3-coder:30b", "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
 
 
 def parse_grades_csv(text: str) -> list[dict]:
@@ -92,8 +90,7 @@ def generate_advice(analysis: list[dict]) -> tuple[str, str | None, list[dict]]:
         "위험 과목에 대해 남은 평가에서 점수를 끌어올릴 구체적 공부 전략을 과목별 2줄로 한국어로.\n"
         f"{json.dumps(at_risk, ensure_ascii=False)}"
     )
-    res = router.generate(prompt, prefer=SUBSTRATE_CHAIN)
-    return res["text"], res["substrate"], res["trail"]
+    return base.generate(prompt)
 
 
 def run(courses: list[dict], today: str) -> dict:
@@ -124,13 +121,7 @@ def main(argv: list[str] | None = None) -> int:
     courses = parse_grades_csv(args.csv.read_text(encoding="utf-8"))
     today = args.today or time.strftime("%Y-%m-%d")
     receipt = run(courses, today)
-
-    out_dir = ROOT / ".aios" / "grade"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%dT%H%M%S")
-    (out_dir / f"receipt-{stamp}.json").write_text(
-        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _, stamp = base.write_receipt("grade", receipt)
 
     if args.json:
         print(json.dumps(receipt, ensure_ascii=False, indent=2))

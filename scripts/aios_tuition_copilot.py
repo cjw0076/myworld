@@ -21,12 +21,10 @@ import time
 from datetime import date
 from pathlib import Path
 
-import aios_substrate_router as router
+import aios_capability_base as base
 from aios_deadline_copilot import norm_date
 
-ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.tuition_copilot.v1"
-SUBSTRATE_CHAIN = ["qwen3-coder:30b", "qwen3:30b-a3b", "deepseek-coder-v2:16b"]
 
 
 def _to_date(value) -> date | None:
@@ -92,8 +90,7 @@ def generate_plan(analysis: dict) -> tuple[str, str | None, list[dict]]:
         "항목별 1~2줄 한국어로. 입력에 없는 항목은 언급 금지.\n"
         f"{json.dumps(at_risk, ensure_ascii=False)}"
     )
-    res = router.generate(prompt, prefer=SUBSTRATE_CHAIN)
-    return res["text"], res["substrate"], res["trail"]
+    return base.generate(prompt)
 
 
 def run(items: list[dict], today: str) -> dict:
@@ -123,13 +120,7 @@ def main(argv: list[str] | None = None) -> int:
     items = parse_bursar_csv(args.csv.read_text(encoding="utf-8"))
     today = args.today or time.strftime("%Y-%m-%d")
     receipt = run(items, today)
-
-    out_dir = ROOT / ".aios" / "tuition"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%dT%H%M%S")
-    (out_dir / f"receipt-{stamp}.json").write_text(
-        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _, stamp = base.write_receipt("tuition", receipt)
 
     a = receipt["analysis"]
     if args.json:
