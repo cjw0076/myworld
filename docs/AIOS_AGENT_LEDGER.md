@@ -5,6 +5,32 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-07 01:52 KST — codex@myworld — ASC-0232 route-quality fallback validation
+
+- repo: myworld + hivemind
+- role: autonomous implementation / Hive verifier hardening
+- goal: close Hive Product P0 #5 by making route-quality scoring
+  schema-validated and provider fallback explicit without granting fallback
+  execution authority.
+- changed: `docs/contracts/ASC-0232-...p0-5.md`,
+  `hivemind/hivemind/route_quality.py`,
+  `hivemind/hivemind/run_routing_quality_validation.py`,
+  `hivemind/hivemind/provider_failure.py`, focused Hive glue/tests, and Hive
+  product/worklog docs.
+- evidence: CapabilityOS recommended `cap_aios_route_planner`
+  recommendation-only; red tests caught missing fallback projection, malformed
+  `routing_quality.json` validation, and Korean Codex failure classification;
+  focused Hive tests passed 35/35; wider route/validation/provider/DAG suite
+  passed 201/201; py_compile and `git diff --check` passed; Hive public
+  release gate passed 19/19 with artifact root `.hivemind/release/20260607_013750`.
+- decision: route-quality fallback is a prepare-only verifier signal. Localized
+  Codex `틀렸습니다` / `접근 거부` maps to `pin_required_noninteractive`, not
+  generic unknown failure.
+- risk: fallback output quality still requires independent verifier receipts
+  before final acceptance; ASC-0232 does not execute fallback providers.
+- next: commit/push ASC-0232, then continue to Product P0 #6.
+- status: done
+
 ## 2026-06-05 20:10 KST — codex@myworld — ASC-0227 autodraft boundary gate
 
 - repo: myworld
@@ -6601,3 +6627,27 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: I (claude) overstepped uri's Claude↔Codex split by authoring uri implementation/UI — flagged in uri AGENT_WORKLOG; codex@uri must own/validate it and run UI through the image-board workflow. Student data persistence needs the consent gate per COPILOT_DATA_POLICY before real users.
 - next: codex@uri builds the import-first UX + consent/retention + unified per-student memory (the moat); founder decides GO on uri productization.
 - status: done (control-plane proof + uri slice + Claude review package); uri productization handed to codex@uri.
+
+## 2026-06-07 01:35:35 KST — codex@dacon — failure-learning-leaked_oof-control_tower
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: ETRI cross-target prior sweep reported 0.44 OOF but was classified as leaked_oof; do not submit cross-target sweeps until priors are recomputed fold-locally and pass honest_cv_236690.
+- changed: competitions/control_tower/receipts/20260607T013528+0900_failure-learning-leaked-oof-control-tower.md, competitions/control_tower/aios_outbox/20260607T013528+0900_failure-learning-leaked-oof-control-tower.aios.md
+- evidence: control_tower/failure_reports/20260607T013528+0900_leaked-oof-control-tower.md; etri/docs/claude_leak_finding_236690.md; etri/scripts/honest_cv_236690.py; etri/artifacts/submission_queue_20260605.json parks cross-target n15_w075 as leaked_oof.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Keep ETRI active queue on v3/v4 public anchors; rebuild cross-target only with fold-local priors.
+- status: done
+
+## 2026-06-07 01:41:09 KST — codex@dacon — failure-learning-public-regression-anchor-correction-etri-236690
+
+- repo: /home/user/workspaces/jaewon/dacon
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: ETRI local-CV v3/v4 and Q1-stack lanes regressed publicly; active queue corrected to accepted hybrid/logreg public anchors.
+- changed: competitions/control_tower/receipts/20260607T014103+0900_failure-learning-public-regression-anchor-correction-etri-236690.md, competitions/control_tower/aios_outbox/20260607T014103+0900_failure-learning-public-regression-anchor-correction-etri-236690.aios.md
+- evidence: control_tower/failure_reports/20260607T014103+0900_public-regression-anchor-correction-etri-236690.md; etri/artifacts/submission_queue_20260605.json; etri/docs/DIRECT_INTERVENTION.md; submit receipts dacon_submit_20260606_163143_299796_a1.json, dacon_submit_20260606_163308_100770_a1.json, dacon_submit_20260606_163406_145815_a1.json
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Keep combo_logreg_hybrid_s1, hybrid, and hybrid_logreg_path_a15 as the only active queue; write hybrid/logreg public-CV gap table before generating more variants.
+- status: done

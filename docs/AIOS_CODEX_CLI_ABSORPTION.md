@@ -15,6 +15,10 @@ This means AIOS wrappers should treat `codex --help` as an auth/capability
 probe whose result can change by installed CLI version or local auth state, not
 as a permanently failing command.
 
+On 2026-06-07 KST, the operator ran `codex login` successfully in the same
+workspace. AIOS should continue to probe per invocation because this changes
+local auth state without making credentials safe to store or replay.
+
 Earlier, on 2026-05-13 KST, the external `codex` binary required a local PIN
 when called from a TTY. Without that interactive PIN path, non-interactive
 provider calls failed before Codex could even print help:
