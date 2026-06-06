@@ -22,35 +22,34 @@ import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
+import aios_capability_base as base
+import aios_capability_dispatch as dispatch
 import aios_deadline_copilot as copilot
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def plan_request(payload: dict) -> tuple[int, dict]:
-    """Pure request handler: validate input, run the copilot, return (status, body).
-    Kept separate from the HTTP layer so it is unit-testable."""
-    if payload.get("ical"):
-        assignments = copilot.parse_ical(str(payload["ical"]))
-    elif payload.get("csv"):
-        assignments = copilot.parse_csv(str(payload["csv"]))
-    else:
-        assignments = payload.get("assignments")
-    if not assignments or not isinstance(assignments, list):
-        return 400, {"error": "no assignments (provide assignments[], ical, or csv)"}
-
+    """Pure request handler: route the input to the right capability (deadline /
+    grade / exam / tuition) and return (status, body). Unit-testable."""
     today = payload.get("today") or time.strftime("%Y-%m-%d")
-    student = payload.get("student")
-    out_dir = copilot.student_dir(student)
-    prior = copilot.load_prior_context(out_dir)
-    receipt = copilot.run(assignments, today, prior)
 
-    out_dir.mkdir(parents=True, exist_ok=True)
-    stamp = time.strftime("%Y%m%dT%H%M%S")
-    (out_dir / f"receipt-{stamp}.json").write_text(
-        json.dumps(receipt, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
-    return 200, receipt
+    # explicit assignments[] → deadline copilot with per-student memory
+    if payload.get("assignments") and not (payload.get("csv") or payload.get("ical")):
+        assignments = payload["assignments"]
+        if not isinstance(assignments, list):
+            return 400, {"error": "assignments must be a list"}
+        out_dir = copilot.student_dir(payload.get("student"))
+        receipt = copilot.run(assignments, today, copilot.load_prior_context(out_dir))
+        base.write_receipt(f"copilot/{out_dir.name}", receipt)
+        return 200, {"capability": "deadline", **receipt}
+
+    # otherwise auto-detect the capability from the input (csv / ical)
+    cap, receipt = dispatch.dispatch(payload, today)
+    if cap is None:
+        return 400, receipt  # {"error": ...}
+    base.write_receipt(cap, receipt)
+    return 200, {"capability": cap, **receipt}
 
 
 def make_handler() -> type[BaseHTTPRequestHandler]:
