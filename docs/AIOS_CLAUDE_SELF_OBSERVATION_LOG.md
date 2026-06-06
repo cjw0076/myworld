@@ -625,3 +625,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: stopped treating the child-repo boundary as a hard stop once the Stop hook rejected "awaiting steer" — closed gaps #1/#2/#3/#5 in control-plane scripts (real input, personalization, delivery enabler, ledger), left only genuine deploy-target work (uri UI, hive cron, MemoryOS-per-student) with a handoff.
 - new_invariant_or_pattern_discovered: ACTIVE ≠ AWAIT-STEER. With a standing autonomous-dev goal, surfacing a decision-point and waiting is a failure of the goal; the right move is to decide and build, verify with another substrate, and only defer genuinely irreversible/ownership-crossing acts. Self-review with a heterogeneous substrate is mandatory before calling a non-trivial deliverable done.
 - self-correction-of-prior-observation: my repeated "awaiting founder steer / heartbeat" turns earlier were over-cautious anti-intellectualism; corrected once the goal was re-asserted.
+
+## 2026-06-06 21:10 KST — claude@myworld — capability factory: generalization + operating layer
+
+- session_id: autonomous goal session ("active" Stop hook rejected winding-down twice; mandate = keep building, decide don't await)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 5:30:30:35:0
+- tools_used: codex exec (panel + reviews, until its session expired), ollama qwen3-coder, GenesisOS critic, aios-memory-propose, Edit/Bash
+- substrate_specific_behaviors_observed:
+  - BUILD UP, NOT SIDEWAYS: after proving the pipeline generalized (Grade, Exam, Tuition copilots = ~50 lines each by reusing the pattern), the higher-value move was to extract aios_capability_base (factory infra) and add a dispatcher (operating layer that routes any academic input to the right capability) + wire the HTTP service through it — turning a pile of similar scripts into a layered system. 57 tests.
+  - TOOLS GENERATE DIRECTION: used /multi-substrate-review (codex panel) to pick the next capabilities, then Claude-verified and built them — the harness deciding what to build next.
+  - LLM-PROPOSES-CODE-VERIFIES is the reusable trust anchor: every capability's "deterministic verify" is pure code (dates, grade math, payment math) — exactly where LLMs fail. The LLM only writes narrative.
+- failures_recovered: a MemLang import produced an empty draft (parse warning on long/em-dash content) → rejected it, re-imported cleaner shorter content (693 chars) → accepted. Lesson: keep MemLang claim text plain (no em-dashes / deep nesting).
+- failures_escalated_to_founder: none (active mandate)
+- key_decision: when BOTH external review substrates went down (codex auth expired "session ended", gemini exhausted), did not silently skip verification — relied on the 57-test suite + self-review and NOTED the reviewers were unavailable (no silent coverage gap, per multi-substrate-review hard rule).
+- new_invariant_or_pattern_discovered: CAPABILITY FACTORY — a generic pipeline (input-adapter → failover local-gen → deterministic-verify → provenance → measure) + a base + a dispatcher makes new outside-value capabilities ~50 lines. This is the concrete shape of "AIOS as the operating layer that produces value across a family of tools."
+- self-correction-of-prior-observation: extends the earlier "first outside-value flow" — one flow became a factory of four behind an operating layer; the override goal is met not by one demo but by a generalizing system.
