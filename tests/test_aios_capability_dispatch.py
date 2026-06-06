@@ -13,8 +13,13 @@ import aios_tuition_copilot as tuition
 
 class DetectTests(unittest.TestCase):
     def test_ics_is_deadline_or_exam(self) -> None:
-        self.assertEqual(d.detect_capability({"ical": "X"}), "deadline")
+        self.assertEqual(d.detect_capability({"ical": "SUMMARY:과제 제출\n"}), "deadline")
         self.assertEqual(d.detect_capability({"ical": "X", "kind": "exam"}), "exam")
+
+    def test_ics_auto_detects_exam_from_content(self) -> None:
+        self.assertEqual(d.detect_capability({"ical": "SUMMARY:자료구조 기말고사\n"}), "exam")
+        self.assertEqual(d.detect_capability({"ical": "SUMMARY:Final Exam\n"}), "exam")
+        self.assertEqual(d.detect_capability({"ical": "SUMMARY:에세이 초안\n"}), "deadline")
 
     def test_csv_grade(self) -> None:
         self.assertEqual(d.detect_capability({"csv": "course,current,weight_completed,target\n"}), "grade")

@@ -31,9 +31,16 @@ import aios_tuition_copilot as tuition
 SCHEMA_VERSION = "aios.capability_dispatch.v1"
 
 
+_EXAM_SIGNALS = ("시험", "기말", "중간", "exam", "quiz", "midterm", "final", "고사")
+
+
 def detect_capability(payload: dict) -> str | None:
     if payload.get("ical"):
-        return "exam" if payload.get("kind") == "exam" else "deadline"
+        if payload.get("kind") == "exam":
+            return "exam"
+        text = str(payload["ical"]).lower()
+        # auto-route an exam-looking calendar to exam prep, else a deadline plan
+        return "exam" if any(kw in text for kw in _EXAM_SIGNALS) else "deadline"
     text = payload.get("csv") or ""
     header = text.splitlines()[0].lower() if text.strip() else ""
     if "weight_completed" in header or "current" in header:
