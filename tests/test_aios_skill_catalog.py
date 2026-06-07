@@ -66,6 +66,19 @@ class ExportSkillTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertIsNone(c.export_skill(Path(tmp), "nope", Path(tmp) / "out"))
 
+    def test_export_all_with_repo_filter(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude" / "skills" / "alpha").mkdir(parents=True)
+            (root / ".claude" / "skills" / "alpha" / "SKILL.md").write_text(INLINE)
+            (root / "uri" / ".claude" / "skills" / "beta").mkdir(parents=True)
+            (root / "uri" / ".claude" / "skills" / "beta" / "SKILL.md").write_text(FOLDED)
+            target = root / "bundle"
+            names = c.export_all(root, target, repos={"myworld"})  # only myworld
+            self.assertEqual(names, ["foo"])
+            self.assertTrue((target / "alpha" / "SKILL.md").is_file())
+            self.assertFalse((target / "beta").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -85,21 +85,40 @@ def export_skill(root: Path, name: str, to_dir: Path) -> Path | None:
     return None
 
 
+def export_all(root: Path, to_dir: Path, repos: set[str] | None = None) -> list[str]:
+    """Install the whole AIOS skill collection (optionally only certain repos)
+    into a target skills dir — a shareable .claude/skills bundle."""
+    installed: list[str] = []
+    for s in scan_skills(root):
+        if repos and s["repo"] not in repos:
+            continue
+        if export_skill(root, s["name"], to_dir):
+            installed.append(s["name"])
+    return installed
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", type=Path, default=ROOT)
-    p.add_argument("--export", metavar="NAME", help="install a skill by name into --to")
-    p.add_argument("--to", type=Path, help="target skills dir for --export")
+    p.add_argument("--export", metavar="NAME", help="install one skill by name into --to")
+    p.add_argument("--export-all", action="store_true", help="install the whole AIOS skill collection into --to")
+    p.add_argument("--repos", help="comma-separated repos to limit --export-all (e.g. myworld)")
+    p.add_argument("--to", type=Path, help="target skills dir for --export/--export-all")
     p.add_argument("--json", action="store_true")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.export:
+    if args.export or args.export_all:
         if not args.to:
-            print("--export requires --to <skills dir>")
+            print("--export/--export-all requires --to <skills dir>")
             return 2
+        if args.export_all:
+            repos = {r.strip() for r in args.repos.split(",")} if args.repos else None
+            names = export_all(args.root.resolve(), args.to, repos)
+            print(f"installed {len(names)} skills → {args.to}: {', '.join(names)}")
+            return 0 if names else 1
         dst = export_skill(args.root.resolve(), args.export, args.to)
         print(f"installed {args.export} → {dst}" if dst else f"skill not found: {args.export}")
         return 0 if dst else 1
