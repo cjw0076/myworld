@@ -39,8 +39,11 @@ PATTERNS: list[tuple[str, re.Pattern]] = [
         r"['\"]([A-Za-z0-9_\-/+]{16,})['\"]")),
 ]
 
-# obvious non-secrets that match generic_secret_assign (placeholders, env refs)
-_PLACEHOLDER = re.compile(r"(?i)\b(example|placeholder|your[_-]?|xxx+|<.*>|\$\{?[A-Z_]+\}?|changeme|redacted|dummy|test)\b")
+# obvious non-secrets that match generic_secret_assign (placeholders, env refs).
+# No \b — placeholder words are often joined by underscores (your_api_key_here).
+_PLACEHOLDER = re.compile(
+    r"(?i)(example|placeholder|your[_-]|xxx+|changeme|redacted|dummy|sample|"
+    r"os\.environ|process\.env|getenv|\$\{?[A-Za-z_]+\}?|<[^>]*>)")
 
 
 def _redact(s: str) -> str:
