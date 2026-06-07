@@ -40,6 +40,28 @@ exact part), emit a receipt, add a `detect_capability` branch. ~50 lines.
 Production (uri UI, hive cron, MemoryOS-per-student) is deploy-target — see
 AIOS_OUTSIDE_VALUE_HANDOFF + AIOS_DEADLINE_COPILOT.
 
+## Security enforcement (absorbed from ironclaw peer Agent OS, 2026-06-07)
+
+The Star Radar absorption (`aios_star_radar.py`) deep-read ironclaw and found AIOS
+had DNA invariants but no security-ENFORCEMENT layer. Three primitives now exist
+(defense-in-depth for the permissioned-head thesis):
+- **`aios_secret_scan.py`** — scans staged changes / paths for leaked secrets
+  (API keys, tokens, private keys, generic secret assignments; placeholders
+  skipped, matches redacted). Exit 1 on findings → pre-commit-hook-able. (DNA #7)
+- **`aios_prompt_guard.py`** — `detect_injection` + `sanitize_untrusted` for
+  untrusted external text before it enters an LLM prompt. Wired into star_radar
+  (GitHub descriptions are untrusted) — use it anywhere user/external text is embedded.
+- **`aios_endpoint_policy.py`** — `is_allowed(url)` + `guarded_urlopen` restrict
+  outbound HTTP to an allowlist (GitHub, localhost ollama). Wired into star_radar's fetch.
+Next (Hive-owned): sandbox/capability-permissions for tool execution, credential
+injection at the host boundary.
+
+## Star Radar — ecosystem absorption organ
+
+`aios_star_radar.py` tracks GitHub momentum → local-LLM distills idea + AIOS angle
+→ draft-first candidates (operator promotes good fits to MemoryOS). dedup skips
+already-seen repos. See memory reference_star_radar_absorption. Re-run periodically.
+
 ## Standing checks (run, don't trust prose)
 
 - **Commit guard:** `python scripts/aios_commit_guard.py` (run with staged
