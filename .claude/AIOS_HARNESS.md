@@ -61,6 +61,13 @@ injection at the host boundary.
 `aios_star_radar.py` tracks GitHub momentum → local-LLM distills idea + AIOS angle
 → draft-first candidates (operator promotes good fits to MemoryOS). dedup skips
 already-seen repos. See memory reference_star_radar_absorption. Re-run periodically.
+Untrusted repo text is sanitized (prompt_guard) and the fetch is allowlisted
+(endpoint_policy) before use.
+
+`aios_skill_catalog.py` — unified CapabilityOS index of every SKILL.md across the
+workspace (myworld harness + uri + hivemind), grounded by frontmatter. Absorbed
+from the shareable-skill-collections trend; foundation for a routable/installable
+AIOS skill library. (`python scripts/aios_skill_catalog.py [--json]`.)
 
 ## Standing checks (run, don't trust prose)
 
