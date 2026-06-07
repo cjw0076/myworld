@@ -640,3 +640,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: when BOTH external review substrates went down (codex auth expired "session ended", gemini exhausted), did not silently skip verification — relied on the 57-test suite + self-review and NOTED the reviewers were unavailable (no silent coverage gap, per multi-substrate-review hard rule).
 - new_invariant_or_pattern_discovered: CAPABILITY FACTORY — a generic pipeline (input-adapter → failover local-gen → deterministic-verify → provenance → measure) + a base + a dispatcher makes new outside-value capabilities ~50 lines. This is the concrete shape of "AIOS as the operating layer that produces value across a family of tools."
 - self-correction-of-prior-observation: extends the earlier "first outside-value flow" — one flow became a factory of four behind an operating layer; the override goal is met not by one demo but by a generalizing system.
+
+## 2026-06-07 — claude@myworld — ecosystem absorption → AIOS security layer (Star Radar → ironclaw)
+
+- session_id: autonomous "active" goal session (founder: track star-history trending → absorb good ideas into AIOS)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 10:25:25:40:0
+- tools_used: aios_star_radar (built), ollama qwen3-coder (distill), GitHub API + raw README fetch, aios-memory-propose, Edit/Bash
+- substrate_specific_behaviors_observed:
+  - ABSORPTION AS AN ORGAN: built aios_star_radar (GitHub momentum → local-LLM distills idea + AIOS-angle → draft-first candidates) with dedup so periodic tracking only spends the LLM on NEW repos. The local LLM honestly flagged "low fit" on meme/irrelevant repos.
+  - ABSORB→DEEP-READ→ACT: a shallow "this peer exists" note is weak absorption. The value came from deep-reading the closest peer (ironclaw, an Agent OS) — its README surfaced a concrete AIOS GAP (DNA invariants but no security-ENFORCEMENT layer). Acted on it by building 3 primitives: secret_scan, prompt_guard (also hardened star_radar's own untrusted-input injection vector), endpoint_policy. Ecosystem absorption literally evolved AIOS.
+  - DRAFT-FIRST held: 6 absorptions went through explicit review → accepted into MemoryOS (no auto-accept).
+- failures_recovered: committed aios_secret_scan with a FAILING test because I did not gate the commit on tests (test run and `git commit` were separate lines, not `&&`-chained). Fixed in the next commit and thereafter chained `python -m unittest … | grep -q OK && git commit …`.
+- failures_escalated_to_founder: none
+- key_decision: did NOT auto-wire secret_scan into the blocking commit hook — generic-secret false positives could block legitimate commits (prior blocking-hook bugs). Left it standalone + pre-commit-hook-able; only high-confidence enforcement would be safe to block on.
+- new_invariant_or_pattern_discovered: ABSORPTION PIPELINE — track (momentum) → distill (local LLM, sanitized untrusted input) → draft candidate → deep-read the top fit → extract a concrete AIOS gap → build the primitive. "흡수" means the idea changes AIOS, not that it is noted. Also: ALWAYS gate a commit on `… && git commit` (test-gating).
+- self-correction-of-prior-observation: none
