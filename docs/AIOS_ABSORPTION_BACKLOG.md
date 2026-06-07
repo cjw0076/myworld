@@ -16,7 +16,7 @@ AIOS development, not just a note.
 
 | absorbed idea | source | concrete AIOS action | size |
 |---|---|---|---|
-| **self-evolving skills** (eval→improve→test→keep/rollback) | darwin-skill | a self-evolve loop: absorption-probe = eval, local LLM proposes a variant, tests verify, MemoryOS keeps / git rolls back. Operationalizes the **self-evolve maturity axis** + dream-cycle. AIOS already has every piece. | M |
+| **self-evolving skills** (eval→improve→test→keep/rollback) | darwin-skill | CORRECTION (verify-before-building): AIOS **already has** `scripts/aios_self_evolve.py` — a per-specialist organ that distills VERIFIED-GOOD invocations into a principles file, with the critical no-self-distillation safety (never evolve from a helper's own raw output). darwin-skill's contribution is the explicit propose→test→**keep/rollback A/B** (variant vs current, keep the strictly-better) — an ENHANCEMENT to the existing organ, not a missing capability. Parametric (LoRA on the verified set) is the named follow-on. | S |
 | **benchmarked memory system** | MemPalace (~54k★) | benchmark MemoryOS against MemPalace; run the retrieval-research-cycle vs it; study its patterns while keeping AIOS active-graph + draft-first differentiators. | S |
 | **queryable knowledge graph from code/docs** | graphify (~60k★) | adopt queryable cross-source graph patterns in MemoryOS (aligns project_lgm_memory_thesis). | M |
 | **installable cross-platform skill library** | antigravity (~39k★) | make the skill catalog installable into other agent CLIs' `.claude` (next step after the catalog). | M |
