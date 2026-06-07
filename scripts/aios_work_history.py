@@ -58,16 +58,21 @@ def summarize(receipt: dict) -> dict:
 
 
 def load_history(directory: Path) -> list[dict]:
+    import time
+
     rows: list[dict] = []
     for fp in directory.rglob("receipt-*.json"):
         try:
             r = json.loads(fp.read_text())
         except (OSError, json.JSONDecodeError):
             continue
-        if isinstance(r, dict) and r.get("schema_version"):
-            rows.append(summarize(r))
-    # newest first; "?" sorts last
-    return sorted(rows, key=lambda x: x["when"], reverse=True)
+        if not (isinstance(r, dict) and r.get("schema_version")):
+            continue
+        s = summarize(r)
+        if s["when"] == "?":  # fall back to file mtime so the timeline stays ordered
+            s["when"] = time.strftime("%Y-%m-%d", time.localtime(fp.stat().st_mtime))
+        rows.append(s)
+    return sorted(rows, key=lambda x: x["when"], reverse=True)  # newest first
 
 
 def build_parser() -> argparse.ArgumentParser:

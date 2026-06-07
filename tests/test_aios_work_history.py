@@ -41,6 +41,16 @@ class LoadHistoryTests(unittest.TestCase):
             hist = w.load_history(d)
             self.assertEqual([h["when"] for h in hist], ["2026-06-07", "2026-06-05"])  # newest first
 
+    def test_missing_generated_at_falls_back_to_mtime(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            d = Path(tmp)
+            (d / "x").mkdir()
+            (d / "x" / "receipt-1.json").write_text(json.dumps({"schema_version": "aios.z.v1"}))  # no generated_at
+            hist = w.load_history(d)
+            self.assertEqual(len(hist), 1)
+            self.assertNotEqual(hist[0]["when"], "?")  # mtime fallback applied
+            self.assertRegex(hist[0]["when"], r"^\d{4}-\d{2}-\d{2}$")
+
 
 if __name__ == "__main__":
     unittest.main()
