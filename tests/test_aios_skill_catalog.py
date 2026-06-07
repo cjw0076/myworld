@@ -51,5 +51,21 @@ class ScanSkillsTests(unittest.TestCase):
         self.assertIn("absorption-probe", names)
 
 
+class ExportSkillTests(unittest.TestCase):
+    def test_export_copies_skill_dir(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / ".claude" / "skills" / "alpha").mkdir(parents=True)
+            (root / ".claude" / "skills" / "alpha" / "SKILL.md").write_text(INLINE)
+            target = root / "other-agent" / "skills"
+            dst = c.export_skill(root, "foo", target)
+            self.assertIsNotNone(dst)
+            self.assertTrue((target / "alpha" / "SKILL.md").is_file())
+
+    def test_export_unknown_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertIsNone(c.export_skill(Path(tmp), "nope", Path(tmp) / "out"))
+
+
 if __name__ == "__main__":
     unittest.main()

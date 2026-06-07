@@ -71,15 +71,38 @@ def scan_skills(root: Path) -> list[dict]:
     return out
 
 
+def export_skill(root: Path, name: str, to_dir: Path) -> Path | None:
+    """Install an AIOS skill into another agent's skills dir (copy SKILL.md +
+    its directory). Foundation of a shareable/installable AIOS skill library."""
+    import shutil
+
+    for s in scan_skills(root):
+        if s["name"] == name:
+            src = (root / s["path"]).parent
+            dst = Path(to_dir) / src.name
+            shutil.copytree(src, dst, dirs_exist_ok=True)
+            return dst
+    return None
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--root", type=Path, default=ROOT)
+    p.add_argument("--export", metavar="NAME", help="install a skill by name into --to")
+    p.add_argument("--to", type=Path, help="target skills dir for --export")
     p.add_argument("--json", action="store_true")
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.export:
+        if not args.to:
+            print("--export requires --to <skills dir>")
+            return 2
+        dst = export_skill(args.root.resolve(), args.export, args.to)
+        print(f"installed {args.export} → {dst}" if dst else f"skill not found: {args.export}")
+        return 0 if dst else 1
     skills = scan_skills(args.root.resolve())
     catalog = {"schema_version": SCHEMA_VERSION, "count": len(skills), "skills": skills}
     if args.json:
