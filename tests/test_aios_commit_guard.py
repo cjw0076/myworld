@@ -73,6 +73,29 @@ class CommitGuardTests(unittest.TestCase):
             )
             self.assertEqual(guard.gitmodules_paths(root), {"GenesisOS", "hivemind"})
 
+    def test_secret_findings_high_confidence_is_error(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "cfg.txt").write_text("aws = AKIAIOSFODNN7EXAMPLE\n")
+            entries = [{"status": "A", "dst_mode": "100644", "path": "cfg.txt"}]
+            f = guard.secret_findings(root, entries)
+            self.assertTrue(any(x["level"] == "error" and x["rule"].startswith("secret:") for x in f))
+
+    def test_secret_findings_skips_gitlink_and_deleted(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "x") .write_text("AKIAIOSFODNN7EXAMPLE")
+            # deleted + gitlink entries must not be scanned
+            entries = [
+                {"status": "D", "dst_mode": "000000", "path": "x"},
+                {"status": "A", "dst_mode": "160000", "path": "x"},
+            ]
+            self.assertEqual(guard.secret_findings(root, entries), [])
+
     def test_is_junk_name(self) -> None:
         self.assertTrue(guard.is_junk_name("0"))
         self.assertTrue(guard.is_junk_name("dir/12"))

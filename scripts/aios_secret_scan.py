@@ -25,6 +25,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_VERSION = "aios.secret_scan.v1"
 
+# near-zero-false-positive rules — safe to BLOCK a commit on. generic_secret_assign
+# is lower precision (warn only when used as an enforcement gate).
+HIGH_CONFIDENCE: frozenset[str] = frozenset({
+    "aws_access_key", "github_token", "openai_anthropic_key",
+    "slack_token", "google_api_key", "private_key_block",
+})
+
 # (name, compiled pattern). Patterns target high-confidence secret shapes to keep
 # false positives low. Values are redacted in output — never printed in full.
 PATTERNS: list[tuple[str, re.Pattern]] = [

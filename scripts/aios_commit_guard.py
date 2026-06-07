@@ -131,10 +131,35 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def secret_findings(root: Path, entries: list[dict]) -> list[dict]:
+    """Leaked-secret findings on staged added/modified files. High-confidence
+    secrets are errors (block); generic/lower-confidence are warnings."""
+    import aios_secret_scan as secret_scan
+
+    def _is_test(p: str) -> bool:  # test files legitimately carry fixture secrets
+        name = Path(p).name
+        return "/tests/" in f"/{p}" or name.startswith("test_") or ".test." in name
+
+    paths = [
+        e["path"] for e in entries
+        if e["status"] in ("A", "M") and e["dst_mode"] != "160000" and not _is_test(e["path"])
+    ]
+    out: list[dict] = []
+    for sf in secret_scan.scan_paths(root, paths):
+        out.append({
+            "level": "error" if sf["rule"] in secret_scan.HIGH_CONFIDENCE else "warn",
+            "path": sf["path"],
+            "rule": f"secret:{sf['rule']}",
+            "message": f"possible secret ({sf['rule']}) at {sf['path']}:{sf['line']} ({sf['match']})",
+        })
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = args.root.resolve()
-    findings = analyze(staged_entries(root), gitmodules_paths(root))
+    entries = staged_entries(root)
+    findings = analyze(entries, gitmodules_paths(root)) + secret_findings(root, entries)
     errors = [f for f in findings if f["level"] == "error"]
     result = {
         "schema_version": SCHEMA_VERSION,
