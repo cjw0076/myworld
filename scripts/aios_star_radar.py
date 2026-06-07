@@ -24,6 +24,7 @@ import urllib.request
 from pathlib import Path
 
 import aios_capability_base as base
+import aios_endpoint_policy as policy
 import aios_prompt_guard as guard
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,7 +57,7 @@ def fetch_trending(since: str, min_stars: int, extra: str | None, limit: int) ->
     q = build_query(since, min_stars, extra)
     url = f"{GH_SEARCH}?{urllib.parse.urlencode({'q': q, 'sort': 'stars', 'order': 'desc', 'per_page': limit})}"
     req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json", "User-Agent": "aios-star-radar"})
-    with urllib.request.urlopen(req, timeout=20) as resp:
+    with policy.guarded_urlopen(req, timeout=20) as resp:  # enforce endpoint allowlist
         return parse_repos(json.loads(resp.read()))
 
 
