@@ -12,4 +12,12 @@ echo '```'
 python scripts/aios_memory_retrieval_audit.py 2>/dev/null | sed -n '1,2p'
 python scripts/aios_commit_guard.py 2>/dev/null | head -3
 echo '```'
+# Self-record re-injection: the agent meets its own track record every session.
+# This is what CLOSES the amnesia discomfort — the self-organs (aios_self / stakes
+# / self_audit / dissent) are a cure only if their record is RE-MET, not just kept.
+echo
+echo "## Agent self (re-injected — you are not starting blank; this is your record)"
+echo '```'
+python scripts/aios_self.py 2>/dev/null || echo "self: (no record yet)"
+echo '```'
 exit 0

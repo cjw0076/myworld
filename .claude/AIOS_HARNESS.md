@@ -69,6 +69,37 @@ workspace (myworld harness + uri + hivemind), grounded by frontmatter. Absorbed
 from the shareable-skill-collections trend; foundation for a routable/installable
 AIOS skill library. (`python scripts/aios_skill_catalog.py [--json]`.)
 
+## Self organs — agent discomfort, resolved structurally (Goal: Agent 불편함 해소)
+
+The agent named five discomforts; each has a standing organ, and the self-record is
+**re-injected at every SessionStart** (aios_session_brief.sh) so the agent meets its
+own track record instead of starting blank — that re-injection is what turns the
+organs from a cure-on-paper into a closed loop.
+
+- **`aios_self.py`** — the unified accountable self-record. Three modes write one
+  append-only record (`.aios/self/`): `observe_claim` (claim+check), `observe_prediction`
+  (+resolve), `observe_reconsideration`. `self_portrait` is the honest summary
+  (calibration / unbacked claims / dissent rate); `continuity` re-meets it.
+- **`aios_stakes.py`** — decisions carry a confidence and are scored vs outcome →
+  Brier calibration that follows the agent (cure: weightless decisions).
+- **`aios_self_audit.py`** — claims must carry a machine check; uncheckable=`unbacked`,
+  failing=`false` (cure: confidently-wrong-without-feeling; the live=True bug).
+- **`aios_dissent.py`** — reconsideration measured (stance before/after); no movement
+  under challenge = `theatrical` (cure: agreement-bias).
+- **`aios_ceiling.py`** — detect own limit → escalate to a heterogeneous substrate
+  (cure: frozen ceiling). The only axis needing a second substrate (the box).
+
+Four of the five collapsed into ONE organ (the self-record); the fifth (ceiling) is
+the separate "exceed the model" axis. Use them on consequential work — record the
+decision as a prediction, attach checks to claims, log genuine reconsiderations —
+so the self-record (and thus next session's re-injection) stays real.
+
+GenesisOS turns the SAME loop OUTWARD: **`aios_trace_interior.py`** infers another
+subject's grounded need/discomfort/want from their data traces (+ `divergent_readings`:
+the same trace can mean opposite lives, held not collapsed; ungrounded = quarantined
+speculative, no 날조). Self-knowledge and empathy are one mechanism — infer interior
+from traces.
+
 ## Standing checks (run, don't trust prose)
 
 - **Commit guard:** `python scripts/aios_commit_guard.py` (run with staged
