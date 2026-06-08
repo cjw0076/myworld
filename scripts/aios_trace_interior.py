@@ -105,6 +105,45 @@ def _deterministic_hypotheses(signals: list[Signal]) -> list[dict]:
     return out
 
 
+# GenesisOS's actual contribution to the reframe: the SAME trace supports OPPOSITE
+# interiors. Seeing behind the data means imagining the non-obvious life, not just
+# the obvious one. Each signal gets an obvious reading AND its inversion — both
+# grounded in the identical evidence — so the agent must hold the ambiguity instead
+# of collapsing to the convenient story. (This is GenesisOS branch:inversion applied
+# to interpretation.)
+_READINGS: dict[str, tuple[tuple[str, str], tuple[str, str]]] = {
+    # signal: ((obvious_dim, obvious_text), (inverted_dim, inverted_text))
+    "grind":     (("discomfort", "stuck — grinding, unable to move past it"),
+                  ("want", "in flow — deeply absorbed, this is what they care about")),
+    "dominance": (("need", "narrowed — one thing crowds everything else out"),
+                  ("want", "found their focus — deliberately giving it everything")),
+    "distress":  (("discomfort", "suffering — recurring failure is wearing them down"),
+                  ("want", "at a growth edge — failing because they're reaching past their level")),
+    "absence":   (("discomfort", "loss — a thread they cared about was dropped/abandoned"),
+                  ("need", "peace — it's finished/resolved, no longer needs attention")),
+}
+
+
+def divergent_readings(signal: Signal) -> dict:
+    """Obvious + inverted interior reading of one signal, both grounded in the SAME
+    evidence. The ambiguity is the point — the data alone cannot say which is true."""
+    pair = _READINGS.get(signal.name)
+    if not pair:
+        return {"signal": signal.name, "readings": [], "ambiguous": False}
+    (od, ot), (vd, vt) = pair
+    return {
+        "signal": signal.name, "detail": signal.detail,
+        "readings": [
+            {"dimension": od, "text": ot, "kind": "obvious", "grounded_in": signal.evidence},
+            {"dimension": vd, "text": vt, "kind": "inverted", "grounded_in": signal.evidence},
+        ],
+        # both grounded in identical evidence → the trace alone cannot disambiguate
+        "ambiguous": True,
+        "to_disambiguate": "needs context the traces don't carry (ask the subject, or a "
+                           "trace of a different kind) — do not pick the convenient story",
+    }
+
+
 def infer_interior(signals: list[Signal], *, generate_fn: Callable[[list[Signal]], list[dict]] | None = None) -> dict:
     """Infer grounded need/discomfort/want. generate_fn (LLM imagination) may propose
     richer hypotheses; CODE then enforces grounding — any hypothesis not citing real
@@ -121,10 +160,15 @@ def infer_interior(signals: list[Signal], *, generate_fn: Callable[[list[Signal]
             speculative.append({**h, "flag": "ungrounded — no trace evidence cited"})
     by_dim = {d: [h for h in grounded if h["dimension"] == d] for d in ("need", "discomfort", "want")}
     itch = max(grounded, key=lambda h: len(h["grounded_in"]), default=None)
+    divergent = [divergent_readings(s) for s in signals]
+    divergent = [d for d in divergent if d["readings"]]
     return {
         "schema_version": "aios.trace_interior.v1",
         "signals": [{"name": s.name, "detail": s.detail, "evidence": s.evidence} for s in signals],
         "interior": by_dim,
+        # GenesisOS imagination: the non-obvious life the same data could mean
+        "divergent_readings": divergent,
+        "ambiguities": [d["detail"] for d in divergent if d["ambiguous"]],
         "the_itch": itch,                          # the most-grounded unspoken thing
         "speculative": speculative,                # imagination not (yet) backed by data
         "imagination_substrate": "llm" if generate_fn else "deterministic-grounding-only",
