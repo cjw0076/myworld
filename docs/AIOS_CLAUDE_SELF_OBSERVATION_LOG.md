@@ -47,6 +47,35 @@ substrate-equivalent adapter (Claude / Codex / Local LLM).
 
 ---
 
+## 2026-06-08 10:50 KST — claude@myworld — world-presentable front door (`aios demo`)
+
+- session_id: compact resumption — "세상에 AIOS 생태계를 선보일 수 있도록" autonomous
+- mode_breakdown: observe:8 / verify:6 / decide:4 / intervene:10 / escalate:2 (min)
+- tools_used: Bash, Read, Write, Edit, mcp__aios__aios_retrieve/route/challenge (4-OS ritual), background test run + until-loop wait
+- tools_NOT_used (CLI gap): no `aios demo` existed — the gap I just filled; no
+  pyproject manifest still (pip-installability deferred, demo doesn't need it)
+- substrate_specific_behaviors_observed: GenesisOS critique materially changed
+  the artifact — it flagged operator jargon (provenance/organ/aios) and forced
+  plain-language narration. A world-facing demo MUST speak to a stranger, not an
+  operator; the critic caught that I'd default to insider language.
+- failures_recovered: README Edit blocked because I'd read it via `cat` (Bash)
+  not the Read tool — harness requires Read-before-Edit; re-Read then Edit.
+  Background `tail -8` lost the test summary under demo stdout flooding the
+  pipe; re-ran capturing summary only (739 OK).
+- failures_escalated_to_founder: none auto-decided; surfacing ONE strategic fork
+  (deploy uri to real users) as vision-level, not auto-taken.
+- key_decision: built `aios demo` (zero-GPU/network verifiable-output showcase)
+  as the highest-leverage presentability move; declined to extend it to all 4
+  copilots (deadline/exam = pass/catch frame, grade/tuition = exact-math frame —
+  mixing frames dilutes the punch; single hero demo is stronger).
+- new_invariant_or_pattern_discovered: "selling-surface vs operating-surface" —
+  the harness/CLI was built FOR operators (jargon-dense, provisioning-first). A
+  world front door is a different audience needing a different first move
+  (instant honest wow, no setup). Same gap likely recurs in docs/install copy.
+- self-correction-of-prior-observation: none
+
+---
+
 ## 2026-05-12 14:00 → 2026-05-13 10:15 KST — claude@myworld — initial multi-session compact-bridged operator stretch
 
 - session_id: compact resumption from 2026-05-11 founder bootstrap; ran
