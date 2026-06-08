@@ -169,6 +169,10 @@ def self_model_command(root: Path, argv: list[str]) -> list[str]:
     return [sys.executable, (root / "scripts" / "aios_self_model.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
+def demo_command(root: Path, argv: list[str]) -> list[str]:
+    return [sys.executable, (root / "scripts" / "aios_demo.py").as_posix(), *argv]
+
+
 def dispatch_reconcile_command(root: Path, argv: list[str]) -> list[str]:
     return [sys.executable, (root / "scripts" / "aios_dispatch_reconcile.py").as_posix(), "--root", root.as_posix(), *argv]
 
@@ -234,6 +238,7 @@ def build_parser() -> argparse.ArgumentParser:
         "cmd",
         choices=[
             "root",
+            "demo",
             "ask",
             "chat",
             "status",
@@ -287,6 +292,9 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(payload["root"])
         return 0
+
+    if args.cmd == "demo":
+        return run_delegate(demo_command(root, args.args), cwd=root)
 
     if args.cmd in {"status", "step", "run", "submit-goal", "sprint-loop"}:
         return run_delegate(runtime_command(root, [args.cmd, *args.args]), cwd=root)

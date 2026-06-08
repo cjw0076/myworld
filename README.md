@@ -14,6 +14,19 @@ sibling OS repos:
 - **CapabilityOS** — capability map (recommendation-only routing)
 - **GenesisOS** — divergence layer (re-framing reasoning across fixed axes)
 
+## See it in 30 seconds (no API key, no GPU, no network)
+
+```sh
+git clone https://github.com/cjw0076/myworld && cd myworld
+python bin/aios demo        # or: bin/aios demo
+```
+
+It shows the one idea AIOS is built around: the AI only *proposes*, then plain
+deterministic code checks the part that has to be exact — and **rejects** the
+answer if the check fails. The demo runs the same checker on a good study plan
+(passes) and on a plan with a realistic AI slip — a session scheduled past its
+deadline — and watches the code catch it. Every result leaves a provenance file.
+
 ## Install
 
 ```sh
@@ -23,6 +36,7 @@ curl -fsSL https://raw.githubusercontent.com/cjw0076/myworld/main/install.sh | s
 Then:
 
 ```sh
+aios demo               # the 30-second showcase above
 aios setup apply        # provision local models + config + the always-on service
 aios self-model build   # what AIOS knows about itself
 ```
