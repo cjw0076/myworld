@@ -58,11 +58,17 @@ def score_universe(u: Universe) -> float:
     return round(score, 3)
 
 
-def select_winner(universes: list[Universe]) -> Universe | None:
-    """Pick the highest-scoring universe; stable tie-break by id for determinism."""
+Scorer = Callable[["Universe"], float]
+
+
+def select_winner(universes: list[Universe], scorer: Scorer = score_universe) -> Universe | None:
+    """Pick the highest-scoring universe; stable tie-break by id for determinism.
+
+    `scorer` defaults to the hand-coded prior but can be a LEARNED scorer fit from
+    accumulated run history (aios_smx_experience) — closing the inductive loop."""
     if not universes:
         return None
-    return max(universes, key=lambda u: (score_universe(u), -_ord(u.id)))
+    return max(universes, key=lambda u: (scorer(u), -_ord(u.id)))
 
 
 def _ord(s: str) -> int:
@@ -105,14 +111,18 @@ def run_multiverse(
     *,
     apply_fn: Callable[[Universe], None] | None = None,
     cf_dir: Path | None = None,
+    scorer: Scorer = score_universe,
+    experience_sink: Callable[[list[Universe], "Universe | None"], None] | None = None,
 ) -> dict:
     """Score the universes, apply ONLY the winner, send losers to counterfactual
     memory, return a provenance receipt. apply_fn defaults to no-op (caller wires
-    the real diff-apply). Pure orchestration — unit-testable with synthetic universes.
+    the real diff-apply). `scorer` may be a learned scorer; `experience_sink`
+    records every universe+outcome so the scorer can be re-fit (the inductive loop).
+    Pure orchestration — unit-testable with synthetic universes.
     """
-    scored = [{"id": u.id, "branch_type": u.branch_type, "score": score_universe(u),
+    scored = [{"id": u.id, "branch_type": u.branch_type, "score": round(scorer(u), 3),
                "verified_ok": u.verified_ok, "executed": u.executed} for u in universes]
-    winner = select_winner(universes)
+    winner = select_winner(universes, scorer)
     losers = [u for u in universes if winner is None or u.id != winner.id]
     cf = [counterfactual_episode(u, winner.id if winner else "none") for u in losers]
     cf_path = write_counterfactuals(cf, cf_dir or (ROOT / ".aios" / "counterfactual"))
@@ -120,6 +130,8 @@ def run_multiverse(
     if winner is not None and winner.verified_ok and winner.executed and apply_fn is not None:
         apply_fn(winner)                      # commit ONLY the winning universe
         applied = True
+    if experience_sink is not None:
+        experience_sink(universes, winner)    # feed the inductive loop
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": time.strftime("%Y-%m-%d"),
@@ -129,8 +141,9 @@ def run_multiverse(
         "any_real_execution": any(u.executed for u in universes),
         "counterfactuals": len(cf),
         "counterfactual_ref": cf_path.as_posix() if cf_path else None,
-        "provenance": "deterministic survivability score (code judges); winner-only "
-                      "apply; losers kept as counterfactual memory",
+        "scorer": getattr(scorer, "scorer_name", "prior"),
+        "provenance": "survivability score (code judges); winner-only apply; "
+                      "losers kept as counterfactual memory",
     }
 
 

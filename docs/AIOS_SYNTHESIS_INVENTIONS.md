@@ -79,7 +79,18 @@ not just facts. Hermes feeds back trust on *accepted* facts; **nobody keeps memo
 of reverted actions.** Over time this is the training signal for SMX's scorer and
 the antidote to repeating a mistake a different session already made.
 
-### 3. Learned Divergence — the multiverse develops taste
+### 3. Learned Divergence — the multiverse develops taste  *(BUILT — inductive loop closed)*
+
+> Status 2026-06-08: the loop runs. `aios_smx_experience.py` logs every universe +
+> outcome to an append-only store, re-fits the universe scorer from that history
+> (pure-Python logreg), and that learned scorer drives the next run's selection —
+> cold-start-safe (falls back to the hand-coded prior until the data supports
+> learning). Validated experimentally: in a world whose real success-driver
+> penalizes blast radius 4× more than the prior assumes, the learned scorer adapts
+> its weights from the outcome data and beats the fixed prior on top-1 selection
+> (0.89 vs 0.845) — the fixed magic-number scorer cannot. Modest, honest gain; the
+> point is that the scorer is now *induced from experience*, not asserted.
+
 
 **Weave** (critic escape #4, the 1-year horizon): SMX history × Counterfactual Memory
 × GenesisOS Reflexion-loop × CapabilityOS confidence.
