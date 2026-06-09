@@ -194,6 +194,52 @@ def compile_goal(
 
 # --- CLI ----------------------------------------------------------------------
 
+def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str]]):
+    """Reactive sampler for the turn-loop: ask the provider for the NEXT single move
+    given the trajectory so far (one tool call, or done). This is the agent-loop shape
+    (react to results), unlike the one-shot planner. Degrades: returns 'done' if the
+    provider can't be reached, so the loop ends cleanly instead of fabricating."""
+    tools = _load("aios_tools")
+    catalog = json.dumps(tools.list_tools(), ensure_ascii=False)
+
+    def sampler(history: list[dict]) -> dict:
+        tl = _load("aios_turn_loop")
+        prompt = (
+            "You are the AIOS agent loop. Tools (name/class):\n" + catalog + "\n"
+            "Trajectory so far (names/status only):\n"
+            + json.dumps(history[-12:], ensure_ascii=False) + "\n"
+            'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
+            'action, or {"done":true} when the goal is met. No prose.')
+        try:
+            raw = adapters[provider](prompt)
+        except Exception:  # noqa: BLE001 — provider unreachable → end loop honestly
+            return {"tool_calls": []}
+        try:
+            m = re.search(r"\{.*\}", raw, re.S)
+            obj = json.loads(m.group(0)) if m else {"done": True}
+        except (json.JSONDecodeError, AttributeError):
+            return {"tool_calls": []}
+        if obj.get("done") or not obj.get("tool"):
+            return {"tool_calls": []}
+        return {"tool_calls": [tl.ToolCall(str(obj["tool"]), dict(obj.get("arguments", {})))]}
+
+    return sampler
+
+
+def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
+                  max_turns: int = 12) -> dict:
+    """Run a goal as a real agent TURN-LOOP (the kernel spine) with AIOS organs as
+    kernel tools behind an authority gate — not a single-pass batch over a pre-planned
+    step list. The model is a sampler (DI for tests, provider-backed live)."""
+    tl = _load("aios_turn_loop")
+    tools = _load("aios_tools")
+    if sampler is None:
+        return {"schema_version": "aios.turn_loop.v1", "exit": "no_sampler",
+                "detail": "pass a sampler, or run --loop with an available provider"}
+    return tl.run_loop(goal, sampler, tools.build_registry(),
+                       gate=tools.gate_for(agent_id), max_turns=max_turns)
+
+
 def _default_adapters(authorized_provider: str) -> dict[str, Callable[[str], str]]:
     adapters_mod = _load("aios_adapters")
     return adapters_mod.build_adapters(providers=[authorized_provider])
@@ -226,6 +272,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--save", help="write the resulting contract json to this path")
     parser.add_argument("--no-memory", action="store_true",
                         help="disable the cognition loop (no recall before, no draft after)")
+    parser.add_argument("--loop", action="store_true",
+                        help="run as a reactive agent TURN-LOOP (organs as kernel tools, "
+                             "authority-gated) instead of a single-pass plan")
+    parser.add_argument("--agent", default="codex@myworld", help="agent identity for the gate")
     args = parser.parse_args(argv)
 
     adapters = _default_adapters(args.provider)
@@ -233,6 +283,13 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"status": "no_planner",
                           "detail": f"provider '{args.provider}' CLI not available"}, indent=2))
         return 1
+
+    if args.loop:
+        sampler = make_provider_sampler(args.provider, adapters)
+        outcome = run_loop_goal(args.goal, agent_id=args.agent, sampler=sampler)
+        print(json.dumps(outcome, ensure_ascii=False, indent=2))
+        return 0 if outcome.get("exit") in ("model_finished", "needs_approval") else 1
+
     planner = make_provider_planner(args.provider, adapters)
 
     # cognition loop: recall before planning, draft after closeout (draft-first)
