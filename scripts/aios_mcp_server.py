@@ -112,6 +112,27 @@ def tool_specs() -> list[dict[str, Any]]:
                 "required": ["summary"],
             },
         },
+        # Gateway to ALL AIOS organs (deferred-loading: discover via aios_list_tools,
+        # invoke via aios_invoke through the authority gate) — exposes the full organ
+        # set without dumping 150 schemas into context (the token-bloat trap).
+        {
+            "name": "aios_list_tools",
+            "description": "List every AIOS organ available as a tool (name, class, domain). Call this to discover what AIOS can do before invoking via aios_invoke.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+        {
+            "name": "aios_invoke",
+            "description": "Invoke any AIOS organ tool (from aios_list_tools) THROUGH the authority gate. Read/advisory tools run; write tools require the agent's authority or return needs_approval.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "tool": {"type": "string", "description": "organ tool name from aios_list_tools"},
+                    "arguments": {"type": "object", "description": "arguments for the tool"},
+                    "agent": {"type": "string", "description": "caller identity for the gate (default codex@myworld)"},
+                },
+                "required": ["tool"],
+            },
+        },
     ]
 
 
@@ -214,12 +235,51 @@ def call_observe(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
     return True, f"observation recorded to AIOS: {path.relative_to(root)}"
 
 
+def _aios_tools_mod():
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import aios_tools  # noqa: E402
+    import aios_turn_loop  # noqa: E402
+    return aios_tools, aios_turn_loop
+
+
+def call_list_tools(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    """Discovery: the full organ catalog (deferred-loading — no schema dump)."""
+    try:
+        tools, _ = _aios_tools_mod()
+        return True, json.dumps({"tools": tools.list_tools()}, ensure_ascii=False)
+    except Exception as exc:  # noqa: BLE001
+        return False, f"list_tools unavailable: {exc}"
+
+
+def call_invoke(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    """Invoke an organ THROUGH the authority gate — external agents are gated too."""
+    name = str(args.get("tool", "")).strip()
+    if not name:
+        return False, "tool is required"
+    arguments = args.get("arguments") or {}
+    agent = str(args.get("agent") or "codex@myworld")
+    try:
+        tools, tl = _aios_tools_mod()
+        decision = tools.gate_for(agent)(name, arguments)
+        if decision == tl.DENY:
+            return True, json.dumps({"status": "denied", "tool": name, "reason": "gate denied"})
+        if decision == tl.ASK:
+            return True, json.dumps({"status": "needs_approval", "tool": name,
+                                     "reason": f"{agent} not authorized; operator approval required"})
+        status, result = tools.build_registry().dispatch(tl.ToolCall(name, dict(arguments)))
+        return True, json.dumps({"status": status, "tool": name, "result": result}, ensure_ascii=False)
+    except Exception as exc:  # noqa: BLE001
+        return False, f"invoke failed: {exc}"
+
+
 HANDLERS = {
     "aios_route": call_route,
     "aios_helper_run": call_helper_run,
     "aios_retrieve": call_retrieve,
     "aios_challenge": call_challenge,
     "aios_observe": call_observe,
+    "aios_list_tools": call_list_tools,
+    "aios_invoke": call_invoke,
 }
 
 
