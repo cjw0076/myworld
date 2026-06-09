@@ -5,7 +5,23 @@
 # design — surfaces state into context; never fails the session.
 set +e
 cd "$(dirname "$0")/.." || exit 0
-cat .claude/AIOS_HARNESS.md
+# Token-lean digest, not the full 10KB harness doc. Deferred loading (the same
+# pattern AIOS reverse-engineered from Claude tool-search): inject NAMES + live state
+# now (~a few hundred tokens), load detail on demand via Read. Set AIOS_BRIEF=full to
+# inject the whole doc. Saves ~2.5K tokens EVERY session ("plugin처럼 붙는 부분의 토큰").
+if [ "${AIOS_BRIEF:-lean}" = "full" ]; then
+  cat .claude/AIOS_HARNESS.md
+else
+  echo "# AIOS Operator Harness — lean digest (full: Read .claude/AIOS_HARNESS.md)"
+  echo
+  echo "Skills (invoke /<name>):"
+  grep -oE '^\| \*\*`/[a-z-]+`\*\*' .claude/AIOS_HARNESS.md | tr -d '|* `' | sed 's/^/  /'
+  echo "Sections in .claude/AIOS_HARNESS.md (Read for detail):"
+  grep -E '^## ' .claude/AIOS_HARNESS.md | sed 's/^## /  - /'
+  echo "Kernel ecosystem: aios_head --loop → aios_turn_loop → aios_tools (organs as"
+  echo "  gated kernel tools) → aios_packet (call_id+lineage) → aios_run_log (resumable)"
+  echo "  → aios_work (cross-session). Blueprint: docs/AIOS_ECOSYSTEM_BLUEPRINT.md."
+fi
 echo
 echo "## Live state (injected at session start)"
 echo '```'
