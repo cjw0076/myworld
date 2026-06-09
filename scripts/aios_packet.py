@@ -30,8 +30,21 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BUS = ROOT / ".aios" / "bus"
 
-KINDS = ("request", "result", "done", "ask", "blocked", "approval")
+# Performatives = a SMALL FIXED set (avoid KQML/FIPA's dialect-fork trap), meaning
+# defined by observable COMMITMENT (ledger/receipt), never by inner state (avoid
+# Wooldridge's verifiability trap). FIPA-derived + AIOS's novel `challenge` (GenesisOS
+# dissent — "here is the non-obvious reading / I diverge"; no existing ACL has it).
+KINDS = ("request", "result", "inform", "propose", "agree", "refuse",
+         "failure", "ask", "blocked", "approval", "done", "challenge")
 STATUSES = ("pending", "running", "final", "timed_out", "denied")
+
+# control performatives always pass the sparsity gate; informative ones are gated
+# (AgentPrune/"Talk Isn't Always Cheap": redundant inform is the net-negative cost).
+_CONTROL = {"request", "ask", "blocked", "approval", "failure", "done", "refuse", "challenge"}
+
+# AIOS status → A2A state name (bridge-compatibility, near-free given the isomorphism)
+_A2A_STATE = {"pending": "submitted", "running": "working", "final": "completed",
+              "timed_out": "failed", "denied": "rejected"}
 
 
 def _h(*parts) -> str:
@@ -53,6 +66,8 @@ class Packet:
     trace_id: str = ""        # threads the whole conversation (lineage)
     status: str = "pending"
     payload_ref: str = ""     # path/id, NEVER inline content (DNA #7)
+    confidence: float = -1.0  # calibration (from aios_stakes); -1 = unstated
+    evidence_ref: str = ""    # provenance — the receipt/ledger entry the claim commits to
     ts: str = ""
 
     def to_dict(self) -> dict:
@@ -97,6 +112,34 @@ def wait_status(call_id: str, results: list[Packet], *, deadline_passed: bool = 
         if r.parent_id == call_id:
             return r.status
     return "timed_out" if deadline_passed else "pending"
+
+
+def should_communicate(kind: str, *, novel: bool = True, redundant: bool = False) -> bool:
+    """The sparsity gate — the research's #1 finding encoded: over-communication is
+    net-negative (AgentPrune cut 28–73% by pruning; debate degrades via agreement
+    cascades). Control performatives (ask/blocked/failure/done/challenge/…) always
+    pass; an informative message (inform/result) is sent ONLY if it's novel and not
+    redundant. Default to NOT sending low-value chatter."""
+    if kind in _CONTROL:
+        return True
+    return bool(novel) and not redundant
+
+
+def with_calibration(p: Packet, confidence: float, *, evidence_ref: str = "") -> Packet:
+    """Attach calibration + provenance so a claim is trust-weightable (commitment-based
+    semantics: the message commits to evidence, not to a mental state)."""
+    p.confidence = round(float(confidence), 4)
+    p.evidence_ref = evidence_ref
+    return p
+
+
+def to_a2a(p: Packet) -> dict:
+    """Bridge to Google A2A field naming so the AIOS bus is A2A-interoperable for free
+    (the models are near-isomorphic: call_id↔taskId, trace_id↔contextId, status↔state)."""
+    role = "agent" if p.from_agent.split("@")[0] != "user" else "user"
+    state = "input_required" if p.kind in ("ask", "blocked", "approval") else _A2A_STATE.get(p.status, "working")
+    return {"taskId": p.id, "contextId": p.trace_id, "role": role,
+            "kind": p.kind, "state": state, "artifactRef": p.payload_ref or None}
 
 
 def write_packet(p: Packet, *, bus: Path = BUS) -> Path:

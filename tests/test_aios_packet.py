@@ -77,5 +77,59 @@ class BusTests(unittest.TestCase):
         self.assertEqual(r.payload_ref, ".aios/run/123.json")
 
 
+class PerformativeTests(unittest.TestCase):
+    def test_fipa_derived_and_challenge_are_valid(self) -> None:
+        req = P.new_request("a@b", "GenesisOS", "propose_contract")
+        for k in ("inform", "propose", "agree", "refuse", "failure", "challenge", "done"):
+            self.assertEqual(P.reply(req, k).kind, k)   # all valid performatives
+
+    def test_challenge_is_aios_novel_performative(self) -> None:
+        # GenesisOS dissent as a first-class speech act — not in FIPA/A2A
+        self.assertIn("challenge", P.KINDS)
+
+
+class SparsityGateTests(unittest.TestCase):
+    """The research's #1 finding encoded: over-communication is net-negative."""
+
+    def test_control_always_passes(self) -> None:
+        for k in ("ask", "blocked", "failure", "done", "challenge", "request"):
+            self.assertTrue(P.should_communicate(k))
+
+    def test_redundant_inform_is_suppressed(self) -> None:
+        self.assertFalse(P.should_communicate("inform", redundant=True))
+        self.assertFalse(P.should_communicate("inform", novel=False))
+
+    def test_novel_inform_passes(self) -> None:
+        self.assertTrue(P.should_communicate("inform", novel=True, redundant=False))
+
+
+class CalibrationTests(unittest.TestCase):
+    def test_with_calibration_attaches_confidence_and_provenance(self) -> None:
+        req = P.new_request("codex@hivemind", "memoryOS", "accept_memory_draft")
+        res = P.with_calibration(P.reply(req, "inform"), 0.7, evidence_ref=".aios/r.json")
+        self.assertEqual(res.confidence, 0.7)
+        self.assertEqual(res.evidence_ref, ".aios/r.json")
+        self.assertNotIn("content", res.to_dict())     # still ref/scalar only, no body
+
+    def test_default_confidence_unstated(self) -> None:
+        self.assertEqual(P.new_request("a@b", "hivemind", "x").confidence, -1.0)
+
+
+class A2ABridgeTests(unittest.TestCase):
+    def test_bridge_field_names(self) -> None:
+        req = P.new_request("claude@myworld", "hivemind", "commit_to_child_repo")
+        a = P.to_a2a(req)
+        self.assertEqual(a["taskId"], req.id)
+        self.assertEqual(a["contextId"], req.trace_id)
+
+    def test_blocked_maps_to_input_required(self) -> None:
+        req = P.new_request("a@b", "hivemind", "x")
+        self.assertEqual(P.to_a2a(P.reply(req, "blocked", status="pending"))["state"], "input_required")
+
+    def test_final_maps_to_completed(self) -> None:
+        req = P.new_request("a@b", "hivemind", "x")
+        self.assertEqual(P.to_a2a(P.reply(req, "done", status="final"))["state"], "completed")
+
+
 if __name__ == "__main__":
     unittest.main()
