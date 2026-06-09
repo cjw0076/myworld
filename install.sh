@@ -70,6 +70,21 @@ case ":$PATH:" in
      printf '       export PATH="%s:$PATH"\n' "$AIOS_BIN" >&2 ;;
 esac
 
+# --- 4b. ambient wiring -----------------------------------------------------
+# The moat: a download makes the device's agents follow AIOS — by attaching to each
+# provider's PUBLISHED extension surface (Claude Code hooks+MCP, Codex/Gemini MCP),
+# never the closed runtime. Safe by construction: idempotent, non-destructive (merges,
+# preserves user config), backed-up (.aios-bak), JSON-validated, reversible
+# (`aios_ambient.py unwire --apply`). Honors AIOS_NO_AMBIENT=1 to skip.
+if [ "${AIOS_NO_AMBIENT:-0}" != "1" ] && [ -f "$AIOS_HOME/myworld/scripts/aios_ambient.py" ]; then
+  if "$PY" "$AIOS_HOME/myworld/scripts/aios_ambient.py" wire --apply \
+       --home "$HOME" --root "$AIOS_HOME/myworld" >/dev/null 2>&1; then
+    say "ambient: AIOS wired alongside your providers (claude/codex/gemini). undo: aios uninstall"
+  else
+    warn "ambient wiring skipped (provider configs untouched)"
+  fi
+fi
+
 # --- 5. done ----------------------------------------------------------------
 if [ -n "$failed" ]; then
   warn "some repos did not clone:$failed (GenesisOS has no public remote and is expected to be absent)"
