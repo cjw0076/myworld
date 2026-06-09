@@ -82,13 +82,22 @@ def default_gate(name: str, arguments: dict) -> str:
 def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
              gate: Callable[[str, dict], str] = default_gate,
              max_turns: int = 12, loop_threshold: int = 3,
-             record_sink: Callable[[dict], None] | None = None) -> dict:
-    """Run the agent loop. Returns a structured outcome with a named exit."""
+             record_sink: Callable[[dict], None] | None = None,
+             turn_sink: Callable[[dict], None] | None = None) -> dict:
+    """Run the agent loop. Returns a structured outcome with a named exit.
+
+    turn_sink (optional) receives per-turn `turn_context` + each `trajectory` entry as
+    they happen — the append-only stream that makes a run RESUMABLE (aios_run_log)."""
     history: list[dict] = [{"role": "user", "kind": "goal"}]   # names/roles only, no content
     trajectory: list[dict] = []
     last_sig, sig_count = None, 0
 
+    def emit(rec: dict) -> None:
+        if turn_sink:
+            turn_sink(rec)
+
     for turn in range(1, max_turns + 1):
+        emit({"kind": "turn_context", "turn": turn})
         resp = sampler(history)
         calls = [c if isinstance(c, ToolCall) else ToolCall(**c) for c in (resp.get("tool_calls") or [])]
         history.append({"role": "assistant", "turn": turn, "tools": [c.name for c in calls]})
@@ -115,6 +124,7 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
             elif decision == ASK:                        # escalate as a typed control result, not prose
                 entry["status"] = "needs_approval"
                 trajectory.append(entry)
+                emit({"kind": "trajectory", **entry})
                 stop = {"exit": "needs_approval", "turns": turn,
                         "pending": {"tool": call.name, "call_id": call.call_id},
                         "trajectory": trajectory}
@@ -124,6 +134,7 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                 entry["status"] = status
                 history.append({"role": "tool", "tool": call.name, "status": status})
             trajectory.append(entry)
+            emit({"kind": "trajectory", **entry})
         if stop:
             outcome = stop
             break
