@@ -7,9 +7,19 @@ boldly. This realizes it via each provider's PUBLISHED extension surface (hooks 
 + context files) — NOT by piercing their closed runtime (that couples to internals and
 breaks AIOS's churn-resilience thesis). The doors the providers left open:
 
-  - Claude Code : ~/.claude/settings.json  → SessionStart + PreToolUse hooks + MCP server
+  - Claude Code : ~/.claude.json  → top-level mcpServers.aios  (DURABLE, user-scope —
+                  the canonical file `claude mcp add -s user` persists to; survives relaunch)
+                  + ~/.claude/settings.json hooks (BEST-EFFORT only — see finding below)
   - Codex       : ~/.codex/config.toml      → [mcp_servers.aios]
   - Gemini      : ~/.gemini/settings.json   → mcpServers.aios
+
+Finding (2026-06-10, verified on the dev device): ~/.claude/settings.json is NOT a durable
+seam. Claude Code REGENERATES that file from its own canonical config on launch and
+silently drops any externally-injected mcpServers/hooks (observed: a wired settings.json
+was byte-reverted to its pre-AIOS state at the next session start). So the load-bearing
+moat piece — the AIOS MCP server — must land in ~/.claude.json (which the app owns and
+persists). Hooks still go to settings.json as a best-effort nicety; never depend on them.
+codex/gemini config files are not app-rewritten, so wiring there holds.
 
 SAFE-by-construction (reversible risk, the responsible form of bold): every change is
 idempotent (a marker prevents double-add), NON-destructive (merges into existing
@@ -56,8 +66,17 @@ def _write_json(path: Path, data: dict) -> bool:
     json.loads(text)                    # validate before write — fail-closed
     path.parent.mkdir(parents=True, exist_ok=True)
     _backup(path)
-    path.write_text(text, encoding="utf-8")
+    _atomic_write(path, text)
     return True
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """Write via temp + os.replace so a concurrent reader (e.g. the live provider app
+    holding ~/.claude.json) never sees a half-written or corrupt file."""
+    import os
+    tmp = path.with_suffix(path.suffix + ".aios-tmp")
+    tmp.write_text(text, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 # --- Claude Code: hooks + MCP --------------------------------------------------
@@ -77,35 +96,52 @@ def _has_aios_hook(hooks: dict) -> bool:
 
 
 def wire_claude(home: Path, root: Path, apply: bool) -> dict:
-    path = home / ".claude" / "settings.json"
-    cfg = _load_json(path)
-    changed = False
-    cfg.setdefault("mcpServers", {})
-    if MARK not in cfg["mcpServers"]:
-        cfg["mcpServers"][MARK] = _mcp_command(root); changed = True
-    hooks = cfg.setdefault("hooks", {})
-    if not _has_aios_hook(hooks):
+    # DURABLE seam: the MCP server lands in ~/.claude.json (app-canonical, survives relaunch).
+    durable = home / ".claude.json"
+    dcfg = _load_json(durable)
+    dchanged = MARK not in (dcfg.get("mcpServers") or {})
+    if dchanged:
+        dcfg.setdefault("mcpServers", {})[MARK] = _mcp_command(root)
+        if apply:
+            _write_json(durable, dcfg)
+    # BEST-EFFORT seam: hooks in settings.json (the app may strip these on relaunch — never
+    # depend on them; they're a nicety for SessionStart brief + PreToolUse guard).
+    spath = home / ".claude" / "settings.json"
+    scfg = _load_json(spath)
+    hooks = scfg.setdefault("hooks", {})
+    schanged = not _has_aios_hook(hooks)
+    if schanged:
         for ev, entries in _claude_hooks(root).items():
             hooks.setdefault(ev, []).extend(entries)
-        changed = True
-    if changed and apply:
-        _write_json(path, cfg)
-    return {"provider": "claude", "config": path.as_posix(), "would_change": changed, "applied": changed and apply}
+        if apply:
+            _write_json(spath, scfg)
+    changed = dchanged or schanged
+    return {"provider": "claude", "config": durable.as_posix(), "hooks_config": spath.as_posix(),
+            "would_change": changed, "applied": changed and apply,
+            "durable_mcp": dchanged, "best_effort_hooks": schanged}
 
 
 def unwire_claude(home: Path, apply: bool) -> dict:
-    path = home / ".claude" / "settings.json"
-    cfg = _load_json(path)
     changed = False
-    if isinstance(cfg.get("mcpServers"), dict) and MARK in cfg["mcpServers"]:
-        del cfg["mcpServers"][MARK]; changed = True
-    if isinstance(cfg.get("hooks"), dict):
-        for ev in list(cfg["hooks"]):
-            kept = [e for e in cfg["hooks"][ev] if MARK not in json.dumps(e)]
-            if len(kept) != len(cfg["hooks"][ev]):
-                cfg["hooks"][ev] = kept; changed = True
-    if changed and apply:
-        _write_json(path, cfg)
+    durable = home / ".claude.json"
+    dcfg = _load_json(durable)
+    if isinstance(dcfg.get("mcpServers"), dict) and MARK in dcfg["mcpServers"]:
+        del dcfg["mcpServers"][MARK]; changed = True
+        if apply:
+            _write_json(durable, dcfg)
+    spath = home / ".claude" / "settings.json"
+    scfg = _load_json(spath)
+    schanged = False
+    if isinstance(scfg.get("mcpServers"), dict) and MARK in scfg["mcpServers"]:
+        del scfg["mcpServers"][MARK]; schanged = True
+    if isinstance(scfg.get("hooks"), dict):
+        for ev in list(scfg["hooks"]):
+            kept = [e for e in scfg["hooks"][ev] if MARK not in json.dumps(e)]
+            if len(kept) != len(scfg["hooks"][ev]):
+                scfg["hooks"][ev] = kept; schanged = True
+    if schanged and apply:
+        _write_json(spath, scfg)
+    changed = changed or schanged
     return {"provider": "claude", "removed": changed, "applied": changed and apply}
 
 
@@ -140,12 +176,16 @@ def wire_gemini(home: Path, root: Path, apply: bool) -> dict:
 
 
 def status(home: Path) -> dict:
-    claude = _load_json(home / ".claude" / "settings.json")
+    durable = _load_json(home / ".claude.json")           # the seam that actually persists
+    settings = _load_json(home / ".claude" / "settings.json")
     codex = (home / ".codex" / "config.toml")
     gemini = _load_json(home / ".gemini" / "settings.json")
     return {
         "schema_version": "aios.ambient.v1",
-        "claude": MARK in (claude.get("mcpServers") or {}) or _has_aios_hook(claude.get("hooks") or {}),
+        # claude durability is decided by the DURABLE seam (~/.claude.json); the settings.json
+        # hooks are best-effort and reported separately so a stripped hook never masks a wired MCP.
+        "claude": MARK in (durable.get("mcpServers") or {}),
+        "claude_hooks": _has_aios_hook(settings.get("hooks") or {}),
         "codex": codex.exists() and "[mcp_servers.aios]" in codex.read_text(encoding="utf-8"),
         "gemini": MARK in (gemini.get("mcpServers") or {}),
     }
