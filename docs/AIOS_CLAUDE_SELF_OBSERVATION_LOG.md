@@ -714,3 +714,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: reject the fossil's blockchain/token packaging for MVP (증권성 risk is founder-relevant but the REJECTION is reversible, so carried; only an actual token launch would escalate).
 - new_invariant_or_pattern_discovered: EVIDENCE-GATED ATTRIBUTION — "no evidence → null, never a uniform guess" generalizes: attribute(), no-jump credit (measured costSavedKrw or 0), bridge mapping (unmapped → reported, not guessed), NPS passives (no signal). The honest default for any credit/血ame assignment is REFUSAL, not uniformity.
 - self-correction-of-prior-observation: none
+
+## 2026-06-10 (3) — claude@myworld — fossil quarantine executed: archival ops need a pre-mortem on identity
+
+- session_id: same session; goal hook "AIOS완성" drove the 3-weeks-overdue kernel-audit shrink ③
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 15:30:15:40:0
+- tools_used: status census by LAST status line (lifecycle = latest wins), git mv (rename-tracked), full-regression-as-gate, file:// clone smoke
+- substrate_specific_behaviors_observed:
+  - PRE-MORTEM ON IDENTITY BEFORE ARCHIVAL: before moving 222 contracts, asked "what allocates from this directory?" → found next_contract_id globbing non-recursively → an ASC number would have been REUSED after quarantine (silent identity corruption, surfacing much later as a collision). Fixed + regression-locked BEFORE the move. Rule: any archival/move operation needs a census of ALLOCATORS reading the moved namespace, not just readers.
+  - CORPUS TOOLS vs PRODUCT SURFACES split resolved the 7-test fallout cleanly: tools that measure the accumulated record (founder_capture, institution_readiness) read both dirs; surfaces a user touches (`aios contract`, install smoke) stay active-only. One principle, seven fixes.
+  - DEAD-LEAK VERIFICATION: audit said "turn off auto-promotion"; instead of adding a gate reflexively, censused callers of goal_inbox_processor → zero (no daemon/cron/CI) → leak structurally closed → skipped the governance polish per the founder override.
+- failures_recovered: 7 quarantine regressions (fixture paths + corpus-size assertions) — all fixed head-on same session, 904 OK.
+- failures_escalated_to_founder: none — moves are git-mv (content+history intact, DNA #3), reversible.
+- key_decision: classify by LAST status line (a contract's lifecycle is its latest state, not its first).
+- new_invariant_or_pattern_discovered: ARCHIVE = MOVE + ALLOCATOR-AUDIT + DUAL-READ. (move preserves records; allocator-audit prevents identity reuse; corpus tools dual-read, product surfaces active-only.)
+- self-correction-of-prior-observation: none
