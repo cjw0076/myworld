@@ -699,3 +699,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: target the durable seam over the convenient one even though both "work" in a dry run — only one survives a relaunch.
 - new_invariant_or_pattern_discovered: AMBIENT DURABILITY RULE — when wiring alongside an app via a config file, distinguish files the app READS from files the app OWNS/REGENERATES. Only the latter are durable seams; verify durability by relaunch (or by inspecting whether the app reconstructs the file), never by a same-session read-back. A green dry-run is not proof of persistence.
 - self-correction-of-prior-observation: corrects the prior session's implicit claim that ~/.claude/settings.json is a usable ambient seam — it is not; it is app-stripped.
+
+## 2026-06-10 (2) — claude@myworld — fossil distillation → product module → resonance loop closure
+
+- session_id: same session as the ambient-durability entry; founder dropped a 5306-line file ("what.md") with no instruction beyond the path
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 25:20:15:40:0
+- tools_used: Grep-as-map (headers+line numbers instead of reading 75k tokens), selective Read of convergence/conclusion/risk nodes, tsx --test, unittest, git
+- substrate_specific_behaviors_observed:
+  - LARGE-FILE PROTOCOL: for a 170KB mixed file, grep the section headers first, then read ONLY the convergence nodes (conclusions, risk lists, final verdicts). Read ~600 of 5306 lines and still extracted the complete signal — the file's own internal agents had already converged 3 times; reading their convergence beats re-deriving it.
+  - DISTILL-THEN-REJECT: the fossil wrapped one good idea (usage-resolved attribution) in three layers of packaging (on-chain, ERC20, quantum). The valuable act was naming the rejections explicitly in the design doc WITH reasons (증권성/FSC, accumulator-serves-thousands-not-six, metaphor-not-machinery) — so the rejections are themselves durable decisions, not silent omissions.
+  - CROSS-REPO COMPLETION: the uri module alone is bookkeeping; the value landed when the myworld bridge closed the loop (product outcomes → substrate routing profiles). Pattern: when building in a child repo, ask "which AIOS organ was waiting for this data?" — aios_substrate_character.update_from_outcome had been fed only dogfood until now.
+- failures_recovered: bridge CLI smoke failed once (ran from uri/ cwd, script lives in myworld) — trivial, but a reminder that cross-repo smokes need explicit roots.
+- failures_escalated_to_founder: none — AskUserQuestion used once for direction (draft vs distill-only); founder said "네가 생각하는 초안 작성해봐" → carried the Claude↔Codex split overstep under direct directive, flagged in uri worklog for codex@uri review.
+- key_decision: reject the fossil's blockchain/token packaging for MVP (증권성 risk is founder-relevant but the REJECTION is reversible, so carried; only an actual token launch would escalate).
+- new_invariant_or_pattern_discovered: EVIDENCE-GATED ATTRIBUTION — "no evidence → null, never a uniform guess" generalizes: attribute(), no-jump credit (measured costSavedKrw or 0), bridge mapping (unmapped → reported, not guessed), NPS passives (no signal). The honest default for any credit/血ame assignment is REFUSAL, not uniformity.
+- self-correction-of-prior-observation: none
