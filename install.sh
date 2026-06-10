@@ -46,6 +46,16 @@ for repo in $REPOS; do
       failed="$failed $repo"
     fi
   fi
+  # A user's start state is the product, not our development fossil record:
+  # exclude docs/_history (222 archived contracts + session logs) from the
+  # working tree. Non-cone pattern keeps everything else; `git pull` still
+  # works; reversible with `git sparse-checkout disable`. Best-effort — an old
+  # git without sparse-checkout just gets the full tree.
+  if [ "$repo" = "myworld" ] && [ -d "$dest/.git" ]; then
+    git -C "$dest" sparse-checkout set --no-cone '/*' '!/docs/_history/' 2>/dev/null \
+      && say "trimmed: docs/_history excluded from working tree (git sparse-checkout disable to restore)" \
+      || true
+  fi
 done
 [ -d "$AIOS_HOME/myworld/bin/aios" ] 2>/dev/null || true
 [ -f "$AIOS_HOME/myworld/bin/aios" ] || die "myworld did not install — cannot continue (failed:${failed:- none})."
