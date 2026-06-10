@@ -684,3 +684,18 @@ AIOS가 이것을 흡수하려면:
 - key_decision: did NOT auto-wire secret_scan into the blocking commit hook — generic-secret false positives could block legitimate commits (prior blocking-hook bugs). Left it standalone + pre-commit-hook-able; only high-confidence enforcement would be safe to block on.
 - new_invariant_or_pattern_discovered: ABSORPTION PIPELINE — track (momentum) → distill (local LLM, sanitized untrusted input) → draft candidate → deep-read the top fit → extract a concrete AIOS gap → build the primitive. "흡수" means the idea changes AIOS, not that it is noted. Also: ALWAYS gate a commit on `… && git commit` (test-gating).
 - self-correction-of-prior-observation: none
+
+## 2026-06-10 — claude@myworld — ambient moat durability: a "wired" config that the provider app silently reverts
+
+- session_id: compact resumption — pending task "fix the 1 failing test from the post-ambient regression"
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 10:45:10:35:0
+- tools_used: Bash (unittest discover, stat/mtime forensics, live config inspection), Read, Edit/Write, git, memory update
+- substrate_specific_behaviors_observed:
+  - VERIFY THE GHOST, DON'T CHASE IT: the "1 failing test" never reproduced across 2 clean runs (893→OK). Instead of hunting a phantom, I treated the non-reproduction itself as evidence and asked WHAT STATE CHANGED — pivoting from "which test" to "what did applying ambient to the live device mutate." That reframe found the real defect.
+  - mtime/byte forensics on live config beat prose: `stat` showed ~/.claude/settings.json rewritten at THIS session's start (09:28), and a byte-diff vs the .aios-bak proved it had been reverted to the exact pre-AIOS state. That is what turned "maybe flaky" into "Claude Code regenerates settings.json and strips external edits" — a hard finding, not a guess.
+  - The provider's OWN app is an adversary to the ambient layer: a published seam is only durable if the app doesn't reconstruct that file. settings.json = reconstructed (non-durable); ~/.claude.json = app-canonical (durable). The moat must target the file the app PERSISTS, not merely one it READS.
+- failures_recovered: the prior session "completed" the moat by writing the Claude MCP server into a seam the app erases — a silent false-positive (status reported wired; next launch it was gone). Recovered by moving the load-bearing MCP entry to ~/.claude.json, keeping settings.json hooks as explicitly best-effort, adding _atomic_write (temp+os.replace) for the live app-owned file, and a regression test that asserts a stripped settings.json must NOT mask a wired MCP.
+- failures_escalated_to_founder: none — modifying the live ~/.claude.json is a global-config change but additive + backed-up (.aios-bak) + atomic + fully reversible (unwire), so carried decisively (over-caution = anti-intellectualism). Verified post-apply: 47 app keys + 7 projects preserved.
+- key_decision: target the durable seam over the convenient one even though both "work" in a dry run — only one survives a relaunch.
+- new_invariant_or_pattern_discovered: AMBIENT DURABILITY RULE — when wiring alongside an app via a config file, distinguish files the app READS from files the app OWNS/REGENERATES. Only the latter are durable seams; verify durability by relaunch (or by inspecting whether the app reconstructs the file), never by a same-session read-back. A green dry-run is not proof of persistence.
+- self-correction-of-prior-observation: corrects the prior session's implicit claim that ~/.claude/settings.json is a usable ambient seam — it is not; it is app-stripped.
