@@ -729,3 +729,22 @@ AIOS가 이것을 흡수하려면:
 - key_decision: classify by LAST status line (a contract's lifecycle is its latest state, not its first).
 - new_invariant_or_pattern_discovered: ARCHIVE = MOVE + ALLOCATOR-AUDIT + DUAL-READ. (move preserves records; allocator-audit prevents identity reuse; corpus tools dual-read, product surfaces active-only.)
 - self-correction-of-prior-observation: none
+
+## 2026-06-11 14:30 KST — claude@myworld — uri-ledger attribution bridge + multi-substrate panel
+
+- session_id: compact resumption #4 (Opus 4.8 1M, continuation of e0f8fb77)
+- mode_breakdown: observe:1 / verify:2 / decide:3 / intervene:3 / escalate:0 / ~90min
+- tools_used: Read, Edit, Bash (npm test × 4, git commit × 2), Agent (multi-substrate consultation)
+- tools_NOT_used: aios_invoke, MemoryOS CLI, CapabilityOS CLI (uri is product repo, not AIOS internals)
+- substrate_specific_behaviors_observed:
+  - 3-substrate panel (sonnet + gemini + codex) converged in round 1; diverged in round 2 when forced dissent. The divergence was real and useful: campus social-graph burn risk (sonnet) + university security/founder-burnout death vector (gemini) — neither visible in round 1.
+  - Codex hit rate limit (Jun 12 8PM reset); local LLM (ollama) not on this machine. 4-substrate target → 2 useful substrates.
+  - My own solo recommendation ("축소 우선") was 2:1 overturned by the panel: "확장 + 사용 데이터 → 그 다음 축소" is the synthesis. Recorded as a correction to my prior isolated judgment.
+- failures_recovered:
+  - `await import()` in non-async test callback → esbuild error → fixed by static import at file top
+  - `PAID_JOB.stage = 'accepted'` but `settle()` requires `'paid'` → test failed silently → added `stage: 'paid'` override
+  - `refs` omitted in settleContract call → "non-provisional requires evidence ref" → added `refs: ['sha256:receipt']`
+- failures_escalated_to_founder: none — all reversible code changes in uri submodule
+- key_decision: none escalated; `settleJobFromAttribution` was clearly the "smallest load-bearing act" (attribution-layer → contract-settlement wiring without new contracts, new OS, or governance changes)
+- new_invariant_or_pattern_discovered: FORCED-DISSENT ROUND PATTERN — round 1 of multi-substrate often converges (agreement bias). Only round 2 with explicit "give me the case AGAINST your answer" produces real signal. Now a standing pattern in `/multi-substrate-review`.
+- self-correction-of-prior-observation: Prior solo judgment ("축소 우선") corrected by 2-substrate forced-dissent result. Attribution is asymmetric: my single-model reasoning did not surface the campus-social-graph burn-rate risk or the death-by-university-security-policy scenario.
