@@ -6678,3 +6678,15 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
 - next: Keep combo_logreg_hybrid_s1, hybrid, and hybrid_logreg_path_a15 as the only active queue; write hybrid/logreg public-CV gap table before generating more variants.
 - status: done
+
+## 2026-06-10 15:30 KST — claude@myworld — uri-ledger → substrate-profile self-resonance bridge
+
+- repo: myworld + uri (cross-repo)
+- role: operator / founder-delegated senior engineer
+- goal: distill the founder-shared what.md fossil (5306 lines: Lindblad tutorial + stray Solidity royalty contract) into its one product signal and land it: Uri Ledger (per-contributor attribution+settlement for Uri Work) + the outcome bridge that feeds product reality back into AIOS routing profiles (자가 공진 loop closure).
+- changed: uri/src/lib/uri-ledger.ts + uri/tests/uri-ledger.test.ts + uri/docs/URI_LEDGER_DESIGN.md (commit 8571ac0, uri); myworld/scripts/aios_outcome_bridge.py + tests/test_aios_outcome_bridge.py.
+- evidence: uri 627/627 tests green (615→627); end-to-end smoke: real reputation() output (credits 0.2+0.64+0.16=1.0, KRW 6000+19200+4800=30000 exact conservation) → bridge dry-run maps agent:poster-v2→local/completion promoter signal, reports memory/human as unmapped (not guessed).
+- decision: rejected the fossil's packaging (on-chain, ERC20 fractional shares — 증권성 risk per FSC 조각투자 가이드라인, quantum simulation); kept credit conservation + jump/no-jump distinction + append-only discipline. Bridge thresholds = NPS standard cutpoints (promoter ≥9 / detractor ≤6 / passive = no signal), not magic numbers.
+- risk: attribution weightHints are orchestrator-self-reported (acceptable single-orchestrator, must become attestation-backed before external contributors); no-jump costSavedKrw needs counterfactual estimates — marked as estimates in evidence. claude authored uri implementation (Claude↔Codex split overstep) under direct founder directive "네가 생각하는 초안 작성해봐" — flagged in uri worklog for codex@uri review.
+- next: wire attribution emission into Uri Work job close-out; populate .aios/contributor_substrates.json as real jobs land; codex@uri validates the uri module.
+- status: done (module+bridge+tests green; live wiring pending real job data)
