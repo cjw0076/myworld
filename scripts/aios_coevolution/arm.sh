@@ -10,3 +10,7 @@ python scripts/aios_primitives.py monitor start --name aios-capability-pulse \
   --command 'while true; do bash scripts/aios_coevolution/capability_pulse.sh; sleep 3600; done' --json
 python scripts/aios_primitives.py monitor start --name aios-hive-pulse \
   --command 'while true; do bash scripts/aios_coevolution/hive_pulse.sh; sleep 900; done' --json
+python scripts/aios_primitives.py monitor start --name aios-genesis-pulse \
+  --command 'while true; do bash scripts/aios_coevolution/genesis_pulse.sh; sleep 3600; done' --json
+python scripts/aios_primitives.py monitor start --name aios-event-processor \
+  --command 'while true; do python scripts/aios_event_processor.py once; sleep 60; done' --json

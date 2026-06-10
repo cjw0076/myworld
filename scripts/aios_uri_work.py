@@ -61,6 +61,21 @@ def _read_all(path: Path) -> list[dict]:
     return out
 
 
+def _emit_primitive_event(root: Path, event_name: str, payload: dict) -> None:
+    """Append one event to the AIOS primitive event bus (.aios/primitives/events.jsonl)."""
+    bus_path = root / ".aios" / "primitives" / "events.jsonl"
+    bus_path.parent.mkdir(parents=True, exist_ok=True)
+    record = {
+        "schema_version": "aios.primitive_event.v1",
+        "kind": "uri_work",
+        "name": event_name,
+        "ts_iso": now_iso(),
+        "payload": {**payload, "eventType": event_name},
+    }
+    with bus_path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
 def _live_jobs(root: Path) -> dict[str, dict]:
     """Latest state per jobId — the live view of the append-only job log."""
     jobs: dict[str, dict] = {}
@@ -344,6 +359,16 @@ def cmd_job_close(args: argparse.Namespace, root: Path) -> int:
     ledger_path = _store_path(root, "ledger.jsonl")
     for entry in entries:
         _append(ledger_path, entry)
+
+    # Emit to the primitive event bus so event processor and future subscribers
+    # can react to a completed payment + attribution.
+    _emit_primitive_event(root, "uri-work:paid", {
+        "jobId": args.id,
+        "priceKrw": job.get("priceKrw"),
+        "taskType": job.get("taskType"),
+        "attributionTotal": attr.get("total"),
+        "ledgerEntriesWritten": len(entries),
+    })
 
     result = {
         "ok": True,
