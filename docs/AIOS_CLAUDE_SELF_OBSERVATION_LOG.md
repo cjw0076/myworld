@@ -748,3 +748,27 @@ AIOS가 이것을 흡수하려면:
 - key_decision: none escalated; `settleJobFromAttribution` was clearly the "smallest load-bearing act" (attribution-layer → contract-settlement wiring without new contracts, new OS, or governance changes)
 - new_invariant_or_pattern_discovered: FORCED-DISSENT ROUND PATTERN — round 1 of multi-substrate often converges (agreement bias). Only round 2 with explicit "give me the case AGAINST your answer" produces real signal. Now a standing pattern in `/multi-substrate-review`.
 - self-correction-of-prior-observation: Prior solo judgment ("축소 우선") corrected by 2-substrate forced-dissent result. Attribution is asymmetric: my single-model reasoning did not surface the campus-social-graph burn-rate risk or the death-by-university-security-policy scenario.
+
+## 2026-06-11 01:00 KST — claude@myworld — event bus loop closure (mock→real)
+
+- session_id: compact resumption #5 (Sonnet 4.6, continuation of e0f8fb77)
+- mode_breakdown: observe:1 / verify:3 / decide:2 / intervene:4 / escalate:0 / ~60min
+- tasks_completed:
+  1. aios_uri_work.py: `_emit_primitive_event()` + `cmd_job_close` now emits `uri-work:paid` to primitive bus after attribution succeeds
+  2. aios_event_processor.py: cursor-based daemon — processes new events, guards against double-attribution (ledger check before re-running close), triggers genesis critic on 20 FAILURE_REAL events
+  3. genesis_pulse.sh: hourly GenesisOS health challenge. Immediately triggered 7 auto-critiques on first run (backlogged FAILURE_REAL events). Fixed working-dir bug: must `cd GenesisOS` before `python3 -m genesisos.cli`
+  4. arm.sh: wired genesis-pulse + event-processor into coevolution daemon set
+  5. DISPATCH_PARSE_BROKEN: truncated 19 corrupt bytes from dispatches.jsonl tail (interrupted write mid-line). dispatch status returned 255 lines after fix.
+- substrate_specific_behaviors_observed:
+  - EVENT-LOOP IDEMPOTENCY VIA LEDGER CHECK: job close emits `uri-work:paid`; event processor receives it and checks ledger for existing attribution before re-running close. Prevents double-attribution without needing a lock or seen-set. Pattern: "emit after write; consumer guards on state already written."
+  - CIRCULAR LOOP ANALYSIS before adding emission: checked whether `emit → processor → close → emit` loop was possible. Answer: processor's ledger guard breaks the cycle after first attribution. Safe to add.
+  - GENESIS DORMANCY: GenesisOS had not been invoked since 2026-05-20. Adding genesis_pulse.sh as hourly daemon closes this gap structurally (not via manual discipline). First run triggered 7 backlogged critiques — showing value of deferred-event accumulation.
+  - DISPATCH CORRUPTION DIAGNOSIS: `dispatches.jsonl` had a truncated last line (`{"contract_id": "AS`). Identified as interrupted write (not data corruption). Fixed by truncating to last valid newline (`f.truncate(last_valid_newline_pos)`). Python bytes-level seek pattern.
+- failures_recovered:
+  - `genesis_pulse.sh` working directory: `python3 -m genesisos.cli` fails from myworld root → fixed with `( cd "$GENESIS_ROOT" && ... )`
+  - `event_processor.py --verbose` arg not recognized by `once` subcommand → positional arg pattern, `--verbose` is on parent parser not subcommand
+- new_invariant_or_pattern_discovered:
+  - EMIT-AFTER-WRITE: write the persistent state first (ledger), then emit the event. Consumers check state, not just the event. Idempotency is enforced by state, not by dedup logic.
+  - 4-SHELL COEVOLUTION was producing events with no consumer. A bus without a processor is a log, not a bus. Adding the event processor transforms it from an observation instrument into a reactive loop.
+- failures_escalated_to_founder: none
+- self-correction: prior session added genesis auto-challenge to event processor for FAILURE_REAL. This session confirmed it actually ran: 7 challenges written to .aios/genesis_challenges/ immediately on first run. Observation confirmed, not just wired.
