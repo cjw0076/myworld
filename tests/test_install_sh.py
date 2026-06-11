@@ -76,8 +76,11 @@ class InstallShSmokeTest(unittest.TestCase):
                 capture_output=True, text=True, env=no_aios_env, check=False,
             )
             self.assertEqual(contract_ls.returncode, 0, contract_ls.stderr)
-            # we have many contracts; this just proves the path is right
-            self.assertGreater(len(contract_ls.stdout.splitlines()), 50)
+            # post-quarantine (docs/_history), `aios contract` lists the ACTIVE
+            # working set only — fossils don't ship as a user's starting state.
+            # Prove the path is right by seeing real ASC entries, not corpus bulk.
+            self.assertIn("ASC-", contract_ls.stdout)
+            self.assertGreater(len(contract_ls.stdout.splitlines()), 0)
 
             # help works
             help_r = subprocess.run(

@@ -127,7 +127,7 @@ def scan_file(path: Path, root: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, line in enumerate(lines, start=1):
         stripped = line.strip()
-        if "/docs/contracts/" in f"/{rel}" and not stripped.startswith(
+        if ("/docs/contracts/" in f"/{rel}" or "/docs/_history/contracts/" in f"/{rel}") and not stripped.startswith(
             ("accepted:", "acceptance_authority:", "origin:", "proposed_by:")
         ):
             continue
@@ -152,9 +152,19 @@ def scan_file(path: Path, root: Path) -> list[dict[str, Any]]:
 
 def default_sources(root: Path) -> list[Path]:
     paths: list[Path] = []
-    sessions = sorted((root / "docs" / "operator_sessions").glob("*.md"))
+    # operator sessions were quarantined to docs/_history/sessions (kernel audit);
+    # read both locations so capture keeps working across the move.
+    sessions = sorted(
+        list((root / "docs" / "operator_sessions").glob("*.md"))
+        + list((root / "docs" / "_history" / "sessions").glob("*.md"))
+    )
     paths.extend(sessions[-3:])
-    paths.extend(sorted((root / "docs" / "contracts").glob("ASC-*.md")))
+    # founder directives live mostly in the quarantined corpus — mine both the
+    # active working set and docs/_history/contracts (capture is a corpus tool).
+    paths.extend(sorted(
+        list((root / "docs" / "contracts").glob("ASC-*.md"))
+        + list((root / "docs" / "_history" / "contracts").glob("ASC-*.md"))
+    ))
     return paths
 
 

@@ -99,7 +99,7 @@ Pending.
         self.assertEqual(len(first["per_contract"]), 2)
 
     def test_markdown_report_contains_baseline_and_lowest_contracts(self) -> None:
-        audit = build_audit(ROOT, "docs/contracts/ASC-0105*.md")
+        audit = build_audit(ROOT, "docs/_history/contracts/ASC-0105*.md")
 
         report = render_markdown(audit)
 
@@ -117,7 +117,7 @@ Pending.
                     "--root",
                     ROOT.as_posix(),
                     "--glob",
-                    "docs/contracts/ASC-0105*.md",
+                    "docs/_history/contracts/ASC-0105*.md",
                     "--write",
                     output.as_posix(),
                     "--json",

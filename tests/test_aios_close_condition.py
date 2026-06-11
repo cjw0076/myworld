@@ -111,7 +111,7 @@ Pass criteria:
         self.assertEqual(payload["manual"], 0)
 
     def test_asc_0110_is_not_classified_as_goal_met(self) -> None:
-        payload = self.run_close(ROOT, ROOT / "docs" / "contracts" / "ASC-0110-memoryos-retrieval-broken.md")
+        payload = self.run_close(ROOT, ROOT / "docs" / "_history" / "contracts" / "ASC-0110-memoryos-retrieval-broken.md")
 
         self.assertGreater(payload["unmet"], 0)
         self.assertIn(payload["recommended_close_type"], {"closed_partial_with_followup", "closed_goal_unmet_documented"})

@@ -26,8 +26,15 @@ def now_kst_label() -> str:
 
 
 def next_contract_id(contracts_dir: Path) -> str:
+    # rglob, not glob: quarantined terminal contracts under docs/_history/contracts/
+    # must still count for numbering, or a post-quarantine draft would REUSE an
+    # archived ID (append-only identity: an ASC number is never reissued).
     highest = 0
-    for path in contracts_dir.glob("ASC-*.md"):
+    candidates = list(contracts_dir.rglob("ASC-*.md"))
+    history = contracts_dir.parent / "_history" / "contracts"
+    if history.is_dir():
+        candidates.extend(history.rglob("ASC-*.md"))
+    for path in candidates:
         match = re.match(r"ASC-(\d{4})-", path.name)
         if match:
             highest = max(highest, int(match.group(1)))

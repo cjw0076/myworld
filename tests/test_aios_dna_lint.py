@@ -105,8 +105,8 @@ repos: `myworld`
         self.assertFalse(result["missing"])
 
     def test_dogfood_contracts_match_expected_baseline(self) -> None:
-        dna_result = lint_contract(ROOT / "docs" / "contracts" / "ASC-0105-aios-dna-canonical-spec.md")
-        old_result = lint_contract(ROOT / "docs" / "contracts" / "ASC-0091-memoryos-auto-writeback.md")
+        dna_result = lint_contract(ROOT / "docs" / "_history" / "contracts" / "ASC-0105-aios-dna-canonical-spec.md")
+        old_result = lint_contract(ROOT / "docs" / "_history" / "contracts" / "ASC-0091-memoryos-auto-writeback.md")
 
         self.assertTrue(dna_result["required"])
         self.assertFalse(dna_result["missing"])
@@ -119,7 +119,7 @@ repos: `myworld`
             [
                 sys.executable,
                 SCRIPT.as_posix(),
-                "docs/contracts/ASC-0091-memoryos-auto-writeback.md",
+                "docs/_history/contracts/ASC-0091-memoryos-auto-writeback.md",
                 "--json",
             ],
             cwd=ROOT,

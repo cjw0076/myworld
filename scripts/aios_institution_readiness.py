@@ -66,8 +66,13 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def contract_statuses(root: Path) -> dict[str, str]:
+    # readiness measures the institution's ACCUMULATED record — the quarantined
+    # corpus under docs/_history/contracts counts (kernel-audit move, 2026-06-10).
     statuses: dict[str, str] = {}
-    for path in sorted((root / "docs/contracts").glob("ASC-*.md")):
+    candidates = sorted((root / "docs/contracts").glob("ASC-*.md")) + sorted(
+        (root / "docs/_history/contracts").glob("ASC-*.md")
+    )
+    for path in candidates:
         fm = parse_frontmatter(path)
         contract_id = fm.get("contract_id") or path.stem.split("-", 1)[0]
         statuses[contract_id] = fm.get("status", "unknown")
