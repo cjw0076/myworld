@@ -61,9 +61,27 @@ def call_gemini(prompt: str, model: str | None = None, timeout: int = 60) -> dic
         return {"provider": "gemini", "ok": False, "error": "gemini CLI not found", "text": ""}
 
 
+def get_best_local_model() -> str:
+    """Return the best available local model from ollama, falling back to default."""
+    # Preference order: coding-specialist first, then general
+    preference = ["qwen3-coder:30b", "qwen3-coder", "qwen3:14b", "qwen3:7b", "qwen3:1.7b"]
+    try:
+        with urllib.request.urlopen(f"{OLLAMA_HOST}/api/tags", timeout=3) as resp:
+            data = json.loads(resp.read())
+            available = {m["name"] for m in data.get("models", [])}
+            for p in preference:
+                if p in available:
+                    return p
+            if available:
+                return next(iter(available))
+    except Exception:
+        pass
+    return DEFAULT_LOCAL_MODEL
+
+
 def call_local_llm(prompt: str, model: str | None = None, timeout: int = 120) -> dict:
-    """Call local LLM via ollama HTTP API."""
-    model = model or DEFAULT_LOCAL_MODEL
+    """Call local LLM via ollama HTTP API. Auto-selects best available model if none specified."""
+    model = model or get_best_local_model()
     url = f"{OLLAMA_HOST}/api/generate"
     payload = json.dumps({"model": model, "prompt": prompt, "stream": False}).encode()
     req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
