@@ -7030,3 +7030,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: selected-source archive proof is not a clean commit/tag/package release. The current tree remains dirty and ahead of origin.
 - next: scope, commit, and push the AIOS readiness work in clean batches, then rerun release archive smoke from the committed tree.
 - status: done
+
+---
+- when: 2026-06-13T06:00:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator / implementer (WP-0244-A)
+- goal: ASC-0244 — unblock AIOS service-readiness control loop by resolving fossil-quarantine false blockers in aios_monitor.py
+- changed: scripts/aios_monitor.py (history fallback in dispatch_summary()), tests/test_aios_monitor.py (+2 tests)
+- evidence: 45/45 tests pass; monitor findings 164→4; commit 85d70ad; dispatch_contract_path_missing false positives eliminated (160 cases)
+- decision: added exact-filename history fallback under docs/_history/contracts/ — resolves only when path starts with docs/contracts/ and identical basename exists in archive; no broad fallback; active path still wins if both exist
+- risk: low — purely additive check; audit trail preserved; no dispatch records mutated
+- next: round controller now unblocked from hold_for_monitor; verify service-readiness loop resumes
+- status: done

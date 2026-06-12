@@ -1,11 +1,11 @@
 ---
 contract_id: ASC-0244
 slug: service-readiness-monitor-unblock
-status: accepted
+status: closed
 goal: Unblock AIOS service-readiness control loop by resolving monitor false blockers caused by fossil-quarantined contract paths, without weakening auditability.
 created: 2026-06-13T05:24:00+09:00
 accepted: 2026-06-13T05:24:00+09:00
-closed:
+closed: 2026-06-13T06:00:00+09:00
 human_approved: true
 origin: operator directed Codex not to implement directly; Codex should prepare service readiness and delegate missing development to Claude.
 ---
