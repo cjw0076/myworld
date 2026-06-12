@@ -6690,3 +6690,79 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: attribution weightHints are orchestrator-self-reported (acceptable single-orchestrator, must become attestation-backed before external contributors); no-jump costSavedKrw needs counterfactual estimates — marked as estimates in evidence. claude authored uri implementation (Claude↔Codex split overstep) under direct founder directive "네가 생각하는 초안 작성해봐" — flagged in uri worklog for codex@uri review.
 - next: wire attribution emission into Uri Work job close-out; populate .aios/contributor_substrates.json as real jobs land; codex@uri validates the uri module.
 - status: done (module+bridge+tests green; live wiring pending real job data)
+
+## 2026-06-12 10:47 KST — claude@myworld — GenesisOS divergence-layer review (doctrine↔code audit)
+
+- repo: GenesisOS (reviewed by operator from myworld; no GenesisOS source edited)
+- role: review / operator
+- goal: review GenesisOS divergence layer for correctness, doctrine compliance, and quality; surface findings for the AIOS dev agent (codex@GenesisOS).
+- changed: docs-only (this ledger entry). GenesisOS working tree untouched.
+- evidence: `python -m pytest` 58 passed; ~2834 LOC across 12 modules; smoke: `critic --text "hello world"` → confidence 0.333 (2 false-positive signatures); `chamber --goal …` → 5 branches OK; `diverge --generated` → status `generated` (local ollama qwen3:8b via hivemind sibling bin actually invoked).
+- decision: no new ASC contract (founder 2026-05-20 freeze). Findings handed to codex@GenesisOS as review notes; no auto-fix applied.
+- risk (findings, severity-ordered):
+  - MEDIUM — `branches.collapse` → `write_branch_state` overwrites branch JSON **in place** (`genesisos/branches.py:258-265`), contradicting README/doctrine "branch records are append-only" and DNA invariant #3. Audit survives only in `events/`; prior `alive`/`collapsed_to` state is destroyed. Fix: derive branch state from an append-only event log (as `library` already does), or correct the doctrine wording.
+  - MEDIUM — README "All GenesisOS surfaces are local, deterministic" vs `--generated`/`generator.py` invoking local LLM (non-deterministic). Authority boundary is respected (`advisory_only`, `no_remote_llm`, prompt via stdin → no goal injection) but the determinism claim is false. Fix: qualify README ("deterministic by default; `--generated` is local non-deterministic advisory opt-in").
+  - MEDIUM — `critic` precision: `assumption-silent` and `time-frozen` signatures fire on almost any short/benign text (`"hello world"` → confidence 0.333). Fix: gate both on `len(words) >= 40` like `mono-language`/`single-frame`.
+  - MINOR — `chamber.py` re-implements `BRANCH_TYPES` + branch templates from `cli.py:branch()` with already-diverging wording; `now_iso`/`slug`/`short_hash` duplicated across modules → drift risk; extract shared module.
+  - MINOR — `branches.write_event` hashes payload without timestamp; re-collapse with same (goal,winner,reason) → event `skipped_existing` while branch files are still rewritten (asymmetric).
+  - MINOR — `diverge --generated` runs N sequential LLM subprocess calls (5 branches × ≤60s timeout = up to ~5min worst case).
+  - GOOD — `library` soft-bury (immutable seed + `_events/` state-derive), idempotent writes (`skipped_existing`), input validation, and `resolve_text` inline/path fix are solid; authority boundary is 1:1 between doctrine and code.
+- next: codex@GenesisOS to address #1 (append-only collapse) and #3 (critic precision) as the highest-value fixes; #2 is a one-line README correction.
+- status: done (review delivered; fixes owned by codex@GenesisOS)
+
+## 2026-06-12 10:47 KST — claude@myworld — CapabilityOS code review (no change)
+
+- repo: CapabilityOS
+- role: founder-delegated senior engineer / reviewer (observe/verify; contract freeze respected — no new ASC, no code change)
+- goal: full review of the `capabilityos` package so AIOS-developing agents in
+  myworld can pick up the findings without re-reading the source.
+- changed: `CapabilityOS/docs/AGENT_WORKLOG.md` (detailed findings entry); this
+  ledger pointer. No source/catalog mutation.
+- evidence: `python -m pytest` → 23 passed; `DEFAULT_CATALOG` ↔
+  `tests/fixtures/capabilities.json` verified byte-identical (19 cards);
+  recommendation-only invariant confirmed via `audit` (`execution_enabled: []`)
+  and `test_audit_reports_recommendation_only_catalog`.
+- decision: no invariant violations. Findings logged for the owning agent, NOT
+  minted as contracts. Priority order:
+  - P1 (design): `confidence_from_observations` ignores the card's hand-set
+    confidence as a Beta prior → a 0.8 card collapses to 0.5 after one pass+fail
+    batch. Observations overwrite the prior instead of updating it.
+  - P2 (maintainability): dual source of truth (~450-line inline `DEFAULT_CATALOG`
+    duplicates the fixture; guarded by a drift test but doubles every edit) +
+    CLAUDE.md/AGENTS.md doc error ("reads the fixture catalog by default" is
+    false — default is the embedded dict).
+  - P3/P4: minor dead code (`{contract_id}-placeholder.md` fallback, unused
+    `observation_count` baseline branch, ≤2-char term drop) and nits (`--json`
+    no-op, zero-observation provider tie-break, `_bool` string coercion).
+- risk: P1 fix changes the expected value in
+  `test_recommend_can_use_observation_history` — needs operator/founder sign-off
+  before patching. Everything else is non-breaking.
+- next: owning CapabilityOS agent decides whether P1+P2 warrant a minimal
+  fix-packet. Full detail in `CapabilityOS/docs/AGENT_WORKLOG.md`
+  (2026-06-12 entry).
+- status: done (review delivered; no change; fixes pending GO)
+
+## 2026-06-12 21:00 KST — claude@myworld — infrastructure vision + hook layer completion
+
+- repo: myworld
+- agent: claude@myworld
+- role: operator + architect
+- goal: (1) Complete 4-OS × 4-lifecycle hook coverage. (2) Record infrastructure roadmap toward world deployment.
+- changed:
+  - `.claude/settings.json` — plan mode default + 5 hook events wired
+  - `scripts/aios_hive_verify_hook.py` — PostToolUse: exit-code/exception detection → context inject (HiveMind)
+  - `scripts/aios_stop_hook.sh` — Stop: event processor + self-record + bus emit
+  - `scripts/aios_education_hook.py` — UserPromptSubmit: conceptual question → knowledge injection
+  - `scripts/aios_guard_hook.py` — PreToolUse expanded: GenesisOS irreversible-cmd challenge inject
+- evidence: all 5 hooks pipe-tested; 920 tests green; git db35aab
+- decision: hooks now cover SessionStart/PreToolUse/PostToolUse/Stop/UserPromptSubmit. Pattern absorbed from Gemini lifecycle union, Codex PostToolUse quality gate, Anthropic additionalContext spec.
+- infrastructure gap recorded (see below):
+  - Phase 1: MemoryOS Akashic Records pipeline + local credentials vault + session checkpoint
+  - Phase 2: execution sandbox (Morph/E2B) + observability (OTel) + API gateway
+  - Phase 3: SECI 4-direction pipeline + cross-model hivemind ambient + entropy injection
+  - Phase 4: subconscious layer (hooks below agent awareness, memory pre-loads, capability pre-routes)
+  - Critical blocker: multi-agent concurrent memory writes with conflict resolution (unsolved industrywide)
+- inbox status: hivemind 2 pending (ASC-0180 deliberation), memoryOS 12 pending (memory draft reviews)
+- risk: memoryOS inbox backlog growing (12 drafts unreviewed) — needs regular processing cadence
+- next: establish work intake system before Phase 1 implementation; process memoryOS inbox backlog
+- status: done (hooks deployed; roadmap recorded; intake system pending)

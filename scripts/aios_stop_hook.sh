@@ -43,5 +43,7 @@ with events_path.open("a", encoding="utf-8") as f:
     f.write(json.dumps(record, ensure_ascii=False) + "\n")
 PY
 
-# 5. tell the user session closeout happened
-echo "{\"systemMessage\": \"AIOS: session closeout complete — events processed, self-record updated.\"}"
+# 5. show work intake backlog count
+BACKLOG=$(grep -c "^| WORK-" "$ROOT/.aios/WORK_INTAKE.md" 2>/dev/null || echo "0")
+
+echo "{\"systemMessage\": \"AIOS session closeout — events processed. Work backlog: ${BACKLOG} items. See .aios/WORK_INTAKE.md\"}"
