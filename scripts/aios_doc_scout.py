@@ -21,7 +21,7 @@ from typing import Any
 import aios_uri_filter
 
 
-DEFAULT_ROOT = Path("/home/user/workspaces/jaewon")
+DEFAULT_ROOT = Path(os.environ.get("AIOS_WORKSPACE_ROOT", Path(__file__).resolve().parent.parent.parent))
 MARKDOWN_SUFFIXES = {".md", ".mdx"}
 EXCLUDED_PARTS = {
     ".aios",

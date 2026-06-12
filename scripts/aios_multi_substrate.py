@@ -52,15 +52,46 @@ def _run_provider(provider: str, model: str | None, prompt: str, timeout: int) -
 
 # ── synthesis ─────────────────────────────────────────────────────────────────
 
-def _synthesize(results: list[dict], task: str) -> dict:
+def _llm_synthesize(task: str, texts: dict[str, str]) -> str | None:
     """
-    Multi-perspective synthesis — the ultrathink step.
+    True ultrathink synthesis: use an available LLM to reason across all arms.
+    Returns the synthesis text, or None if no synthesizer available.
+    """
+    if not texts:
+        return None
 
-    Strategy:
-    - Collect all successful responses
-    - Find literal agreement zones (shared phrases/conclusions)
-    - Flag disagreements for investigation
-    - Weight by: (1) factual checkability, (2) size of model, (3) consistency
+    arms_block = "\n\n".join(
+        f"=== {provider.upper()} ===\n{text}" for provider, text in texts.items()
+    )
+    synthesis_prompt = f"""You are a synthesis engine. You received responses from {len(texts)} AI models on the same task.
+
+TASK: {task}
+
+RESPONSES:
+{arms_block}
+
+Your job (answer in Korean):
+1. What do all models AGREE on? (high confidence)
+2. Where do they DISAGREE or diverge? (investigate further)
+3. What is the synthesized answer that incorporates the best of all responses?
+4. Which response should be trusted most and why?
+
+Be concise. Focus on the DIFFERENCES between responses — agreement is less interesting than disagreement."""
+
+    # Try local first (free, private), then gemini
+    result = call_local_llm(synthesis_prompt, timeout=90)
+    if result["ok"] and len(result["text"]) > 50:
+        return f"[synthesized by local]\n{result['text']}"
+    result = call_gemini(synthesis_prompt, timeout=60)
+    if result["ok"] and len(result["text"]) > 50:
+        return f"[synthesized by gemini]\n{result['text']}"
+    return None
+
+
+def _synthesize(results: list[dict], task: str, use_llm: bool = True) -> dict:
+    """
+    Ultrathink synthesis: LLM-based cross-model reasoning.
+    Falls back to heuristic if no synthesizer available.
     """
     successes = [r for r in results if r.get("ok")]
     failures = [r for r in results if not r.get("ok")]
@@ -77,88 +108,75 @@ def _synthesize(results: list[dict], task: str) -> dict:
 
     texts = {r["provider"]: r["text"] for r in successes}
 
-    # Simple agreement detection: find sentences that appear across multiple responses
-    agreement_zones = []
-    if len(successes) >= 2:
-        # Compare key concepts rather than exact text (LLMs paraphrase)
-        # Find providers that reached same conclusion direction
-        agreement_zones = _find_agreement(list(texts.values()))
+    # Attempt true LLM-based synthesis (ultrathink)
+    llm_synthesis = None
+    if use_llm and len(successes) >= 2:
+        llm_synthesis = _llm_synthesize(task, texts)
 
-    # Disagreement detection: providers that contradict each other
+    # Heuristic fallback: keyword overlap for agreement zones
+    agreement_zones = _find_agreement(list(texts.values())) if len(successes) >= 2 else []
     disagreements = _find_disagreements(texts)
 
-    # Primary synthesis: use longest/most detailed response as base, annotate with others
-    primary_provider = max(successes, key=lambda r: len(r.get("text", "")))["provider"]
-    primary_text = texts[primary_provider]
+    # Build synthesis text
+    if llm_synthesis:
+        synthesis_text = llm_synthesis
+        synthesis_method = "llm"
+    else:
+        primary_provider = max(successes, key=lambda r: len(r.get("text", "")))["provider"]
+        synthesis_text = "\n\n".join(
+            f"[{p}] {t[:600]}" for p, t in texts.items()
+        )
+        synthesis_method = "heuristic"
 
-    synthesis_lines = [f"[PRIMARY: {primary_provider}] {primary_text[:800]}"]
-    for provider, text in texts.items():
-        if provider != primary_provider and text:
-            synthesis_lines.append(f"[{provider}] {text[:300]}")
+    confidence = (
+        "high" if llm_synthesis and len(successes) >= 2 and not disagreements else
+        "medium" if len(successes) >= 2 else
+        "low"
+    )
 
     return {
         "ok": True,
         "task": task,
         "providers_used": [r["provider"] for r in successes],
         "providers_failed": [r["provider"] for r in failures],
-        "primary": primary_provider,
-        "synthesis": "\n\n".join(synthesis_lines),
+        "synthesis_method": synthesis_method,
+        "synthesis": synthesis_text,
         "raw_responses": texts,
         "agreement_zones": agreement_zones,
         "disagreements": disagreements,
-        "confidence": "high" if len(successes) >= 2 and not disagreements else
-                      "medium" if len(successes) >= 2 else "low",
+        "confidence": confidence,
     }
 
 
 def _find_agreement(texts: list[str]) -> list[str]:
-    """Find themes that appear across multiple responses."""
-    if len(texts) < 2:
-        return []
-    # Split each text into sentences/clauses
-    zones = []
-    all_sentences = [s.strip() for t in texts for s in t.replace("。", ".").split(".") if len(s.strip()) > 20]
-    # Look for keyword overlaps
     word_sets = [set(t.lower().split()) for t in texts]
     common_words = word_sets[0]
     for ws in word_sets[1:]:
         common_words &= ws
-    # Filter out stop words
     stop = {"the", "a", "an", "is", "are", "was", "were", "and", "or", "but", "in", "on",
             "at", "to", "for", "of", "with", "it", "this", "that", "be", "have", "do",
             "이", "은", "는", "이다", "있다", "하다", "수", "을", "를", "의", "에"}
     significant = [w for w in common_words if w not in stop and len(w) > 3]
-    if significant:
-        zones.append(f"all providers agree on: {', '.join(sorted(significant)[:10])}")
-    return zones
+    return [f"shared concepts: {', '.join(sorted(significant)[:8])}"] if significant else []
 
 
 def _find_disagreements(texts: dict[str, str]) -> list[str]:
-    """Detect potential disagreements between providers."""
     disagreements = []
-    providers = list(texts.keys())
-    if len(providers) < 2:
+    if len(texts) < 2:
         return []
-
-    # Simple signal: if one response is much longer/shorter than others, flag it
     lengths = {p: len(t) for p, t in texts.items()}
     avg_len = sum(lengths.values()) / len(lengths)
     for provider, length in lengths.items():
-        if avg_len > 0 and (length < avg_len * 0.2 or length > avg_len * 3):
+        if avg_len > 0 and (length < avg_len * 0.15 or length > avg_len * 4):
             disagreements.append(
-                f"{provider} response length ({length} chars) diverges significantly from "
-                f"others (avg {int(avg_len)} chars) — may indicate model confidence issue"
+                f"{provider} length ({length}ch) diverges from avg ({int(avg_len)}ch) — check confidence"
             )
-
-    # Flag if any response contains explicit uncertainty markers
-    uncertainty_markers = ["i don't know", "uncertain", "not sure", "cannot", "hallucin",
-                           "모르", "불확실", "알 수 없"]
+    uncertainty_markers = ["i don't know", "uncertain", "cannot", "hallucin", "모르", "불확실"]
     for provider, text in texts.items():
         for marker in uncertainty_markers:
             if marker in text.lower():
-                disagreements.append(f"{provider} expressed uncertainty: '{marker}' found")
+                disagreements.append(f"{provider}: uncertainty marker '{marker}' detected")
                 break
-
     return disagreements
 
 
@@ -261,11 +279,18 @@ def cmd_run(args) -> None:
             print(f"\ndisagreements (investigate):")
             for d in synthesis["disagreements"]:
                 print(f"  ⚠ {d}")
-        print(f"\n--- PRIMARY ({synthesis.get('primary')}) ---")
+        method = synthesis.get("synthesis_method", "heuristic")
+        synth_text = synthesis.get("synthesis", "")
+        if method == "llm" and synth_text:
+            print(f"\n--- LLM SYNTHESIS (ultrathink: {method}) ---")
+            print(synth_text[:1200])
+            if len(synth_text) > 1200:
+                print(f"  ... ({len(synth_text)-1200} more chars)")
+        print(f"\n--- RAW ARMS ---")
         for provider, text in synthesis.get("raw_responses", {}).items():
-            print(f"\n[{provider}]: {text[:400]}")
-            if len(text) > 400:
-                print(f"  ... ({len(text)-400} more chars)")
+            print(f"\n[{provider}]: {text[:350]}")
+            if len(text) > 350:
+                print(f"  ... ({len(text)-350} more chars)")
 
 
 # ── main ──────────────────────────────────────────────────────────────────────

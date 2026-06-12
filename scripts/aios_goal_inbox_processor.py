@@ -47,7 +47,7 @@ THEMES: dict[str, dict[str, Any]] = {
         ),
         "keywords": ["research_to_sprint", "public web research", "research notes", "growth intel"],
         "verification": [
-            "python scripts/aios_doc_scout.py --root /home/user/workspaces/jaewon --json",
+            "python scripts/aios_doc_scout.py --json",
             "python scripts/aios_monitor.py assess --json",
         ],
         "stop_conditions": [
@@ -121,11 +121,11 @@ THEMES: dict[str, dict[str, Any]] = {
             "writable provider",
         ],
         "verification": [
-            "cd /home/user/workspaces/jaewon/myworld/hivemind",
+            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/hivemind"",
             "python -m pytest tests/test_provider_loop.py tests/test_local_worker_routing.py -v",
-            "cd /home/user/workspaces/jaewon/myworld/CapabilityOS",
+            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/CapabilityOS"",
             "python -m pytest tests/test_cli.py tests/test_observation.py -v",
-            "cd /home/user/workspaces/jaewon/myworld",
+            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}"
             "python scripts/aios_monitor.py assess --json",
         ],
         "stop_conditions": [

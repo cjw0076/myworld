@@ -14,7 +14,7 @@ from typing import Any
 
 
 SCHEMA_VERSION = "aios.instruction_index.v1"
-DEFAULT_ROOT = Path("/home/user/workspaces/jaewon/myworld")
+DEFAULT_ROOT = Path(os.environ.get("AIOS_ROOT", Path(__file__).resolve().parent.parent))
 TARGET_NAMES = {"AGENTS.md", "CLAUDE.md", "CODEX.md", "CURRENT.md"}
 EXCLUDED_PARTS = {
     ".aios",
