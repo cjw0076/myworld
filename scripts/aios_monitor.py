@@ -241,9 +241,24 @@ def dispatch_summary(root: Path) -> tuple[list[dict[str, Any]], list[dict[str, A
             row["stopped"] = True
             row["reason"] = event.get("reason")
 
+    _ACTIVE_CONTRACT_PREFIX = "docs/contracts/"
+    _HISTORY_CONTRACT_DIR = Path("docs/_history/contracts")
+
     for row in rows.values():
         contract_path_value = str(row.get("contract_path") or "")
         contract_path = root / contract_path_value if contract_path_value else None
+
+        if contract_path is not None and not contract_path.is_file():
+            # Check fossil-quarantine archive before reporting missing.
+            # Only resolve when the path is under the active contracts shelf
+            # and the identical filename exists in the history shelf (exact match).
+            # If both active and history exist, the active path would have been
+            # found above — this branch only runs when active is absent.
+            if contract_path_value.startswith(_ACTIVE_CONTRACT_PREFIX):
+                history_candidate = root / _HISTORY_CONTRACT_DIR / Path(contract_path_value).name
+                if history_candidate.is_file():
+                    contract_path = history_candidate
+
         if contract_path is None or not contract_path.is_file():
             frontmatter = {}
             if row.get("recorded_contract_status"):

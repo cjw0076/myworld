@@ -566,5 +566,64 @@ ringing the alarm bell after the owner acknowledged it.
             self.assertIsInstance(payload["latest_alert_count"], int)
 
 
+    def test_history_archive_suppresses_missing_contract_alert(self) -> None:
+        """A contract moved to _history/contracts/ must NOT raise dispatch_contract_path_missing."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            history_dir = root / "docs" / "_history" / "contracts"
+            history_dir.mkdir(parents=True)
+            (history_dir / "ASC-0001-test.md").write_text(
+                "---\ncontract_id: ASC-0001\nstatus: closed\naccepted: now\nclosed: now\n---\n",
+                encoding="utf-8",
+            )
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            (state / "dispatches.jsonl").write_text(
+                json.dumps({
+                    "event": "created",
+                    "dispatch_id": "asc-0001",
+                    "contract_id": "ASC-0001",
+                    "contract_path": "docs/contracts/ASC-0001-test.md",
+                    "contract_status": "accepted",
+                    "status": "created",
+                }) + "\n",
+                encoding="utf-8",
+            )
+            payload = self.run_snapshot(root)
+            codes = [a["code"] for a in payload["alerts"]]
+            self.assertNotIn(
+                "dispatch_contract_path_missing",
+                codes,
+                "Fossil-archived contract must not trigger missing-contract alert",
+            )
+
+    def test_truly_missing_contract_still_alerts(self) -> None:
+        """A contract not in active dir AND not in history must still raise the alert."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "docs" / "contracts").mkdir(parents=True)
+            (root / "docs" / "_history" / "contracts").mkdir(parents=True)
+            state = root / ".aios" / "state"
+            state.mkdir(parents=True)
+            (state / "dispatches.jsonl").write_text(
+                json.dumps({
+                    "event": "created",
+                    "dispatch_id": "asc-0099",
+                    "contract_id": "ASC-0099",
+                    "contract_path": "docs/contracts/ASC-0099-ghost.md",
+                    "contract_status": "accepted",
+                    "status": "created",
+                }) + "\n",
+                encoding="utf-8",
+            )
+            payload = self.run_snapshot(root)
+            codes = [a["code"] for a in payload["alerts"]]
+            self.assertIn(
+                "dispatch_contract_path_missing",
+                codes,
+                "Truly missing contract must still trigger alert",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
