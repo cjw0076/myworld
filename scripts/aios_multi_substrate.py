@@ -248,7 +248,8 @@ def cmd_run(args) -> None:
     if args.json:
         print(json.dumps(synthesis, ensure_ascii=False, indent=2))
     else:
-        print(f"\n=== HIVEMIND SYNTHESIS ===")
+        print(f"\n=== ULTRATHINK: HIVEMIND SYNTHESIS ===")
+        print(f"(multi-perspective cross-model analysis — disagreement = signal)")
         print(f"task: {task[:100]}")
         print(f"providers: {synthesis.get('providers_used', [])} | failed: {synthesis.get('providers_failed', [])}")
         print(f"confidence: {synthesis.get('confidence', 'unknown')}")
