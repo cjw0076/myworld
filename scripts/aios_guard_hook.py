@@ -49,6 +49,33 @@ def deny(reason: str) -> None:
     sys.exit(0)
 
 
+def inject(context: str) -> None:
+    """Allow the tool but inject advisory context into agent reasoning."""
+    print(
+        json.dumps(
+            {
+                "hookSpecificOutput": {
+                    "hookEventName": "PreToolUse",
+                    "permissionDecision": "allow",
+                    "additionalContext": context,
+                }
+            }
+        )
+    )
+    sys.exit(0)
+
+
+# Irreversible patterns — GenesisOS challenge injection (allow but warn)
+_RISKY = [
+    (re.compile(r'\brm\s+-[rf]{1,2}\b'), "rm -rf"),
+    (re.compile(r'git\s+push\s+--force'), "force push"),
+    (re.compile(r'git\s+reset\s+--hard'), "git reset --hard"),
+    (re.compile(r'\bDROP\s+TABLE\b', re.I), "DROP TABLE"),
+    (re.compile(r'\btruncate\s+table\b', re.I), "TRUNCATE TABLE"),
+    (re.compile(r'dd\s+if='), "dd (disk write)"),
+]
+
+
 def main() -> int:
     try:
         data = json.load(sys.stdin)
@@ -79,6 +106,20 @@ def main() -> int:
                 + lines
                 + "\nFix the ERROR (e.g. `git rm --cached <gitlink>`), then retry."
             )
+
+    # 3. GenesisOS: irreversible pattern challenge (inject, don't block)
+    if tool == "Bash":
+        for pattern, label in _RISKY:
+            if pattern.search(cmd):
+                inject(
+                    f"GenesisOS challenge — '{label}' is irreversible.\n"
+                    "Before proceeding, verify: "
+                    "(1) Is this the right target? "
+                    "(2) Is there a backup or easy undo? "
+                    "(3) Has this been dry-run or tested? "
+                    "If all three are confirmed, proceed. "
+                    "Otherwise pause and re-examine the assumption."
+                )
 
     # 2. contract-creation ritual gate — via the Write tool OR via a shell write
     #    (echo > / tee / cp …), so the gate can't be bypassed through Bash.
