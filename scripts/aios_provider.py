@@ -137,15 +137,25 @@ ROUTING_TABLE = [
      "local", DEFAULT_LOCAL_MODEL, "coding → local qwen3-coder (if available), else claude"),
 ]
 
+def _gemini_available() -> bool:
+    try:
+        r = subprocess.run(["gemini", "--version"], capture_output=True, timeout=5)
+        return r.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        return False
+
+
 def auto_route(prompt: str) -> tuple[str, str | None, str]:
     """Return (provider, model, rationale) based on routing heuristics."""
     for condition, provider, model, rationale in ROUTING_TABLE:
         if condition(prompt):
-            # Check if local is actually available
             if provider == "local":
                 test = call_local_llm("ping", model=model or DEFAULT_LOCAL_MODEL)
                 if not test["ok"]:
                     return "claude", DEFAULT_CLAUDE_MODEL, f"local unavailable ({test['error']}), falling back to claude"
+            elif provider == "gemini":
+                if not _gemini_available():
+                    return "claude", DEFAULT_CLAUDE_MODEL, "gemini unavailable, falling back to claude"
             return provider, model, rationale
     return "claude", DEFAULT_CLAUDE_MODEL, "default → claude sonnet"
 
@@ -195,8 +205,11 @@ def cmd_status(args) -> None:
     results = []
 
     # Gemini
-    test = subprocess.run(["gemini", "--version"], capture_output=True, text=True, timeout=5)
-    results.append(("gemini", test.returncode == 0, test.stdout.strip()))
+    try:
+        test = subprocess.run(["gemini", "--version"], capture_output=True, text=True, timeout=5)
+        results.append(("gemini", test.returncode == 0, test.stdout.strip()))
+    except (FileNotFoundError, subprocess.TimeoutExpired) as e:
+        results.append(("gemini", False, f"not found: {e}"))
 
     # Local
     try:
