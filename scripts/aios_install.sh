@@ -16,6 +16,17 @@
 # DNA invariant #7: never writes secrets — vault must be initialized separately
 set -euo pipefail
 
+AIOS_INSTALL_DRY_RUN="${AIOS_INSTALL_DRY_RUN:-0}"
+AIOS_SKIP_PIP="${AIOS_SKIP_PIP:-0}"
+
+run_or_echo() {
+    if [ "$AIOS_INSTALL_DRY_RUN" = "1" ]; then
+        echo "  [dry-run] $*"
+    else
+        "$@"
+    fi
+}
+
 # ── detect root ───────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 AIOS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -27,10 +38,14 @@ echo ""
 
 # ── python deps ───────────────────────────────────────────────────────────────
 echo "→ Installing Python dependencies..."
-pip install --quiet cryptography argon2-cffi keyring 2>/dev/null || {
-    pip3 install --quiet cryptography argon2-cffi keyring 2>/dev/null || true
-}
-echo "  ✓ cryptography, argon2-cffi, keyring"
+if [ "$AIOS_SKIP_PIP" = "1" ] || [ "$AIOS_INSTALL_DRY_RUN" = "1" ]; then
+    echo "  ✓ skipped pip install"
+else
+    pip install --quiet cryptography argon2-cffi keyring 2>/dev/null || {
+        pip3 install --quiet cryptography argon2-cffi keyring 2>/dev/null || true
+    }
+    echo "  ✓ cryptography, argon2-cffi, keyring"
+fi
 
 # ── claude code hooks ─────────────────────────────────────────────────────────
 CLAUDE_SETTINGS="$AIOS_ROOT/.claude/settings.json"
@@ -50,7 +65,10 @@ if command -v gemini >/dev/null 2>&1; then
 
     if [ -f "$GEMINI_SETTINGS" ]; then
         # Merge hooks into existing settings
-        python3 - "$GEMINI_SETTINGS" "$AIOS_ROOT" <<'PY'
+        if [ "$AIOS_INSTALL_DRY_RUN" = "1" ]; then
+            echo "  [dry-run] would update $GEMINI_SETTINGS with AIOS hooks + MCP server"
+        else
+            python3 - "$GEMINI_SETTINGS" "$AIOS_ROOT" <<'PY'
 import json, sys
 from pathlib import Path
 
@@ -85,9 +103,13 @@ settings["hooks"] = hooks
 settings_path.write_text(json.dumps(settings, ensure_ascii=False, indent=2))
 print(f"  ✓ {settings_path} updated with AIOS hooks + MCP server")
 PY
+        fi
     else
         # Write fresh settings
-        python3 - "$GEMINI_SETTINGS" "$AIOS_ROOT" <<'PY'
+        if [ "$AIOS_INSTALL_DRY_RUN" = "1" ]; then
+            echo "  [dry-run] would create $GEMINI_SETTINGS with AIOS hooks + MCP server"
+        else
+            python3 - "$GEMINI_SETTINGS" "$AIOS_ROOT" <<'PY'
 import json, sys
 from pathlib import Path
 
@@ -113,19 +135,27 @@ settings_path.parent.mkdir(parents=True, exist_ok=True)
 settings_path.write_text(json.dumps(settings, ensure_ascii=False, indent=2))
 print(f"  ✓ {settings_path} created with AIOS hooks + MCP server")
 PY
+        fi
     fi
 else
     echo "  ℹ Gemini CLI not found — skipping Gemini hooks (install with: npm install -g @google/gemini-cli)"
 fi
 
 # ── shell env ─────────────────────────────────────────────────────────────────
-SHELL_RC="${HOME}/.bashrc"
-[ -f "${HOME}/.zshrc" ] && SHELL_RC="${HOME}/.zshrc"
+SHELL_RC="${AIOS_SHELL_RC:-${HOME}/.bashrc}"
+if [ -z "${AIOS_SHELL_RC:-}" ] && [ -f "${HOME}/.zshrc" ]; then
+    SHELL_RC="${HOME}/.zshrc"
+fi
 
 if ! grep -q "AIOS_ROOT" "$SHELL_RC" 2>/dev/null; then
-    echo "" >> "$SHELL_RC"
-    echo "# AIOS" >> "$SHELL_RC"
-    echo "export AIOS_ROOT=\"$AIOS_ROOT\"" >> "$SHELL_RC"
+    if [ "$AIOS_INSTALL_DRY_RUN" = "1" ]; then
+        echo "  [dry-run] would add AIOS_ROOT to $SHELL_RC"
+    else
+        mkdir -p "$(dirname "$SHELL_RC")"
+        echo "" >> "$SHELL_RC"
+        echo "# AIOS" >> "$SHELL_RC"
+        echo "export AIOS_ROOT=\"$AIOS_ROOT\"" >> "$SHELL_RC"
+    fi
     echo "  ✓ AIOS_ROOT added to $SHELL_RC"
 else
     echo "  ✓ AIOS_ROOT already in $SHELL_RC"
@@ -150,7 +180,9 @@ fi
 # ── verify ────────────────────────────────────────────────────────────────────
 echo ""
 echo "→ Provider status:"
-python3 "$AIOS_ROOT/scripts/aios_provider.py" status 2>/dev/null | sed 's/^/  /'
+python3 "$AIOS_ROOT/scripts/aios_provider.py" status 2>/dev/null | sed 's/^/  /' || {
+    echo "  provider status unavailable"
+}
 
 echo ""
 echo "=== AIOS install complete ==="

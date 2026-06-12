@@ -5,6 +5,186 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-12 23:50 KST — codex@myworld — ASC-0235 world deployment readiness gate
+
+- repo: myworld
+- role: implementation / readiness hardening
+- goal: prevent local `AIOS COMPLETE` from being overclaimed as hosted,
+  world-deployable agent-service readiness.
+- changed: added `docs/contracts/ASC-0234-world-deployable-aios-readiness-spine.md`,
+  `docs/contracts/ASC-0235-world-deployment-readiness-cli.md`,
+  `scripts/aios_world_readiness.py`, and
+  `tests/test_aios_world_readiness.py`.
+- evidence: traced Claude's five local commits through current git history;
+  verified `aios_provider.py status` reports Gemini and local Ollama available
+  while Claude API lacks a key; `aios_completion.py --json` reports local
+  self-maintaining completion; `python3 -m unittest
+  tests.test_aios_world_readiness -v` passed 4/4; `python3 -m py_compile
+  scripts/aios_world_readiness.py` passed; `python3
+  scripts/aios_world_readiness.py --json` reports
+  `ready_for_world_deployment=false`, `met_count=1`, `partial_count=6`,
+  `missing_count=0`; `git diff --check` passed before ledger closeout.
+- decision: world deployment readiness is now a separate machine-readable axis
+  with schema `aios.world_readiness.v1`; local completion remains valid only
+  for local self-maintenance.
+- risk: readiness markers are intentionally conservative path-based evidence;
+  owner repos still need dedicated implementation contracts for runtime
+  isolation, Akashic trace graph, SkillOS registry, credential broker, and SECI
+  entropy enforcement.
+- next: create `ASC-0237` for MemoryOS Akashic work-lineage and replay
+  checkpoint index, then dispatch owner-specific packets rather than editing
+  child repo internals from MyWorld.
+- status: done
+
+## 2026-06-12 23:58 KST — codex@myworld — ASC-0237 Akashic lineage contract proposed
+
+- repo: myworld
+- role: contract drafting / owner handoff
+- goal: turn the world-readiness `durable_work_lineage` and
+  `akashic_observability` partial axes into a MemoryOS-owned work contract.
+- changed: added
+  `docs/contracts/ASC-0237-memoryos-akashic-work-lineage-replay-index.md`.
+- evidence: `scripts/aios_world_readiness.py --json` reports
+  `ready_for_world_deployment=false` with those axes still partial; existing
+  local pieces include `scripts/aios_work.py`, `scripts/aios_checkpoint.py`,
+  `scripts/aios_ingest_session.py`, and MemoryOS retrieval trace surfaces.
+- decision: keep the implementation in MemoryOS and require reference/hash/
+  status metadata instead of raw private provider transcripts or credentials.
+- risk: contract is proposed only; no MemoryOS packet has been dispatched and
+  no child repo implementation has been changed from MyWorld.
+- next: accept and dispatch ASC-0237 to MemoryOS, or create ASC-0236 first if
+  runtime isolation/credential boundary is the preferred next bottleneck.
+- status: proposed
+
+## 2026-06-13 00:14 KST — codex@myworld — ASC-0236 credential broker boundary
+
+- repo: myworld
+- role: implementation / privacy boundary hardening
+- goal: reduce repeated provider credential prompts by adding a broker that
+  writes request receipts without printing credential values.
+- changed: added `docs/contracts/ASC-0236-credential-broker-boundary.md`,
+  `scripts/aios_credential_broker.py`, and
+  `tests/test_aios_credential_broker.py`.
+- evidence: `python3 -m unittest tests.test_aios_credential_broker
+  tests.test_aios_world_readiness tests.test_aios_secret_scan -v` passed
+  15/15; `python3 -m py_compile scripts/aios_credential_broker.py
+  scripts/aios_world_readiness.py scripts/aios_vault.py` passed;
+  `python3 scripts/aios_credential_broker.py --json request
+  ANTHROPIC_API_KEY --provider claude --purpose 'multi-provider synthesis'`
+  returned a redacted request with `allowed_to_print_value=false` and
+  `chat_secret_request_allowed=false`; `scripts/aios_world_readiness.py --json`
+  now reports `credential_private_data_boundary=status=met`, while overall
+  world readiness remains false with `met_count=2`, `partial_count=5`.
+- decision: credential availability is now reportable as
+  `available_via_env`, `vault_may_hold_value`, or `missing` without decrypting
+  the vault during status probes or exposing values in chat/docs/receipts.
+- risk: provider wrappers do not yet consume broker receipts automatically;
+  this contract closes the broker surface, not every provider integration.
+- next: continue ASC-0237 for MemoryOS Akashic work-lineage/replay, then
+  create the Hive runtime isolation contract for hosted execution receipts.
+- status: done
+
+## 2026-06-13 00:26 KST — codex@myworld — ASC-0238 SkillOS registry
+
+- repo: myworld
+- role: implementation / capability routing hardening
+- goal: add a recommendation-only SkillOS registry so AIOS can map skills,
+  provider surfaces, owners, risks, evidence, and fallbacks without granting
+  execution authority.
+- changed: added `docs/contracts/ASC-0238-skillos-recommendation-registry.md`,
+  `scripts/aios_skillos_registry.py`, and
+  `tests/test_aios_skillos_registry.py`.
+- evidence: `python3 -m unittest tests.test_aios_skillos_registry
+  tests.test_aios_world_readiness -v` passed 7/7;
+  `python3 scripts/aios_skillos_registry.py --json list` returned
+  `recommendation_only=true` and `execution_enabled=false`;
+  `python3 scripts/aios_skillos_registry.py --json recommend --task 'need
+  credential vault privacy broker for provider' --limit 2` ranked
+  `skill_credential_broker` first; `scripts/aios_world_readiness.py --json`
+  now reports `skillos_routing=status=met`, with overall
+  `ready_for_world_deployment=false`, `met_count=3`, `partial_count=4`.
+- decision: SkillOS is a neuromuscular routing map, not an executor. Execution
+  still requires Hive/owner-repo contract receipts.
+- risk: this is a MyWorld projection over existing local surfaces. CapabilityOS
+  should later own the deeper dynamic registry and observation feedback loop.
+- next: continue ASC-0237 for MemoryOS Akashic lineage/replay and then Hive
+  hosted runtime isolation; world readiness still has 4 partial axes.
+- status: done
+
+## 2026-06-13 00:38 KST — codex@myworld — ASC-0239 SECI entropy gate
+
+- repo: myworld
+- role: implementation / Genesis closeout hardening
+- goal: prevent safe consensus closeouts by requiring SECI knowledge
+  conversion, discomfort, and a counter-branch before synthesis is treated as
+  closeout-ready.
+- changed: added
+  `docs/contracts/ASC-0239-genesis-seci-entropy-closeout-gate.md`,
+  `scripts/aios_seci_entropy.py`, and `tests/test_aios_seci_entropy.py`.
+- evidence: `python3 -m unittest tests.test_aios_seci_entropy
+  tests.test_aios_world_readiness -v` passed 7/7; `python3
+  scripts/aios_seci_entropy.py --text 'Socialization shared experience.
+  Externalization tacit to explicit. Combination synthesis. Internalization
+  habit. Discomfort deficit. Counter-branch alternative assumption mutation.'
+  --json` returned `pass=true`, `authority=advisory_only`, and
+  `execution_enabled=false`; `scripts/aios_world_readiness.py --json` now
+  reports `genesis_seci_entropy=status=met`, with overall
+  `ready_for_world_deployment=false`, `met_count=4`, `partial_count=3`.
+- decision: SECI/entropy is an advisory closeout gate, not a GenesisOS
+  execution surface and not final truth selection.
+- risk: current marker detection is heuristic and should later be backed by
+  GenesisOS branches and MemoryOS evidence refs for high-stakes closeouts.
+- next: dispatch ASC-0237 to MemoryOS and ASC-0240 to Hive; remaining world
+  readiness partial axes are durable lineage, Akashic observability, and hosted
+  runtime isolation.
+- status: done
+
+## 2026-06-13 00:42 KST — codex@myworld — ASC-0240 Hive runtime isolation contract proposed
+
+- repo: myworld
+- role: contract drafting / owner handoff
+- goal: turn the world-readiness `cloud_execution_isolation` partial axis into
+  a Hive-owned hosted runtime receipt contract.
+- changed: added
+  `docs/contracts/ASC-0240-hive-hosted-runtime-isolation-receipts.md`.
+- evidence: `scripts/aios_world_readiness.py --json` reports
+  `cloud_execution_isolation=status=partial`; existing evidence is local
+  sandbox policy only (`scripts/aios_sandbox.py`, `tests/test_aios_sandbox.py`).
+- decision: hosted runtime isolation belongs to Hive execution substrate; MyWorld
+  should verify returned receipts rather than implement Hive internals here.
+- risk: contract is proposed only; no Hive packet has been dispatched and no
+  child repo implementation has been changed from MyWorld.
+- next: accept and dispatch ASC-0240 to Hive, or continue ASC-0237 first if
+  MemoryOS lineage is the preferred next bottleneck.
+- status: proposed
+
+## 2026-06-12 22:55 KST — codex@myworld — OMO plugin removal
+
+- repo: myworld + local Codex profile
+- role: operator cleanup / capability deactivation
+- goal: remove installed `oh-my-opencode` / `oh-my-openagent` / OMO plugin
+  artifacts after the operator reported excessive Codex token pressure.
+- changed: removed OMO source clones under `myworld/oh-my-openagent`,
+  `myworld/omo`, and `uri/apps/oh-my-openagent`; removed Codex OMO plugin
+  cache/data, temporary marketplace payloads, OMO/lazycodex npm and Bun caches,
+  generated OMO bin wrappers, and OMO-generated Codex agent registrations;
+  removed `omo@sisyphuslabs` marketplace/plugin/hook and generated agent
+  blocks from `~/.codex/config.toml` and `~/.codex/config.toml.aios-bak`.
+- evidence: `tomllib` parsed both Codex config files successfully; `rg` found
+  no remaining OMO plugin/config references in Codex config/plugin/bin
+  surfaces; `find` found no remaining targeted OMO install paths; `command -v`
+  returned no `omo`, `oh-my-openagent`, `lazycodex`, or `lazycodex-ai`
+  executable; related OMO/lazycodex processes were terminated.
+- decision: general Codex session logs, user memories, and unrelated
+  same-named project code were not deleted; only confirmed plugin/source/cache
+  artifacts were removed.
+- risk: this active Codex session may still show previously injected OMO skills
+  until a new session starts, but the next session should not load the removed
+  plugin.
+- next: none — operator checkpoint requested before any reinstall or
+  replacement capability.
+- status: done
+
 ## 2026-06-07 01:54 KST — codex@myworld — ASC-0233 provider output disagreements
 
 - repo: myworld + hivemind
@@ -6766,3 +6946,87 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: memoryOS inbox backlog growing (12 drafts unreviewed) — needs regular processing cadence
 - next: establish work intake system before Phase 1 implementation; process memoryOS inbox backlog
 - status: done (hooks deployed; roadmap recorded; intake system pending)
+
+## 2026-06-13 00:04 KST — codex@myworld — ASC-0237 Akashic lineage closeout
+
+- repo: myworld + memoryOS
+- role: control-plane verification / MemoryOS implementation closeout
+- goal: close the world-readiness gap for durable work lineage and Akashic observability without storing raw provider history.
+- changed: `memoryOS/memoryos/akashic_ledger.py`, `memoryOS/tests/test_akashic_ledger.py`, `memoryOS/docs/AGENT_WORKLOG.md`, `docs/contracts/ASC-0237-memoryos-akashic-work-lineage-replay-index.md`, `scripts/aios_world_readiness.py`.
+- evidence: MemoryOS Akashic index tests cover reconstructability, raw-body rejection, secret-like rejection, and append idempotency; world readiness reports 6 met axes and 1 partial axis after the MemoryOS marker.
+- decision: ASC-0237 is closed; cloud execution isolation is not closed by this work and now routes explicitly to ASC-0240 instead of the credential broker contract.
+- risk: hosted runtime isolation remains unproven; no final world-deployment claim is allowed until Hive produces filesystem/process/network/package/timeout/quota/credential-reference receipts.
+- next: execute ASC-0240 in `hivemind` for hosted runtime isolation receipts, then rerun `scripts/aios_world_readiness.py --json`.
+- status: done
+
+## 2026-06-13 00:50 KST — codex@myworld — ASC-0240 Hive runtime isolation receipts
+
+- repo: hivemind + myworld
+- role: execution substrate implementation / control-plane verification
+- goal: close the hosted runtime isolation readiness gap with explicit filesystem/process/network/package/timeout/credential-reference receipts.
+- changed: `hivemind/hivemind/cloud_isolation.py`, `hivemind/tests/test_cloud_isolation.py`, `hivemind/docs/AGENT_WORKLOG.md`, `hivemind/.ai-runs/shared/comms_log.md`, `docs/contracts/ASC-0240-hive-hosted-runtime-isolation-receipts.md`.
+- evidence: Hive cloud isolation tests passed 6/6; focused run validation and provider passthrough tests passed 23/23; py_compile and `git diff --check` passed.
+- decision: ASC-0240 is closed at marker/schema level. Hive receipts fail closed when sandbox backend evidence is missing, support network-denied receipts, and reject credential-looking values and raw provider body fields.
+- risk: this proves the receipt primitive, not a live hosted production deployment. The next proof must wire real provider/local worker execution through the receipt path and project the result into MemoryOS Akashic lineage.
+- next: run MyWorld world readiness; if all seven axes are met, create a follow-up contract for live hosted-run proof and deployment packaging rather than claiming production deployment is complete.
+- status: done
+
+## 2026-06-12 23:55 KST — codex@myworld — ASC-0241 live proof seed
+
+- repo: myworld
+- role: control-plane planner
+- goal: prevent marker-level world readiness from being mistaken for live hosted deployment proof.
+- changed: `docs/contracts/ASC-0241-live-hosted-run-proof-and-akashic-projection.md`
+- evidence: `scripts/aios_world_readiness.py --json` reports `ready=true`, `met=7`, `partial=0`, `missing=0`, but ASC-0240 explicitly proves the receipt primitive rather than a live hosted run.
+- decision: proposed ASC-0241 as the next contract: wire a real Hive provider/local worker path to write runtime isolation receipts and project the result into MemoryOS Akashic lineage.
+- risk: without this follow-up, AIOS could overclaim readiness from marker files alone.
+- next: accept/dispatch ASC-0241 to `hivemind` with MemoryOS projection support.
+- status: proposed
+
+## 2026-06-12 23:59 KST — codex@myworld — ASC-0241 live hosted-run proof
+
+- repo: myworld + hivemind + memoryOS
+- role: execution proof / memory projection
+- goal: prove marker-level world readiness with a replayable Hive path that emits runtime isolation receipts and projects the run into MemoryOS Akashic lineage.
+- changed: `hivemind/hivemind/provider_passthrough.py`, `hivemind/tests/test_provider_passthrough.py`, `scripts/aios_live_hosted_proof.py`, `tests/test_aios_live_hosted_proof.py`, `memoryOS/memory/akashic_work_index.jsonl`, `docs/contracts/ASC-0241-live-hosted-run-proof-and-akashic-projection.md`.
+- evidence: `python3 scripts/aios_live_hosted_proof.py --write-memory --json` produced run `run_20260612_235914_2fd12a`, runtime receipt `hivemind/.runs/run_20260612_235914_2fd12a/runtime_isolation/provider_codex_native_01.json`, and Akashic index `akashic_c12ae7508fd4cb1b`; focused Hive tests passed 19/19; MyWorld ASC-0241 proof test passed.
+- decision: ASC-0241 is closed for deterministic provider prepare proof. This proves the receipt/projection path, not full hosted production deployment.
+- risk: actual hosted worker backend, fresh-checkout install, and credential broker adoption remain unproven.
+- next: create/execute the next packaging contract: fresh checkout install smoke + provider credential broker adoption + hosted backend selection.
+- status: done
+
+## 2026-06-13 00:09 KST — codex@myworld — ASC-0242 packaging smoke and credential broker adoption
+
+- repo: myworld
+- role: deployment proof / privacy boundary implementation
+- goal: prove installer behavior from a fresh source copy without touching operator home/profile, and route missing provider credentials through the credential broker.
+- changed: `scripts/aios_install.sh`, `scripts/aios_packaging_proof.py`, `scripts/aios_provider.py`, `tests/test_aios_packaging_proof.py`, `tests/test_aios_provider_credentials.py`, `docs/contracts/ASC-0242-packaging-smoke-and-credential-broker-adoption.md`.
+- evidence: packaging proof test and provider credential broker test passed 2/2; `scripts/aios_packaging_proof.py --json` returned `ok=true`, `install_returncode=0`, `provider_status_returncode=0`, `copied_git_dir=false`, `copied_aios_runtime_state=false`, `wrote_operator_shell_rc=false`; py_compile passed for Python proof/provider files; `bash -n scripts/aios_install.sh` passed.
+- decision: ASC-0242 is closed for privacy-safe fresh-copy install smoke and missing Claude credential broker adoption.
+- risk: this is not a published package or real hosted worker backend. The source tree is still dirty and ahead of origin; release/archive smoke from a clean committed tree remains unproven.
+- next: hosted backend selection + clean-tree release/archive install smoke + provider credential broker adoption for all hosted providers.
+- status: done
+
+## 2026-06-13 00:12 KST — codex@myworld — ASC-0243 hosted backend selection seed
+
+- repo: myworld
+- role: deployment planner / external-source route
+- goal: prevent local working-tree smoke from being mistaken for a release/archive or hosted backend proof.
+- changed: `docs/contracts/ASC-0243-hosted-backend-selection-and-release-archive-smoke.md`
+- evidence: official OpenAI Codex docs describe managed cloud containers and CLI/app sandbox controls; Anthropic release notes describe Claude Managed Agents, multi-agent orchestration, and self-hosted sandboxes on AWS; Gemini API docs describe Interactions server-side history/background agentic workflows and Deep Research agent workflows.
+- decision: proposed ASC-0243 with backend tiers: local-first release archive, Codex Cloud optional, Anthropic Managed Agents optional, Gemini Interactions research optional.
+- risk: provider-hosted routes require operator account, IAM/environment, and credential prerequisites; CapabilityOS should recommend but not execute the binding.
+- next: run clean release/archive install smoke and produce backend selection receipt.
+- status: proposed
+
+## 2026-06-13 00:14 KST — codex@myworld — ASC-0243 selected-source release archive smoke
+
+- repo: myworld
+- role: deployment proof / backend selection
+- goal: prove install from a selected-source archive and record the first hosted-backend tier decision without relying on dirty workspace state.
+- changed: `scripts/aios_release_archive_proof.py`, `tests/test_aios_release_archive_proof.py`, `docs/contracts/ASC-0243-hosted-backend-selection-and-release-archive-smoke.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- evidence: `python3 -m unittest tests.test_aios_release_archive_proof -v` passed; `python3 scripts/aios_release_archive_proof.py --json` returned `ok=true`, `install_returncode=0`, `provider_status_returncode=0`, `archive_forbidden_runtime_or_private_paths_present=[]`, and `wrote_operator_shell_rc=false`.
+- decision: selected first deployment tier is `local_first_release_archive`; hosted tiers remain optional and checkpoint-gated: Codex Cloud, Anthropic Managed Agents, Gemini Interactions research.
+- risk: selected-source archive proof is not a clean commit/tag/package release. The current tree remains dirty and ahead of origin.
+- next: scope, commit, and push the AIOS readiness work in clean batches, then rerun release archive smoke from the committed tree.
+- status: done

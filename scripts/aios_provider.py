@@ -116,7 +116,14 @@ def call_claude(prompt: str, model: str | None = None, timeout: int = 60) -> dic
         except Exception:
             pass
     if not api_key:
-        return {"provider": "claude", "ok": False, "error": "ANTHROPIC_API_KEY not set (try aios_vault.py set ANTHROPIC_API_KEY)", "text": ""}
+        request = credential_request("ANTHROPIC_API_KEY", provider="claude", purpose="Claude API provider call")
+        return {
+            "provider": "claude",
+            "ok": False,
+            "error": "credential unavailable; broker request written",
+            "credential_request": request,
+            "text": "",
+        }
 
     model = model or DEFAULT_CLAUDE_MODEL
     payload = json.dumps({
@@ -140,6 +147,52 @@ def call_claude(prompt: str, model: str | None = None, timeout: int = 60) -> dic
             return {"provider": "claude", "model": model, "ok": True, "text": text.strip(), "error": None}
     except Exception as e:
         return {"provider": "claude", "ok": False, "error": str(e), "text": ""}
+
+
+def credential_request(key: str, *, provider: str, purpose: str) -> dict:
+    """Write a privacy-safe credential request through the broker."""
+    broker = Path(__file__).parent / "aios_credential_broker.py"
+    root = Path(os.environ.get("AIOS_ROOT", Path(__file__).resolve().parents[1])).resolve()
+    try:
+        result = subprocess.run(
+            [
+                sys.executable,
+                broker.as_posix(),
+                "--root",
+                root.as_posix(),
+                "--json",
+                "request",
+                key,
+                "--provider",
+                provider,
+                "--purpose",
+                purpose,
+                "--write",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode == 0:
+            return json.loads(result.stdout)
+        return {
+            "schema_version": "aios.credential_broker.v1",
+            "key": key,
+            "provider": provider,
+            "availability": "broker_failed",
+            "allowed_to_print_value": False,
+            "error": result.stderr.strip()[:240],
+        }
+    except Exception as exc:
+        return {
+            "schema_version": "aios.credential_broker.v1",
+            "key": key,
+            "provider": provider,
+            "availability": "broker_unavailable",
+            "allowed_to_print_value": False,
+            "error": str(exc)[:240],
+        }
 
 
 # ── routing heuristics ────────────────────────────────────────────────────────
@@ -240,7 +293,15 @@ def cmd_status(args) -> None:
 
     # Claude API
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    results.append(("claude (api)", bool(api_key), "ANTHROPIC_API_KEY set" if api_key else "no API key"))
+    if api_key:
+        results.append(("claude (api)", True, "ANTHROPIC_API_KEY set"))
+    else:
+        request = credential_request("ANTHROPIC_API_KEY", provider="claude", purpose="provider status check")
+        receipt = request.get("receipt", "")
+        detail = f"credential broker: {request.get('availability', 'unknown')}"
+        if receipt:
+            detail += f" receipt={receipt}"
+        results.append(("claude (api)", False, detail))
 
     for name, ok, detail in results:
         status = "✓" if ok else "✗"
