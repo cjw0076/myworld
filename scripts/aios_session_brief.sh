@@ -44,4 +44,12 @@ echo "## Per-OS agents (summoned through authority — not bypassed)"
 echo '```'
 python scripts/aios_agent_invoke.py session-start 2>/dev/null || echo "(agent activation unavailable)"
 echo '```'
+
+# Session checkpoint resume — inject last session's state so this session
+# does NOT start blank. Lean format (~10 lines) to stay token-lean.
+CP_SUMMARY=$(python3 scripts/aios_checkpoint.py show --latest --lean 2>/dev/null)
+if [ -n "$CP_SUMMARY" ]; then
+  echo
+  echo "$CP_SUMMARY"
+fi
 exit 0

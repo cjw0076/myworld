@@ -11,10 +11,16 @@ set +e
 ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 cd "$ROOT" || exit 0
 
-# 1. process pending primitive events
+# 1. write session checkpoint — carry state to next session
+GOAL_TEXT=$(cat "$ROOT/.aios/current_goal.txt" 2>/dev/null || echo "")
+python3 "$ROOT/scripts/aios_checkpoint.py" write \
+  ${GOAL_TEXT:+--goal "$GOAL_TEXT"} \
+  >/dev/null 2>&1 || true
+
+# 2. process pending primitive events
 python3 scripts/aios_event_processor.py once >/dev/null 2>&1 || true
 
-# 2. update self-record (aios_self.py if it exists)
+# 3. update self-record (aios_self.py if it exists)
 python3 scripts/aios_self.py >/dev/null 2>&1 || true
 
 # 3. count what happened in this session
