@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0274
 slug: smx-bounded-workspace-contract-split
-status: proposed
+status: accepted
+accepted: 2026-06-14T03:10:00+09:00
 goal: Split Speculative Multiverse Execution into a safe Gate A GenesisOS branch-design contract and a later Hivemind isolated-execution contract gated by serving proof.
 created: 2026-06-14T03:20:00+09:00
-human_approved: false
+human_approved: true
 parent: ASC-0271
 depends_on:
   - ASC-0263
@@ -32,14 +33,12 @@ duplicate-action prevention.
 repos:
 
 - `GenesisOS`
-- `hivemind` only for later contract references, not implementation now
 
 allowed_files:
 
 - `GenesisOS/genesisos/smx_branch.py`
 - `GenesisOS/tests/test_smx_branch.py`
 - `GenesisOS/docs/**`
-- `hivemind/docs/**`
 
 forbidden_files:
 
@@ -49,8 +48,7 @@ forbidden_files:
 - credential vault contents
 - raw provider logs
 - raw user data
-- `hivemind/hivemind/**`
-- `hivemind/tests/**`
+- `hivemind/**`
 - `memoryOS/**`
 - `CapabilityOS/**`
 - `apps/**`

@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0276
 slug: agent-company-studio-gate-a-framing
-status: proposed
+status: accepted
+accepted: 2026-06-14T03:10:00+09:00
 goal: Preserve the Agent Company Studio product framing as a Gate A docs-only artifact without creating serving UI before visual target selection.
 created: 2026-06-14T03:20:00+09:00
-human_approved: false
+human_approved: true
 parent: ASC-0271
 depends_on:
   - ASC-0268
@@ -83,7 +84,7 @@ Create a product brief that:
 ## Verification Gate
 
 ```bash
-test -f docs/product/AIOS_AGENT_COMPANY_STUDIO_BRIEF.md
+python3 scripts/aios_world_readiness.py --json
 python3 scripts/aios_serving_design_gate.py assess --root . --json
 python3 scripts/aios_serving_release_gate.py assess --root . --json
 git diff --check

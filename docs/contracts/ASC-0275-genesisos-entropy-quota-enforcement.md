@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0275
 slug: genesisos-entropy-quota-enforcement
-status: proposed
+status: accepted
+accepted: 2026-06-14T03:10:00+09:00
 goal: Build a GenesisOS entropy quota gate so major closeouts require discomfort, counter-branch, provider convergence, and dated external-baseline evidence.
 created: 2026-06-14T03:20:00+09:00
-human_approved: false
+human_approved: true
 parent: ASC-0271
 depends_on:
   - ASC-0266
