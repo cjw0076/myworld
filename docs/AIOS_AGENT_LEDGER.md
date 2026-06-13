@@ -7082,3 +7082,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — additive only; existing dispatch flow unchanged; leases expire naturally
 - next: monitor for next Codex packet
 - status: done
+
+---
+- when: 2026-06-13T14:45:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane verifier / dispatcher
+- goal: ASC-0249 — separate AIOS system-building work from live AIOS agent runtime work on the same machine
+- changed: docs/contracts/ASC-0249-build-runtime-isolation-boundary.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: process inventory showed live round controller, pulse loops, provider sessions, and MCP servers sharing the same myworld root; ASC-0248 Claude session was closed by result packet but still running until manually terminated
+- decision: proposed a Claude-owned build/runtime profile boundary instead of Codex directly implementing code; immediate stale ASC-0248 provider process was isolated by terminating only its process group after verification
+- risk: build-control and live-agent runtime still share `.aios` state until ASC-0249 is implemented
+- next: dispatch ASC-0249 to Claude and verify profile/status guardrails
+- status: proposed
