@@ -226,6 +226,76 @@ def root_report(root: Path, source: str) -> dict[str, Any]:
     }
 
 
+def _serve(root: Path, argv: list[str]) -> int:
+    """Start the AIOS end-user serving UI + API.
+
+    Usage: aios serve [--port PORT] [--host HOST] [--tunnel]
+
+    --tunnel: pipe traffic through a cloudflared quick tunnel so the
+              serving UI is accessible from outside localhost.
+    """
+    import argparse as _ap
+    import threading as _threading
+    import time as _time
+
+    p = _ap.ArgumentParser(prog="aios serve")
+    p.add_argument("--port", type=int, default=8741)
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--tunnel", action="store_true",
+                   help="expose via cloudflared quick tunnel (requires cloudflared)")
+    opts = p.parse_args(argv)
+
+    api_script = root / "scripts" / "aios_serving_api.py"
+    if not api_script.exists():
+        print(f"[aios serve] error: {api_script} not found — run from AIOS root", flush=True)
+        return 1
+
+    host = "0.0.0.0" if opts.tunnel else opts.host
+    api_proc = subprocess.Popen(
+        [sys.executable, str(api_script), "--host", host, "--port", str(opts.port)],
+        cwd=root,
+    )
+    print(f"[aios serve] API started on http://{host}:{opts.port}/", flush=True)
+
+    tunnel_proc = None
+    if opts.tunnel:
+        cf = subprocess.run(["which", "cloudflared"], capture_output=True)
+        if cf.returncode != 0:
+            print("[aios serve] --tunnel requires cloudflared — install from https://github.com/cloudflare/cloudflared/releases", flush=True)
+            api_proc.terminate()
+            return 1
+        # cloudflared prints the public URL to stderr: https://xxxx.trycloudflare.com
+        tunnel_proc = subprocess.Popen(
+            ["cloudflared", "tunnel", "--url", f"http://localhost:{opts.port}"],
+            stderr=subprocess.PIPE, text=True,
+        )
+        print("[aios serve] cloudflared tunnel starting…", flush=True)
+        url = None
+        for _ in range(60):
+            line = tunnel_proc.stderr.readline()
+            if "trycloudflare.com" in line or "https://" in line:
+                import re as _re
+                m = _re.search(r'https://[^\s|]+', line)
+                if m:
+                    url = m.group(0).rstrip("|")
+                    break
+        if url:
+            print(f"\n[aios serve] PUBLIC URL: {url}", flush=True)
+            print(f"[aios serve] Share this URL — anyone can access your AIOS serving UI.", flush=True)
+        else:
+            print("[aios serve] tunnel URL not detected — check cloudflared output above", flush=True)
+
+    try:
+        api_proc.wait()
+    except KeyboardInterrupt:
+        print("\n[aios serve] stopping…", flush=True)
+    finally:
+        api_proc.terminate()
+        if tunnel_proc:
+            tunnel_proc.terminate()
+    return 0
+
+
 def run_delegate(command: list[str], *, cwd: Path) -> int:
     completed = subprocess.run(command, cwd=cwd)
     return completed.returncode
@@ -274,6 +344,7 @@ def build_parser() -> argparse.ArgumentParser:
             "up",
             "open",
             "stop",
+            "serve",
         ],
     )
     parser.add_argument("args", nargs=argparse.REMAINDER)
@@ -390,6 +461,9 @@ def main(argv: list[str] | None = None) -> int:
         elif not up_args or up_args[0] != "up":
             up_args = ["up", *up_args]
         return run_delegate(local_app_command(root, up_args), cwd=root)
+
+    if args.cmd == "serve":
+        return _serve(root, args.args)
 
     if args.cmd == "open":
         return open_control_app(root, args.args)
