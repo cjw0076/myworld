@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -249,13 +250,59 @@ def assess_slice(root: Path, spec: SliceSpec) -> dict[str, Any]:
     }
 
 
+def _genesis_entropy_check(root: Path, slices: list[dict[str, Any]]) -> dict[str, Any]:
+    """Run GenesisOS entropy quota against the current release state.
+
+    Treats the release gate as a major-risk closeout — requires at least one
+    discomfort finding or counter-branch in the genesis prelaunch slice.
+    Returns a finding dict: {finding, deficits, receipts, available}.
+    Degrades honestly if GenesisOS is unavailable.
+    """
+    genesis_path = root / "GenesisOS"
+    if str(genesis_path) not in sys.path:
+        sys.path.insert(0, str(genesis_path))
+    try:
+        from genesisos.entropy_quota import EntropyQuotaInput, assess as eq_assess  # noqa: PLC0415
+    except ImportError:
+        return {"finding": "unavailable", "deficits": ["genesis_entropy_quota_not_importable"],
+                "receipts": [], "available": False}
+
+    genesis_slice = next(
+        (s for s in slices if s["slice_id"] == "genesis_prelaunch_challenge"), {}
+    )
+    evidence: list[str] = genesis_slice.get("evidence", [])
+    prelaunch_proof = any("genesis_prelaunch" in e for e in evidence)
+
+    present_ids = [s["slice_id"] for s in slices if s["status"] == "met"]
+    inp = EntropyQuotaInput(
+        contract_id="serving_release_gate",
+        risk_level="high",
+        changed_surfaces=present_ids or ["none"],
+        evidence_refs=evidence or ["none"],
+        has_discomfort_finding=prelaunch_proof,
+        has_counter_branch=prelaunch_proof,
+        has_provider_convergence_challenge=False,
+        has_external_baseline=False,
+        providers_named=["myworld"],
+    )
+    result = eq_assess(inp)
+    d = result.to_dict()
+    d["available"] = True
+    return d
+
+
 def assess(root: Path) -> dict[str, Any]:
     slices = [assess_slice(root, spec) for spec in SLICES]
     met_count = sum(1 for item in slices if item["status"] == "met")
     partial_count = sum(1 for item in slices if item["status"] == "partial")
     missing_count = sum(1 for item in slices if item["status"] == "missing")
-    ready = met_count == len(slices)
+    entropy = _genesis_entropy_check(root, slices)
+    entropy_blocks = entropy.get("available") and entropy.get("finding") == "block"
+    ready = met_count == len(slices) and not entropy_blocks
     first_gap = next((item for item in slices if item["status"] != "met"), None)
+    next_action = first_gap["next_action"] if first_gap else "maintain serving release evidence"
+    if entropy_blocks:
+        next_action = f"genesis_entropy blocked: {entropy.get('deficits', [])}"
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": now_iso(),
@@ -264,7 +311,8 @@ def assess(root: Path) -> dict[str, Any]:
         "partial_count": partial_count,
         "missing_count": missing_count,
         "slice_count": len(slices),
-        "next_action": first_gap["next_action"] if first_gap else "maintain serving release evidence",
+        "genesis_entropy": entropy,
+        "next_action": next_action,
         "slices": slices,
     }
 
