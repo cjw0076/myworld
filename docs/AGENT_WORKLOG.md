@@ -4,6 +4,32 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-14 02:35 KST — claude — ASC-0270/0271 dream hardening
+
+- status: completed
+- scope: `docs/contracts/ASC-0271-dream-hardening-invariant-pack.md`,
+  auxiliary duplicate draft
+  `docs/contracts/ASC-0271-aios-growth-hardening-invariant-pack.md`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`
+- work: received ASC-0270 dispatch (asc-0270-claude-r2) from codex. Read the
+  dream expansion map, contract, shared language, definition, north star,
+  substrate boundary, negative evidence spec, and agent service baseline.
+  Produced ASC-0271 hardening invariant pack containing: 8 growth invariants
+  (memory review gate, capability recommendation boundary, genesis speculation
+  boundary, evidence-bound completion, provider replaceability, production
+  evidence gate, execution receipt binding, privacy boundary preservation);
+  5 owner-bound follow-on contracts (myworld, hivemind, memoryOS, capabilityOS,
+  genesisOS) with completion targets and prerequisite chains; sequencing gate
+  splitting 9 safe-now moves from 6 blocked-until-serving-proof moves; dream
+  preservation rules to prevent prose decay; 11 consolidated stop conditions.
+- evidence: semantic handshake clean (0 ambiguous terms); no `apps/serving/**`
+  touched; no memory auto-accepted; no execution dispatched; no provider
+  surface treated as AIOS boundary. Contract is `proposed` (not accepted —
+  operator decides).
+- receipts: ASC-0271 contract file; Codex verifier corrected the auxiliary
+  duplicate draft from premature `accepted/human_approved=true` to
+  `superseded_duplicate_draft`, preserving it as non-authoritative material.
+
 ## 2026-06-14 01:30 KST — claude — ASC-0267 serving support redaction
 
 - status: completed

@@ -7547,3 +7547,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: dream artifacts can become vague unless Claude turns them into bounded invariants; serving UI remains blocked until visual target selection and browser proof.
 - next: dispatch ASC-0270 to `claude@myworld`; after Claude hardening, keep Codex on visible serving/product growth lane.
 - status: accepted
+
+---
+- when: 2026-06-14T02:35:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: system hardening / invariant architect
+- goal: harden ASC-0270 dream expansion into governed growth rails (ASC-0271)
+- changed: docs/contracts/ASC-0271-dream-hardening-invariant-pack.md, docs/contracts/ASC-0271-aios-growth-hardening-invariant-pack.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: read dream map, ASC-0270 contract, shared language, definition, north star, substrate boundary, negative evidence spec, agent service baseline; semantic handshake clean (0 ambiguous terms); no apps/serving touched; no memory auto-accepted; no execution dispatched.
+- decision: proposed ASC-0271 with 8 growth invariants, 5 owner-bound follow-on contracts, 9 safe-now vs 6 blocked-until-proof sequencing gates, dream preservation rules, and 11 consolidated stop conditions. Contract status is proposed — operator decides acceptance. Codex verifier preserved Claude's second hardening draft as `ASC-0271-AUX` and corrected its premature accepted/human-approved metadata to `superseded_duplicate_draft`.
+- risk: invariant pack is comprehensive but may over-constrain early exploration if applied rigidly; operator should treat invariants as guardrails not walls during Phase 1 internal hardening.
+- next: operator accepts or adjusts ASC-0271; Phase 1 internal work (schemas, gates, observation paths) can begin immediately; serving UI remains blocked until visual target selection.
+- status: proposed
