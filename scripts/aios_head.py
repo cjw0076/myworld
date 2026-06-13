@@ -489,8 +489,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if outcome.get("exit") in ("model_finished", "needs_approval") else 1
 
     if args.loop:
+        # --loop always runs organically — RunLog + postamble wired by default
         sampler = make_provider_sampler(args.provider, adapters)
-        outcome = run_loop_goal(args.goal, agent_id=args.agent, sampler=sampler)
+        root_path = Path(args.root).resolve()
+        outcome = run_organic_goal(args.goal, agent_id=args.agent, sampler=sampler,
+                                   root=root_path)
         print(json.dumps(outcome, ensure_ascii=False, indent=2))
         return 0 if outcome.get("exit") in ("model_finished", "needs_approval") else 1
 

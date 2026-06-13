@@ -172,10 +172,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--query", default=None, help="extra GitHub query terms (e.g. 'agent OR llm')")
     p.add_argument("--limit", type=int, default=8)
     p.add_argument("--no-skip-seen", action="store_true", help="re-distill repos seen in prior runs")
-    p.add_argument("--write-drafts", action="store_true",
-                   help="write distilled candidates to memoryOS as draft MemoryObjects "
-                        "(absorption loop: star_radar→draft→review→accepted→preamble retrieves)")
-    p.add_argument("--dry-run", action="store_true", help="validate --write-drafts without writing")
+    p.add_argument("--no-write-drafts", action="store_true",
+                   help="skip writing to memoryOS (default: always write draft MemoryObjects)")
+    p.add_argument("--dry-run", action="store_true", help="show what would be written, don't write")
     p.add_argument("--json", action="store_true")
     return p
 
@@ -186,7 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     base.write_receipt("star_radar", receipt)
 
     draft_result: dict | None = None
-    if args.write_drafts or args.dry_run:
+    if not args.no_write_drafts:
         draft_result = write_radar_drafts(receipt["candidates"],
                                           dry_run=args.dry_run)
 

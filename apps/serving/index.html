@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIOS — Goal Runner</title>
+  <style>
+    :root {
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d7dde6;
+      --bg: #f4f7fb;
+      --panel: #ffffff;
+      --teal: #087f8c;
+      --green: #2f7d4f;
+      --amber: #9a5b00;
+      --red: #a33a3a;
+      --shadow: 0 12px 34px rgba(31,41,51,0.12);
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      padding: 32px 16px;
+    }
+    header { text-align: center; margin-bottom: 32px; }
+    header h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p { color: var(--muted); font-size: 0.9rem; margin-top: 6px; }
+
+    .goal-box {
+      width: 100%; max-width: 680px;
+      background: var(--panel); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 20px;
+      margin-bottom: 24px;
+    }
+    .goal-box label { font-size: 0.8rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 8px; }
+    .goal-row { display: flex; gap: 10px; }
+    .goal-row input {
+      flex: 1; padding: 10px 14px; border: 1.5px solid var(--line);
+      border-radius: 8px; font-size: 0.95rem; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    .goal-row input:focus { border-color: var(--teal); }
+    .goal-row button {
+      padding: 10px 20px; background: var(--teal); color: #fff;
+      border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .goal-row button:hover { opacity: 0.88; }
+    .goal-row button:disabled { opacity: 0.5; cursor: default; }
+
+    .provider-row { margin-top: 10px; display: flex; gap: 12px; align-items: center;
+      font-size: 0.82rem; color: var(--muted); }
+    .provider-row select {
+      padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px;
+      font-size: 0.82rem; font-family: inherit; background: var(--bg);
+    }
+
+    .result-panel {
+      width: 100%; max-width: 680px; display: none; flex-direction: column; gap: 16px;
+    }
+    .result-panel.active { display: flex; }
+
+    .card {
+      background: var(--panel); border-radius: var(--radius);
+      box-shadow: 0 2px 8px rgba(31,41,51,0.07); padding: 16px 20px;
+    }
+    .card h3 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; }
+
+    .status-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 600;
+    }
+    .status-badge.ok { background: #e6f5ec; color: var(--green); }
+    .status-badge.warn { background: #fff7e0; color: var(--amber); }
+    .status-badge.err { background: #fef0f0; color: var(--red); }
+
+    .turn-list { list-style: none; }
+    .turn-list li { padding: 5px 0; border-bottom: 1px solid var(--line);
+      font-size: 0.85rem; display: flex; gap: 10px; align-items: baseline; }
+    .turn-list li:last-child { border-bottom: none; }
+    .turn-num { color: var(--muted); font-size: 0.75rem; min-width: 28px; }
+    .tool-name { font-weight: 600; color: var(--teal); }
+    .tool-status { font-size: 0.75rem; color: var(--muted); }
+
+    .memory-list { list-style: none; }
+    .memory-list li { padding: 4px 0; font-size: 0.85rem; color: var(--muted);
+      border-bottom: 1px solid var(--line); }
+    .memory-list li:last-child { border-bottom: none; }
+    .memory-list strong { color: var(--ink); }
+
+    .pipeline-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+      font-size: 0.75rem; text-align: center;
+    }
+    .pipeline-step { padding: 8px 4px; border-radius: 6px; background: var(--bg); }
+    .pipeline-step.ok { background: #e6f5ec; }
+    .pipeline-step.warn { background: #fff7e0; }
+    .pipeline-step .step-name { font-weight: 700; margin-bottom: 2px; }
+    .pipeline-step .step-val { color: var(--muted); }
+
+    .next-list { list-style: none; }
+    .next-list li { padding: 5px 0; font-size: 0.88rem; display: flex; gap: 8px;
+      align-items: flex-start; border-bottom: 1px solid var(--line); }
+    .next-list li:last-child { border-bottom: none; }
+    .next-list li::before { content: "→"; color: var(--teal); font-weight: 700; flex-shrink: 0; }
+
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid var(--line); border-top-color: var(--teal);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      background: #fef0f0; border: 1px solid #f9c0c0; border-radius: 8px;
+      padding: 12px 16px; color: var(--red); font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AIOS Goal Runner</h1>
+    <p>자연어 goal → organic pipeline 실행 → 결과 + memory trace</p>
+  </header>
+
+  <div class="goal-box">
+    <label>Goal</label>
+    <div class="goal-row">
+      <input id="goalInput" type="text" placeholder="e.g. 현재 프로젝트 상태 요약해줘"
+             autocomplete="off" spellcheck="false">
+      <button id="runBtn" onclick="runGoal()">실행</button>
+    </div>
+    <div class="provider-row">
+      <span>Provider:</span>
+      <select id="providerSelect">
+        <option value="claude">claude</option>
+        <option value="codex">codex</option>
+        <option value="gemini">gemini</option>
+        <option value="ollama_local">ollama (local)</option>
+      </select>
+      <span>Max turns:</span>
+      <select id="maxTurns">
+        <option value="6">6</option>
+        <option value="12" selected>12</option>
+        <option value="24">24</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="resultPanel" class="result-panel">
+
+    <div class="card" id="statusCard">
+      <h3>실행 상태</h3>
+      <div id="statusContent"><span class="spinner"></span>실행 중…</div>
+    </div>
+
+    <div class="card" id="pipelineCard">
+      <h3>5-OS Organic Pipeline</h3>
+      <div id="pipelineContent" class="pipeline-grid">
+        <div class="pipeline-step" id="p-memory">
+          <div class="step-name">memory</div>
+          <div class="step-val">—</div>
+        </div>
+        <div class="pipeline-step" id="p-capability">
+          <div class="step-name">capability</div>
+          <div class="step-val">—</div>
+        </div>
+        <div class="pipeline-step" id="p-loop">
+          <div class="step-name">turn loop</div>
+          <div class="step-val">—</div>
+        </div>
+        <div class="pipeline-step" id="p-dream">
+          <div class="step-name">dream agora</div>
+          <div class="step-val">—</div>
+        </div>
+        <div class="pipeline-step" id="p-akashic">
+          <div class="step-name">akashic</div>
+          <div class="step-val">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="trajectoryCard">
+      <h3>실행 Trajectory</h3>
+      <ul id="trajectoryList" class="turn-list">
+        <li style="color:var(--muted); font-size:0.85rem">실행 대기 중…</li>
+      </ul>
+    </div>
+
+    <div class="card" id="memoryCard">
+      <h3>Memory Hits (preamble)</h3>
+      <ul id="memoryList" class="memory-list">
+        <li>—</li>
+      </ul>
+    </div>
+
+    <div class="card" id="nextCard">
+      <h3>다음 권장 액션</h3>
+      <ul id="nextList" class="next-list">
+        <li>—</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    // AIOS Serving UI — calls the local aios_head API server (aios_serving_session.py)
+    // or falls back to a static demo if the server is not running.
+    const API_BASE = 'http://localhost:8741';
+
+    function setStep(id, status, val) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = 'pipeline-step ' + (status || '');
+      el.querySelector('.step-val').textContent = val || '—';
+    }
+
+    async function runGoal() {
+      const goal = document.getElementById('goalInput').value.trim();
+      if (!goal) { document.getElementById('goalInput').focus(); return; }
+
+      const provider = document.getElementById('providerSelect').value;
+      const maxTurns = parseInt(document.getElementById('maxTurns').value);
+
+      document.getElementById('runBtn').disabled = true;
+      document.getElementById('resultPanel').classList.add('active');
+      document.getElementById('statusContent').innerHTML =
+        '<span class="spinner"></span>실행 중…';
+
+      // Reset pipeline display
+      ['memory','capability','loop','dream','akashic'].forEach(s =>
+        setStep('p-' + s, '', '—'));
+      document.getElementById('trajectoryList').innerHTML =
+        '<li style="color:var(--muted);font-size:0.85rem">실행 중…</li>';
+      document.getElementById('memoryList').innerHTML = '<li>—</li>';
+      document.getElementById('nextList').innerHTML = '<li>—</li>';
+
+      try {
+        const resp = await fetch(`${API_BASE}/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ goal, provider, max_turns: maxTurns }),
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        renderResult(data);
+      } catch (err) {
+        // Server not running — show the error honestly + instructions
+        renderOffline(goal, err.message);
+      } finally {
+        document.getElementById('runBtn').disabled = false;
+      }
+    }
+
+    function renderResult(data) {
+      const pipe = data.organic_pipeline || {};
+      const pre = pipe.preamble || {};
+      const post = pipe.postamble || {};
+      const exit = data.exit || 'unknown';
+      const turns = data.turns || 0;
+
+      // Status
+      const exitOk = ['model_finished', 'needs_approval'].includes(exit);
+      document.getElementById('statusContent').innerHTML =
+        `<span class="status-badge ${exitOk ? 'ok' : 'warn'}">${exit}</span>
+         &nbsp; <span style="color:var(--muted);font-size:0.88rem">${turns} turns</span>
+         ${data.run_id ? `&nbsp;<code style="font-size:0.78rem;color:var(--muted)">${data.run_id}</code>` : ''}`;
+
+      // Pipeline steps
+      setStep('p-memory', pre.memory_status === 'ok' ? 'ok' : 'warn',
+              pre.memory_hits != null ? `${pre.memory_hits} hits` : pre.memory_status || '—');
+      setStep('p-capability', pre.capability_status === 'ok' ? 'ok' : 'warn',
+              pre.top_capability || pre.capability_status || '—');
+      setStep('p-loop', exitOk ? 'ok' : 'warn', `${turns}T / ${exit}`);
+      setStep('p-dream', post.dream_agora_ingest === 'ok' ? 'ok' : 'warn',
+              post.dream_agora_ingest || '—');
+      setStep('p-akashic', post.akashic_record === 'ok' ? 'ok' : 'warn',
+              post.akashic_record || '—');
+
+      // Trajectory
+      const traj = data.trajectory || [];
+      const trajEl = document.getElementById('trajectoryList');
+      if (traj.length === 0) {
+        trajEl.innerHTML = '<li style="color:var(--muted);font-size:0.85rem">tool call 없음</li>';
+      } else {
+        trajEl.innerHTML = traj.map(t =>
+          `<li>
+            <span class="turn-num">T${t.turn}</span>
+            <span class="tool-name">${t.tool || '?'}</span>
+            <span class="tool-status">${t.status || ''} ${t.decision ? '('+t.decision+')' : ''}</span>
+          </li>`
+        ).join('');
+      }
+
+      // Memory hits
+      const memEl = document.getElementById('memoryList');
+      const hits = pre.memory_hits;
+      memEl.innerHTML = hits > 0
+        ? `<li><strong>${hits}개</strong> 관련 메모리 컨텍스트 로드됨</li>`
+        : '<li style="color:var(--muted)">관련 메모리 없음 (첫 실행 또는 새 topic)</li>';
+
+      // Next actions
+      const nextEl = document.getElementById('nextList');
+      const errs = post.errors || [];
+      const nexts = errs.length > 0
+        ? errs.map(e => `<li>${e}</li>`).join('')
+        : `<li>결과를 memoryOS에서 리뷰하세요: <code>memoryos drafts list</code></li>
+           <li>다음 goal로 연속 실행하면 이번 결과가 context로 사용됩니다</li>`;
+      nextEl.innerHTML = nexts;
+    }
+
+    function renderOffline(goal, errMsg) {
+      document.getElementById('statusContent').innerHTML =
+        `<div class="error-box">
+          <strong>서버 미실행</strong> — aios_serving_session.py가 :8741에서 실행 중이 아닙니다.<br>
+          <code style="font-size:0.8rem;display:block;margin-top:6px">
+            python3 scripts/aios_serving_session.py serve --port 8741
+          </code>
+          <span style="font-size:0.78rem;color:#c0392b;margin-top:4px;display:block">
+            ${errMsg}
+          </span>
+        </div>`;
+
+      // Show what WOULD happen
+      setStep('p-memory', 'warn', 'offline');
+      setStep('p-capability', 'warn', 'offline');
+      setStep('p-loop', 'warn', 'pending');
+      setStep('p-dream', '', '—');
+      setStep('p-akashic', '', '—');
+
+      document.getElementById('trajectoryList').innerHTML =
+        `<li style="color:var(--muted);font-size:0.85rem">
+          실행 대기: goal = "${goal.slice(0, 60)}${goal.length > 60 ? '…' : ''}"
+        </li>`;
+    }
+
+    // Enter key submits
+    document.getElementById('goalInput')
+      .addEventListener('keydown', e => { if (e.key === 'Enter') runGoal(); });
+  </script>
+</body>
+</html>
