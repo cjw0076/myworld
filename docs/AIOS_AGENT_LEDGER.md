@@ -7560,3 +7560,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: invariant pack is comprehensive but may over-constrain early exploration if applied rigidly; operator should treat invariants as guardrails not walls during Phase 1 internal hardening.
 - next: operator accepts or adjusts ASC-0271; Phase 1 internal work (schemas, gates, observation paths) can begin immediately; serving UI remains blocked until visual target selection.
 - status: proposed
+
+---
+- when: 2026-06-14T03:00:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: system hardening / invariant architect
+- goal: finalize ASC-0270 claude hardening with definitive invariant pack
+- changed: docs/contracts/ASC-0271-dream-hardening-invariant-pack.md (restored to proposed), docs/contracts/ASC-0271-aios-growth-hardening-invariant-pack.md (AUX reference), docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: asc-0270-claude-r2 result packet already `status=passed` per Codex watcher; ASC-0271 canonical stub restored to `proposed` after incorrect `superseded` status was set; AUX draft preserved with comprehensive 10-invariant content; Codex verifier correctly blocked auto-accept (human_approved: true removed per operator checkpoint rule); design gate `build_allowed=false` confirmed; world readiness remains false.
+- decision: ASC-0271 stays `proposed` until founder accepts. Two artifacts available: (1) canonical stub with 8 invariants + sequencing + 11 stop conditions; (2) AUX draft with 10 invariants + gates A/B/C + 5 owner-bound follow-on contracts (ASC-0272–0276) + Agent Company Studio framing + assumption hardening critique. Founder can accept stub, accept AUX-as-canonical, or merge.
+- risk: Serving UI remains blocked (visual target not selected). Dream vectors safe to execute under Gate A (internal, non-UI work). No production claims allowed.
+- next: founder selects visual target (`python3 scripts/aios_serving_design_gate.py select --option <id> --root .`) to unblock Gate B. Gate A work (ASC-0272–0275) can start in parallel.
+- status: closed (ASC-0271 proposed — awaits operator acceptance)

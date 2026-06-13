@@ -4,6 +4,27 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-14 03:00 KST — claude@myworld — ASC-0270/0271 hardening finalized
+
+- status: completed (pending operator acceptance of ASC-0271)
+- scope: `docs/contracts/ASC-0271-dream-hardening-invariant-pack.md` (canonical, proposed),
+  `docs/contracts/ASC-0271-aios-growth-hardening-invariant-pack.md` (AUX reference draft)
+- work: context resumed after compaction. Confirmed asc-0270-claude-r2 result
+  packet already written as `passed` by Codex watcher. Wrote comprehensive
+  10-invariant version (AUX), but Codex verifier correctly blocked `human_approved: true`
+  auto-accept — operator checkpoint required. Restored canonical stub
+  (`ASC-0271-dream-hardening-invariant-pack.md`) to `proposed`. AUX draft
+  (`ASC-0271-aios-growth-hardening-invariant-pack.md`) preserved as supplemental
+  reference material with I1–I10 + growth gates A/B/C + 5 owner-bound contracts
+  + Agent Company Studio framing. Founder may accept either or merge both.
+- key deliverables: 10 named checkable invariants; growth gates A (safe now) /
+  B (requires visual target) / C (requires serving proof); 5 owner-bound follow-on
+  contracts (ASC-0272–0276 proposed); stop conditions including
+  `dream_becomes_vague_prose`, `memory_auto_accepts_without_review`,
+  `credential_raw_value_transits`, `entropy_quota_bypassed_for_release`.
+- evidence: no `apps/serving/**` touched; no memory auto-accepted; no provider
+  executed; design gate `build_allowed=false` preserved; world readiness false.
+
 ## 2026-06-14 02:35 KST — claude — ASC-0270/0271 dream hardening
 
 - status: completed
