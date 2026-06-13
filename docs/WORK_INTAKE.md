@@ -36,7 +36,7 @@
 | ~~WORK-20260612-003~~ | ~~Session checkpoint/resume~~ | ~~세션작업~~ | ~~P1~~ |
 | WORK-20260612-004 | memoryOS inbox 12개 draft 처리 | 즉각실행 | P2 |
 | WORK-20260612-005 | hivemind ASC-0180 deliberation | 세션작업 | P2 |
-| WORK-20260612-006 | Entropy injection (genesis_pulse 세션길이 비례) | 세션작업 | P2 |
+| ~~WORK-20260612-006~~ | ~~Entropy injection (genesis_pulse 세션길이 비례)~~ | ~~세션작업~~ | ~~P2~~ |
 | WORK-20260612-007 | SECI 4방향 파이프라인 설계 | 장기프로젝트 | P3 |
 | WORK-20260612-008 | Cross-model ambient hivemind | 장기프로젝트 | P3 |
 
@@ -50,6 +50,7 @@
 |----|------|---------|------|
 | WORK-20260612-002 | Local Credentials Vault | 2026-06-12 | git e3191ef scripts/aios_vault.py |
 | WORK-20260612-003 | Session checkpoint/resume | 2026-06-14 | resume/show ID fix + backlog section filter, scripts/aios_checkpoint.py |
+| WORK-20260612-006 | Entropy injection (genesis_pulse 세션길이 비례) | 2026-06-14 | scripts/aios_session_entropy.py — pressure 1-5 by session age, min interval per level, genesis critic integration |
 | - | 4-OS × 4-lifecycle hook coverage | 2026-06-12 21:00 | git db35aab |
 | - | plan mode default | 2026-06-12 | git bd32a73 |
 | - | event bus loop (emit-after-write) | 2026-06-11 | git 8f5713d |
