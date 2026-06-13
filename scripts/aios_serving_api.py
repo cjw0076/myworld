@@ -60,6 +60,8 @@ def run_organic(goal: str, provider: str, max_turns: int) -> dict:
 
 
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"  # Required for SSE — HTTP/1.0 drops chunked streams
+
     def log_message(self, fmt, *args):
         print(f"[aios-serving] {self.address_string()} {fmt % args}", flush=True)
 
@@ -133,7 +135,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
         self.send_header("Cache-Control", "no-cache")
-        self.send_header("Transfer-Encoding", "chunked")
+        self.send_header("Connection", "close")        # close after done event, no keep-alive
+        self.send_header("X-Accel-Buffering", "no")   # disable nginx buffering if proxied
         self._cors_headers()
         self.end_headers()
 
@@ -178,15 +181,16 @@ class Handler(BaseHTTPRequestHandler):
 
         emit("preamble", head._organ_preamble(goal, root))
 
-        sampler = head.make_provider_sampler(provider, adapters)
-        result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
-                                    turn_sink=combined_sink)
-
-        postamble = head._organ_postamble(goal, result, root, run_id=run_id)
-        result["run_id"] = run_id
-        result["organic_pipeline"] = {"postamble": postamble}
-
-        emit("done", result)
+        try:
+            sampler = head.make_provider_sampler(provider, adapters)
+            result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
+                                        turn_sink=combined_sink)
+            postamble = head._organ_postamble(goal, result, root, run_id=run_id)
+            result["run_id"] = run_id
+            result["organic_pipeline"] = {"postamble": postamble}
+            emit("done", result)
+        except Exception as _exc:
+            emit("error", {"error": str(_exc)[:200], "phase": "run_loop"})
 
     def do_OPTIONS(self):
         self.send_response(200)
