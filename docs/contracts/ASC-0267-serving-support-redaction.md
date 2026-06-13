@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0267
 slug: serving-support-redaction
-status: accepted
+status: closed
 goal: Implement redacted serving support and incident timeline projections so real-user AIOS serving can be debugged without exposing raw user content, memory bodies, provider logs, or credential material.
 created: 2026-06-14T01:27:00+09:00
 accepted: 2026-06-14T01:27:00+09:00
+closed: 2026-06-14T01:33:00+09:00
 human_approved: true
 origin: ASC-0260/ASC-0261 release gate marks observability/support redaction as partial and owner-bound to myworld with MemoryOS privacy constraints.
 depends_on:
@@ -188,3 +189,39 @@ Write `.aios/outbox/myworld/asc-0267.myworld.result.json` with:
 - test commands and outcomes;
 - remaining gaps;
 - stop conditions triggered, if any.
+
+## Result
+
+The first `asc-0267` watcher attempt held on `pending_concurrent_work` because
+the dispatch-policy preparation files were still dirty. Codex committed that
+preparation as `e167ddc Prepare serving support redaction dispatch`, then
+reissued the packet as `asc-0267-r2`.
+
+Claude executed `asc-0267-r2` through `scripts/aios_child_watcher.sh` as
+`claude@myworld`.
+
+Evidence:
+
+- dispatch result: `.aios/outbox/myworld/asc-0267-r2.myworld.result.json`
+- changed files:
+  - `scripts/aios_serving_support.py`
+  - `tests/test_aios_serving_support.py`
+  - `docs/AGENT_WORKLOG.md`
+- verification:
+  - `python3 -m unittest tests.test_aios_serving_support -v` passed 36/36
+  - `python3 -m py_compile scripts/aios_serving_support.py tests/test_aios_serving_support.py` passed
+  - `python3 scripts/aios_serving_release_gate.py assess --root . --json` reports `observability_support_redaction` as `met`
+  - `python3 scripts/aios_world_readiness.py --json` remains `ready_for_world_deployment=false`
+  - `git diff --check` passed
+
+Release gate delta:
+
+- `observability_support_redaction`: `partial` -> `met`
+- release gate totals: `ready_for_production_serving=false`, `met=6`,
+  `partial=3`, `missing=0`
+
+Remaining serving blockers:
+
+- Product Design visual target and design brief
+- end-user serving UI/browser proof
+- runtime Genesis launch-candidate proof

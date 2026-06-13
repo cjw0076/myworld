@@ -4,6 +4,45 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-14 01:30 KST — claude — ASC-0267 serving support redaction
+
+- status: completed
+- scope: `scripts/aios_serving_support.py`, `tests/test_aios_serving_support.py`
+- work: implemented redacted serving support projection primitive per ASC-0267.
+  `project_support()` accepts structured incident events and emits user-scoped
+  timelines (stage/status/timestamp/error_type/severity/retryable/opaque refs)
+  with all raw fields stripped (message_body, memory_body, provider_output,
+  tool_output, prompt_text, credential values, tokens, private exports).
+  Admin summaries expose only aggregate counts by stage/status/error_type/severity
+  with no user IDs or raw content. Cross-user incident access denied when
+  requesting user_id doesn't match incident owner. Credential patterns
+  (sk-*, JWT, ghp_*, xox*, AKIA*, bearer) detected and redacted in arbitrary
+  fields.
+- evidence: 36/36 tests pass; py_compile clean; git diff --check clean;
+  `aios_serving_release_gate.py assess` reports `observability_support_redaction`
+  as `met`.
+- receipts: `aios.serving_support_projection.v1`,
+  `aios.serving_incident_timeline.v1`, `raw_content_redaction_test`,
+  `cross_user_incident_denial_test`
+
+## 2026-06-14 01:33 KST — codex@myworld — ASC-0267 verified and closed
+
+- status: closed
+- scope: verify Claude's serving support redaction implementation, preserve
+  the first `pending_concurrent_work` hold, and close the contract without
+  touching unrelated dirty files.
+- result: `asc-0267` first held because dispatch-policy preparation files were
+  dirty; Codex committed the preparation as `e167ddc` and reissued
+  `asc-0267-r2`, which Claude completed.
+- verification: `python3 -m unittest tests.test_aios_serving_support -v`
+  passed 36/36; py_compile passed; `git diff --check` passed; release gate now
+  reports `observability_support_redaction=met`.
+- release gate: `ready_for_production_serving=false`, `met=6`, `partial=3`,
+  `missing=0`.
+- world readiness: remains `ready_for_world_deployment=false`.
+- next: Product Design Slice 1 remains the first blocker before UI; Genesis
+  launch proof must wait for a release candidate.
+
 ## 2026-06-13 15:20 KST — claude — ASC-0250 build/runtime isolation finish-forward
 
 - status: completed (Claude finish-forward; awaiting Codex verify/collect)

@@ -7494,3 +7494,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: Product Design visual target, serving UI/browser proof, observability/support redaction, and runtime Genesis launch proof remain incomplete; world readiness remains false.
 - next: Product Design Slice 1 brief confirmation/ideation, then serving UI prototype; add redacted support/incident view before launch-candidate Genesis proof.
 - status: closed
+
+---
+- when: 2026-06-14T01:33:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane dispatcher / verifier
+- goal: close ASC-0267 serving support redaction
+- changed: docs/contracts/ASC-0267-serving-support-redaction.md, scripts/aios_action_policy.py, tests/test_aios_action_policy.py, scripts/aios_serving_support.py, tests/test_aios_serving_support.py, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `asc-0267` first held on `pending_concurrent_work`; Codex committed dispatch-policy preparation as `e167ddc`; `asc-0267-r2` executed by `claude@myworld` and result packet passed; `python3 -m unittest tests.test_aios_serving_support -v` passed 36/36; action policy/dispatch tests passed 71/71; py_compile passed; release gate reports `observability_support_redaction=met`.
+- decision: serving support/admin projections now expose stage/status/error/severity/retryability/count metadata and deny cross-user timelines while stripping raw user content, memory bodies, provider/tool output, prompt text, credential-like values, and private export fields.
+- release_gate: `python3 scripts/aios_serving_release_gate.py assess --root . --json` reports `ready_for_production_serving=false`, met=6, partial=3, missing=0.
+- risk: Product Design visual target, serving UI/browser proof, and runtime Genesis launch proof remain incomplete; world readiness remains false.
+- next: run Product Design Slice 1 brief confirmation/ideation before any serving UI implementation.
+- status: closed
