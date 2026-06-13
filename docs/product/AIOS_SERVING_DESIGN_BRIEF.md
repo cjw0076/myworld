@@ -21,6 +21,20 @@ to:
 - get support-safe timelines without exposing raw provider logs, raw contract
   bodies, operator-only state, or other users' data.
 
+## Agent Company Studio Framing
+
+ASC-0276 adds a Gate A docs-only framing:
+`docs/product/AIOS_AGENT_COMPANY_STUDIO_BRIEF.md`.
+
+The serving product may eventually present AIOS as a company of agents:
+MyWorld as board, Hivemind as operations, MemoryOS as institutional memory,
+CapabilityOS as procurement, GenesisOS as R&D pressure, Claude as hardening,
+and Codex as product/growth.
+
+This framing is not permission to build UI. It exists so the selected serving
+visual target can later expose departments, approvals, memory drafts, route
+recommendations, artifacts, and receipts without exposing raw logs.
+
 ## Interactivity Target
 
 The selected prototype should be fully interactive for the first workflow:

@@ -6290,3 +6290,40 @@ oversight once their dependencies close.
   `ready_for_world_deployment=false`.
 - Verification passed: `git diff --check`.
 - Next: commit/push the Codex dream slice, then retry Claude hardening dispatch.
+
+## 2026-06-14 Codex — Gate A Infrastructure Fanout Drafted
+
+### Goal
+- Move the long-term AIOS infrastructure objective forward without waiting for
+  serving UI visual target selection.
+- Turn ASC-0271 Gate A into owner-bound proposed contracts that child OS agents
+  can accept/release through the normal AIOS loop.
+
+### Files Changed
+- `docs/research/AIOS_AGENT_SERVICE_INFRA_DELTA_2026-06-14.md`
+- `docs/contracts/ASC-0272-memoryos-dream-agora-intake.md`
+- `docs/contracts/ASC-0273-capabilityos-credential-grants-and-blindspots.md`
+- `docs/contracts/ASC-0274-smx-bounded-workspace-contract-split.md`
+- `docs/contracts/ASC-0275-genesisos-entropy-quota-enforcement.md`
+- `docs/contracts/ASC-0276-agent-company-studio-gate-a-framing.md`
+- `docs/product/AIOS_AGENT_COMPANY_STUDIO_BRIEF.md`
+- `docs/product/AIOS_SERVING_DESIGN_BRIEF.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+### Evidence
+- External official sources checked: OpenAI Agents SDK, Sandbox Agents,
+  Agents observability, running agents/session state, Agent Builder, MCP docs,
+  Anthropic MCP connector, Google A2A, and Google Interactions API/ADK/A2A.
+- GenesisOS critic first flagged `assumption-silent`, `time-frozen`,
+  `terminology-trapped`, and `single-frame`; the research delta was revised
+  with assumptions/negations, 1h/1w/1y horizons, plain language, and a
+  cross-domain frame. Final critic result: no prison signatures.
+- Child repo worktrees checked clean before drafting contracts.
+- No `apps/**` files changed.
+- Contracts are `proposed` with `human_approved=false`; no child execution was
+  claimed.
+
+### Next
+- Operator/delegated controller may accept and dispatch ASC-0272..ASC-0275 to
+  Claude in the owning child repos.
+- ASC-0276 remains docs-only until visual target selection opens Gate B.

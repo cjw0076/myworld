@@ -7573,3 +7573,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: Serving UI remains blocked (visual target not selected). Dream vectors safe to execute under Gate A (internal, non-UI work). No production claims allowed.
 - next: founder selects visual target (`python3 scripts/aios_serving_design_gate.py select --option <id> --root .`) to unblock Gate B. Gate A work (ASC-0272–0275) can start in parallel.
 - status: closed (ASC-0271 proposed — awaits operator acceptance)
+
+---
+- when: 2026-06-14T03:20:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane researcher / Gate A dispatcher-prep
+- goal: turn ASC-0271 Gate A into source-backed, owner-bound infrastructure contracts without starting UI or child-repo implementation
+- changed: docs/research/AIOS_AGENT_SERVICE_INFRA_DELTA_2026-06-14.md, docs/contracts/ASC-0272-memoryos-dream-agora-intake.md, docs/contracts/ASC-0273-capabilityos-credential-grants-and-blindspots.md, docs/contracts/ASC-0274-smx-bounded-workspace-contract-split.md, docs/contracts/ASC-0275-genesisos-entropy-quota-enforcement.md, docs/contracts/ASC-0276-agent-company-studio-gate-a-framing.md, docs/product/AIOS_AGENT_COMPANY_STUDIO_BRIEF.md, docs/product/AIOS_SERVING_DESIGN_BRIEF.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: official/current external sources checked for OpenAI Agents SDK, sandbox agents, tracing, sessions/state, Agent Builder, MCP, Anthropic MCP connector, Google A2A, and Google Interactions API; GenesisOS critic forced assumptions/negations, 1h/1w/1y horizons, plain language, and a cross-domain frame, then returned no prison signatures; child repo worktrees were clean before contract drafting; no `apps/**` or child implementation files were changed.
+- decision: ASC-0272..ASC-0276 are proposed Gate A contracts with `human_approved=false`; they convert the broad AIOS infrastructure objective into MemoryOS, CapabilityOS, GenesisOS, Hivemind, and MyWorld owner-bound work packets while preserving MemoryOS draft-first, CapabilityOS recommendation-only, GenesisOS speculative-only, and Hivemind receipt-bound authority.
+- risk: these contracts are dispatch-ready planning artifacts, not implemented infrastructure; production serving still depends on visual target selection, UI/browser proof, and later Gate B/C work.
+- next: accept/release ASC-0272..ASC-0275 to owning child repos when operator or delegated controller approves; keep ASC-0276 docs-only until serving design gate opens.
+- status: proposed
