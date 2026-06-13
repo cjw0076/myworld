@@ -130,9 +130,18 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                         "trajectory": trajectory}
                 break
             else:
-                status, _result = registry.dispatch(call)   # result fed back next turn
+                status, tool_result = registry.dispatch(call)   # result fed back next turn
                 entry["status"] = status
-                history.append({"role": "tool", "tool": call.name, "status": status})
+                # Include a compact result summary so the sampler can see what was returned
+                # and avoid redundant re-calls (names/status only, never content blobs)
+                result_summary: dict = {}
+                if isinstance(tool_result, dict):
+                    for k in ("hits", "status", "itch", "ambiguities", "backed_rate",
+                              "trustworthy", "bytes", "prediction_id", "would_write"):
+                        if k in tool_result:
+                            result_summary[k] = tool_result[k]
+                history.append({"role": "tool", "tool": call.name, "status": status,
+                                 **({"result": result_summary} if result_summary else {})})
             trajectory.append(entry)
             emit({"kind": "trajectory", **entry})
         if stop:

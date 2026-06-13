@@ -186,6 +186,10 @@ class Handler(BaseHTTPRequestHandler):
             sampler = head.make_provider_sampler(provider, adapters, goal=goal)
             result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
                                         turn_sink=combined_sink)
+            # Synthesis step: generate a concise final answer using fast local LLM
+            final_answer = head._organ_synthesis(goal, result, preamble=preamble_data, root=root)
+            if final_answer:
+                result["final_answer"] = final_answer
             postamble = head._organ_postamble(goal, result, root, run_id=run_id)
             result["run_id"] = run_id
             result["organic_pipeline"] = {"preamble": preamble_data, "postamble": postamble}

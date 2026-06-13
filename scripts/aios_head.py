@@ -263,19 +263,22 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             for t in h.get("tools", []):
                 tool_counts[t] = tool_counts.get(t, 0) + 1
         turn_num = sum(1 for h in recent if h.get("role") == "assistant")
-        repetition_hint = ""
-        if tool_counts:
-            reps = [f"{t}×{n}" for t, n in tool_counts.items() if n >= 2]
-            if reps:
-                repetition_hint = f"WARNING: Already used {', '.join(reps)} — use a DIFFERENT tool or emit {{\"done\":true}}.\n"
+
+        # Filter out exhausted tools (used ≥2 times) from the catalog so small models
+        # can't keep selecting them — removing from the list is stronger than a hint.
+        exhausted = {t for t, n in tool_counts.items() if n >= 2}
+        active_catalog = "\n".join(
+            f"  {t['name']} — {t.get('description', t['class'])}"
+            for t in _tool_list if t['name'] not in exhausted
+        ) or "  (no tools available — emit {\"done\":true})"
+
         done_hint = ""
         if turn_num >= 2:
             done_hint = 'If the goal is satisfied or cannot be completed, emit {"done":true} now.\n'
         prompt = (
             goal_line
-            + "You are the AIOS agent turn-loop. Available tools:\n" + catalog_lines + "\n"
+            + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
             + done_hint
-            + repetition_hint
             + "Trajectory:\n"
             + json.dumps(recent, ensure_ascii=False) + "\n"
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
@@ -291,7 +294,11 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             return {"tool_calls": []}
         if obj.get("done") or not obj.get("tool"):
             return {"tool_calls": []}
-        return {"tool_calls": [tl.ToolCall(str(obj["tool"]), dict(obj.get("arguments", {})))]}
+        tool_name = str(obj["tool"])
+        # Hard block: if model requests an exhausted tool despite filtered catalog, force done
+        if tool_name in exhausted:
+            return {"tool_calls": []}
+        return {"tool_calls": [tl.ToolCall(tool_name, dict(obj.get("arguments", {})))]}
 
     return sampler
 
@@ -422,6 +429,77 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
         "akashic_record": akashic_status,
         "errors": preamble_errors,
     }
+
+
+def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
+                      root: "Path | None" = None) -> str:
+    """Synthesis step: after the turn loop, generate a concise final answer.
+
+    Uses ollama_rest (fast, local) so this never adds frontier API latency.
+    Falls back gracefully if ollama is unavailable.
+
+    Retrieves actual memory snippets (names only, never content blobs per DNA #7)
+    to give the synthesizer material to answer from.
+    """
+    adapters_mod = _load("aios_adapters")
+    if not adapters_mod._ollama_rest_available():
+        return ""
+    adapter = adapters_mod.make_ollama_rest_adapter(model="qwen3:1.7b", timeout=30)
+
+    traj = result.get("trajectory", [])
+    exit_status = result.get("exit", "unknown")
+    turns = result.get("turns", 0)
+
+    # Collect tool result summaries from trajectory (compact, never content blobs)
+    traj_lines: list[str] = []
+    for t in traj:
+        line = f"  turn {t.get('turn')}: {t.get('tool', '?')} → {t.get('status', '?')}"
+        res = t.get("result", {})
+        if res:
+            line += f" ({', '.join(f'{k}={v}' for k, v in list(res.items())[:3])})"
+        traj_lines.append(line)
+    traj_summary = "\n".join(traj_lines) or "  (no tool calls)"
+
+    # Attempt to retrieve memory snippet names for context (names/slugs only)
+    mem_names: list[str] = []
+    if root is not None:
+        try:
+            import subprocess as _sp
+            p = _sp.run(
+                [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
+                 "--task", goal, "--json"],
+                cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20,
+            )
+            if p.returncode == 0:
+                data = json.loads(p.stdout)
+                for item in (data.get("selected") or [])[:6]:
+                    name = item.get("name") or item.get("id") or ""
+                    if name:
+                        mem_names.append(name)
+        except Exception:  # noqa: BLE001
+            pass
+
+    mem_context = ("Relevant memory records: " + ", ".join(mem_names) + ".") if mem_names else \
+                  f"Memory hits: {(preamble or {}).get('memory_hits', 0)}."
+
+    # Detect goal language — use Korean response if goal is Korean
+    is_korean = any('가' <= c <= '힣' for c in goal)
+    lang_hint = "한국어로 답하세요. " if is_korean else ""
+
+    synthesis_prompt = (
+        f"Goal: {goal}\n\n"
+        f"{mem_context}\n\n"
+        f"Agent loop ({turns} turns, exit={exit_status}):\n{traj_summary}\n\n"
+        f"{lang_hint}"
+        "Write a concise, direct answer to the goal (1-3 sentences, plain text, no markdown). "
+        "Use the memory records and tool results above as evidence. "
+        "If the goal cannot be fully answered from available data, state what was found."
+    )
+    try:
+        raw = adapter(synthesis_prompt)
+        return raw.strip()[:800]
+    except Exception as exc:  # noqa: BLE001
+        return f"synthesis unavailable: {str(exc)[:60]}"
 
 
 def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,

@@ -188,6 +188,11 @@
       </div>
     </div>
 
+    <div class="card" id="answerCard" style="display:none; border-left: 3px solid var(--teal);">
+      <h3>AIOS 답변</h3>
+      <div id="answerContent" style="font-size:0.95rem; line-height:1.6; color:var(--ink);">—</div>
+    </div>
+
     <div class="card" id="trajectoryCard">
       <h3>실행 Trajectory</h3>
       <ul id="trajectoryList" class="turn-list">
@@ -352,6 +357,16 @@
             <span class="tool-status">${t.status || ''} ${t.decision ? '('+t.decision+')' : ''}</span>
           </li>`
         ).join('');
+      }
+
+      // Final answer (synthesis from ollama_rest post-loop)
+      const answerCard = document.getElementById('answerCard');
+      const answerContent = document.getElementById('answerContent');
+      if (data.final_answer) {
+        answerCard.style.display = 'block';
+        answerContent.textContent = data.final_answer;
+      } else {
+        answerCard.style.display = 'none';
       }
 
       // Memory hits
