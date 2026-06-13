@@ -271,13 +271,15 @@ def _serve(root: Path, argv: list[str]) -> int:
         )
         print("[aios serve] cloudflared tunnel starting…", flush=True)
         url = None
-        for _ in range(60):
+        import re as _re
+        for _ in range(90):
             line = tunnel_proc.stderr.readline()
-            if "trycloudflare.com" in line or "https://" in line:
-                import re as _re
-                m = _re.search(r'https://[^\s|]+', line)
+            if not line:
+                break
+            if "trycloudflare.com" in line:
+                m = _re.search(r'https://[\w.-]+\.trycloudflare\.com', line)
                 if m:
-                    url = m.group(0).rstrip("|")
+                    url = m.group(0)
                     break
         if url:
             print(f"\n[aios serve] PUBLIC URL: {url}", flush=True)
