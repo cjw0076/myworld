@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -114,6 +115,56 @@ def run(since: str, min_stars: int, extra: str | None, limit: int, skip_seen: bo
     }
 
 
+def write_radar_drafts(candidates: list[dict], *, dry_run: bool = False) -> dict:
+    """Write distilled star_radar candidates as draft MemoryObjects to the real memoryOS graph.
+
+    Closes the absorption loop: star_radar → MemoryOS draft → operator review → accepted
+    → next preamble retrieves it. Draft-first: never auto-accepts.
+    Returns {written, skipped, errors}.
+    """
+    mem_root = ROOT / "memoryOS"
+    if str(mem_root) not in sys.path:
+        sys.path.insert(0, str(mem_root))
+    try:
+        from memoryos.schema import make_memory_object  # noqa: PLC0415
+        from memoryos.store import GraphStore           # noqa: PLC0415
+    except ImportError as exc:
+        return {"written": 0, "skipped": 0, "errors": [f"memoryos_import_failed:{exc}"]}
+
+    memory_objects = []
+    for c in candidates:
+        content = (
+            f"{c.get('full_name')} (★{c.get('stars', 0)}) — "
+            f"{c.get('description', '')[:200]}\n"
+            f"absorption: {c.get('absorption', '')}"
+        )
+        mo = make_memory_object(
+            memory_type="observation",
+            content=content,
+            origin="star_radar",
+            project="aios_ecosystem",
+            raw_refs=[c.get("url") or f"github:{c.get('full_name')}"],
+            confidence=0.55,
+            status="draft",
+            radar_repo=c.get("full_name"),
+            radar_stars=c.get("stars", 0),
+        )
+        memory_objects.append(mo)
+
+    if not memory_objects:
+        return {"written": 0, "skipped": 0, "errors": []}
+    if dry_run:
+        return {"written": 0, "skipped": 0, "dry_run": True,
+                "would_write": [mo.id[:12] for mo in memory_objects]}
+
+    try:
+        store = GraphStore(mem_root)
+        written, skipped = store.append_memory_objects(memory_objects)
+        return {"written": written, "skipped": skipped, "errors": []}
+    except Exception as exc:  # noqa: BLE001
+        return {"written": 0, "skipped": 0, "errors": [str(exc)[:120]]}
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--since", default="2026-03-01", help="created-after date (momentum proxy)")
@@ -121,6 +172,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--query", default=None, help="extra GitHub query terms (e.g. 'agent OR llm')")
     p.add_argument("--limit", type=int, default=8)
     p.add_argument("--no-skip-seen", action="store_true", help="re-distill repos seen in prior runs")
+    p.add_argument("--write-drafts", action="store_true",
+                   help="write distilled candidates to memoryOS as draft MemoryObjects "
+                        "(absorption loop: star_radar→draft→review→accepted→preamble retrieves)")
+    p.add_argument("--dry-run", action="store_true", help="validate --write-drafts without writing")
     p.add_argument("--json", action="store_true")
     return p
 
@@ -129,14 +184,27 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     receipt = run(args.since, args.min_stars, args.query, args.limit, skip_seen=not args.no_skip_seen)
     base.write_receipt("star_radar", receipt)
+
+    draft_result: dict | None = None
+    if args.write_drafts or args.dry_run:
+        draft_result = write_radar_drafts(receipt["candidates"],
+                                          dry_run=args.dry_run)
+
     if args.json:
-        print(json.dumps(receipt, ensure_ascii=False, indent=2))
+        out = dict(receipt)
+        if draft_result is not None:
+            out["draft_write"] = draft_result
+        print(json.dumps(out, ensure_ascii=False, indent=2))
     else:
         print(f"=== Star Radar ({receipt['query']}) — {len(receipt['candidates'])} new, "
               f"{len(receipt['skipped_seen'])} already seen ===")
         for c in receipt["candidates"]:
             print(f"\n★{c['stars']} {c['full_name']} — {c['description'][:70]}")
             print(f"  {c['absorption']}")
+        if draft_result is not None:
+            print(f"\n[draft_write] written={draft_result.get('written')} "
+                  f"skipped={draft_result.get('skipped')} "
+                  f"errors={draft_result.get('errors')}")
     return 0
 
 
