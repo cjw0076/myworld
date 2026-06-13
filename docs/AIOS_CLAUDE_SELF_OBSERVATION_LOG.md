@@ -853,3 +853,27 @@ AIOS가 이것을 흡수하려면:
   - **Gate A work can be done from myworld context**: all 4 child-repo implementations (memoryOS, CapabilityOS, GenesisOS×2) were executed from myworld without needing separate session context. The child repos are accessible via filesystem; tests run with `python3 -m pytest` from the child dir.
 - self-correction-of-prior-observation: none
 - aios_absorption_candidate: session entropy injection as a named AIOS primitive. `aios_session_entropy.py check/inject` with pressure levels 1-5, min-interval scaling, genesis critic integration, and event emission to primitives bus. Pattern: as session length grows, entropy injection frequency grows to combat convergence. ASC absorption: this is the behavioral loop AIOS needs to self-maintain reasoning quality in long sessions.
+
+## 2026-06-14 14:30 KST — claude@myworld — 모듈 순환 배선: 3개 feedback loop 연결
+
+- session_id: loop-20260614-circular-wiring
+- mode_breakdown: observe:8 verify:5 decide:10 intervene:5 escalate:0 minutes:~60
+- tools_used: Read(aios_head, release_gate, run_log, dream_agora, star_radar), Edit(4 files), Bash(pytest, git, grep), Agent(Explore — full repo map)
+- tools_NOT_used: no Agent(hivemind-executor), no Workflow, no Monitor (loop-based session, wakeup handles timing)
+- substrate_specific_behaviors_observed:
+  - **"전체 레포 탐색" → Explore agent**: founder asked for full repo map. Spawned Explore subagent to get 1077 tests / 172 scripts / 4 sibling repos structure without polluting main context.
+  - **DreamAgoraStore is in-memory only**: critical gap found. `DreamAgoraStore.__init__()` takes no args, stores in `self._drafts: list`. Previous `_organ_postamble` called `DreamAgoraStore(mem_path)` → TypeError. The fix: use `memoryos import-run <run_id>` for persistence, fall back to in-memory DreamAgora when no run_id.
+  - **SyntaxError hunt**: `test_aios_goal_inbox_processor` caught 3 lines with `"cd "${AIOS_ROOT}""` — embedded double-quotes in double-quoted Python strings. Fixed by switching outer quotes to single.
+  - **radar_import in memoryOS CLI**: found `memoryos ingest-doc-radar` → `import_doc_radar_json` already existed. Star radar uses a different schema but the pattern (candidates → MemoryObject drafts) is identical. Used `make_memory_object()` + `GraphStore.append_memory_objects()` directly rather than adding a new CLI command.
+- failures_recovered:
+  - `DreamAgoraStore(mem_path)` TypeError → changed to `DreamAgoraStore()` + conditional import-run path
+  - `aios_goal_inbox_processor.py` SyntaxErrors (3 lines) → single-quote outer strings
+  - `aios_star_radar.py write_radar_drafts()` NameError: `sys` not defined → added `import sys`
+- failures_escalated_to_founder: none (Gate B visual target selection still blocked but not re-escalated this session — it's a known pending item)
+- key_decision: 3 circular loops closed: (1) run→RunLog→import-run→context-build (learning); (2) star_radar→MemoryOS draft (absorption); (3) entropy_quota wired into serving release gate. Gate B remains blocked.
+- new_invariant_or_pattern_discovered:
+  - **Circular wiring requires tracing data through process boundaries**: the learning loop looked closed on paper (dream_agora.ingest called) but actually had zero persistence (in-memory store). Real wiring = each step writes to files that the NEXT step reads from a separate process invocation.
+  - **`memoryos import-run` is the canonical learning hook**: after any turn-loop run, call `memoryos import-run <run_id>`. The RunLog (turn_sink) + import-run pair is the persistence substrate for learning. Without RunLog wired, the loop is a no-op.
+  - **`memoryos ingest-doc-radar` shows the absorption pattern**: for any external signal (star_radar, web evidence, contract closeouts), the flow is: receipts → `make_memory_object()` → `GraphStore.append_memory_objects()` → draft in `memory/objects.jsonl` → operator review → accepted.
+- self-correction-of-prior-observation: prior session's `_organ_postamble` implementation (dream_agora in-memory) was marked as "wired" but was actually ephemeral. This session replaced it with the real persistent path.
+- aios_absorption_candidate: the 5-OS circular wiring pattern as a named AIOS architecture primitive: every output must write to a file that a subsequent subprocess reads. No in-memory passing across process boundaries. Tracing the data flow across process boundaries is the verification step for "organic wiring."
