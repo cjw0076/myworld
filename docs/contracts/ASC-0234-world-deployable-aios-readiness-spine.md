@@ -177,6 +177,47 @@ Pass criteria:
 - `capabilityos_executes_instead_of_recommends`
 - `memoryos_accepts_without_review`
 
+## Plain Language (GenesisOS escape — terminology-trapped)
+
+AIOS is a local program that routes your AI tasks to the right tool (Claude,
+Gemini, a local model). Right now it only works on one machine. "World
+deployable" means: install it on a new machine in five minutes, store secrets
+safely, and prove it actually sent tasks to each tool and got back answers.
+The readiness spine is a checklist for that jump from one-machine to any-machine.
+
+## Cross-Domain Frame (GenesisOS escape — single-frame)
+
+Analogy from aviation: a flight management system (FMS) sits above the
+individual engines and navigation radios. The FMS does not replace those
+instruments; it routes inputs, records the flight envelope, and enforces
+procedures. A FMS that works on one aircraft type but cannot be ported to
+another is not a product — it is a prototype. AIOS-to-world-deployment is
+the portability certification flight: same checklist, new airframe (machine),
+every instrument (provider) must self-report green before departure.
+
+The key tension the aviation frame exposes: **pre-flight checks must be
+run on the target airframe, not the development bench.** A local
+`AIOS COMPLETE` is a bench test. The world-deployment readiness gate is the
+airframe pre-flight.
+
+## Assumptions
+
+1. A new-machine install under 10 minutes is achievable with `aios_install.sh`
+   + vault init.
+2. Provider availability can be verified at install time, not just at task time.
+3. Credential secrets can be stored without ever appearing in git history,
+   logs, or docs.
+4. A multi-substrate run with ≥2 providers constitutes functional proof of
+   routing — single-provider success is a passing bench test, not a deployment
+   proof.
+5. "World-deployable" does not require multi-tenant hosting; single-operator
+   install on a remote machine qualifies.
+
+Counter-branch: Assumption 5 may be wrong — if uri production requires a
+hosted endpoint accessible by multiple users simultaneously, single-operator
+remote-machine install is insufficient. That branch is tracked in ASC-0180
+(Hive hosting debate) and remains open for founder verdict.
+
 ## Next Contracts
 
 - `ASC-0235`: world-deployment readiness report CLI in MyWorld.
