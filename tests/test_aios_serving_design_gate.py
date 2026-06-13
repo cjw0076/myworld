@@ -29,7 +29,8 @@ def complete_gate() -> dict:
         "visual_target_ref": "",
         "interactivity_level": "full",
         "confirmed_by_user": True,
-        "build_allowed": True,
+        "next_product_design_step": "ideate",
+        "build_allowed": False,
         "stop_conditions": REQUIRED_STOP_CONDITIONS,
     }
 
@@ -97,7 +98,7 @@ class AiosServingDesignGateTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertTrue(any("visual_target_ref is required" in error for error in payload["errors"]))
 
-    def test_complete_gate_is_ready_but_only_points_to_asc0253(self) -> None:
+    def test_complete_needs_ideation_gate_is_ready_for_ideation_not_build(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             artifact = root / ".aios" / "serving" / "design_gate.json"
@@ -111,6 +112,121 @@ class AiosServingDesignGateTest(unittest.TestCase):
             self.assertTrue(payload["ready"])
             self.assertEqual(payload["status"], "ready")
             self.assertEqual(payload["next_action"], "ASC-0253")
+            self.assertEqual(payload["artifact"]["next_product_design_step"], "ideate")
+            self.assertFalse(payload["artifact"]["build_allowed"])
+
+    def test_needs_ideation_cannot_claim_build_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            data = complete_gate()
+            data["build_allowed"] = True
+            artifact.write_text(json.dumps(data), encoding="utf-8")
+
+            result = self.run_gate(root, "assess", "--root", root.as_posix(), "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ready"])
+            self.assertTrue(any("needs_ideation requires build_allowed=false" in error for error in payload["errors"]))
+
+    def test_concrete_visual_target_requires_prototype_and_build_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            data = complete_gate()
+            data["visual_target_type"] = "screenshot"
+            data["visual_target_ref"] = "assets/serving-target.png"
+            data["next_product_design_step"] = "prototype"
+            data["build_allowed"] = True
+            artifact.write_text(json.dumps(data), encoding="utf-8")
+
+            result = self.run_gate(root, "assess", "--root", root.as_posix(), "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ready"], payload["errors"])
+            self.assertEqual(payload["artifact"]["next_product_design_step"], "prototype")
+            self.assertTrue(payload["artifact"]["build_allowed"])
+
+    def test_questions_outputs_required_intake_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = self.run_gate(root, "questions", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            ids = [question["id"] for question in payload["questions"]]
+            self.assertEqual(
+                ids,
+                [
+                    "product_goal",
+                    "visual_target_type",
+                    "visual_target_ref",
+                    "interactivity_level",
+                    "confirmed_by_user",
+                ],
+            )
+            self.assertEqual(payload["routing_rules"]["needs_ideation"]["next_product_design_step"], "ideate")
+            self.assertFalse(payload["routing_rules"]["needs_ideation"]["build_allowed"])
+
+    def test_draft_needs_ideation_does_not_write_without_flag(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = self.run_gate(
+                root,
+                "draft",
+                "--root",
+                root.as_posix(),
+                "--product-goal",
+                "End user creates and tracks an AIOS task.",
+                "--visual-target-type",
+                "needs_ideation",
+                "--interactivity-level",
+                "full",
+                "--confirmed-by-user",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ready"], payload["errors"])
+            self.assertFalse(payload["written"])
+            self.assertEqual(payload["artifact"]["next_product_design_step"], "ideate")
+            self.assertFalse(payload["artifact"]["build_allowed"])
+            self.assertFalse((root / ".aios" / "serving" / "design_gate.json").exists())
+
+    def test_draft_concrete_visual_target_can_write_ready_gate(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = self.run_gate(
+                root,
+                "draft",
+                "--root",
+                root.as_posix(),
+                "--product-goal",
+                "End user creates and tracks an AIOS task.",
+                "--visual-target-type",
+                "screenshot",
+                "--visual-target-ref",
+                "assets/serving-target.png",
+                "--interactivity-level",
+                "full",
+                "--confirmed-by-user",
+                "--write",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ready"], payload["errors"])
+            self.assertTrue(payload["written"])
+            self.assertEqual(payload["artifact"]["next_product_design_step"], "prototype")
+            self.assertTrue(payload["artifact"]["build_allowed"])
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            self.assertEqual(json.loads(artifact.read_text(encoding="utf-8")), payload["artifact"])
 
 
 if __name__ == "__main__":

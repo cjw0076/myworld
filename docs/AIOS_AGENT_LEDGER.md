@@ -7342,3 +7342,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no `apps/serving/` UI or browser proof exists yet; this contract intentionally avoids UI work.
 - next: collect Product Design brief answers from the operator, then create the design gate artifact and proceed to ideation/implementation under ASC-0253.
 - status: closed
+
+---
+- when: 2026-06-13T19:27:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: open ASC-0259 serving design gate intake
+- changed: docs/contracts/ASC-0259-serving-design-gate-intake.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: ASC-0258 gate reports `ready=false` because `.aios/serving/design_gate.json` is missing; Product Design critical override says a confirmed brief is not a visual target.
+- decision: add `questions` and `draft` commands, and make `needs_ideation` route to ideation only, not build.
+- risk: if left unfixed, a future agent could treat `needs_ideation` plus user confirmation as implementation permission.
+- next: implement and verify the intake commands.
+- status: opened
+
+---
+- when: 2026-06-13T19:31:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: close ASC-0259 serving design gate intake
+- changed: scripts/aios_serving_design_gate.py, tests/test_aios_serving_design_gate.py, docs/contracts/ASC-0259-serving-design-gate-intake.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `python3 -m unittest tests.test_aios_serving_design_gate -v` passed 10/10; `python3 -m py_compile scripts/aios_serving_design_gate.py` passed; `questions --json` emits required Product Design fields; `draft --json` with `needs_ideation` returns `next_product_design_step=ideate` and `build_allowed=false`.
+- decision: a confirmed brief with `needs_ideation` permits Product Design ideation only. Implementation requires a concrete visual target.
+- risk: no user-confirmed `.aios/serving/design_gate.json` exists yet, so ASC-0253 remains blocked before ideation/build.
+- next: ask the operator the generated questions, then write the gate artifact only after confirmation.
+- status: closed
