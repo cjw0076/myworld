@@ -7599,3 +7599,15 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: GenesisOS tests use pytest runner (not unittest discover with tests.* prefix). Verified correct runner.
 - next: collect ASC-0275 result; integrate entropy quota hook into aios_serving_release_gate.py for Gate C; dispatch ASC-0272/0273/0274 execution.
 - status: closed
+
+---
+- when: 2026-06-14T03:40:00+09:00
+- repo: GenesisOS
+- agent: claude@myworld
+- role: GenesisOS implementer / SMX branch design
+- goal: implement ASC-0274 SMX bounded branch design primitive
+- changed: GenesisOS/genesisos/smx_branch.py, GenesisOS/tests/test_smx_branch.py
+- evidence: 17/17 tests passed; py_compile clean; GenesisOS commit 01e48b9; result packet collected; all 4 stop conditions enforced (execution_blocked=True, selection_authority=operator, counterfactual_draft for losers, hivemind blocked).
+- decision: SMX design spec is Gate A only. All branches require isolation receipt for execution. GenesisOS never selects final truth. Execution authority belongs to Hivemind with receipt (Gate C).
+- next: ASC-0272 (MemoryOS Dream Agora), ASC-0273 (CapabilityOS credential grants). Integrate entropy quota into release gate.
+- status: closed
