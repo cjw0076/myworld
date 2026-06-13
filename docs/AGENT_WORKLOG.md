@@ -5695,3 +5695,34 @@ schema_version: aios.agent_worklog.v1
   execution needs a first-class bridge.
 - next: ASC-0253 proposed for the actual `apps/serving/` prototype after
   Product Design brief/visual target confirmation.
+
+## 2026-06-13 15:42 KST — codex@myworld — starting ASC-0254 myworld provider dispatch bridge
+
+- status: starting
+- scope: make `scripts/aios_child_watcher.sh` support `--repo myworld` so
+  myworld-targeted Claude/Codex/Gemini/local provider packets can execute
+  through the same receipt path as child repos.
+- reason: ASC-0252 proved the gap: `aios_dispatch.py` can send `myworld`
+  packets, but `aios_child_watcher.sh once --repo myworld` returns
+  `unsupported repo: myworld`.
+- expected files: `scripts/aios_child_watcher.sh`,
+  `tests/test_aios_child_watcher.py`,
+  `docs/contracts/ASC-0254-myworld-provider-dispatch-bridge.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, `docs/AGENT_WORKLOG.md`.
+- deferred: no `apps/serving/` UI work until Product Design visual target and
+  ASC-0253 acceptance.
+
+## 2026-06-13 15:46 KST — codex@myworld — ASC-0254 closed
+
+- status: done
+- scope: myworld provider dispatch bridge.
+- result: `scripts/aios_child_watcher.sh` supports `myworld` in `repo_path`,
+  usage, status, and explicit `--repo all` start/stop loops.
+- verification: `python3 -m unittest tests.test_aios_child_watcher -v` passed
+  19/19; `bash -n scripts/aios_child_watcher.sh` passed; `git diff --check`
+  passed. New test proves a myworld packet runs from the workspace root and
+  writes `.aios/outbox/myworld/<id>.myworld.result.json`.
+- decision: future myworld-targeted Claude/Codex/Gemini/local work can use the
+  watcher bridge instead of manual side channels.
+- next: ASC-0253 can be accepted/refined after Product Design visual target;
+  the dispatch bridge is no longer the blocker.

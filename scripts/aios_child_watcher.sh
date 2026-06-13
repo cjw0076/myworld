@@ -40,6 +40,7 @@ Usage:
   scripts/aios_child_watcher.sh status
 
 Repos:
+  myworld
   hivemind
   memoryOS
   CapabilityOS
@@ -89,6 +90,7 @@ PY
 
 repo_path() {
   case "$1" in
+    myworld) echo "$ROOT" ;;
     hivemind) echo "$ROOT/hivemind" ;;
     memoryOS) echo "$ROOT/memoryOS" ;;
     CapabilityOS) echo "$ROOT/CapabilityOS" ;;
@@ -979,7 +981,7 @@ stop_repo() {
 }
 
 status_all() {
-  for repo in hivemind memoryOS CapabilityOS GenesisOS; do
+  for repo in myworld hivemind memoryOS CapabilityOS GenesisOS; do
     local pid_file running inbox_count outbox_count pending_count
     mkdir -p "$INBOX_DIR/$repo" "$OUTBOX_DIR/$repo"
     pid_file="$(pid_file_for "$repo")"
@@ -1033,6 +1035,7 @@ case "$command" in
   start)
     [[ -n "$repo_arg" ]] || { echo "--repo required" >&2; exit 2; }
     if [[ "$repo_arg" == "all" ]]; then
+      start_repo myworld
       start_repo hivemind
       start_repo memoryOS
       start_repo CapabilityOS
@@ -1044,6 +1047,7 @@ case "$command" in
   stop)
     [[ -n "$repo_arg" ]] || { echo "--repo required" >&2; exit 2; }
     if [[ "$repo_arg" == "all" ]]; then
+      stop_repo myworld
       stop_repo hivemind
       stop_repo memoryOS
       stop_repo CapabilityOS

@@ -7212,3 +7212,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: `aios_child_watcher.sh` cannot execute `--repo myworld`, so myworld-targeted Claude dispatches still need a manual/provider-specific bridge or watcher support.
 - next: accept or refine ASC-0253 after Product Design brief/visual target; then build the first `apps/serving/` workflow.
 - status: closed
+
+---
+- when: 2026-06-13T15:42:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: implementer / verifier
+- goal: open ASC-0254 myworld provider dispatch bridge
+- changed: docs/contracts/ASC-0254-myworld-provider-dispatch-bridge.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `aios_dispatch.py` supports `myworld` packets and ASC-0252 used one; `scripts/aios_child_watcher.sh once --repo myworld` returned `unsupported repo: myworld`.
+- decision: fix the watcher bridge before accepting ASC-0253 implementation work, so future Claude development can run through AIOS receipts instead of manual side channels.
+- risk: this is execution infrastructure; tests must use fake provider commands only and must not touch provider auth files.
+- next: implement `repo_path myworld`, status/all support, and focused child watcher tests.
+- status: opened
+
+---
+- when: 2026-06-13T15:46:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: implementer / verifier
+- goal: close ASC-0254 myworld provider dispatch bridge
+- changed: scripts/aios_child_watcher.sh, tests/test_aios_child_watcher.py, docs/contracts/ASC-0254-myworld-provider-dispatch-bridge.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `python3 -m unittest tests.test_aios_child_watcher -v` passed 19/19; `bash -n scripts/aios_child_watcher.sh` passed; `git diff --check` passed.
+- decision: `myworld` is now a first-class watcher target. Provider dispatch packets addressed to `myworld` can execute from the workspace root and return normal myworld result packets.
+- risk: explicit `start --repo all` now includes `myworld`; this is intentional but should remain governed by dispatch policy and runtime profile controls.
+- next: use the bridge for future Claude-owned myworld implementation packets, including ASC-0253 once Product Design brief/visual target is accepted.
+- status: closed

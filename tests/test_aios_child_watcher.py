@@ -26,6 +26,8 @@ class AiosChildWatcherTest(unittest.TestCase):
         (root / "memoryOS").mkdir()
         (root / "GenesisOS").mkdir()
         (root / "CapabilityOS" / "capabilityos").mkdir(parents=True)
+        (root / ".aios" / "inbox" / "myworld").mkdir(parents=True)
+        (root / ".aios" / "outbox" / "myworld").mkdir(parents=True)
         (root / ".aios" / "inbox" / "memoryOS").mkdir(parents=True)
         (root / ".aios" / "outbox" / "memoryOS").mkdir(parents=True)
         (root / ".aios" / "inbox" / "GenesisOS").mkdir(parents=True)
@@ -45,6 +47,22 @@ class AiosChildWatcherTest(unittest.TestCase):
             "scope": {"allowed_files": ["memoryOS/docs/AGENT_WORKLOG.md"], "forbidden_files": [".env"]},
         }
         path = root / ".aios" / "inbox" / "memoryOS" / f"{dispatch_id}.memoryOS.json"
+        path.write_text(json.dumps(packet), encoding="utf-8")
+        return path
+
+    def write_myworld_packet(self, root: Path, dispatch_id: str, agent: str = "codex") -> Path:
+        packet = {
+            "schema_version": "aios.dispatch.v1",
+            "dispatch_id": dispatch_id,
+            "contract_id": "ASC-0997",
+            "contract_path": "docs/contracts/ASC-0997-test.md",
+            "target_repo": "myworld",
+            "agent": agent,
+            "goal": "prove myworld watcher bridge behavior",
+            "return_to": f".aios/outbox/myworld/{dispatch_id}.myworld.result.json",
+            "scope": {"allowed_files": ["docs/AGENT_WORKLOG.md"], "forbidden_files": [".env"]},
+        }
+        path = root / ".aios" / "inbox" / "myworld" / f"{dispatch_id}.myworld.json"
         path.write_text(json.dumps(packet), encoding="utf-8")
         return path
 
@@ -818,6 +836,31 @@ class AiosChildWatcherTest(unittest.TestCase):
             self.assertEqual(data["target_repo"], "GenesisOS")
             self.assertEqual(data["final_agent"], "codex")
 
+    def test_myworld_packet_runs_from_workspace_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_root(tmp)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            cwd_marker = root / "codex-cwd.txt"
+            write_executable(
+                bin_dir / "codex",
+                "#!/usr/bin/env bash\n"
+                f"pwd > {cwd_marker.as_posix()}\n"
+                "echo 'myworld bounded turn complete'\n"
+                "exit 0\n",
+            )
+            self.write_myworld_packet(root, "asc-0997")
+
+            result = self.run_watcher_for_repo(root, bin_dir, "myworld")
+
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+            result_path = root / ".aios" / "outbox" / "myworld" / "asc-0997.myworld.result.json"
+            data = json.loads(result_path.read_text(encoding="utf-8"))
+            self.assertEqual(data["status"], "passed")
+            self.assertEqual(data["target_repo"], "myworld")
+            self.assertEqual(data["final_agent"], "codex")
+            self.assertEqual(cwd_marker.read_text(encoding="utf-8").strip(), root.as_posix())
+
     def test_status_lists_genesisos(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = self.make_root(tmp)
@@ -836,6 +879,7 @@ class AiosChildWatcherTest(unittest.TestCase):
             )
 
             self.assertEqual(status.returncode, 0, status.stderr)
+            self.assertIn("myworld running=false", status.stdout)
             self.assertIn("GenesisOS running=false", status.stdout)
 
 
