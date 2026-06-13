@@ -5832,3 +5832,38 @@ schema_version: aios.agent_worklog.v1
 - next: future Claude/Gemini/local serving packets can be reissued cleanly if a
   stale wrong-agent packet blocks execution. UI/API affordance remains future
   `apps/serving/` work.
+
+## 2026-06-13 19:21 KST — codex@myworld — starting ASC-0258 serving design gate
+
+- status: starting
+- scope: make the Product Design prerequisite for ASC-0253 machine-checkable
+  without implementing `apps/serving/`.
+- reason: Product Design preflight reports no saved user context; ASC-0253
+  still lacks a confirmed product brief, visual target, and interactivity
+  level, so building UI would violate the no-visual-target/no-build rule.
+- expected files: `scripts/aios_serving_design_gate.py`,
+  `scripts/aios_world_readiness.py`, `tests/test_aios_serving_design_gate.py`,
+  `tests/test_aios_world_readiness.py`,
+  `docs/contracts/ASC-0258-serving-design-gate.md`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- deferred: no UI scaffold, no browser server, no image generation, and no
+  `apps/serving/**` changes in this contract.
+
+## 2026-06-13 19:23 KST — codex@myworld — ASC-0258 closed
+
+- status: done
+- scope: machine-checkable Product Design gate for ASC-0253.
+- result: added `scripts/aios_serving_design_gate.py` and tests. The gate
+  assesses product goal, visual target, interactivity level, user confirmation,
+  build allowance, and stop conditions. Current repo reports `ready=false`
+  because `.aios/serving/design_gate.json` is missing.
+- verification: `python3 -m unittest tests.test_aios_serving_design_gate
+  tests.test_aios_world_readiness -v` passed 15/15; py_compile passed; serving
+  design gate JSON reports `status=missing`; world readiness remains
+  `ready_for_world_deployment=false`.
+- decision: ASC-0253 is now blocked by a concrete gate artifact, not implicit
+  chat memory. UI work still requires Product Design brief/visual target
+  confirmation.
+- next: ask/confirm the serving design brief, then write
+  `.aios/serving/design_gate.json` and proceed through Product Design ideation
+  or implementation rules.

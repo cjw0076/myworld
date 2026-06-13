@@ -133,6 +133,20 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertEqual(serving["evidence"], ["scripts/aios_serving_session.py"])
             self.assertNotEqual(serving["status"], "met")
 
+    def test_serving_design_gate_script_is_partial_not_met(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            touch(root, "scripts/aios_serving_design_gate.py")
+
+            payload = self.run_readiness(root)
+
+            self.assertFalse(payload["ready_for_world_deployment"])
+            serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
+            self.assertEqual(serving["status"], "partial")
+            self.assertEqual(serving["evidence"], ["scripts/aios_serving_design_gate.py"])
+            self.assertIn("Product Design gate", serving["gap"])
+            self.assertNotEqual(serving["status"], "met")
+
     def test_all_eight_axes_met_reach_world_ready(self) -> None:
         # Only when all 8 axes have their met_markers does world-ready become true.
         with tempfile.TemporaryDirectory() as tmp:

@@ -119,10 +119,11 @@ AXES: Final = (
         partial_markers=(
             "docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md",
             "docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md",
+            "scripts/aios_serving_design_gate.py",
         ),
         missing_gap=(
             "end-user serving surface (apps/serving/), end_user_serving runtime profile, "
-            "and first-workflow browser-test proof are not yet implemented (spec only — ASC-0251)"
+            "Product Design gate, and first-workflow browser-test proof are not yet complete"
         ),
         next_contract="ASC-0253",
         met_policy="all",

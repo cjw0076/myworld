@@ -7316,3 +7316,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no UI/API affordance yet; this is a CLI/control-plane primitive only.
 - next: future serving work can safely dispatch to Claude/Gemini/local and use `reissue` if stale packets or provider routing mistakes occur.
 - status: closed
+
+---
+- when: 2026-06-13T19:21:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: open ASC-0258 serving design gate
+- changed: docs/contracts/ASC-0258-serving-design-gate.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `python3 scripts/aios_world_readiness.py --json` reports `end_user_serving_readiness=partial` and `next_action=ASC-0253`; Product Design user-context preflight reports `exists=false`.
+- decision: do not build `apps/serving/` until the serving design brief/visual target/interactivity gate is explicit and confirmed.
+- risk: without a machine-checkable gate, future agents may invent visuals or treat a prose brief as a selected visual target.
+- next: implement serving design gate CLI, tests, and readiness partial evidence.
+- status: opened
+
+---
+- when: 2026-06-13T19:23:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: close ASC-0258 serving design gate
+- changed: scripts/aios_serving_design_gate.py, scripts/aios_world_readiness.py, tests/test_aios_serving_design_gate.py, tests/test_aios_world_readiness.py, docs/contracts/ASC-0258-serving-design-gate.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: Product Design user-context preflight reported `exists=false`; focused tests passed 15/15; py_compile passed; serving design gate JSON reports `ready=false` and `status=missing`; world readiness remains `ready_for_world_deployment=false` with serving axis partial.
+- decision: ASC-0253 is not buildable until `.aios/serving/design_gate.json` proves product goal, visual target or `needs_ideation`, interactivity level, user confirmation, build allowance, and stop conditions.
+- risk: no `apps/serving/` UI or browser proof exists yet; this contract intentionally avoids UI work.
+- next: collect Product Design brief answers from the operator, then create the design gate artifact and proceed to ideation/implementation under ASC-0253.
+- status: closed
