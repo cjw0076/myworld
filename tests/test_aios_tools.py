@@ -70,7 +70,10 @@ class FlowThroughKernelTests(unittest.TestCase):
 
 class HandlerTests(unittest.TestCase):
     def test_self_audit_handler_runs_in_process(self) -> None:
-        r = T.HANDLERS["self.audit"]({"claims": [{"text": "exists", "path": "scripts/aios_tools.py"}]})
+        # Use absolute path so this passes regardless of CWD
+        import os, pathlib
+        abs_path = str(pathlib.Path(__file__).resolve().parents[1] / "scripts" / "aios_tools.py")
+        r = T.HANDLERS["self.audit"]({"claims": [{"text": "exists", "path": abs_path}]})
         self.assertEqual(r["status"], "ok")
         self.assertTrue(r["trustworthy"])                # the file does exist
 

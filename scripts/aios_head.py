@@ -444,7 +444,7 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     adapters_mod = _load("aios_adapters")
     if not adapters_mod._ollama_rest_available():
         return ""
-    adapter = adapters_mod.make_ollama_rest_adapter(model="qwen3:1.7b", timeout=30)
+    adapter = adapters_mod.make_ollama_rest_adapter(model="qwen3:8b", timeout=60)
 
     traj = result.get("trajectory", [])
     exit_status = result.get("exit", "unknown")
@@ -460,8 +460,8 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
         traj_lines.append(line)
     traj_summary = "\n".join(traj_lines) or "  (no tool calls)"
 
-    # Attempt to retrieve memory snippet names for context (names/slugs only)
-    mem_names: list[str] = []
+    # Retrieve actual memory content for synthesis (decisions, feedback — names+summaries only)
+    mem_snippets: list[str] = []
     if root is not None:
         try:
             import subprocess as _sp
@@ -472,15 +472,22 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
             )
             if p.returncode == 0:
                 data = json.loads(p.stdout)
-                for item in (data.get("selected") or [])[:6]:
-                    name = item.get("name") or item.get("id") or ""
-                    if name:
-                        mem_names.append(name)
+                # decisions and feedback_directives carry actual content snippets
+                for item in (data.get("decisions") or [])[:4]:
+                    content = str(item.get("content", ""))[:120].strip()
+                    if content:
+                        mem_snippets.append(f"[decision] {content}")
+                for item in (data.get("constraints") or [])[:2]:
+                    content = str(item.get("content", ""))[:80].strip()
+                    if content:
+                        mem_snippets.append(f"[constraint] {content}")
         except Exception:  # noqa: BLE001
             pass
 
-    mem_context = ("Relevant memory records: " + ", ".join(mem_names) + ".") if mem_names else \
-                  f"Memory hits: {(preamble or {}).get('memory_hits', 0)}."
+    if mem_snippets:
+        mem_context = "Memory context:\n" + "\n".join(f"  • {s}" for s in mem_snippets)
+    else:
+        mem_context = f"Memory hits: {(preamble or {}).get('memory_hits', 0)} (names not available)."
 
     # Detect goal language — use Korean response if goal is Korean
     is_korean = any('가' <= c <= '힣' for c in goal)
