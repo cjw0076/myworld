@@ -7586,3 +7586,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: these contracts are dispatch-ready planning artifacts, not implemented infrastructure; production serving still depends on visual target selection, UI/browser proof, and later Gate B/C work.
 - next: accept/release ASC-0272..ASC-0275 to owning child repos when operator or delegated controller approves; keep ASC-0276 docs-only until serving design gate opens.
 - status: proposed
+
+---
+- when: 2026-06-14T03:30:00+09:00
+- repo: GenesisOS
+- agent: claude@myworld
+- role: GenesisOS implementer / entropy quota gate
+- goal: implement ASC-0275 entropy quota primitive
+- changed: GenesisOS/genesisos/entropy_quota.py, GenesisOS/tests/test_entropy_quota.py
+- evidence: 18/18 tests passed; py_compile clean; git diff --check clean; GenesisOS commit 9ad0182; result packet written to .aios/outbox/GenesisOS/asc-0275.GenesisOS.result.json
+- decision: entropy quota is speculative-only gate returning pass/partial/block. Major risk requires discomfort or counter-branch (block if missing). Multi-provider surfaces require convergence challenge. Major risk requires dated external baseline. Findings are gate signals, not truth claims.
+- risk: GenesisOS tests use pytest runner (not unittest discover with tests.* prefix). Verified correct runner.
+- next: collect ASC-0275 result; integrate entropy quota hook into aios_serving_release_gate.py for Gate C; dispatch ASC-0272/0273/0274 execution.
+- status: closed
