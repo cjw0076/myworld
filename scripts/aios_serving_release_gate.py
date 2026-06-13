@@ -198,8 +198,16 @@ def design_gate_state(root: Path) -> dict[str, Any]:
         missing.append("concrete visual target")
     if not build_allowed:
         missing.append("build_allowed=true")
+    if ready:
+        status = "ready"
+    elif visual_type == "needs_ideation":
+        status = "needs_ideation"
+    elif visual_type == "needs_selection":
+        status = "needs_selection"
+    else:
+        status = "incomplete"
     return {
-        "status": "ready" if ready else "needs_ideation" if visual_type == "needs_ideation" else "incomplete",
+        "status": status,
         "ready": ready,
         "build_allowed": build_allowed,
         "visual_target_type": visual_type,
@@ -215,12 +223,18 @@ def assess_slice(root: Path, spec: SliceSpec) -> dict[str, Any]:
     partial = present_markers(root, spec.partial_markers)
     missing = [marker for marker in spec.required_markers if marker not in required]
     extra: dict[str, Any] = {}
+    next_action = spec.next_action
     if spec.slice_id == "product_design_visual_target":
         gate = design_gate_state(root)
         extra["design_gate"] = gate
         required = list(dict.fromkeys([*gate["evidence"], *required]))
         if not gate["ready"]:
             missing = list(dict.fromkeys([*gate["missing"], *missing]))
+        if gate["status"] == "needs_selection":
+            next_action = (
+                "Select a Product Design option, then update "
+                ".aios/serving/design_gate.json with a concrete visual target"
+            )
     status = "met" if not missing else "partial" if required or partial else "missing"
     return {
         "slice_id": spec.slice_id,
@@ -230,7 +244,7 @@ def assess_slice(root: Path, spec: SliceSpec) -> dict[str, Any]:
         "evidence": list(dict.fromkeys([*partial, *required])),
         "missing": missing,
         "stop_conditions": list(spec.stop_conditions),
-        "next_action": "" if status == "met" else spec.next_action,
+        "next_action": "" if status == "met" else next_action,
         **extra,
     }
 

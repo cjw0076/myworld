@@ -6172,3 +6172,24 @@ oversight once their dependencies close.
 - world readiness: remains `ready_for_world_deployment=false`.
 - next: Product Design Slice 1 remains first blocker; observability/support
   redaction and serving UI/browser proofs still need owner-bound follow-up.
+
+## 2026-06-14 Codex — Completed Serving Product Design Ideation
+
+### What I Changed
+- Added `docs/contracts/ASC-0268-serving-product-design-ideation.md`.
+- Added `docs/product/AIOS_SERVING_DESIGN_BRIEF.md`.
+- Preserved three generated options under `docs/product/assets/`.
+- Updated the serving release gate to distinguish `needs_ideation` from
+  `needs_selection`.
+
+### Commands Run
+- `python3 /home/user/.codex/plugins/cache/openai-curated-remote/product-design/0.1.46/skills/user-context/scripts/user_context_preflight.py` -> no saved Product Design context.
+- Image Gen -> generated exactly three options: Task Cabin, Mission Control For
+  One Job, Memory-First Service Desk.
+
+### Notes For Other Agents
+- No `apps/serving/**` implementation is allowed yet.
+- `.aios/serving/design_gate.json` is local ignored state and now records
+  `visual_target_type=needs_selection`, `build_allowed=false`.
+- Next owner action: operator selects option 1, 2, or 3, or requests a revised
+  hybrid before ASC-0253 UI prototype work starts.

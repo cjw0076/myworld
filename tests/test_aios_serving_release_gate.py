@@ -41,6 +41,31 @@ def write_design_gate(root: Path, *, concrete: bool) -> None:
     artifact.write_text(json.dumps(payload), encoding="utf-8")
 
 
+def write_design_gate_needs_selection(root: Path) -> None:
+    artifact = root / ".aios" / "serving" / "design_gate.json"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "schema_version": "aios.serving_design_gate.v1",
+        "product_goal": "Real end-user AIOS serving product.",
+        "visual_target_type": "needs_selection",
+        "visual_target_ref": "",
+        "interactivity_level": "full",
+        "confirmed_by_user": True,
+        "next_product_design_step": "select_visual_target",
+        "build_allowed": False,
+        "ideation_options": [
+            "docs/product/assets/aios-serving-option-01-task-cabin.png",
+            "docs/product/assets/aios-serving-option-02-mission-control.png",
+            "docs/product/assets/aios-serving-option-03-memory-first-service-desk.png",
+        ],
+        "stop_conditions": [
+            "ui_implementation_before_visual_target",
+            "serving_ui_reuses_operator_control_center",
+        ],
+    }
+    artifact.write_text(json.dumps(payload), encoding="utf-8")
+
+
 class AiosServingReleaseGateTest(unittest.TestCase):
     def run_gate(self, root: Path, *, json_flag: bool = True) -> subprocess.CompletedProcess[str]:
         args = [sys.executable, SCRIPT.as_posix(), "assess", "--root", root.as_posix()]
@@ -83,6 +108,22 @@ class AiosServingReleaseGateTest(unittest.TestCase):
             self.assertEqual(design["status"], "partial")
             self.assertEqual(design["design_gate"]["status"], "needs_ideation")
             self.assertIn("build_allowed=true", design["missing"])
+            self.assertFalse(payload["ready_for_production_serving"])
+
+    def test_needs_selection_design_gate_is_partial_not_build_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_design_gate_needs_selection(root)
+            touch(root, "docs/product/AIOS_SERVING_DESIGN_BRIEF.md")
+
+            payload = self.load_gate(root)
+
+            design = payload["slices"][0]
+            self.assertEqual(design["status"], "partial")
+            self.assertEqual(design["design_gate"]["status"], "needs_selection")
+            self.assertIn("concrete visual target", design["missing"])
+            self.assertIn("build_allowed=true", design["missing"])
+            self.assertIn("Select a Product Design option", payload["next_action"])
             self.assertFalse(payload["ready_for_production_serving"])
 
     def test_concrete_design_gate_still_requires_design_brief_marker(self) -> None:
