@@ -7264,3 +7264,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: this is a non-UI boundary only; no hosted auth/transport, `apps/serving/`, or browser-visible first workflow exists yet.
 - next: ASC-0253 remains the follow-up for serving UI/prototype work after Product Design visual target selection.
 - status: closed
+
+---
+- when: 2026-06-13T16:05:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: open ASC-0256 dispatch agent binding hygiene after ASC-0255 provider route mismatch
+- changed: docs/contracts/ASC-0256-dispatch-agent-binding-hygiene.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: ASC-0255 closeout records `passed_with_route_mismatch`; AIOS route advised `cap_myworld_operator_control_plane` and `cap_aios_child_watcher`; GenesisOS critique requires explicit assumptions and machine-checkable rules.
+- decision: provider assignment is a binding packet property. Existing inbox packet agent assignment is immutable across provider names; executed evidence must not be rewritten.
+- risk: if not fixed, future Claude/Gemini/local dispatches can be accidentally consumed by a stale default Codex packet.
+- next: implement focused `send` checks and dispatch tests, then close ASC-0256.
+- status: opened
+
+---
+- when: 2026-06-13T16:12:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: close ASC-0256 dispatch agent binding hygiene
+- changed: scripts/aios_dispatch.py, tests/test_aios_dispatch.py, docs/contracts/ASC-0256-dispatch-agent-binding-hygiene.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `python3 -m unittest tests.test_aios_dispatch -v` passed 52/52; `python3 -m py_compile scripts/aios_dispatch.py` passed; `git diff --check` passed; Explorer review recommended immutable existing packet assignment.
+- decision: `send --force` may overwrite same-agent packets, but it cannot convert an existing packet from one provider to another. Mismatches record `agent_binding_mismatch` or `agent_reassign_blocked`; result evidence is included when present.
+- risk: no explicit cancel/archive/reissue command exists yet, so wrong-agent stale packets require a new dispatch id or future operator primitive.
+- next: before future Claude-owned serving work, verify the inbox packet `agent` matches `claude`; propose cancel/archive/reissue if stale packet replacement is needed.
+- status: closed

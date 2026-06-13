@@ -1064,6 +1064,31 @@ def build_packet(
     return packet
 
 
+def existing_packet_agent(packet_path: Path) -> str | None:
+    try:
+        payload = json.loads(packet_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    agent = payload.get("agent")
+    return str(agent) if agent else None
+
+
+def dispatch_result_evidence(root: Path, dispatch_id: str, repo: str) -> list[str]:
+    evidence: list[str] = []
+    result_path = root / OUTBOX_DIR / repo / f"{dispatch_id}.{repo}.result.json"
+    if result_path.exists():
+        evidence.append(result_path.relative_to(root).as_posix())
+    for event in load_events(root):
+        if (
+            event.get("event") == "collected"
+            and event.get("dispatch_id") == dispatch_id
+            and event.get("repo") == repo
+        ):
+            result = event.get("result")
+            evidence.append(str(result) if result else "dispatch.collected")
+    return sorted(set(evidence))
+
+
 def cmd_send(args: argparse.Namespace) -> int:
     root = repo_root()
     dispatch_id = args.dispatch_id or latest_dispatch_id(root)
@@ -1162,8 +1187,39 @@ def cmd_send(args: argparse.Namespace) -> int:
         session_envelope_ref=session_envelope_ref,
     )
     packet_path = root / INBOX_DIR / repo / f"{dispatch_id}.{repo}.json"
-    if packet_path.exists() and not args.force:
-        raise SystemExit(f"packet already exists: {packet_path} (use --force to overwrite)")
+    if packet_path.exists():
+        previous_agent = existing_packet_agent(packet_path)
+        rel_packet = packet_path.relative_to(root).as_posix()
+        if previous_agent and previous_agent != args.agent:
+            result_evidence = dispatch_result_evidence(root, dispatch_id, repo)
+            append_event(
+                root,
+                {
+                    "event": "agent_reassign_blocked" if args.force else "agent_binding_mismatch",
+                    "dispatch_id": dispatch_id,
+                    "contract_id": contract.contract_id,
+                    "repo": repo,
+                    "previous_agent": previous_agent,
+                    "requested_agent": args.agent,
+                    "packet": rel_packet,
+                    "reason": "existing_packet_agent_is_immutable",
+                    "result_evidence": result_evidence,
+                    "status": "blocked",
+                },
+            )
+            detail = (
+                f"; result evidence exists ({', '.join(result_evidence)})"
+                if result_evidence
+                else ""
+            )
+            raise SystemExit(
+                "agent binding mismatch: "
+                f"{rel_packet} is assigned to {previous_agent}, requested {args.agent}; "
+                "existing packet agent is immutable, create a new dispatch or stop/archive the old one"
+                f"{detail}"
+            )
+        elif not args.force:
+            raise SystemExit(f"packet already exists: {packet_path} (use --force to overwrite)")
     packet_path.write_text(json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     append_event(
         root,

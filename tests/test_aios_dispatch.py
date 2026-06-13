@@ -490,6 +490,78 @@ class AiosDispatchTest(unittest.TestCase):
             self.assertEqual(packet["action_policy"]["decision"], "allow")
             self.assertIn("allow_proposed_test_bypass", packet["action_policy"]["reason_codes"])
 
+    def test_send_blocks_existing_packet_with_different_agent(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "claude", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("agent binding mismatch", result.stderr)
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["agent"], "codex")
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event.get("event") == "agent_binding_mismatch" for event in events))
+            self.assertFalse(any(event.get("event") == "sent" and event.get("agent") == "claude" for event in events))
+
+    def test_send_force_keeps_existing_packet_agent_immutable(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "claude", "--force", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("existing packet agent is immutable", result.stderr)
+            packet_path = root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json"
+            packet = json.loads(packet_path.read_text(encoding="utf-8"))
+            self.assertEqual(packet["agent"], "codex")
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event.get("event") == "agent_reassign_blocked" for event in events))
+            self.assertFalse(any(event.get("event") == "sent" and event.get("agent") == "claude" for event in events))
+
+    def test_send_force_blocks_agent_change_after_result_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+            self.run_cli(root, "watch", "--repo", "myworld", "--dispatch-id", "asc-0998", "--once")
+
+            result = self.run_cli(root, "send", "--repo", "myworld", "--agent", "claude", "--force", check=False)
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(".aios/outbox/myworld/asc-0998.myworld.result.json", result.stderr)
+            packet = json.loads(
+                (root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(packet["agent"], "codex")
+            result_packet = json.loads(
+                (root / ".aios" / "outbox" / "myworld" / "asc-0998.myworld.result.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(result_packet["agent_assigned"], "codex")
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            blocked = [event for event in events if event.get("event") == "agent_reassign_blocked"]
+            self.assertEqual(blocked[-1]["result_evidence"], [".aios/outbox/myworld/asc-0998.myworld.result.json"])
+
     def test_send_captures_allowed_existing_dirty_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

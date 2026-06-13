@@ -5763,3 +5763,36 @@ schema_version: aios.agent_worklog.v1
   fields.
 - next: ASC-0253 serving UI/prototype remains gated on Product Design visual
   target selection and browser proof.
+
+## 2026-06-13 16:05 KST — codex@myworld — starting ASC-0256 dispatch agent binding hygiene
+
+- status: starting
+- scope: fix `aios_dispatch.py send` so an existing inbox packet cannot
+  silently preserve a stale/default provider when the operator requests a
+  different agent.
+- reason: ASC-0255 was intended for `claude@myworld` but executed as
+  `codex@myworld`; serving-grade AIOS needs provider assignment to be binding
+  and auditable.
+- expected files: `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `docs/contracts/ASC-0256-dispatch-agent-binding-hygiene.md`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- deferred: no `apps/serving/` UI work and no child repo implementation in
+  this contract.
+
+## 2026-06-13 16:12 KST — codex@myworld — ASC-0256 closed
+
+- status: done
+- scope: dispatch agent binding hygiene.
+- result: `send` now reads any existing inbox packet before overwrite. If the
+  packet's `agent` differs from the requested `--agent`, it records either
+  `agent_binding_mismatch` or `agent_reassign_blocked` and refuses to rewrite
+  the packet, even with `--force`.
+- verification: `python3 -m unittest tests.test_aios_dispatch -v` passed
+  52/52; `python3 -m py_compile scripts/aios_dispatch.py` passed; `git diff
+  --check` passed.
+- decision: existing inbox packet agent assignment is immutable across provider
+  names because watcher pickup can race with reassignment. Reissuing to Claude
+  must use a new explicit dispatch/stop/archive path.
+- next: future Claude-owned serving work must verify the packet `agent` before
+  watcher execution. Add a dedicated cancel/archive/reissue command if stale
+  packet replacement becomes common.
