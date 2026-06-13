@@ -7238,3 +7238,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: explicit `start --repo all` now includes `myworld`; this is intentional but should remain governed by dispatch policy and runtime profile controls.
 - next: use the bridge for future Claude-owned myworld implementation packets, including ASC-0253 once Product Design brief/visual target is accepted.
 - status: closed
+
+---
+- when: 2026-06-13T15:48:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: dispatcher / verifier
+- goal: open ASC-0255 end-user serving runtime/session boundary
+- changed: docs/contracts/ASC-0255-end-user-serving-runtime-session-boundary.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `scripts/aios_world_readiness.py --json` reports `end_user_serving_readiness=partial`; ASC-0253 UI is proposed but Product Design visual target is missing; myworld watcher bridge now works after ASC-0254.
+- decision: delegate non-UI runtime/session work to Claude before UI implementation. This moves service readiness forward without bypassing Product Design's no-visual-target/no-build rule.
+- risk: runtime profile changes could accidentally weaken `build_control`; focused dispatch/round-controller tests are required.
+- next: dispatch WP-0255-A to `claude@myworld` via `scripts/aios_child_watcher.sh once --repo myworld`, then verify tests and readiness evidence.
+- status: opened

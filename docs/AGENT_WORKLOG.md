@@ -5726,3 +5726,20 @@ schema_version: aios.agent_worklog.v1
   watcher bridge instead of manual side channels.
 - next: ASC-0253 can be accepted/refined after Product Design visual target;
   the dispatch bridge is no longer the blocker.
+
+## 2026-06-13 15:48 KST — codex@myworld — starting ASC-0255 serving runtime/session boundary
+
+- status: starting
+- scope: delegate the non-UI `end_user_serving` runtime/session primitive to
+  Claude through the now-working myworld watcher bridge.
+- reason: ASC-0253 UI remains Product Design-gated, but the runtime/session
+  boundary is a service-readiness prerequisite that can progress without visual
+  design.
+- expected files: `scripts/aios_dispatch.py`, `scripts/aios_round_controller.py`,
+  `scripts/aios_serving_session.py`, `scripts/aios_world_readiness.py`,
+  `tests/test_aios_dispatch.py`, `tests/test_aios_round_controller.py`,
+  `tests/test_aios_serving_session.py`, `tests/test_aios_world_readiness.py`,
+  `docs/contracts/ASC-0255-end-user-serving-runtime-session-boundary.md`,
+  `docs/AIOS_AGENT_LEDGER.md`, `docs/AGENT_WORKLOG.md`.
+- deferred: no `apps/serving/` UI until Product Design visual target/brief is
+  confirmed.
