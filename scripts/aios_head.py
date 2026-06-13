@@ -327,43 +327,40 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
     preamble_errors: list[str] = []
 
     # 1. MemoryOS run import — write the run as draft MemoryObjects to the real graph.
-    #    This closes the learning loop: turn loop → import-run → context build (next preamble).
-    #    Falls back to in-memory DreamAgora log if no run_id (e.g. test / no RunLog).
-    if run_id:
-        try:
-            r = _sp.run(
-                [sys.executable, "-m", "memoryos", "--root", ".", "import-run", run_id],
-                cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=60,
-            )
-            dream_status = "ok" if r.returncode == 0 else f"import_run_failed:{r.stderr[:60]}"
-            if r.returncode != 0:
-                preamble_errors.append(dream_status)
-        except Exception as exc:  # noqa: BLE001
-            dream_status = f"unavailable:{str(exc)[:60]}"
-            preamble_errors.append(dream_status)
-    else:
-        # No persisted run — record in-memory DreamAgora event (not durable, but auditable).
-        try:
-            mem_path = root / "memoryOS"
-            if str(mem_path) not in sys.path:
-                sys.path.insert(0, str(mem_path))
-            spec = _ilu.spec_from_file_location("dream_agora", mem_path / "memoryos" / "dream_agora.py")
-            da_mod = _ilu.module_from_spec(spec)
-            spec.loader.exec_module(da_mod)
-            store = da_mod.DreamAgoraStore()
-            ref_hash = _hl.sha256(goal.encode()).hexdigest()[:16]
-            receipt = da_mod.SourceReceipt(
-                source_ref=f"aios_head_run:{ref_hash}",
-                source_type="aios_run_trace",
-                source_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
-                provider="aios_head",
-                privacy_class="internal",
-            )
-            store.ingest(receipt, content_summary=f"goal={goal[:120]} exit={result.get('exit','?')} turns={result.get('turns',0)}")
-            dream_status = "ok_ephemeral"
-        except Exception as exc:  # noqa: BLE001
-            dream_status = f"unavailable:{str(exc)[:60]}"
-            preamble_errors.append(dream_status)
+    #    Uses make_memory_object + GraphStore directly (avoid import-run format mismatch:
+    #    import-run expects .runs/<id>/run_state.json; RunLog writes .aios/runs/<id>.jsonl).
+    ref_hash = _hl.sha256(f"{goal}{run_id or ''}".encode()).hexdigest()[:16]
+    dream_status = "skipped"
+    try:
+        mem_path = root / "memoryOS"
+        if str(mem_path) not in sys.path:
+            sys.path.insert(0, str(mem_path))
+        from memoryos.schema import make_memory_object  # noqa: PLC0415
+        from memoryos.store import GraphStore  # noqa: PLC0415
+        exit_status = result.get("exit", "unknown")
+        turns = result.get("turns", 0)
+        final_answer = str(result.get("final_answer") or result.get("answer") or "")[:300]
+        content = (
+            f"Goal: {goal[:200]}\n"
+            f"Exit: {exit_status}  Turns: {turns}\n"
+            + (f"Result: {final_answer}\n" if final_answer else "")
+            + (f"run_id: {run_id}" if run_id else "")
+        ).strip()
+        mo = make_memory_object(
+            memory_type="observation",
+            content=content,
+            origin="aios_head_organic",
+            project="aios_execution",
+            raw_refs=[f"run:{run_id}" if run_id else f"goal_hash:{ref_hash}"],
+            confidence=0.6,
+            status="draft",
+        )
+        store = GraphStore(mem_path)
+        written, skipped = store.append_memory_objects([mo])
+        dream_status = f"ok:written={written},skipped={skipped}"
+    except Exception as exc:  # noqa: BLE001
+        dream_status = f"unavailable:{str(exc)[:80]}"
+        preamble_errors.append(dream_status)
 
     # 2. Akashic index — record work lineage
     akashic_status = "skipped"
