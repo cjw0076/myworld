@@ -7394,3 +7394,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: contract freeze means slices are planning records only; each needs explicit founder GO to become an accepted contract
 - next: Slice 1 Product Design ideation — founder or operator triggers visual target ideation for serving surface
 - status: closed
+
+---
+- when: 2026-06-13T20:18:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: close ASC-0261 production-serving release gate
+- changed: scripts/aios_serving_release_gate.py, scripts/aios_world_readiness.py, tests/test_aios_serving_release_gate.py, tests/test_aios_world_readiness.py, docs/contracts/ASC-0261-production-serving-release-gate.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: AIOS MemoryOS retrieval `rtrace_d976099a83abec3d`; CapabilityOS route recommended MyWorld control-plane plus browser verification future route; GenesisOS challenge required machine-checkable schema/counter-branch; focused tests passed 17/17; py_compile passed; `aios_serving_release_gate.py assess --root . --json` reports `ready_for_production_serving=false`, met=2, partial=5, missing=2; `aios_world_readiness.py --json` remains `ready_for_world_deployment=false`.
+- decision: `end_user_serving_readiness` now depends on an ASC-0260 release gate, so prototype markers alone cannot claim world readiness.
+- risk: current repo still lacks Product Design concrete visual target, serving UI proof, Hivemind worker, MemoryOS per-user lifecycle, CapabilityOS serving access routing, observability/support redaction, and Genesis launch proof.
+- next: run Product Design ideation for Slice 1; dispatch owner-bound contracts for Hivemind/MemoryOS/CapabilityOS slices when authorized.
+- status: closed

@@ -16,6 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Final
 
+try:
+    from scripts.aios_serving_release_gate import assess as assess_serving_release_gate
+except ModuleNotFoundError:  # pragma: no cover - direct script execution
+    from aios_serving_release_gate import assess as assess_serving_release_gate
+
 
 SCHEMA_VERSION: Final = "aios.world_readiness.v1"
 
@@ -115,15 +120,19 @@ AXES: Final = (
             "apps/serving/index.html",
             "scripts/aios_serving_session.py",
             "tests/test_aios_serving_e2e.py",
+            "scripts/aios_serving_release_gate.py",
+            "tests/test_aios_serving_release_gate.py",
         ),
         partial_markers=(
             "docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md",
             "docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md",
             "scripts/aios_serving_design_gate.py",
+            "docs/contracts/ASC-0260-real-user-serving-release-spine.md",
         ),
         missing_gap=(
             "end-user serving surface (apps/serving/), end_user_serving runtime profile, "
-            "Product Design gate, and first-workflow browser-test proof are not yet complete"
+            "Product Design gate, ASC-0260 production-serving release gate, and "
+            "first-workflow browser-test proof are not yet complete"
         ),
         next_contract="ASC-0253",
         met_policy="all",
@@ -146,19 +155,29 @@ def present_markers(root: Path, markers: tuple[str, ...]) -> tuple[str, ...]:
 def assess_axis(root: Path, axis: Axis) -> AxisResult:
     met = present_markers(root, axis.met_markers)
     partial = present_markers(root, axis.partial_markers)
+    release_gap = ""
+    if axis.axis_id == "end_user_serving_readiness":
+        release_gate = assess_serving_release_gate(root)
+        if release_gate.get("ready_for_production_serving") is True:
+            met = tuple(dict.fromkeys((*met, "aios_serving_release_gate:ready")))
+        else:
+            release_gap = str(release_gate.get("next_action") or "ASC-0260 release gate is not ready")
+            if release_gate.get("partial_count") or release_gate.get("met_count"):
+                partial = tuple(dict.fromkeys((*partial, "aios_serving_release_gate:not_ready")))
     if axis.met_policy == "all":
-        if axis.met_markers and len(met) == len(axis.met_markers):
+        required_met_count = len(axis.met_markers) + (1 if axis.axis_id == "end_user_serving_readiness" else 0)
+        if axis.met_markers and len(met) == required_met_count:
             status = "met"
             evidence = met
             gap = ""
         elif met or partial:
             status = "partial"
             evidence = tuple(dict.fromkeys((*partial, *met)))
-            gap = axis.missing_gap
+            gap = f"{axis.missing_gap}; {release_gap}" if release_gap else axis.missing_gap
         else:
             status = "missing"
             evidence = ()
-            gap = axis.missing_gap
+            gap = f"{axis.missing_gap}; {release_gap}" if release_gap else axis.missing_gap
     elif met:
         status = "met"
         evidence = met

@@ -6052,3 +6052,28 @@ Slice 9 (adversarial challenge) → after Slice 8, before release
 Current gate state: `build_allowed=false`, `visual_target_type=needs_ideation`.
 Slice 1 must run before Slice 2. All others may proceed in parallel with operator
 oversight once their dependencies close.
+
+## 2026-06-13 20:18 KST — codex@myworld — ASC-0261 production-serving release gate
+
+- status: closed
+- scope: make the ASC-0260 real-user serving slices machine-checkable without
+  implementing `apps/serving/**` or child repo code.
+- result: added `scripts/aios_serving_release_gate.py` with a 9-slice JSON
+  assessment for Product Design, UI prototype, runtime, Hivemind worker,
+  MemoryOS lifecycle, CapabilityOS access routing, observability/support,
+  release gate, and Genesis pre-launch challenge.
+- world readiness binding: `scripts/aios_world_readiness.py` now requires the
+  serving release gate to be ready before `end_user_serving_readiness` can be
+  `met`; old prototype markers alone remain partial.
+- current evidence: release gate reports `ready_for_production_serving=false`,
+  `met=2`, `partial=5`, `missing=2`; next action is Product Design ideation
+  because `design_gate.json` remains `needs_ideation` and `build_allowed=false`.
+- verification: `python3 -m unittest tests.test_aios_serving_release_gate
+  tests.test_aios_world_readiness -v` passed 17/17; py_compile passed; world
+  readiness remains `ready_for_world_deployment=false`.
+- decision: no future agent can make AIOS world-ready by adding only
+  `apps/serving/index.html` plus a broad e2e test; all ASC-0260 serving slices
+  need explicit evidence.
+- next: Slice 1 Product Design ideation remains the first release blocker; in
+  parallel, owner-bound child contracts can prepare Hivemind, MemoryOS, and
+  CapabilityOS slice implementations.
