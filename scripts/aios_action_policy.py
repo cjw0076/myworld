@@ -188,6 +188,40 @@ def is_owner_bound_human_approved_dispatch(action: dict[str, Any], target_repo: 
     return all(is_repo_scoped_path(path, target_repo) for path in allowed_files)
 
 
+def is_myworld_human_approved_local_dispatch(action: dict[str, Any], target_repo: str) -> bool:
+    """Allow approved myworld implementation packets despite boundary words.
+
+    Contracts that implement redaction, credential boundaries, or provider-log
+    filters must mention sensitive terms in order to forbid them. The keyword
+    classifier can mark those local docs/scripts/tests edits as remote or
+    credential-using. Keep the exception narrow and still reject public,
+    legal/safety, real-world, paid, private-transfer, irreversible, or private
+    path work.
+    """
+    if action.get("action_type") != "dispatch_packet":
+        return False
+    if target_repo != "myworld":
+        return False
+    if not action.get("has_contract") or not bool(action.get("human_approved")):
+        return False
+    if str(action.get("cost") or "").strip().lower() != "free":
+        return False
+    if bool(action.get("sends_private_data")) or bool(action.get("irreversible")):
+        return False
+    for field in ("public_communication", "legal_or_safety_impact", "real_world_authority"):
+        if bool(action.get(field)):
+            return False
+    repos = as_string_list(action.get("repos")) or [target_repo]
+    if repos != ["myworld"]:
+        return False
+    allowed_files = as_string_list(action.get("allowed_files"))
+    if not allowed_files:
+        return False
+    if contains_private_remote_path(action):
+        return False
+    return all(path.startswith(LOCAL_OPERATOR_PREFIXES) for path in allowed_files)
+
+
 def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
     reason_codes: list[str] = []
     action_type = str(action.get("action_type") or "").strip()
@@ -246,6 +280,9 @@ def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
 
     if is_owner_bound_human_approved_dispatch(action, target_repo) and risk == "low":
         return ActionPolicyResult("allow", ["owner_bound_human_approved_dispatch"], False, True)
+
+    if is_myworld_human_approved_local_dispatch(action, target_repo) and risk in {"low", "medium", "high"}:
+        return ActionPolicyResult("allow", ["myworld_human_approved_local_dispatch"], False, True)
 
     if risk == "low" and privacy == "local":
         return ActionPolicyResult("allow", ["low_risk_local_contract_evidence"], False, True)

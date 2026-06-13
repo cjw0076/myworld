@@ -302,6 +302,67 @@ class AiosActionPolicyTest(unittest.TestCase):
         self.assertEqual(result.decision, "escalate")
         self.assertIn("human_checkpoint_required:external_effect", result.reason_codes)
 
+    def test_myworld_human_approved_local_dispatch_allows_redaction_boundary_terms(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "myworld",
+                "authority": "accepted_contract",
+                "risk": "high",
+                "privacy": "remote",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0267-serving-support-redaction.md"],
+                "human_approved": True,
+                "irreversible": False,
+                "external_effect": True,
+                "uses_credentials": True,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["myworld"],
+                "allowed_files": [
+                    "scripts/aios_serving_support.py",
+                    "tests/test_aios_serving_support.py",
+                    "docs/contracts/ASC-0267-serving-support-redaction.md",
+                ],
+                "forbidden_files": [".env", "credential vault contents", "raw provider logs"],
+            }
+        )
+
+        self.assertEqual(result.decision, "allow")
+        self.assertTrue(result.allowed_to_execute)
+        self.assertIn("myworld_human_approved_local_dispatch", result.reason_codes)
+
+    def test_myworld_human_approved_local_dispatch_blocks_private_paths(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "myworld",
+                "authority": "accepted_contract",
+                "risk": "high",
+                "privacy": "remote",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0267-serving-support-redaction.md"],
+                "human_approved": True,
+                "irreversible": False,
+                "external_effect": True,
+                "uses_credentials": True,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["myworld"],
+                "allowed_files": ["scripts/aios_serving_support.py", "_from_desktop/private.json"],
+                "forbidden_files": [".env"],
+            }
+        )
+
+        self.assertEqual(result.decision, "hold")
+        self.assertIn("requires_more_specific_policy", result.reason_codes)
+
 
 if __name__ == "__main__":
     unittest.main()
