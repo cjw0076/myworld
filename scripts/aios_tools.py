@@ -65,14 +65,26 @@ def _sibling(cmd: list[str], cwd: Path) -> dict:
 def _h_retrieve(a: dict) -> dict:
     r = _sibling([sys.executable, "-m", "memoryos", "context", "build", "--task",
                   str(a.get("task", "")), "--json"], ROOT / "memoryOS")
-    return {"status": r["status"], "hits": len((r.get("data") or {}).get("selected", []))
-            if r["status"] == "ok" and isinstance(r.get("data"), dict) else 0}
+    if r["status"] != "ok":
+        return {"status": r["status"], "hits": 0}
+    data = r.get("data") or {}
+    # context_items is the real count; decisions has actual content
+    hits = data.get("context_items", 0) or len(data.get("selected", []))
+    decisions = data.get("decisions", [])
+    top_decision = decisions[0].get("content", "")[:80] if decisions else ""
+    return {"status": "ok", "hits": hits, "decisions": len(decisions),
+            **({"top": top_decision} if top_decision else {})}
 
 
 def _h_route(a: dict) -> dict:
     r = _sibling([sys.executable, "-m", "capabilityos.cli", "recommend", "--task",
                   str(a.get("task", "")), "--json"], ROOT / "CapabilityOS")
-    return {"status": r["status"]}
+    if r["status"] != "ok":
+        return {"status": r["status"]}
+    recs = (r.get("data") or {}).get("recommendations", [])
+    top = recs[0] if recs else {}
+    return {"status": "ok", "top_id": top.get("id", ""), "top_desc": top.get("description", "")[:80],
+            "count": len(recs)}
 
 
 def _h_challenge(a: dict) -> dict:
@@ -83,7 +95,12 @@ def _h_challenge(a: dict) -> dict:
     r = _sibling([sys.executable, "-m", "genesisos.cli", "critic", "--text", tmp, "--json"],
                  ROOT / "GenesisOS")
     Path(tmp).unlink(missing_ok=True)
-    return {"status": r["status"]}
+    if r["status"] != "ok":
+        return {"status": r["status"]}
+    data = r.get("data") or {}
+    vectors = data.get("escape_vectors", [])
+    return {"status": "ok", "confidence": data.get("confidence"),
+            "top_vector": vectors[0] if vectors else None, "vector_count": len(vectors)}
 
 
 def _h_self_audit(a: dict) -> dict:
