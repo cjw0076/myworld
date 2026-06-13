@@ -1,9 +1,11 @@
 ---
 contract_id: ASC-0251
 slug: end-user-serving-interface-spine
-status: proposed
+status: accepted
 goal: Define the first true end-user serving interface for AIOS as a product surface separate from the local operator Control Center.
 created: 2026-06-13T15:07:00+09:00
+accepted: 2026-06-13T15:31:00+09:00
+human_approved: true
 origin: The current AIOS UI is a local operator workbench, not a well-made hosted interface for real users.
 ---
 
@@ -25,6 +27,43 @@ the interface a real user should receive when AIOS is offered as a service.
 The product needs a separate end-user surface with account/session boundaries,
 per-user memory transparency, job progress, artifact review, consent gates,
 and a simple first task loop.
+
+ASC-0249 and ASC-0250 are now closed, so the local build/runtime profile
+boundary exists before this serving-interface work starts.
+
+## Scope
+
+repos:
+
+- `myworld`
+
+allowed_files:
+
+- `docs/contracts/ASC-0251-end-user-serving-interface-spine.md`
+- `docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md`
+- `docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+- `docs/AGENT_WORKLOG.md`
+
+forbidden_files:
+
+- `.env`
+- `.env.*`
+- provider auth files
+- private vault contents
+- raw provider logs
+- private history stores
+- child repo implementation files
+- `apps/control/**`
+- `apps/serving/**`
+- `scripts/**`
+- `tests/**`
+- `uri/**`
+- `CapabilityOS/**`
+- `artifacts/**`
+- `gemini/**`
+- `gemini-cli/**`
+- `1.md`
 
 ## Current External Baseline
 
@@ -64,9 +103,25 @@ It is a separate product entry:
 - user can download or reject artifacts;
 - operator can still audit every action through MyWorld ledgers.
 
-## Required Design Work
+## Product Design Brief Gate
 
-Before implementation, produce a design/contract packet with:
+Product Design context preflight on 2026-06-13 found no saved Product Design
+context at `/home/user/.codex/state/plugins/product-design/user-context.md`.
+
+Confirmed brief for this contract:
+
+- product: AIOS end-user serving interface;
+- source: current `apps/control` proves what not to expose to users and may be
+  used only as operator-control contrast, not as the visual target;
+- desired feel: quiet, trustworthy, work-focused service interface for users
+  delegating tasks to an agent company;
+- interactivity for this contract: design/spec only, no runnable UI build yet;
+- implementation dependency: future UI build needs either a chosen visual
+  direction, reference, mock, or prototype contract.
+
+## Required Design Work For Claude
+
+Before implementation, produce a design/spec packet with:
 
 1. User roles:
    - end user;
@@ -98,8 +153,20 @@ Before implementation, produce a design/contract packet with:
    - rate/cost controls;
    - incident/support flow.
 6. UI proof:
-   - a prototype or screenshot must prove the first user workflow, not just an
-     operator dashboard.
+   - define what later prototype or screenshot must prove for the first user
+     workflow, without building that prototype in this contract.
+7. MyWorld control-plane mapping:
+   - how user actions become contracts, dispatches, approvals, or MemoryOS
+     records;
+   - what the end user must never see from operator-only control state;
+   - how support/admin can inspect enough evidence without crossing privacy
+     boundaries.
+8. Acceptance gates for a future UI build:
+   - explicit route list;
+   - mock data schema;
+   - first workflow state machine;
+   - accessibility and responsive checks;
+   - browser verification expectations.
 
 ## Plain-Language Framing
 
@@ -115,13 +182,13 @@ users responsible for operator decisions.
 
 ## Dependency
 
-ASC-0251 should not be implemented until ASC-0250 closes the local
-build/runtime profile boundary. Otherwise the serving UI may inherit the same
-mixed-state problem.
+ASC-0250 closed the local build/runtime profile boundary on
+2026-06-13T15:24:00+09:00. This contract may now proceed as a design/spec
+packet. It still must not implement UI code.
 
 ## First Implementation Candidate
 
-After ASC-0250 closes, create a narrow prototype:
+After this design/spec packet is accepted, create a separate narrow prototype:
 
 - `apps/serving/` or equivalent, separate from `apps/control/`;
 - one user task form;
@@ -131,6 +198,18 @@ After ASC-0250 closes, create a narrow prototype:
 - no direct access to operator-only contracts, raw runtime logs, or provider
   internals.
 
+## Work Packets
+
+### WP-0251-A — Claude end-user serving interface spec
+
+- target_repo: `myworld`
+- target_agent: `claude`
+- status: issued
+- instruction: Produce the required design/spec packet only. Do not implement
+  UI code. Keep the surface separate from the operator Control Center and make
+  the first user workflow concrete enough for a future prototype contract.
+- result: pending
+
 ## Stop Conditions
 
 - `serving_ui_reuses_operator_control_center`
@@ -138,4 +217,5 @@ After ASC-0250 closes, create a narrow prototype:
 - `session_boundary_ambiguous`
 - `approval_path_missing`
 - `runtime_profile_dependency_unclosed`
+- `ui_implementation_before_visual_target`
 - `privacy_boundary_ambiguous`

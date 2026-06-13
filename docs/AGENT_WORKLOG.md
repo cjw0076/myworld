@@ -5630,3 +5630,20 @@ schema_version: aios.agent_worklog.v1
   result packets now surface as monitor risk and clear after lease removal.
 - next: ASC-0251 remains proposed for the first true end-user serving
   interface, separate from `apps/control`.
+
+## 2026-06-13 15:31 KST — codex@myworld — ASC-0251 serving interface design gate
+
+- status: started
+- scope: `docs/contracts/ASC-0251-end-user-serving-interface-spine.md`,
+  `docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md`,
+  `docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md`, and ledger/worklog
+  entries.
+- context: ASC-0249/0250 closed the local build/runtime boundary. Current
+  `apps/control` remains an operator/local surface, not a user serving UI.
+- Product Design preflight: no saved Product Design context exists, so this
+  contract is design/spec only and must not scaffold UI before a visual target
+  is chosen.
+- decision: accept ASC-0251 as a Claude-owned design/spec packet, with
+  implementation explicitly forbidden in this slice.
+- next: dispatch ASC-0251 to Claude; Codex verifies the spec is concrete enough
+  for a later prototype contract.

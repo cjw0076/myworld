@@ -7134,3 +7134,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: runtime profile separation is local and visible, not a complete hosted multi-tenant service boundary.
 - next: use ASC-0251 to design/build the real end-user serving interface after this boundary.
 - status: done
+
+---
+- when: 2026-06-13T15:31:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: product-boundary dispatcher
+- goal: ASC-0251 — accepted design/spec contract for the first true end-user serving interface
+- changed: docs/contracts/ASC-0251-end-user-serving-interface-spine.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: ASC-0250 is closed; dispatch status shows `runtime_profile=build_control live_child_execution_blocked=True`; Product Design user-context preflight reports no saved visual/product context, so UI implementation must wait for a visual target or prototype contract.
+- decision: ASC-0251 is accepted for a Claude-authored design/spec packet only. Current `apps/control` must not be repurposed as the user-facing service UI.
+- risk: until the spec/prototype contracts close, AIOS still has no well-made end-user serving interface.
+- next: dispatch ASC-0251 to Claude for `docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md` and route map.
+- status: proposed
