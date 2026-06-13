@@ -235,22 +235,51 @@ def compile_goal(
 
 # --- CLI ----------------------------------------------------------------------
 
-def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str]]):
+def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str]],
+                          goal: str = ""):
     """Reactive sampler for the turn-loop: ask the provider for the NEXT single move
     given the trajectory so far (one tool call, or done). This is the agent-loop shape
     (react to results), unlike the one-shot planner. Degrades: returns 'done' if the
-    provider can't be reached, so the loop ends cleanly instead of fabricating."""
+    provider can't be reached, so the loop ends cleanly instead of fabricating.
+
+    goal: include the active goal in every sampler call so the model has context.
+    Without it the model can only see the trajectory shape, not what it's working toward.
+    """
     tools = _load("aios_tools")
-    catalog = json.dumps(tools.list_tools(), ensure_ascii=False)
+    # Build human-readable tool menu for the sampler prompt
+    _tool_list = tools.list_tools()
+    catalog_lines = "\n".join(
+        f"  {t['name']} — {t.get('description', t['class'])}"
+        for t in _tool_list
+    )
+    goal_line = f"Goal: {goal[:200]}\n" if goal else ""
 
     def sampler(history: list[dict]) -> dict:
         tl = _load("aios_turn_loop")
+        recent = history[-12:]
+        # Track repeated tool usage to steer the model away from loops
+        tool_counts: dict[str, int] = {}
+        for h in recent:
+            for t in h.get("tools", []):
+                tool_counts[t] = tool_counts.get(t, 0) + 1
+        turn_num = sum(1 for h in recent if h.get("role") == "assistant")
+        repetition_hint = ""
+        if tool_counts:
+            reps = [f"{t}×{n}" for t, n in tool_counts.items() if n >= 2]
+            if reps:
+                repetition_hint = f"WARNING: Already used {', '.join(reps)} — use a DIFFERENT tool or emit {{\"done\":true}}.\n"
+        done_hint = ""
+        if turn_num >= 2:
+            done_hint = 'If the goal is satisfied or cannot be completed, emit {"done":true} now.\n'
         prompt = (
-            "You are the AIOS agent loop. Tools (name/class):\n" + catalog + "\n"
-            "Trajectory so far (names/status only):\n"
-            + json.dumps(history[-12:], ensure_ascii=False) + "\n"
+            goal_line
+            + "You are the AIOS agent turn-loop. Available tools:\n" + catalog_lines + "\n"
+            + done_hint
+            + repetition_hint
+            + "Trajectory:\n"
+            + json.dumps(recent, ensure_ascii=False) + "\n"
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
-            'action, or {"done":true} when the goal is met. No prose.')
+            'action, or {"done":true} when complete. No prose.')
         try:
             raw = adapters[provider](prompt)
         except Exception:  # noqa: BLE001 — provider unreachable → end loop honestly

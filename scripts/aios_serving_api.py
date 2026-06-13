@@ -55,7 +55,7 @@ def run_organic(goal: str, provider: str, max_turns: int) -> dict:
     adapters = head._default_adapters(provider)
     if provider not in adapters:
         return {"error": f"provider '{provider}' not available", "exit": "no_provider"}
-    sampler = head.make_provider_sampler(provider, adapters)
+    sampler = head.make_provider_sampler(provider, adapters, goal=goal)
     return head.run_organic_goal(goal, sampler=sampler, max_turns=max_turns, root=ROOT)
 
 
@@ -179,15 +179,16 @@ class Handler(BaseHTTPRequestHandler):
             run_log.sink(rec)
             streaming_turn_sink(rec)
 
-        emit("preamble", head._organ_preamble(goal, root))
+        preamble_data = head._organ_preamble(goal, root)
+        emit("preamble", preamble_data)
 
         try:
-            sampler = head.make_provider_sampler(provider, adapters)
+            sampler = head.make_provider_sampler(provider, adapters, goal=goal)
             result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
                                         turn_sink=combined_sink)
             postamble = head._organ_postamble(goal, result, root, run_id=run_id)
             result["run_id"] = run_id
-            result["organic_pipeline"] = {"postamble": postamble}
+            result["organic_pipeline"] = {"preamble": preamble_data, "postamble": postamble}
             emit("done", result)
         except Exception as _exc:
             emit("error", {"error": str(_exc)[:200], "phase": "run_loop"})

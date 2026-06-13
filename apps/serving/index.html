@@ -140,10 +140,11 @@
     <div class="provider-row">
       <span>Provider:</span>
       <select id="providerSelect">
+        <option value="ollama_rest" selected>ollama REST (fast, local)</option>
         <option value="claude">claude</option>
         <option value="codex">codex</option>
         <option value="gemini">gemini</option>
-        <option value="ollama_local">ollama (local)</option>
+        <option value="ollama_local">ollama CLI (local)</option>
       </select>
       <span>Max turns:</span>
       <select id="maxTurns">
@@ -331,9 +332,11 @@
       setStep('p-capability', pre.capability_status === 'ok' ? 'ok' : 'warn',
               pre.top_capability || pre.capability_status || '—');
       setStep('p-loop', exitOk ? 'ok' : 'warn', `${turns}T / ${exit}`);
-      setStep('p-dream', post.dream_agora_ingest === 'ok' ? 'ok' : 'warn',
+      setStep('p-dream',
+              String(post.dream_agora_ingest || '').startsWith('ok') ? 'ok' : 'warn',
               post.dream_agora_ingest || '—');
-      setStep('p-akashic', post.akashic_record === 'ok' ? 'ok' : 'warn',
+      setStep('p-akashic',
+              String(post.akashic_record || '').startsWith('ok') ? 'ok' : 'warn',
               post.akashic_record || '—');
 
       // Trajectory

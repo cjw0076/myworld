@@ -33,16 +33,16 @@ import aios_turn_loop as loop
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# tool → (class, authority action used by the gate for write-class tools)
-TOOL_SPEC: dict[str, tuple[str, str]] = {
-    "memory.retrieve":   ("advisory", ""),
-    "capability.route":  ("advisory", ""),
-    "genesis.challenge": ("advisory", ""),
-    "self.audit":        ("read", ""),
-    "interior.read":     ("read", ""),
-    "fs.read":           ("read", ""),
-    "stakes.record":     ("write", "propose_contract"),
-    "fs.write":          ("write", "commit_to_child_repo"),
+# tool → (class, authority action, one-line description for sampler prompts)
+TOOL_SPEC: dict[str, tuple[str, str, str]] = {
+    "memory.retrieve":   ("advisory", "", "Recall past knowledge or context relevant to the goal"),
+    "capability.route":  ("advisory", "", "Recommend the best provider/tool for a given sub-task"),
+    "genesis.challenge": ("advisory", "", "Stress-test a plan or assumption; find weak points"),
+    "self.audit":        ("read", "",    "Check agent state, health, or recent decisions"),
+    "interior.read":     ("read", "",    "Read internal reasoning trace or agent reflection"),
+    "fs.read":           ("read", "",    "Read a file from the local filesystem"),
+    "stakes.record":     ("write", "propose_contract", "Record a formal proposal or contract draft"),
+    "fs.write":          ("write", "commit_to_child_repo", "Write or update a file (requires authority)"),
 }
 
 
@@ -141,7 +141,7 @@ def gate_for(agent_id: str):
         spec = TOOL_SPEC.get(name)
         if spec is None:
             return loop.DENY                          # unknown tool, fail-closed
-        cls, action = spec
+        cls, action, _desc = spec
         if cls in ("read", "advisory"):
             return loop.ALLOW
         res = authority.verify_authority(agent_id, action)
@@ -151,7 +151,8 @@ def gate_for(agent_id: str):
 
 def list_tools() -> list[dict]:
     """Discovery surface (teardown §comms: list_tools)."""
-    return [{"name": n, "class": c, "domain_action": a or None} for n, (c, a) in TOOL_SPEC.items()]
+    return [{"name": n, "class": c, "domain_action": a or None, "description": d}
+            for n, (c, a, d) in TOOL_SPEC.items()]
 
 
 if __name__ == "__main__":
