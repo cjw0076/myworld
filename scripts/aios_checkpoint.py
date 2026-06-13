@@ -62,8 +62,19 @@ def _read_backlog(root: Path) -> list[dict]:
     if not p.exists():
         return []
     items = []
-    in_table = False
+    # Only collect from the pending/backlog section; stop at completed section
+    in_pending = False
     for line in p.read_text(encoding="utf-8").splitlines():
+        # Start collecting when we hit the "대기 중" or pending header
+        if "대기 중" in line or "미시작" in line:
+            in_pending = True
+            continue
+        # Stop at the completed section (진행 중, 완료)
+        if in_pending and ("진행 중" in line or "완료" in line or "### 완료" in line):
+            in_pending = False
+            continue
+        if not in_pending:
+            continue
         if "| ID |" in line or "| ---- |" in line or "| ~~" in line:
             continue
         if line.startswith("| WORK-"):
@@ -217,7 +228,9 @@ def cmd_show(args) -> None:
             return
     else:
         cp_dir = root / CHECKPOINT_DIR_REL
-        matches = list(cp_dir.glob(f"*{args.checkpoint_id}*.json"))
+        # Strip "chk-" prefix — files are YYYY-MM-DDTHH-MM-SS.json, not chk-*.json
+        stripped = args.checkpoint_id.removeprefix("chk-")
+        matches = list(cp_dir.glob(f"*{stripped}*.json"))
         if not matches:
             print(f"No checkpoint matching '{args.checkpoint_id}'")
             return
@@ -255,7 +268,9 @@ def cmd_resume(args) -> None:
         return
     cp_id = getattr(args, "checkpoint_id", None)
     if cp_id:
-        matches = list(cp_dir.glob(f"*{cp_id}*.json"))
+        # ID may be "chk-2026-06-14T03-27-34" but files are named "2026-06-14T03-27-34.json"
+        stripped = cp_id.removeprefix("chk-")
+        matches = list(cp_dir.glob(f"*{stripped}*.json"))
         cp = json.loads(matches[0].read_text(encoding="utf-8")) if matches else None
     else:
         cp = _load_latest(root)
