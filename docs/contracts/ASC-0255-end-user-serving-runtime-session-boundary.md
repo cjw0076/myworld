@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0255
 slug: end-user-serving-runtime-session-boundary
-status: accepted
+status: closed
 goal: Add the non-UI runtime/session boundary for end_user_serving so AIOS can represent user-scoped service work before the apps/serving UI is built.
 created: 2026-06-13T15:48:00+09:00
 accepted: 2026-06-13T15:48:00+09:00
+closed: 2026-06-13T15:53:14+09:00
 human_approved: true
 origin: ASC-0252 readiness says service readiness is partial because `end_user_serving` runtime and user-scoped serving session proof do not exist. ASC-0253 UI remains blocked by Product Design visual target, so this contract closes the non-UI runtime/session prerequisite first.
 ---
@@ -160,11 +161,58 @@ git diff --check
 
 - target_repo: `myworld`
 - target_agent: `claude`
-- status: issued
+- status: passed_with_route_mismatch
 - instruction: Implement the non-UI `end_user_serving` runtime/session boundary
   only. Do not build `apps/serving/`. Keep all serving workspace artifacts under
   `.aios/serving/**` and keep credentials/raw provider logs out of receipts.
-- result: pending
+- result: passed — the existing `asc-0255` dispatch packet executed as
+  `codex@myworld` instead of the intended `claude@myworld`; Codex verified and
+  recovered the missing result packet. `end_user_serving` profile and
+  deterministic serving-session primitive are implemented; readiness remains
+  partial until `apps/serving/` and browser proof exist.
+
+## Result Packet
+
+schema_version: `aios.result_packet.v1`
+contract_id: `ASC-0255`
+dispatch_id: `asc-0255`
+repo: `myworld`
+agent: `codex@myworld`
+status: `passed`
+
+changed:
+
+- `scripts/aios_dispatch.py`
+- `scripts/aios_round_controller.py`
+- `scripts/aios_serving_session.py`
+- `scripts/aios_world_readiness.py`
+- `tests/test_aios_dispatch.py`
+- `tests/test_aios_round_controller.py`
+- `tests/test_aios_serving_session.py`
+- `tests/test_aios_world_readiness.py`
+- `docs/contracts/ASC-0255-end-user-serving-runtime-session-boundary.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+- `docs/AGENT_WORKLOG.md`
+
+evidence:
+
+- `python3 -m unittest tests.test_aios_dispatch tests.test_aios_round_controller tests.test_aios_serving_session tests.test_aios_world_readiness -v` passed 81 tests.
+- `python3 -m py_compile scripts/aios_dispatch.py scripts/aios_round_controller.py scripts/aios_serving_session.py scripts/aios_world_readiness.py` passed.
+- `python3 scripts/aios_world_readiness.py --json` reports `ready_for_world_deployment=false`, `met_count=7`, `partial_count=1`, `end_user_serving_readiness=partial`, `next_action=ASC-0253`.
+- `git diff --check` passed.
+
+remaining_gaps:
+
+- `apps/serving/` is still intentionally unimplemented.
+- First-workflow browser proof is still absent.
+- Product Design visual target/brief is still required before UI work.
+- Dispatch route hygiene still needs improvement: `asc-0255` was intended for
+  Claude but executed as Codex because the dispatch id already existed before
+  the explicit Claude send. Future dispatches should avoid precreated default
+  agents when the contract names a specific provider.
+
+next: ASC-0253 should remain the serving UI/prototype follow-up after Product
+Design target selection.
 
 ## Stop Conditions
 

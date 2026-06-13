@@ -25,7 +25,7 @@ from typing import Any
 SCHEMA_VERSION = "aios.round_controller.v1"
 REPOS = ("hivemind", "memoryOS", "CapabilityOS")
 RUNTIME_PROFILE_FILE = Path(".aios/runtime_profile.json")  # runtime-only, not committed (ASC-0249)
-RUNTIME_PROFILES = ("build_control", "live_agent_runtime")
+RUNTIME_PROFILES = ("build_control", "live_agent_runtime", "end_user_serving")
 DEFAULT_RUNTIME_PROFILE = "build_control"
 STATE_DIR = Path(".aios/state")
 RUN_DIR = Path(".aios/run")

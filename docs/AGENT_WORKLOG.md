@@ -5743,3 +5743,23 @@ schema_version: aios.agent_worklog.v1
   `docs/AIOS_AGENT_LEDGER.md`, `docs/AGENT_WORKLOG.md`.
 - deferred: no `apps/serving/` UI until Product Design visual target/brief is
   confirmed.
+
+## 2026-06-13 15:53 KST — codex@myworld — ASC-0255 closed
+
+- status: done
+- scope: non-UI `end_user_serving` runtime/session boundary only.
+- result: `scripts/aios_dispatch.py` recognizes `end_user_serving` without
+  weakening `build_control`; `scripts/aios_serving_session.py` creates
+  deterministic `aios.serving_session.v1` records under
+  `.aios/serving/workspaces/<user>/<session>/serving_session.json`.
+- verification: focused unittest gate passed 81/81; py_compile passed for
+  `aios_dispatch.py`, `aios_round_controller.py`, `aios_serving_session.py`,
+  and `aios_world_readiness.py`; readiness JSON remains conservative with
+  `ready_for_world_deployment=false`, `met_count=7`, `partial_count=1`,
+  `end_user_serving_readiness=partial`, `next_action=ASC-0253`; `git diff
+  --check` passed.
+- decision: serving sessions require safe user/session path segments, approval
+  before sensitive actions, draft-only memory writes, and no credential/raw log
+  fields.
+- next: ASC-0253 serving UI/prototype remains gated on Product Design visual
+  target selection and browser proof.

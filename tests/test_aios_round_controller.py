@@ -178,7 +178,13 @@ class RuntimeProfileIsolationTest(AiosRoundControllerTest):
     """ASC-0249/ASC-0250 — the round controller honors the build/runtime
     isolation profile when deciding whether to spawn live child watchers."""
 
-    def write_profile(self, root: Path, profile: str, allow_live: bool = False) -> None:
+    def write_profile(
+        self,
+        root: Path,
+        profile: str,
+        allow_live: bool = False,
+        serving_session_artifact: str = "",
+    ) -> None:
         profile_path = root / ".aios" / "runtime_profile.json"
         profile_path.parent.mkdir(parents=True, exist_ok=True)
         profile_path.write_text(
@@ -187,6 +193,7 @@ class RuntimeProfileIsolationTest(AiosRoundControllerTest):
                     "schema_version": "aios.runtime_profile.v1",
                     "profile": profile,
                     "allow_live_child_execution": allow_live,
+                    "serving_session_artifact": serving_session_artifact,
                 }
             ),
             encoding="utf-8",
@@ -247,6 +254,53 @@ class RuntimeProfileIsolationTest(AiosRoundControllerTest):
             self.assertTrue(data["live_child_execution_allowed"])
             self.assertFalse(data["child_execution_blocked"])
             self.assertEqual(["child_once_hivemind"], [item["name"] for item in data["child_executions"]])
+
+    def test_end_user_serving_profile_blocks_without_session_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=1)
+            self.write_profile(root, "end_user_serving")
+
+            result = self.run_controller(root, "once", "--root", root.as_posix(), "--execute-children", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "end_user_serving")
+            self.assertFalse(data["live_child_execution_allowed"])
+            self.assertTrue(data["child_execution_blocked"])
+            self.assertEqual(data["child_executions"][0]["status"], "blocked")
+
+    def test_end_user_serving_profile_opens_with_session_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=1)
+            artifact = root / ".aios" / "serving" / "workspaces" / "user1" / "sess1" / "serving_session.json"
+            artifact.parent.mkdir(parents=True, exist_ok=True)
+            artifact.write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.serving_session.v1",
+                        "user_id": "user1",
+                        "session_id": "sess1",
+                        "workspace_path": ".aios/serving/workspaces/user1/sess1",
+                    }
+                ),
+                encoding="utf-8",
+            )
+            self.write_profile(
+                root,
+                "end_user_serving",
+                serving_session_artifact=".aios/serving/workspaces/user1/sess1/serving_session.json",
+            )
+
+            result = self.run_controller(root, "once", "--root", root.as_posix(), "--execute-children", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "end_user_serving")
+            self.assertTrue(data["runtime_profile"]["serving_session_boundary"]["present"])
+            self.assertTrue(data["live_child_execution_allowed"])
+            self.assertFalse(data["child_execution_blocked"])
 
     def test_build_control_without_pending_does_not_emit_blocked_noise(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -1197,6 +1197,50 @@ class RuntimeProfileTest(unittest.TestCase):
         self.assertTrue(state["allow_live_child_execution"])
         self.assertFalse(state["live_child_execution_blocked"])
 
+    def test_end_user_serving_profile_blocks_live_without_session_boundary(self):
+        self.mod.write_runtime_profile(self.root, "end_user_serving", False)
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "end_user_serving")
+        self.assertEqual(state["source"], "file")
+        self.assertFalse(state["allow_live_child_execution"])
+        self.assertTrue(state["live_child_execution_blocked"])
+        self.assertFalse(state["serving_session_boundary"]["present"])
+
+    def test_end_user_serving_profile_with_session_boundary_opens_door(self):
+        artifact = self.root / ".aios" / "serving" / "workspaces" / "user1" / "sess1" / "serving_session.json"
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.serving_session.v1",
+                    "user_id": "user1",
+                    "session_id": "sess1",
+                    "workspace_path": ".aios/serving/workspaces/user1/sess1",
+                }
+            ),
+            encoding="utf-8",
+        )
+        profile_path = self.root / self.mod.RUNTIME_PROFILE_FILE
+        profile_path.parent.mkdir(parents=True, exist_ok=True)
+        profile_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.runtime_profile.v1",
+                    "profile": "end_user_serving",
+                    "allow_live_child_execution": False,
+                    "serving_session_artifact": ".aios/serving/workspaces/user1/sess1/serving_session.json",
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        state = self.mod.runtime_profile_state(self.root)
+
+        self.assertEqual(state["profile"], "end_user_serving")
+        self.assertTrue(state["allow_live_child_execution"])
+        self.assertFalse(state["live_child_execution_blocked"])
+        self.assertTrue(state["serving_session_boundary"]["present"])
+
     def test_env_profile_overrides_file(self):
         self.mod.write_runtime_profile(self.root, "build_control", False)
         os.environ["AIOS_RUNTIME_PROFILE"] = "live_agent_runtime"
@@ -1245,6 +1289,12 @@ class RuntimeProfileTest(unittest.TestCase):
         self.assertEqual(state["profile"], "build_control")
         self.assertEqual(state["source"], "default")
 
+    def test_unknown_profile_value_in_env_is_ignored(self):
+        os.environ["AIOS_RUNTIME_PROFILE"] = "rogue_room"
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "build_control")
+        self.assertEqual(state["source"], "default")
+
 
 class RuntimeProfileCliTest(unittest.TestCase):
     """ASC-0250 — the dispatch CLI surfaces the runtime profile boundary."""
@@ -1285,6 +1335,15 @@ class RuntimeProfileCliTest(unittest.TestCase):
             self.assertFalse(show["live_child_execution_blocked"])
             # status must reflect the open door too
             self.assertIn("runtime_profile=live_agent_runtime", self.run_cli(root, "status").stdout)
+
+    def test_profile_set_accepts_end_user_serving_but_blocks_without_session(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.run_cli(root, "profile", "set", "--profile", "end_user_serving")
+            show = json.loads(self.run_cli(root, "profile", "show").stdout)
+            self.assertEqual(show["profile"], "end_user_serving")
+            self.assertTrue(show["live_child_execution_blocked"])
+            self.assertFalse(show["serving_session_boundary"]["present"])
 
     def test_profile_clear_reverts_to_default(self):
         with tempfile.TemporaryDirectory() as tmp:

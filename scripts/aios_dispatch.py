@@ -35,7 +35,7 @@ LOG_DIR = Path(".aios/logs")
 LEASE_DIR = Path(".aios/leases")       # runtime-only, not committed
 LEASE_TTL_DEFAULT = 300                # seconds
 RUNTIME_PROFILE_FILE = Path(".aios/runtime_profile.json")  # runtime-only, not committed (ASC-0249)
-RUNTIME_PROFILES = ("build_control", "live_agent_runtime")
+RUNTIME_PROFILES = ("build_control", "live_agent_runtime", "end_user_serving")
 DEFAULT_RUNTIME_PROFILE = "build_control"
 TERMINAL_STATES = ("released", "held", "retried", "escalated")
 STATE_COMMANDS = {
@@ -391,13 +391,16 @@ def runtime_profile_state(root: Path, override: str | None = None) -> dict[str, 
     Two labeled rooms on one machine:
       - ``build_control``      — contracts, code changes, verification, delegation;
       - ``live_agent_runtime`` — actual AIOS agent workloops/pulses.
+      - ``end_user_serving``   — user-delegated serving sessions.
 
     Resolution order (later overrides earlier): default -> file under .aios/
     -> environment -> explicit caller override. The default is
     ``build_control`` with live child execution disallowed: the conservative
     "we are building AIOS" assumption, so a build context never *silently*
     spawns a live child provider session. ``live_agent_runtime`` implies live
-    child execution is allowed by definition.
+    child execution is allowed by definition. ``end_user_serving`` opens live
+    child execution only when an explicit serving-session artifact is bound or
+    an explicit allow flag is present.
 
     State lives under ``.aios/`` which is gitignored, so the profile never
     enters commits (ASC-0249 negated check ``runtime_profile_committed``).
@@ -405,6 +408,7 @@ def runtime_profile_state(root: Path, override: str | None = None) -> dict[str, 
     profile = DEFAULT_RUNTIME_PROFILE
     allow_live = False
     source = "default"
+    serving_session_artifact = ""
     path = root / RUNTIME_PROFILE_FILE
     if path.exists():
         try:
@@ -413,6 +417,7 @@ def runtime_profile_state(root: Path, override: str | None = None) -> dict[str, 
                 profile = str(data["profile"])
                 source = "file"
             allow_live = bool(data.get("allow_live_child_execution", allow_live))
+            serving_session_artifact = str(data.get("serving_session_artifact") or "")
         except (OSError, json.JSONDecodeError, ValueError):
             pass
     env_profile = os.environ.get("AIOS_RUNTIME_PROFILE", "").strip()
@@ -424,16 +429,67 @@ def runtime_profile_state(root: Path, override: str | None = None) -> dict[str, 
         allow_live = True
     elif env_allow in {"0", "false", "no"}:
         allow_live = False
+    env_serving_artifact = os.environ.get("AIOS_SERVING_SESSION_ARTIFACT", "").strip()
+    if env_serving_artifact:
+        serving_session_artifact = env_serving_artifact
     if override in RUNTIME_PROFILES:
         profile = override
         source = "override"
-    effective_allow = allow_live or profile == "live_agent_runtime"
+    serving_boundary = serving_session_boundary_state(root, serving_session_artifact)
+    effective_allow = (
+        allow_live
+        or profile == "live_agent_runtime"
+        or (profile == "end_user_serving" and serving_boundary["present"])
+    )
     return {
         "schema_version": "aios.runtime_profile.v1",
         "profile": profile,
         "allow_live_child_execution": effective_allow,
         "live_child_execution_blocked": not effective_allow,
+        "serving_session_boundary": serving_boundary,
         "source": source,
+    }
+
+
+def _within(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve().relative_to(parent.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def serving_session_boundary_state(root: Path, artifact: str) -> dict[str, Any]:
+    if not artifact:
+        return {"present": False, "reason": "missing_serving_session_artifact"}
+    artifact_path = Path(artifact)
+    if not artifact_path.is_absolute():
+        artifact_path = root / artifact_path
+    serving_root = root / ".aios" / "serving"
+    if not _within(artifact_path, serving_root):
+        return {"present": False, "reason": "artifact_outside_serving_root"}
+    try:
+        data = json.loads(artifact_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {"present": False, "reason": "artifact_not_found"}
+    except (OSError, json.JSONDecodeError, ValueError):
+        return {"present": False, "reason": "artifact_unreadable"}
+    workspace = str(data.get("workspace_path") or "")
+    workspace_path = Path(workspace)
+    if not workspace_path.is_absolute():
+        workspace_path = root / workspace_path
+    if data.get("schema_version") != "aios.serving_session.v1":
+        return {"present": False, "reason": "schema_mismatch"}
+    if not data.get("user_id") or not data.get("session_id"):
+        return {"present": False, "reason": "missing_user_or_session"}
+    if not _within(workspace_path, root / ".aios" / "serving" / "workspaces"):
+        return {"present": False, "reason": "workspace_outside_serving_root"}
+    return {
+        "present": True,
+        "artifact_path": artifact_path.relative_to(root).as_posix(),
+        "workspace_path": workspace_path.relative_to(root).as_posix(),
+        "user_id": data.get("user_id"),
+        "session_id": data.get("session_id"),
     }
 
 

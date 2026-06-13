@@ -17,13 +17,19 @@ def touch(root: Path, rel: str) -> None:
 
 
 class AiosWorldReadinessTest(unittest.TestCase):
-    def run_readiness(self, root: Path) -> dict:
-        result = subprocess.run(
-            [sys.executable, SCRIPT.as_posix(), "--root", root.as_posix(), "--json"],
+    def run_readiness_process(self, root: Path, *, json_flag: bool = True) -> subprocess.CompletedProcess[str]:
+        args = [sys.executable, SCRIPT.as_posix(), "--root", root.as_posix()]
+        if json_flag:
+            args.append("--json")
+        return subprocess.run(
+            args,
             text=True,
             capture_output=True,
             check=False,
         )
+
+    def run_readiness(self, root: Path) -> dict:
+        result = self.run_readiness_process(root)
         self.assertTrue(result.stdout, result.stderr)
         return json.loads(result.stdout)
 
@@ -36,6 +42,20 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertEqual(payload["met_count"], 0)
             self.assertEqual(payload["missing_count"], 8)
             self.assertEqual(payload["next_action"], "ASC-0235")
+
+    def test_json_mode_returns_zero_even_when_not_world_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.run_readiness_process(Path(tmp), json_flag=True)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertFalse(json.loads(result.stdout)["ready_for_world_deployment"])
+
+    def test_text_mode_returns_nonzero_when_not_world_ready(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            result = self.run_readiness_process(Path(tmp), json_flag=False)
+
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("world_deployment_ready=False", result.stdout)
 
     def test_partial_markers_do_not_overclaim_world_readiness(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -98,6 +118,19 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertFalse(payload["ready_for_world_deployment"])
             serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
             self.assertEqual(serving["status"], "partial")
+            self.assertNotEqual(serving["status"], "met")
+
+    def test_serving_session_primitive_alone_is_partial_not_met(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            touch(root, "scripts/aios_serving_session.py")
+
+            payload = self.run_readiness(root)
+
+            self.assertFalse(payload["ready_for_world_deployment"])
+            serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
+            self.assertEqual(serving["status"], "partial")
+            self.assertEqual(serving["evidence"], ["scripts/aios_serving_session.py"])
             self.assertNotEqual(serving["status"], "met")
 
     def test_all_eight_axes_met_reach_world_ready(self) -> None:

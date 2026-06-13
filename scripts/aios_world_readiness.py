@@ -29,6 +29,7 @@ class Axis:
     partial_markers: tuple[str, ...]
     missing_gap: str
     next_contract: str
+    met_policy: str = "any"
 
 
 @dataclass(frozen=True)
@@ -124,6 +125,7 @@ AXES: Final = (
             "and first-workflow browser-test proof are not yet implemented (spec only — ASC-0251)"
         ),
         next_contract="ASC-0253",
+        met_policy="all",
     ),
 )
 
@@ -143,7 +145,20 @@ def present_markers(root: Path, markers: tuple[str, ...]) -> tuple[str, ...]:
 def assess_axis(root: Path, axis: Axis) -> AxisResult:
     met = present_markers(root, axis.met_markers)
     partial = present_markers(root, axis.partial_markers)
-    if met:
+    if axis.met_policy == "all":
+        if axis.met_markers and len(met) == len(axis.met_markers):
+            status = "met"
+            evidence = met
+            gap = ""
+        elif met or partial:
+            status = "partial"
+            evidence = tuple(dict.fromkeys((*partial, *met)))
+            gap = axis.missing_gap
+        else:
+            status = "missing"
+            evidence = ()
+            gap = axis.missing_gap
+    elif met:
         status = "met"
         evidence = met
         gap = ""
@@ -215,16 +230,16 @@ def main(argv: list[str] | None = None) -> int:
     payload = readiness(Path(args.root).resolve())
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
-    else:
-        print(f"world_deployment_ready={payload['ready_for_world_deployment']}")
-        print(
-            f"met={payload['met_count']} partial={payload['partial_count']} "
-            f"missing={payload['missing_count']}"
-        )
-        if payload["gaps"]:
-            print(f"next: {payload['next_action']}")
-            for gap in payload["gaps"]:
-                print(f"- {gap}")
+        return 0
+    print(f"world_deployment_ready={payload['ready_for_world_deployment']}")
+    print(
+        f"met={payload['met_count']} partial={payload['partial_count']} "
+        f"missing={payload['missing_count']}"
+    )
+    if payload["gaps"]:
+        print(f"next: {payload['next_action']}")
+        for gap in payload["gaps"]:
+            print(f"- {gap}")
     return 0 if payload["ready_for_world_deployment"] else 1
 
 

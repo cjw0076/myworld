@@ -7251,3 +7251,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: runtime profile changes could accidentally weaken `build_control`; focused dispatch/round-controller tests are required.
 - next: dispatch WP-0255-A to `claude@myworld` via `scripts/aios_child_watcher.sh once --repo myworld`, then verify tests and readiness evidence.
 - status: opened
+
+---
+- when: 2026-06-13T15:53:14+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: implementer / verifier
+- goal: close ASC-0255 end-user serving runtime/session boundary
+- changed: scripts/aios_dispatch.py, scripts/aios_round_controller.py, scripts/aios_serving_session.py, scripts/aios_world_readiness.py, tests/test_aios_dispatch.py, tests/test_aios_round_controller.py, tests/test_aios_serving_session.py, tests/test_aios_world_readiness.py, docs/contracts/ASC-0255-end-user-serving-runtime-session-boundary.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: focused unittest gate passed 81/81; py_compile passed for the four touched scripts; world readiness JSON reports `ready_for_world_deployment=false`, `met_count=7`, `partial_count=1`, `end_user_serving_readiness=partial`, `next_action=ASC-0253`; `git diff --check` passed.
+- decision: `end_user_serving` is now a recognized conservative runtime profile. It does not open live child execution unless an explicit allow flag or valid `.aios/serving/**` session artifact is bound. Serving session creation is deterministic, user/session-scoped, approval-first, and draft-memory-only.
+- risk: this is a non-UI boundary only; no hosted auth/transport, `apps/serving/`, or browser-visible first workflow exists yet.
+- next: ASC-0253 remains the follow-up for serving UI/prototype work after Product Design visual target selection.
+- status: closed
