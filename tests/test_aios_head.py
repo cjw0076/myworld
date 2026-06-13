@@ -94,6 +94,74 @@ class HeadTest(unittest.TestCase):
         self.head.runner.rollback(c)
         self.assertEqual((self.root / "src.txt").read_text(), "original")
 
+    def test_planner_receipt_attached_on_success(self):
+        """Successful planner call must produce an auditable planner receipt."""
+        plan = [{"id": "s1", "description": "read", "tool": "fs.read",
+                 "inputs": {"path": str(self.root)}}]
+        c, errors = self.head.compile_goal(
+            "read workspace", workspace_root=str(self.root),
+            planner=self._planner(plan), planner_label="fake-test",
+        )
+        pr = c.planner_receipt
+        self.assertIsNotNone(pr, "planner_receipt must be attached")
+        self.assertEqual(pr.schema_version, "aios.planner_receipt.v0")
+        self.assertEqual(pr.parse_status, "ok")
+        self.assertEqual(pr.step_count, 1)
+        self.assertEqual(pr.planner_label, "fake-test")
+        self.assertEqual(pr.memory_count, 0)
+        # workspace / write_paths / network context recorded
+        self.assertEqual(pr.workspace_root, str(self.root))
+        self.assertIsInstance(pr.write_paths, list)
+        self.assertIsInstance(pr.network, bool)
+
+    def test_planner_receipt_no_raw_body(self):
+        """Raw planner text must NOT appear in the ContractObject receipt."""
+        raw_sentinel = "SENSITIVE_PLANNER_OUTPUT_DO_NOT_STORE_THIS"
+        planner = lambda goal, ctx: json.dumps(
+            [{"id": "s1", "description": raw_sentinel, "tool": "user.checkpoint"}]
+        )
+        c, _ = self.head.compile_goal(
+            "goal", workspace_root=str(self.root), planner=planner,
+        )
+        # Serialize the whole contract — raw sentinel must not appear
+        serialized = json.dumps(c.planner_receipt.__dict__ if hasattr(c.planner_receipt, '__dict__') else {})
+        self.assertNotIn(raw_sentinel, serialized,
+                         "raw planner body must not be stored in planner_receipt")
+        # hash and length are stored instead
+        self.assertIsNotNone(c.planner_receipt.raw_body_hash)
+        self.assertGreater(c.planner_receipt.raw_body_len, 0)
+
+    def test_planner_receipt_on_parse_failure(self):
+        """Parse failure must preserve a hash/length diagnostic receipt, not be invisible."""
+        bad_planner = lambda goal, ctx: "this is NOT valid json - no array here"
+        c, errors = self.head.compile_goal(
+            "bad goal", workspace_root=str(self.root), planner=bad_planner,
+        )
+        self.assertTrue(errors, "errors must be non-empty on parse failure")
+        pr = c.planner_receipt
+        self.assertIsNotNone(pr, "planner_receipt must exist even after parse failure")
+        self.assertEqual(pr.parse_status, "failed")
+        self.assertEqual(pr.step_count, 0)
+        self.assertIsNotNone(pr.error)
+        # hash and length recorded even for bad output
+        self.assertIsNotNone(pr.raw_body_hash)
+        self.assertGreater(pr.raw_body_len, 0)
+
+    def test_planner_receipt_memory_count_not_bodies(self):
+        """Memory inputs are counted, raw memory bodies must not appear in the receipt."""
+        memories = ["trace_id_abc", "trace_id_xyz", "trace_id_123"]
+        retriever = lambda goal: memories
+        plan = [{"id": "s1", "description": "step", "tool": "user.checkpoint"}]
+        c, _ = self.head.compile_goal(
+            "recall goal", workspace_root=str(self.root),
+            planner=self._planner(plan), retriever=retriever,
+        )
+        pr = c.planner_receipt
+        self.assertEqual(pr.memory_count, 3)
+        # raw memory bodies must not be in the receipt
+        for mem in memories:
+            self.assertNotIn(mem, pr.raw_body_hash)
+
 
 if __name__ == "__main__":
     unittest.main()

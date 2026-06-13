@@ -174,6 +174,27 @@ class MemoryEffect:
     note: str = ""
 
 
+@dataclass
+class PlannerReceipt:
+    """Audit record for one planner call. Attached before steps are trusted.
+
+    Raw planner body is never stored — only its SHA-256 hash and length.
+    Memory inputs are counted, not copied.
+    """
+    schema_version: str    # "aios.planner_receipt.v0"
+    contract_id: str
+    planner_label: str     # provider name or "fake" for tests
+    workspace_root: str
+    write_paths: list[str]
+    network: bool
+    memory_count: int
+    parse_status: str      # "ok" | "failed"
+    step_count: int        # 0 when parse_status == "failed"
+    raw_body_hash: str     # sha256 hex of raw planner output
+    raw_body_len: int
+    error: str | None = None
+
+
 # --- ContractObject ----------------------------------------------------------
 
 @dataclass
@@ -191,6 +212,7 @@ class ContractObject:
     memory_inputs: list[str] = field(default_factory=list)   # memoryos memory_ids
     capability_route: dict[str, Any] = field(default_factory=dict)
     genesis_challenge: dict[str, Any] | None = None
+    planner_receipt: "PlannerReceipt | None" = None
 
     steps: list[Step] = field(default_factory=list)
     actions: list[dict[str, Any]] = field(default_factory=list)  # planned-vs-actual
@@ -320,6 +342,7 @@ class ContractObject:
             evals=[_load_dc(Eval, e) for e in data.get("evals", [])],
             user_checkpoints=list(data.get("user_checkpoints", [])),
             memory_effects=[_load_dc(MemoryEffect, m) for m in data.get("memory_effects", [])],
+            planner_receipt=_load_dc(PlannerReceipt, data["planner_receipt"]) if data.get("planner_receipt") else None,
             next_state=data.get("next_state"),
             created_at=data.get("created_at") or _now(),
             updated_at=data.get("updated_at") or _now(),

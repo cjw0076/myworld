@@ -25,6 +25,7 @@ step list; tests pass a fake planner so the head is testable without an LLM.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
@@ -157,6 +158,27 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
     return planner
 
 
+def _planner_receipt(co_mod, *, contract_id: str, planner_label: str, context: dict,
+                     memory_count: int, raw: str, parse_status: str,
+                     step_count: int, error: str | None = None):
+    """Build a PlannerReceipt from a planner call. Raw body is never stored."""
+    digest = hashlib.sha256(raw.encode("utf-8", errors="replace")).hexdigest()
+    return co_mod.PlannerReceipt(
+        schema_version="aios.planner_receipt.v0",
+        contract_id=contract_id,
+        planner_label=planner_label,
+        workspace_root=context.get("workspace_root", ""),
+        write_paths=list(context.get("write_paths", [])),
+        network=bool(context.get("network", False)),
+        memory_count=memory_count,
+        parse_status=parse_status,
+        step_count=step_count,
+        raw_body_hash=digest,
+        raw_body_len=len(raw),
+        error=error,
+    )
+
+
 def compile_goal(
     goal: str,
     *,
@@ -165,6 +187,7 @@ def compile_goal(
     allow_write: list[str] | None = None,
     allow_network: bool = False,
     retriever: Callable[[str], list[str]] | None = None,
+    planner_label: str = "unknown",
 ) -> tuple[Any, list[str]]:
     """Goal -> (ContractObject with steps, validation errors).
 
@@ -174,7 +197,12 @@ def compile_goal(
     `retriever(goal)->list[str]` recalls prior execution traces (memory) and
     injects them into the planner context. This is what closes the cognition
     loop: the head plans better for a goal it has seen relatives of before.
+
+    A PlannerReceipt is always attached to the ContractObject after the planner
+    call — whether parsing succeeds or fails — so planning is never invisible.
+    The raw planner body is never stored; only its SHA-256 hash and byte length.
     """
+    co_mod = _load("aios_contract_object")
     c = build_skeleton(goal, workspace_root=workspace_root,
                        allow_write=allow_write, allow_network=allow_network)
     recalled = retriever(goal) if retriever else []
@@ -186,9 +214,22 @@ def compile_goal(
         "recalled_memory": recalled,
     }
     raw = planner(goal, context)
-    plan = _extract_json_array(raw)
-    c.steps = steps_from_plan(plan)
-    errors = c.validate()
+    try:
+        plan = _extract_json_array(raw)
+        c.steps = steps_from_plan(plan)
+        c.planner_receipt = _planner_receipt(
+            co_mod, contract_id=c.contract_id, planner_label=planner_label,
+            context=context, memory_count=len(recalled), raw=raw,
+            parse_status="ok", step_count=len(c.steps),
+        )
+        errors = c.validate()
+    except (ValueError, KeyError, TypeError) as exc:
+        c.planner_receipt = _planner_receipt(
+            co_mod, contract_id=c.contract_id, planner_label=planner_label,
+            context=context, memory_count=len(recalled), raw=raw,
+            parse_status="failed", step_count=0, error=str(exc),
+        )
+        errors = [f"planner parse failed: {exc}"]
     return c, errors
 
 
