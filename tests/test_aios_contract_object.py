@@ -199,5 +199,68 @@ class ContractObjectTest(unittest.TestCase):
             self.assertEqual(data["state"], "accepted")
 
 
+    def test_authorize_step_blocks_fs_list_outside_scope(self) -> None:
+        """fs.list must check allows_read — not silently bypass authorization."""
+        scope = self.mod.FilesystemScope(read_paths=["/allowed/dir/"])
+        obj = self._make_contract(filesystem_scope=scope)
+        step = self.mod.Step(id="s1", description="list outside", tool="fs.list",
+                             inputs={"path": "/forbidden/dir"})
+        errors = obj.authorize_step(step)
+        self.assertTrue(errors, "fs.list outside read_paths should produce errors")
+
+    def test_authorize_step_allows_fs_list_inside_scope(self) -> None:
+        """fs.list inside read_paths must be allowed."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            scope = self.mod.FilesystemScope(read_paths=[tmp + "/"])
+            obj = self._make_contract(filesystem_scope=scope)
+            step = self.mod.Step(id="s1", description="list inside", tool="fs.list",
+                                 inputs={"path": tmp})
+            errors = obj.authorize_step(step)
+            self.assertEqual(errors, [])
+
+    def test_canonical_path_blocks_traversal(self) -> None:
+        """Path traversal via ../ must be caught by canonical resolution."""
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            allowed = tmp + "/allowed/"
+            scope = self.mod.FilesystemScope(read_paths=[allowed])
+            obj = self._make_contract(filesystem_scope=scope)
+            traversal = allowed + "../outside_file.txt"
+            step = self.mod.Step(id="s1", description="traversal attempt", tool="fs.read",
+                                 inputs={"path": traversal})
+            errors = obj.authorize_step(step)
+            self.assertTrue(errors, "path traversal should be blocked")
+
+    def test_canonical_path_blocks_symlink_escape(self) -> None:
+        """Symlink pointing outside allowed scope must be caught by canonical resolution."""
+        import tempfile, os
+        with tempfile.TemporaryDirectory() as tmp:
+            allowed_dir = Path(tmp) / "allowed"
+            allowed_dir.mkdir()
+            outside_dir = Path(tmp) / "outside"
+            outside_dir.mkdir()
+            (outside_dir / "secret.txt").write_text("secret", encoding="utf-8")
+            link = allowed_dir / "escape_link"
+            link.symlink_to(outside_dir / "secret.txt")
+            scope = self.mod.FilesystemScope(read_paths=[str(allowed_dir) + "/"])
+            obj = self._make_contract(filesystem_scope=scope)
+            step = self.mod.Step(id="s1", description="symlink read", tool="fs.read",
+                                 inputs={"path": str(link)})
+            errors = obj.authorize_step(step)
+            self.assertTrue(errors, "symlink escaping scope should be blocked")
+
+    def _make_contract(self, filesystem_scope=None, **kwargs):
+        return self.mod.ContractObject(
+            contract_id="TEST-001",
+            goal="test",
+            workspace_root="/tmp",
+            authority_scope=self.mod.AuthorityScope(),
+            filesystem_scope=filesystem_scope or self.mod.FilesystemScope(),
+            provider_routes=[],
+            **kwargs,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

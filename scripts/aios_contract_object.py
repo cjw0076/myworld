@@ -84,13 +84,29 @@ class FilesystemScope:
         return any(FilesystemScope._matches(path, [a]) for a in allow_list)
 
     @staticmethod
+    def _canonical(path: str) -> str:
+        """Return canonical absolute path, resolving symlinks and traversal."""
+        p = Path(path).expanduser()
+        try:
+            # resolve() follows symlinks and normalizes ../; works even if path
+            # doesn't exist yet (Python 3.6+ strict=False default).
+            return str(p.resolve())
+        except OSError:
+            return str(p.absolute())
+
+    @staticmethod
     def _matches(path: str, patterns: list[str]) -> bool:
+        # Canonicalize both sides so ../escape and symlink traversal are caught.
+        cpath = FilesystemScope._canonical(path)
         for pat in patterns:
-            if path == pat:
+            cpat = FilesystemScope._canonical(pat)
+            if cpath == cpat:
                 return True
-            if pat.endswith("/") and path.startswith(pat):
+            # treat trailing-slash or ** as subtree match
+            prefix = cpat.rstrip("/") + "/"
+            if cpath.startswith(prefix):
                 return True
-            if pat.endswith("**") and path.startswith(pat[:-2]):
+            if pat.endswith("**") and cpath.startswith(cpat.rstrip("*")):
                 return True
         return False
 
@@ -246,10 +262,10 @@ class ContractObject:
         errors: list[str] = []
         tool = step.tool
         inputs = step.inputs or {}
-        if tool == "fs.read":
+        if tool in ("fs.read", "fs.list"):
             p = inputs.get("path", "")
             if not self.filesystem_scope.allows_read(p):
-                errors.append(f"step '{step.id}': fs.read on '{p}' not in scope")
+                errors.append(f"step '{step.id}': {tool} on '{p}' not in scope")
         elif tool == "fs.write":
             p = inputs.get("path", "")
             if not self.filesystem_scope.allows_write(p):

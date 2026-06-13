@@ -84,8 +84,13 @@ def _receipts_file(contract: Any) -> Path:
 # Handlers assume authorize_step() already passed — they enforce nothing extra
 # except real filesystem reality (missing files, etc).
 
+def _resolve_path(raw: str) -> Path:
+    """Expand and canonicalize a path, catching symlink escapes."""
+    return Path(raw).expanduser().resolve()
+
+
 def _syscall_fs_read(contract: Any, step: Any) -> tuple[bool, list[str], str, str | None]:
-    path = Path(step.inputs.get("path", "")).expanduser()
+    path = _resolve_path(step.inputs.get("path", ""))
     if not path.exists():
         return False, [], "", f"path not found: {path}"
     if path.is_dir():
@@ -96,7 +101,7 @@ def _syscall_fs_read(contract: Any, step: Any) -> tuple[bool, list[str], str, st
 
 
 def _syscall_fs_list(contract: Any, step: Any) -> tuple[bool, list[str], str, str | None]:
-    path = Path(step.inputs.get("path", "")).expanduser()
+    path = _resolve_path(step.inputs.get("path", ""))
     if not path.exists():
         return False, [], "", f"path not found: {path}"
     if not path.is_dir():
@@ -119,7 +124,7 @@ def _record_backup_manifest(contract: Any, entry: dict[str, Any]) -> None:
 
 
 def _syscall_fs_write(contract: Any, step: Any, seq: int) -> tuple[bool, list[str], str, str | None]:
-    path = Path(step.inputs.get("path", "")).expanduser()
+    path = _resolve_path(step.inputs.get("path", ""))
     content = step.inputs.get("content", "")
     old = path.read_text(encoding="utf-8", errors="replace") if path.exists() else None
     backup_ref = None
@@ -148,7 +153,7 @@ def _syscall_fs_write(contract: Any, step: Any, seq: int) -> tuple[bool, list[st
 
 
 def _syscall_fs_delete(contract: Any, step: Any, seq: int) -> tuple[bool, list[str], str, str | None]:
-    path = Path(step.inputs.get("path", "")).expanduser()
+    path = _resolve_path(step.inputs.get("path", ""))
     if not path.exists():
         return False, [], "", f"path not found: {path}"
     if path.is_dir():
@@ -164,8 +169,8 @@ def _syscall_fs_delete(contract: Any, step: Any, seq: int) -> tuple[bool, list[s
 
 
 def _syscall_fs_move(contract: Any, step: Any, seq: int) -> tuple[bool, list[str], str, str | None]:
-    src = Path(step.inputs.get("src", "")).expanduser()
-    dst = Path(step.inputs.get("dst", "")).expanduser()
+    src = _resolve_path(step.inputs.get("src", ""))
+    dst = _resolve_path(step.inputs.get("dst", ""))
     if not src.exists():
         return False, [], "", f"src not found: {src}"
     _record_backup_manifest(contract, {
@@ -351,6 +356,11 @@ def _dispatch(contract: Any, step: Any, seq: int, adapters: dict[str, Any], fetc
         return _syscall_provider(contract, step, adapters)
     if tool == "web":
         return _syscall_web_fetch(contract, step, fetcher)
+    if tool == "user.checkpoint":
+        # Reached only after operator approval (runner skips checkpoint steps until approved).
+        # Record the acknowledged checkpoint as a successful receipt and continue.
+        note = step.inputs.get("note", step.description or "checkpoint acknowledged")
+        return True, [], f"checkpoint '{step.id}' acknowledged: {note}", None
     return False, [], "", f"unknown syscall '{tool}'"
 
 

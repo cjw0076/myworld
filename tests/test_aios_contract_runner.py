@@ -175,6 +175,44 @@ class ContractRunnerTest(unittest.TestCase):
         self.assertFalse(target.exists())
         self.assertEqual(len(c.receipts), 0)
 
+    def test_user_checkpoint_approved_succeeds(self):
+        """user.checkpoint step on an approved resume must not fall through to 'unknown syscall'."""
+        c = self._contract(contract_id="co-chk")
+        c.steps.append(self.co.Step(
+            id="chk1", description="operator review gate", tool="user.checkpoint",
+            inputs={"note": "review before applying changes"},
+        ))
+        summary = self.runner.run_contract(c)
+        self.assertEqual(summary["status"], "closed", summary)
+        self.assertEqual(len(c.receipts), 1)
+        self.assertTrue(c.receipts[0].success, c.receipts[0].error)
+        self.assertIn("chk1", c.receipts[0].step_id)
+
+    def test_user_checkpoint_note_in_output(self):
+        """user.checkpoint output must contain the note string."""
+        c = self._contract(contract_id="co-chk2")
+        c.steps.append(self.co.Step(
+            id="chk2", description="gate", tool="user.checkpoint",
+            inputs={"note": "my special note"},
+        ))
+        self.runner.run_contract(c)
+        self.assertIn("my special note", c.receipts[0].summary or "")
+
+    def test_resolve_path_prevents_traversal_on_read(self):
+        """fs.read with ../ escape should be blocked by scope (resolved path check)."""
+        import os
+        allowed = self.root / "allowed"
+        allowed.mkdir()
+        outside = self.root / "outside.txt"
+        outside.write_text("secret", encoding="utf-8")
+        c = self._contract(contract_id="co-trav")
+        c.filesystem_scope = self.co.FilesystemScope(read_paths=[str(allowed) + "/"])
+        traversal = str(allowed) + "/../outside.txt"
+        c.steps.append(self.co.Step(id="r1", description="traversal read", tool="fs.read",
+                                    inputs={"path": traversal}))
+        summary = self.runner.run_contract(c)
+        self.assertEqual(summary["status"], "invalid", summary)
+
 
 if __name__ == "__main__":
     unittest.main()

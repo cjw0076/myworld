@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import uuid
@@ -31,7 +32,10 @@ from typing import Any, Iterable
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MEMORY_DIR = Path(
-    "/home/user/.claude/projects/-home-user-workspaces-jaewon-myworld/memory"
+    os.environ.get(
+        "AIOS_MEMORY_DIR",
+        Path.home() / ".claude" / "projects" / "-home-user-workspaces-jaewon-myworld" / "memory",
+    )
 )
 
 
