@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0260
 slug: real-user-serving-release-spine
-status: accepted
+status: closed
 goal: Reframe AIOS serving work as a real end-user served product, not a local demo or operator UI, and split the missing production slices into owner-bound work packets.
 created: 2026-06-13T19:40:00+09:00
 accepted: 2026-06-13T19:40:00+09:00
+closed: 2026-06-13T20:07:00+09:00
 human_approved: true
 human_approved_note: The operator explicitly clarified that the serving target is for real end users. This contract produces only deliberation artifacts and follow-on contract scope; it does not deploy, does not create deployment manifests, does not call remote APIs, does not access provider auth files, and includes no deployment code.
 origin: The operator clarified that the AIOS serving path is "아예 User들이 사용할 때 진짜 서빙용" — for real users using an actually served product.

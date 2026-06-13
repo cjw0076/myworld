@@ -7381,3 +7381,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no browser-visible `apps/serving/**`, hosted worker, auth/session boundary, per-user memory proof, or release proof exists yet.
 - next: dispatch WP-0260-A to `claude@myworld` for a concrete implementation contract pack; keep `scripts/aios_world_readiness.py --json` false.
 - status: accepted
+
+---
+- when: 2026-06-13T20:07:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator architect
+- goal: Produce implementation contract pack for real end-user AIOS serving (ASC-0260 WP-0260-A)
+- changed: docs/AGENT_WORKLOG.md (9-slice implementation plan), docs/contracts/ASC-0260 status→closed
+- evidence: asc-0260.myworld.result.json; world_readiness=false confirmed; design_gate build_allowed=false confirmed; no apps/serving/ created
+- decision: 9 slices owner-bound (Product Design → UI prototype → runtime profile → hivemind worker → memoryOS lifecycle → CapabilityOS routing → observability → readiness gate → GenesisOS adversarial); execution order documented; Slice 1 (ideation) gates all UI work
+- risk: contract freeze means slices are planning records only; each needs explicit founder GO to become an accepted contract
+- next: Slice 1 Product Design ideation — founder or operator triggers visual target ideation for serving surface
+- status: closed

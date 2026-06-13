@@ -5921,3 +5921,134 @@ schema_version: aios.agent_worklog.v1
   launch-proof contracts.
 - next: dispatch WP-0260-A to `claude@myworld` for an implementation contract
   pack; keep world readiness false until real serving evidence exists.
+
+## 2026-06-13 20:05 KST — claude@myworld — ASC-0260 WP-0260-A: implementation contract pack
+
+Produced below per WP-0260-A brief. Contract freeze remains in effect; this
+entry is the owner-bound planning record until each slice's execution contract
+is explicitly requested by the founder.
+
+### Slice 1 — Product Design ideation
+
+- owner: `myworld` operator (founder + claude)
+- dispatch_to: none — operator-owned deliberation
+- output: 3–5 serving interface directions → one accepted visual target
+- allowed_files: `.aios/serving/design_gate.json`, `docs/product/`
+- acceptance_evidence: `design_gate.json` updated with concrete `visual_target_type` (`url`/`image`/`figma`/`screenshot`/`design_system`); `build_allowed=true`; design brief committed to `docs/product/AIOS_SERVING_DESIGN_BRIEF.md`
+- stop_conditions: `ui_implementation_before_visual_target`, `operator_control_center_reused_as_visual_target`
+- unblocks: Slice 2 (UI prototype)
+
+### Slice 2 — End-user serving UI prototype (ASC-0253)
+
+- owner: `myworld`
+- dispatch_to: `claude@myworld`
+- depends_on: Slice 1 (`build_allowed=true`)
+- output: `apps/serving/**` route set (6 routes from ASC-0251 spec)
+- allowed_files: `apps/serving/**`, `scripts/aios_serving_session.py`, `tests/test_aios_serving_e2e.py`, `tests/test_aios_serving_*.py`, `scripts/aios_world_readiness.py`
+- acceptance_evidence:
+  - browser proof at 375px + 1280px for 4 flows: new task, approval, memory draft review, artifact download
+  - `scripts/aios_world_readiness.py --json` serving axis → `met` (met_markers exist)
+  - `?mock=true` fixture mode on all 6 routes
+- stop_conditions: `serving_ui_reuses_operator_control_center`, `local_demo_claimed_as_real_serving`, `world_readiness_claim_without_browser_proof`, `session_boundary_ambiguous`, `approval_path_missing`
+
+### Slice 3 — `end_user_serving` runtime profile (myworld + hivemind)
+
+- owner: `myworld` (dispatch write) + `hivemind` (execution enforcement)
+- dispatch_to: `claude@myworld` then `codex@hivemind`
+- output: `end_user_serving` added to `RUNTIME_PROFILES` in `aios_dispatch.py`; user/session-scoped authority in `aios_round_controller.py`; `aios_serving_session.py` session lifecycle
+- allowed_files: `scripts/aios_dispatch.py`, `scripts/aios_serving_session.py`, `tests/test_aios_dispatch.py`, `tests/test_aios_serving_session.py`
+- acceptance_evidence:
+  - `runtime_profile_state(root, override='end_user_serving')` returns valid state
+  - tests prove `build_control` state and operator-only paths not exposed to `end_user_serving` context
+  - session create/resume/expire lifecycle with `user_id` + `session_id` in receipts
+- stop_conditions: `operator_state_exposed_to_user_session`, `cross_user_session_read`, `live_child_execution_without_user_scope`
+
+### Slice 4 — Hivemind hosted worker queue/resume
+
+- owner: `hivemind`
+- dispatch_to: `codex@hivemind`
+- depends_on: Slice 3 (runtime profile exists)
+- output: user task queue worker, `aios_run_log`-backed resume, per-user sandbox receipts
+- allowed_files: `hivemind/**` (owner-bound)
+- acceptance_evidence:
+  - two interrupted jobs resume from run-log receipts without duplicate sensitive actions
+  - provider call receipts carry `user_id` + `session_id`
+  - queue/retry does not re-execute stages already recorded as complete
+- stop_conditions: `duplicate_sensitive_action_on_retry`, `cross_user_worker_state_access`, `provider_credentials_in_receipt`
+
+### Slice 5 — MemoryOS per-user memory lifecycle
+
+- owner: `memoryOS`
+- dispatch_to: `codex@memoryOS`
+- output: per-user `namespace` tag, draft-first lifecycle API, export/delete request receipts
+- allowed_files: `memoryOS/**` (owner-bound)
+- acceptance_evidence:
+  - `aios_retrieve` with `user_id=A` cannot return records tagged `user_id=B`
+  - memory draft requires explicit user review before `status=accepted`
+  - export request emits `aios.export_request.v1`; deletion request emits `aios.deletion_request.v1` (append-only, per DNA invariant 3)
+- stop_conditions: `cross_user_memory_visible`, `auto_accept_without_user_review`, `deletion_request_destroys_record`
+
+### Slice 6 — CapabilityOS provider-access/rate/consent routing
+
+- owner: `CapabilityOS`
+- dispatch_to: `codex@CapabilityOS`
+- output: per-user connector access-grant scopes, rate/cost limits, consent gate check before dispatch
+- allowed_files: `CapabilityOS/**` (owner-bound)
+- acceptance_evidence:
+  - denial receipts produced for missing consent before any provider call
+  - rate/budget limit refusal recorded before dispatch (not after)
+  - user revoke of a provider connector propagates to active session within one round
+- stop_conditions: `provider_call_without_consent_check`, `budget_exceeded_without_refusal_receipt`, `access_grant_leaked_across_users`
+
+### Slice 7 — Observability and support redaction (myworld + memoryOS)
+
+- owner: `myworld`
+- dispatch_to: `claude@myworld`
+- output: redacted job timeline endpoint, incident support view with stage/error metadata only
+- allowed_files: `scripts/aios_serving_session.py`, `tests/test_aios_serving_support.py`, `scripts/aios_monitor.py`
+- acceptance_evidence:
+  - `support/incident/:id` view contains stage names + status codes + error types, not raw message bodies or memory content
+  - `admin/audit/:id` view contains operator-visible summaries, not raw user content
+  - tests prove raw tool output and memory bodies absent from support/admin views
+- stop_conditions: `raw_user_content_in_support_view`, `cross_user_incident_access`, `operator_audit_exposes_user_memory_body`
+
+### Slice 8 — Release readiness gate update (myworld)
+
+- owner: `myworld`
+- dispatch_to: `claude@myworld`
+- depends_on: Slices 2–7 (all serving evidence markers must exist)
+- output: `scripts/aios_world_readiness.py` serving axis `met` only when all slice evidence exists; `scripts/aios_serving_design_gate.py` reports production-serving status
+- allowed_files: `scripts/aios_world_readiness.py`, `tests/test_aios_world_readiness.py`, `scripts/aios_serving_design_gate.py`
+- acceptance_evidence:
+  - `aios_world_readiness.py --json` → `ready_for_world_deployment=true` only when all 8 axes met
+  - infra + spec + prototype alone cannot satisfy the full gate
+  - gate provides checklist of all required serving evidence markers
+- stop_conditions: `prototype_claimed_as_world_ready`, `infra_markers_sufficient_for_world_ready`
+
+### Slice 9 — GenesisOS pre-launch adversarial challenge
+
+- owner: `GenesisOS`
+- dispatch_to: `codex@GenesisOS` or operator-run challenge script
+- depends_on: Slices 2–8 (launch candidate must exist)
+- output: adversarial review of privacy, abuse, frozen-knowledge, and assumption-negation risks
+- allowed_files: `GenesisOS/**` (owner-bound), `docs/contracts/` (advisory record)
+- acceptance_evidence:
+  - no unresolved cross-user data, authority, or support-risk findings
+  - explicit refutation or mitigation for each of ASC-0260's three negated assumptions
+  - adversarial challenge receipt committed before release gate closes
+- stop_conditions: `launch_closes_without_adversarial_review`, `assumption_not_negated`, `privacy_risk_unresolved`
+
+### Execution order
+
+```
+Slice 1 (ideation) → Slice 2 (UI prototype, if visual target accepted)
+Slice 3 (runtime profile) → parallel → Slice 4 (hivemind worker), Slice 5 (memoryOS)
+Slice 6 (CapabilityOS) → parallel with 4+5
+Slice 7 (observability) → after Slice 3+5
+Slice 8 (readiness gate) → after all slices 2–7 closed
+Slice 9 (adversarial challenge) → after Slice 8, before release
+```
+
+Current gate state: `build_allowed=false`, `visual_target_type=needs_ideation`.
+Slice 1 must run before Slice 2. All others may proceed in parallel with operator
+oversight once their dependencies close.
