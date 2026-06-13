@@ -176,14 +176,18 @@ class AiosServingReleaseGateTest(unittest.TestCase):
             self.assertEqual(payload["met_count"], 9)
             self.assertEqual(payload["missing_count"], 0)
 
-    def test_current_repo_not_ready(self) -> None:
+    def test_current_repo_serving_release_ready(self) -> None:
+        # Serving release gate achieved 9/9 on 2026-06-14:
+        # genesis_prelaunch adversarial review completed, goal injection protection added.
         payload = self.load_gate(ROOT)
 
-        self.assertFalse(payload["ready_for_production_serving"])
+        self.assertTrue(payload["ready_for_production_serving"])
         self.assertEqual(payload["slice_count"], 9)
+        self.assertEqual(payload["met_count"], 9)
+        self.assertEqual(payload["missing_count"], 0)
         design = payload["slices"][0]
-        self.assertEqual(design["status"], "partial")
-        self.assertFalse(design["design_gate"]["build_allowed"])
+        self.assertEqual(design["status"], "met")
+        self.assertTrue(design["design_gate"]["build_allowed"])
 
 
 if __name__ == "__main__":

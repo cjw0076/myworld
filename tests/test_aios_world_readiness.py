@@ -265,18 +265,18 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertEqual(payload["met_count"], 8)
             self.assertFalse(payload["gaps"])
 
-    def test_current_repo_serving_spec_only_not_world_ready(self) -> None:
-        # Current repo: 7 infra axes met + serving axis partial (spec exists, no implementation).
+    def test_current_repo_world_readiness_achieved(self) -> None:
+        # 2026-06-14: all 8 axes met including end_user_serving_readiness.
+        # Serving UI + API built, 9/9 serving release gate, genesis prelaunch done.
         payload = self.run_readiness(ROOT)
 
-        self.assertFalse(payload["ready_for_world_deployment"])
+        self.assertTrue(payload["ready_for_world_deployment"])
         self.assertTrue(payload["local_completion"]["present"])
         self.assertIn("not world-deployment readiness", payload["local_completion"]["scope"])
-        self.assertEqual(payload["met_count"], 7)
-        self.assertEqual(payload["partial_count"], 1)
+        self.assertEqual(payload["met_count"], 8)
+        self.assertEqual(payload["partial_count"], 0)
         serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
-        self.assertEqual(serving["status"], "partial")
-        self.assertEqual(serving["next_contract"], "ASC-0253")
+        self.assertEqual(serving["status"], "met")
 
 
 if __name__ == "__main__":
