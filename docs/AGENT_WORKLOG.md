@@ -5796,3 +5796,39 @@ schema_version: aios.agent_worklog.v1
 - next: future Claude-owned serving work must verify the packet `agent` before
   watcher execution. Add a dedicated cancel/archive/reissue command if stale
   packet replacement becomes common.
+
+## 2026-06-13 19:13 KST — codex@myworld — starting ASC-0257 dispatch cancel/archive/reissue
+
+- status: starting
+- scope: open a control-plane lifecycle contract that lets a wrong-agent
+  dispatch be cancelled/archived and reissued under a new dispatch id without
+  rewriting existing packet or result evidence.
+- reason: ASC-0256 correctly made packet `agent` immutable across provider
+  names; serving-grade AIOS still needs an explicit recovery path when an
+  operator intended Claude/Gemini/local but a stale packet already exists.
+- expected files: `scripts/aios_dispatch.py`, `tests/test_aios_dispatch.py`,
+  `docs/contracts/ASC-0257-dispatch-cancel-archive-reissue.md`,
+  `docs/AGENT_WORKLOG.md`, `docs/AIOS_AGENT_LEDGER.md`.
+- delegated: first implementation attempt should route to `claude@myworld`
+  with provider fallback disabled so a Claude failure is visible.
+- deferred: no `apps/serving/` UI work, no provider credential changes, and no
+  child repo implementation in this contract.
+
+## 2026-06-13 19:18 KST — codex@myworld — ASC-0257 closed
+
+- status: done
+- scope: dispatch cancel/archive/reissue lifecycle primitive.
+- result: `aios_dispatch.py reissue` creates a new dispatch id for the intended
+  agent, archives a pending source inbox packet when no result evidence exists,
+  and preserves/cites source result evidence when execution already happened.
+- Claude attempt: `asc-0257` was correctly addressed to `claude`, but the child
+  watcher held with `pending_concurrent_work`; fallback was disabled so this
+  degraded receipt stayed visible.
+- verification: `python3 -m unittest tests.test_aios_dispatch -v` passed
+  55/55; `python3 -m py_compile scripts/aios_dispatch.py` passed; `git diff
+  --check` passed.
+- decision: wrong-agent recovery is now a new dispatch lineage, not packet
+  mutation.
+- next: future Claude/Gemini/local serving packets can be reissued cleanly if a
+  stale wrong-agent packet blocks execution. UI/API affordance remains future
+  `apps/serving/` work.

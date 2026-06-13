@@ -562,6 +562,111 @@ class AiosDispatchTest(unittest.TestCase):
             blocked = [event for event in events if event.get("event") == "agent_reassign_blocked"]
             self.assertEqual(blocked[-1]["result_evidence"], [".aios/outbox/myworld/asc-0998.myworld.result.json"])
 
+    def test_reissue_archives_pending_packet_and_sends_new_agent_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+
+            result = self.run_cli(
+                root,
+                "reissue",
+                "--dispatch-id",
+                "asc-0998",
+                "--repo",
+                "myworld",
+                "--agent",
+                "claude",
+                "--new-dispatch-id",
+                "asc-0998-claude",
+                "--reason",
+                "wrong_agent_packet",
+            )
+            payload = json.loads(result.stdout)
+
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["archived_packet"], ".aios/archive/inbox/myworld/asc-0998.myworld.json")
+            self.assertFalse((root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").exists())
+            self.assertTrue((root / ".aios" / "archive" / "inbox" / "myworld" / "asc-0998.myworld.json").exists())
+            packet = json.loads(
+                (root / ".aios" / "inbox" / "myworld" / "asc-0998-claude.myworld.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(packet["agent"], "claude")
+            self.assertEqual(packet["reissue"]["source_dispatch_id"], "asc-0998")
+            self.assertEqual(packet["reissue"]["archived_packet"], ".aios/archive/inbox/myworld/asc-0998.myworld.json")
+            events = [
+                json.loads(line)
+                for line in (root / ".aios" / "state" / "dispatches.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertTrue(any(event.get("event") == "dispatch_packet_archived" for event in events))
+            self.assertTrue(any(event.get("event") == "sent" and event.get("dispatch_id") == "asc-0998-claude" and event.get("agent") == "claude" for event in events))
+
+    def test_reissue_preserves_source_packet_when_result_evidence_exists(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+            self.run_cli(root, "watch", "--repo", "myworld", "--dispatch-id", "asc-0998", "--once")
+
+            result = self.run_cli(
+                root,
+                "reissue",
+                "--dispatch-id",
+                "asc-0998",
+                "--repo",
+                "myworld",
+                "--agent",
+                "claude",
+                "--new-dispatch-id",
+                "asc-0998-claude",
+                "--reason",
+                "rerun_with_claude_after_codex_result",
+            )
+            payload = json.loads(result.stdout)
+
+            self.assertIsNone(payload["archived_packet"])
+            self.assertEqual(payload["source_result_evidence"], [".aios/outbox/myworld/asc-0998.myworld.result.json"])
+            self.assertTrue((root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").exists())
+            self.assertTrue((root / ".aios" / "outbox" / "myworld" / "asc-0998.myworld.result.json").exists())
+            packet = json.loads(
+                (root / ".aios" / "inbox" / "myworld" / "asc-0998-claude.myworld.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(packet["agent"], "claude")
+            self.assertEqual(packet["reissue"]["source_result_evidence"], [".aios/outbox/myworld/asc-0998.myworld.result.json"])
+
+    def test_reissue_refuses_existing_new_dispatch_id(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            contract = root / "ASC-0998-test.md"
+            contract.write_text(ACCEPTED_MYWORLD_CONTRACT.format(root=root.as_posix()), encoding="utf-8")
+            self.run_cli(root, "create", contract.as_posix())
+            self.run_cli(root, "send", "--repo", "myworld", "--agent", "codex")
+            self.run_cli(root, "create", contract.as_posix(), "--dispatch-id", "asc-0998-claude")
+
+            result = self.run_cli(
+                root,
+                "reissue",
+                "--dispatch-id",
+                "asc-0998",
+                "--repo",
+                "myworld",
+                "--agent",
+                "claude",
+                "--new-dispatch-id",
+                "asc-0998-claude",
+                "--reason",
+                "wrong_agent_packet",
+                check=False,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("new dispatch already exists", result.stderr)
+            self.assertTrue((root / ".aios" / "inbox" / "myworld" / "asc-0998.myworld.json").exists())
+
     def test_send_captures_allowed_existing_dirty_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

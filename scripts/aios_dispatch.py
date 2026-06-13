@@ -1089,6 +1089,32 @@ def dispatch_result_evidence(root: Path, dispatch_id: str, repo: str) -> list[st
     return sorted(set(evidence))
 
 
+def archive_packet_if_safe(root: Path, dispatch_id: str, repo: str, reason: str, new_dispatch_id: str) -> str | None:
+    packet_path = root / INBOX_DIR / repo / f"{dispatch_id}.{repo}.json"
+    if not packet_path.exists():
+        return None
+    archive_dir = root / ".aios" / "archive" / "inbox" / repo
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    archive_path = archive_dir / packet_path.name
+    if archive_path.exists():
+        archive_path = archive_dir / f"{dispatch_id}.{repo}.{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.json"
+    packet_path.rename(archive_path)
+    rel_archive = archive_path.relative_to(root).as_posix()
+    append_event(
+        root,
+        {
+            "event": "dispatch_packet_archived",
+            "dispatch_id": dispatch_id,
+            "repo": repo,
+            "packet": rel_archive,
+            "reason": reason,
+            "new_dispatch_id": new_dispatch_id,
+            "status": "archived",
+        },
+    )
+    return rel_archive
+
+
 def cmd_send(args: argparse.Namespace) -> int:
     root = repo_root()
     dispatch_id = args.dispatch_id or latest_dispatch_id(root)
@@ -1241,6 +1267,113 @@ def cmd_send(args: argparse.Namespace) -> int:
                 "ok": True,
                 "dispatch_id": dispatch_id,
                 "repo": repo,
+                "packet": packet_path.relative_to(root).as_posix(),
+                "return_to": packet["return_to"],
+            },
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
+def cmd_reissue(args: argparse.Namespace) -> int:
+    root = repo_root()
+    dispatch_id = args.dispatch_id
+    new_dispatch_id = args.new_dispatch_id
+    repo = args.repo
+    if new_dispatch_id == dispatch_id:
+        raise SystemExit("--new-dispatch-id must differ from --dispatch-id")
+    if repo not in REPOS:
+        raise SystemExit(f"unsupported repo: {repo}")
+    created = dispatch_created(root, dispatch_id)
+    if not created:
+        raise SystemExit(f"dispatch not found: {dispatch_id}")
+    if dispatch_created(root, new_dispatch_id):
+        raise SystemExit(f"new dispatch already exists: {new_dispatch_id}")
+    contract = read_contract(Path(str(created["contract_path"])))
+    if contract.repos and repo not in contract.repos:
+        raise SystemExit(f"{repo} is not in contract scope: {', '.join(contract.repos)}")
+    if contract.status not in {"accepted", "closed"}:
+        raise SystemExit(f"contract {contract.contract_id} is {contract.status}; operator acceptance required before reissue")
+    ensure_layout(root)
+
+    result_evidence = dispatch_result_evidence(root, dispatch_id, repo)
+    archived_packet = None
+    if not result_evidence:
+        archived_packet = archive_packet_if_safe(root, dispatch_id, repo, args.reason, new_dispatch_id)
+
+    append_event(
+        root,
+        {
+            "event": "reissue_requested",
+            "dispatch_id": dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": args.agent,
+            "new_dispatch_id": new_dispatch_id,
+            "archived_packet": archived_packet,
+            "source_result_evidence": result_evidence,
+            "reason": args.reason,
+            "status": "reissued",
+        },
+    )
+    append_event(
+        root,
+        {
+            "event": "created",
+            "dispatch_id": new_dispatch_id,
+            "contract_id": contract.contract_id,
+            "contract_path": contract.path.as_posix(),
+            "contract_status": contract.status,
+            "goal": contract.goal,
+            "repos": contract.repos,
+            "allowed_files": contract.allowed_files,
+            "forbidden_files": contract.forbidden_files,
+            "status": "created",
+            "reissue_of": dispatch_id,
+            "reissue_reason": args.reason,
+        },
+    )
+    policy = evaluate_dispatch_policy(contract, new_dispatch_id, repo, args.agent)
+    if policy["decision"] != "allow":
+        blocked = append_policy_block(root, contract, new_dispatch_id, repo, args.agent, policy)
+        print(json.dumps(blocked, ensure_ascii=False, indent=2, sort_keys=True))
+        return 1
+    packet = build_packet(contract, new_dispatch_id, repo, args.agent, policy=policy)
+    packet["reissue"] = {
+        "source_dispatch_id": dispatch_id,
+        "reason": args.reason,
+        "archived_packet": archived_packet,
+        "source_result_evidence": result_evidence,
+    }
+    packet_path = root / INBOX_DIR / repo / f"{new_dispatch_id}.{repo}.json"
+    if packet_path.exists():
+        raise SystemExit(f"packet already exists: {packet_path}")
+    packet_path.write_text(json.dumps(packet, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    append_event(
+        root,
+        {
+            "event": "sent",
+            "dispatch_id": new_dispatch_id,
+            "contract_id": contract.contract_id,
+            "repo": repo,
+            "agent": args.agent,
+            "packet": packet_path.relative_to(root).as_posix(),
+            "status": "sent",
+            "reissue_of": dispatch_id,
+        },
+    )
+    enqueue_dispatch_job(root, new_dispatch_id, repo, contract)
+    print(
+        json.dumps(
+            {
+                "ok": True,
+                "dispatch_id": dispatch_id,
+                "new_dispatch_id": new_dispatch_id,
+                "repo": repo,
+                "agent": args.agent,
+                "archived_packet": archived_packet,
+                "source_result_evidence": result_evidence,
                 "packet": packet_path.relative_to(root).as_posix(),
                 "return_to": packet["return_to"],
             },
@@ -2061,6 +2194,14 @@ def build_parser() -> argparse.ArgumentParser:
     send.add_argument("--allow-proposed", action="store_true", help="testing only; bypass accepted-contract guard")
     send.add_argument("--force", action="store_true")
     send.set_defaults(func=cmd_send)
+
+    reissue = sub.add_parser("reissue", help="archive/cancel a stale dispatch packet and issue a new dispatch id")
+    reissue.add_argument("--dispatch-id", required=True)
+    reissue.add_argument("--repo", required=True, choices=REPOS)
+    reissue.add_argument("--agent", required=True)
+    reissue.add_argument("--new-dispatch-id", required=True)
+    reissue.add_argument("--reason", required=True)
+    reissue.set_defaults(func=cmd_reissue)
 
     status = sub.add_parser("status", help="show dispatch state")
     status.add_argument("--json", action="store_true")

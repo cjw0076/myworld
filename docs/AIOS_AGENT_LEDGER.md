@@ -7290,3 +7290,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no explicit cancel/archive/reissue command exists yet, so wrong-agent stale packets require a new dispatch id or future operator primitive.
 - next: before future Claude-owned serving work, verify the inbox packet `agent` matches `claude`; propose cancel/archive/reissue if stale packet replacement is needed.
 - status: closed
+
+---
+- when: 2026-06-13T19:13:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: dispatcher / verifier
+- goal: open ASC-0257 dispatch cancel/archive/reissue primitive
+- changed: docs/contracts/ASC-0257-dispatch-cancel-archive-reissue.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: ASC-0256 closeout says existing packet agent is immutable and names cancel/archive/reissue as the next lifecycle primitive; CapabilityOS routed this work to `cap_aios_child_watcher` and `cap_myworld_operator_control_plane`.
+- decision: wrong-agent recovery must create new dispatch lineage rather than rewriting packet history.
+- risk: if not implemented, future Claude-owned serving work can still get stuck behind a stale wrong-agent packet, even though it cannot be silently overwritten.
+- next: dispatch ASC-0257 to `claude@myworld` with fallback disabled; if Claude degrades, record the degraded receipt before any Codex fallback.
+- status: opened
+
+---
+- when: 2026-06-13T19:18:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / verifier
+- goal: close ASC-0257 dispatch cancel/archive/reissue primitive
+- changed: scripts/aios_dispatch.py, tests/test_aios_dispatch.py, docs/contracts/ASC-0257-dispatch-cancel-archive-reissue.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: Claude child-watcher attempt for `asc-0257` held with `pending_concurrent_work`; `python3 -m unittest tests.test_aios_dispatch -v` passed 55/55; `python3 -m py_compile scripts/aios_dispatch.py` passed; `git diff --check` passed.
+- decision: wrong-agent recovery now uses `reissue` to create a new dispatch id and cite/archive old evidence. Pending source packets are archived; result-bearing source dispatches are preserved and cited.
+- risk: no UI/API affordance yet; this is a CLI/control-plane primitive only.
+- next: future serving work can safely dispatch to Claude/Gemini/local and use `reissue` if stale packets or provider routing mistakes occur.
+- status: closed
