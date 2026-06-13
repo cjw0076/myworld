@@ -1,8 +1,9 @@
 ---
 contract_id: ASC-0272
 slug: memoryos-dream-agora-intake
-status: accepted
+status: closed
 accepted: 2026-06-14T03:10:00+09:00
+closed: 2026-06-14T04:05:00+09:00
 goal: Build the MemoryOS Gate A Dream Agora intake path so web, research, provider, trace, and failure events become source-backed drafts instead of accepted memory.
 created: 2026-06-14T03:20:00+09:00
 human_approved: true

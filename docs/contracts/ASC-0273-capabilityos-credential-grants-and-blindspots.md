@@ -1,8 +1,9 @@
 ---
 contract_id: ASC-0273
 slug: capabilityos-credential-grants-and-blindspots
-status: accepted
+status: closed
 accepted: 2026-06-14T03:10:00+09:00
+closed: 2026-06-14T04:05:00+09:00
 goal: Build CapabilityOS Gate A schemas for credential grants, provider blindspot harvesting, fallback risk, and recommendation-only route observations.
 created: 2026-06-14T03:20:00+09:00
 human_approved: true

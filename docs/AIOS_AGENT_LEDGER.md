@@ -7611,3 +7611,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - decision: SMX design spec is Gate A only. All branches require isolation receipt for execution. GenesisOS never selects final truth. Execution authority belongs to Hivemind with receipt (Gate C).
 - next: ASC-0272 (MemoryOS Dream Agora), ASC-0273 (CapabilityOS credential grants). Integrate entropy quota into release gate.
 - status: closed
+
+---
+- when: 2026-06-14T04:05:00+09:00
+- repo: memoryOS
+- agent: claude@myworld
+- role: memoryOS implementer / Dream Agora intake
+- goal: implement ASC-0272 Dream Agora source-backed draft intake pipeline
+- changed: memoryOS/memoryos/dream_agora.py, memoryOS/tests/test_dream_agora.py
+- evidence: 23/23 tests passed; py_compile clean; memoryOS commit 3744ca1; result packet written to .aios/outbox/memoryOS/asc-0272.memoryOS.result.json
+- decision: Dream Agora enforces draft-first invariant at schema level. All intake produces status=draft + review_status=pending. Blocked source types (raw_provider_log, raw_user_export, private_provider_output, raw_chat_export) raise ValueError at ingest. Privacy class "private" blocked. stable_id() produces "src_<hex>" opaque refs (underscore prefix, never sequential).
+- risk: All records draft-only — no path to auto-accept. Review required before any record enters accepted memory graph.
+- next: ASC-0273 (CapabilityOS credential grants); process pending 12 inbox drafts; Gate B visual target selection.
+- status: closed
+
+---
+- when: 2026-06-14T04:10:00+09:00
+- repo: CapabilityOS
+- agent: claude@myworld
+- role: CapabilityOS implementer / credential grants and blindspots
+- goal: implement ASC-0273 credential grant schema and provider blindspot harvesting
+- changed: CapabilityOS/capabilityos/credential_grant.py, CapabilityOS/capabilityos/provider_blindspot.py, CapabilityOS/tests/test_credential_grant.py, CapabilityOS/tests/test_provider_blindspot.py
+- evidence: 34/34 tests passed (17 credential_grant + 17 provider_blindspot); py_compile clean; CapabilityOS commit d206948; result packet at .aios/outbox/CapabilityOS/asc-0273.CapabilityOS.result.json
+- decision: Credential grants use opaque refs only (vault:// or short hash); 8 raw credential patterns (sk-*, ghp_*, xox*, AKIA*, ya29.*, Bearer, Password, JWT) blocked at schema validation. Provider blindspot harvesting classifies friction events (refusal/timeout/hallucination/credential_friction/convergence/sandbox_mismatch/unavailable_fallback); marks single-provider routes with risk flags. All output recommendation_only=true. CapabilityOS never executes tools or binds credentials.
+- risk: Schema-level blocking catches known patterns but not all future credential formats. Opaque ref convention (vault://) is advisory, not enforced against external credential managers.
+- next: Gate A complete (ASC-0272..0275 closed). ASC-0276 (myworld/codex) in inbox. Gate B requires visual target selection. Process WORK-20260612-001 (Akashic Records), WORK-20260612-003 (session checkpoint/resume).
+- status: closed
