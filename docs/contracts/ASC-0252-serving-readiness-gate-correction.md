@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0252
 slug: serving-readiness-gate-correction
-status: accepted
+status: closed
 goal: Correct the world-deployment readiness gate so AIOS cannot claim world-ready service readiness while the end-user serving runtime/interface is only a spec.
 created: 2026-06-13T15:47:00+09:00
 accepted: 2026-06-13T15:47:00+09:00
+closed: 2026-06-13T15:55:00+09:00
 human_approved: true
 origin: `scripts/aios_world_readiness.py --json` currently reports `ready_for_world_deployment=true`, but ASC-0251 explicitly says the end-user serving interface is design/spec only and `apps/serving/` plus `end_user_serving` runtime are not implemented.
 ---

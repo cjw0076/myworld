@@ -7186,3 +7186,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: until ASC-0252 closes, `scripts/aios_world_readiness.py` may mislead operators into thinking AIOS is ready for end-user service deployment.
 - next: dispatch WP-0252-A to `claude@myworld`; verify focused tests and readiness JSON after the result packet.
 - status: opened
+
+---
+- when: 2026-06-13T15:55:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator + infra engineer
+- goal: Correct world-deployment readiness gate — AIOS must not claim world-ready while serving is spec-only (ASC-0252)
+- changed: scripts/aios_world_readiness.py (8th axis end_user_serving_readiness added), tests/test_aios_world_readiness.py (6 tests: old 7-infra-only→false, spec-docs-only→partial, all-8→true, current-repo→false), docs/contracts/ASC-0252 status→closed
+- evidence: asc-0252.myworld.result.json; python3 scripts/aios_world_readiness.py --json → ready_for_world_deployment=false, met=7, partial=1, next=ASC-0252; 6/6 tests pass
+- decision: partial (spec docs exist) ≠ met (implementation exists); 7 infra axes alone cannot claim world-ready for a user-service product
+- risk: none; gate is now conservative — false-negative impossible until serving implementation exists
+- next: follow-on prototype contract for apps/serving/ (new task, visual target or brief required first)
+- status: closed

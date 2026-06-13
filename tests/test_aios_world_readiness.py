@@ -34,7 +34,7 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertEqual(payload["schema_version"], "aios.world_readiness.v1")
             self.assertFalse(payload["ready_for_world_deployment"])
             self.assertEqual(payload["met_count"], 0)
-            self.assertEqual(payload["missing_count"], 7)
+            self.assertEqual(payload["missing_count"], 8)
             self.assertEqual(payload["next_action"], "ASC-0235")
 
     def test_partial_markers_do_not_overclaim_world_readiness(self) -> None:
@@ -56,9 +56,12 @@ class AiosWorldReadinessTest(unittest.TestCase):
             self.assertFalse(payload["ready_for_world_deployment"])
             self.assertEqual(payload["met_count"], 0)
             self.assertEqual(payload["partial_count"], 7)
+            self.assertEqual(payload["missing_count"], 1)  # serving axis still missing
             self.assertIn("local self-maintaining", payload["local_completion"]["scope"])
 
-    def test_all_dedicated_markers_reach_world_ready(self) -> None:
+    def test_seven_infra_markers_alone_not_world_ready(self) -> None:
+        # ASC-0252: infrastructure axes alone must not claim world-ready;
+        # the serving axis is still missing when only the 7 infra files exist.
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             for rel in (
@@ -74,19 +77,66 @@ class AiosWorldReadinessTest(unittest.TestCase):
 
             payload = self.run_readiness(root)
 
-            self.assertTrue(payload["ready_for_world_deployment"])
+            self.assertFalse(payload["ready_for_world_deployment"])
             self.assertEqual(payload["met_count"], 7)
+            self.assertEqual(payload["missing_count"], 1)   # serving axis missing
+            self.assertTrue(payload["gaps"])
+
+    def test_asc0251_spec_docs_alone_not_world_ready(self) -> None:
+        # The design/spec docs from ASC-0251 are partial markers only;
+        # they must not satisfy the serving axis.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md",
+                "docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md",
+            ):
+                touch(root, rel)
+
+            payload = self.run_readiness(root)
+
+            self.assertFalse(payload["ready_for_world_deployment"])
+            serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
+            self.assertEqual(serving["status"], "partial")
+            self.assertNotEqual(serving["status"], "met")
+
+    def test_all_eight_axes_met_reach_world_ready(self) -> None:
+        # Only when all 8 axes have their met_markers does world-ready become true.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in (
+                "scripts/aios_turn_loop.py",
+                "scripts/aios_work_lineage.py",
+                "hivemind/hivemind/cloud_isolation.py",
+                "scripts/aios_credential_broker.py",
+                "scripts/aios_trace_graph.py",
+                "CapabilityOS/capabilityos/skillos_registry.py",
+                "scripts/aios_seci_entropy.py",
+                # serving axis met_markers
+                "apps/serving/index.html",
+                "scripts/aios_serving_session.py",
+                "tests/test_aios_serving_e2e.py",
+            ):
+                touch(root, rel)
+
+            payload = self.run_readiness(root)
+
+            self.assertTrue(payload["ready_for_world_deployment"])
+            self.assertEqual(payload["met_count"], 8)
             self.assertFalse(payload["gaps"])
 
-    def test_current_repo_keeps_local_completion_scope_separate(self) -> None:
+    def test_current_repo_serving_spec_only_not_world_ready(self) -> None:
+        # Current repo: 7 infra axes met + serving axis partial (spec exists, no implementation).
         payload = self.run_readiness(ROOT)
 
-        self.assertTrue(payload["ready_for_world_deployment"])
+        self.assertFalse(payload["ready_for_world_deployment"])
         self.assertTrue(payload["local_completion"]["present"])
         self.assertIn("not world-deployment readiness", payload["local_completion"]["scope"])
         self.assertEqual(payload["met_count"], 7)
-        self.assertEqual(payload["partial_count"], 0)
-        self.assertFalse(payload["gaps"])
+        self.assertEqual(payload["partial_count"], 1)
+        serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
+        self.assertEqual(serving["status"], "partial")
+        self.assertIn("ASC-0252", serving["next_contract"])
 
 
 if __name__ == "__main__":

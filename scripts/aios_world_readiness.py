@@ -106,6 +106,25 @@ AXES: Final = (
         missing_gap="SECI conversion and discomfort injection are not enforced before closeout",
         next_contract="ASC-0239",
     ),
+    Axis(
+        axis_id="end_user_serving_readiness",
+        title="End-user serving interface and runtime",
+        owner_repos=("myworld",),
+        met_markers=(
+            "apps/serving/index.html",
+            "scripts/aios_serving_session.py",
+            "tests/test_aios_serving_e2e.py",
+        ),
+        partial_markers=(
+            "docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md",
+            "docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md",
+        ),
+        missing_gap=(
+            "end-user serving surface (apps/serving/), end_user_serving runtime profile, "
+            "and first-workflow browser-test proof are not yet implemented (spec only — ASC-0251)"
+        ),
+        next_contract="ASC-0252",
+    ),
 )
 
 
