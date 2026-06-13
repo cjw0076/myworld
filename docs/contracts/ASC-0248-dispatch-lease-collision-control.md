@@ -1,12 +1,12 @@
 ---
 contract_id: ASC-0248
 slug: dispatch-lease-collision-control
-status: accepted
+status: closed
 goal: Prevent multiple operator agents from implementing the same AIOS dispatch concurrently by adding an auditable dispatch lease/claim gate.
 created: 2026-06-13T15:16:00+09:00
 accepted: 2026-06-13T15:16:00+09:00
 human_approved: true
-closed:
+closed: 2026-06-13T15:30:00+09:00
 origin: ASC-0247 exposed a concurrent close race: codex and claude both implemented the same dispatch while the contract delegated implementation to Claude.
 ---
 

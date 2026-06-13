@@ -7069,3 +7069,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — additive only; no execution authority changed; existing tests unaffected
 - next: monitor for next Codex packet
 - status: done
+
+---
+- when: 2026-06-13T15:30:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: ASC-0248 — dispatch lease/claim collision control
+- changed: scripts/aios_dispatch.py, tests/test_aios_dispatch.py
+- evidence: commit a5ac27b (58/58 tests pass); .aios/outbox/myworld/asc-0248.myworld.result.json
+- decision: added atomic O_CREAT|O_EXCL lease gate; LEASE_DIR=.aios/leases/ (runtime-only, not committed); claim/release/reclaim/is_stale/get functions; 4 tests cover all stop conditions
+- risk: low — additive only; existing dispatch flow unchanged; leases expire naturally
+- next: monitor for next Codex packet
+- status: done
