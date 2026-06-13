@@ -6100,3 +6100,36 @@ oversight once their dependencies close.
   false; no `apps/serving/**` implementation was created.
 - next: ask/confirm Product Design brief playback, then run Slice 1 ideation
   to produce exactly three visual options before any prototype work.
+
+## 2026-06-13 20:13 KST — codex@myworld — ASC-0263..0266 serving owner packets executed
+
+- status: closed for ASC-0263, ASC-0264, ASC-0265, ASC-0266 harness contracts.
+- scope: turn ASC-0260 planning slices into owner-bound child repo execution
+  without implementing child code directly from MyWorld.
+- dispatch:
+  - `asc-0263` -> `claude@hivemind`
+  - `asc-0264` -> `claude@memoryOS`
+  - `asc-0265` -> `claude@CapabilityOS`
+  - `asc-0266` -> `claude@GenesisOS`
+- results:
+  - Hivemind committed `7295e9e Add serving worker queue/resume with per-user isolation`.
+  - MemoryOS committed `dd8acba Add serving memory lifecycle`.
+  - CapabilityOS committed `12e7b38 ASC-0265: implement per-user serving access routing`.
+  - GenesisOS committed `4670471 Add serving prelaunch adversarial challenge harness (ASC-0266)`.
+- policy delta: `scripts/aios_action_policy.py` now allows only narrow
+  owner-bound, human-approved child dispatch packets whose allowed files are
+  entirely under the target repo, even when the contract discusses provider or
+  credential boundaries. Cross-repo files, missing approval, paid/private
+  transfer, public/legal authority, and irreversible actions still block.
+- verification:
+  - MyWorld action policy/dispatch tests passed 69/69.
+  - `hivemind`: serving worker tests passed 28/28; py_compile and diff check passed.
+  - `memoryOS`: serving memory tests passed 22/22; py_compile and diff check passed.
+  - `CapabilityOS`: serving access tests passed 26/26; py_compile and diff check passed.
+  - `GenesisOS`: serving prelaunch tests passed 16/16; py_compile and diff check passed.
+- release gate delta: `ready_for_production_serving=false`, `met=5`,
+  `partial=4`, `missing=0`. Hivemind, MemoryOS, CapabilityOS are now `met`;
+  GenesisOS harness is present but launch proof remains missing by design.
+- world readiness: remains `ready_for_world_deployment=false`.
+- next: Product Design Slice 1 remains first blocker; observability/support
+  redaction and serving UI/browser proofs still need owner-bound follow-up.

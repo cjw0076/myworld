@@ -37,6 +37,7 @@ HIGH_IMPACT_FIELDS = (
     "real_world_authority",
 )
 LOCAL_OPERATOR_PREFIXES = ("scripts/", "tests/", "docs/", ".aios/primitives/")
+OWNER_BOUND_DISPATCH_REPOS = {"hivemind", "memoryOS", "CapabilityOS", "GenesisOS"}
 PRIVATE_REMOTE_PATH_TERMS = (
     "_from_desktop/",
     "raw_exports/",
@@ -145,6 +146,48 @@ def is_myworld_local_operator_scope(action: dict[str, Any], target_repo: str) ->
     return all(path.startswith(LOCAL_OPERATOR_PREFIXES) for path in allowed_files)
 
 
+def is_repo_scoped_path(path: str, repo: str) -> bool:
+    value = str(path).strip().strip("`")
+    if not value or ".." in value.split("/"):
+        return False
+    return value == repo or value.startswith(f"{repo}/")
+
+
+def is_owner_bound_human_approved_dispatch(action: dict[str, Any], target_repo: str) -> bool:
+    """Allow accepted child-repo dispatches that only authorize local repo work.
+
+    Some implementation contracts mention provider or credential boundaries in
+    order to forbid raw secrets and provider calls. The keyword classifier may
+    mark those as remote/credential work even when the dispatch only asks the
+    owning repo to write local code and tests. This helper keeps that path
+    narrow: one child repo, accepted contract, human-approved, free, no private
+    data transfer, no public/legal/real-world authority, and allowed files
+    entirely under the target repo.
+    """
+    if action.get("action_type") != "dispatch_packet":
+        return False
+    if target_repo not in OWNER_BOUND_DISPATCH_REPOS:
+        return False
+    if not action.get("has_contract") or not bool(action.get("human_approved")):
+        return False
+    if str(action.get("cost") or "").strip().lower() != "free":
+        return False
+    if bool(action.get("sends_private_data")) or bool(action.get("irreversible")):
+        return False
+    for field in ("public_communication", "legal_or_safety_impact", "real_world_authority"):
+        if bool(action.get(field)):
+            return False
+    repos = as_string_list(action.get("repos")) or [target_repo]
+    if repos != [target_repo]:
+        return False
+    allowed_files = as_string_list(action.get("allowed_files"))
+    if not allowed_files:
+        return False
+    if contains_private_remote_path(action):
+        return False
+    return all(is_repo_scoped_path(path, target_repo) for path in allowed_files)
+
+
 def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
     reason_codes: list[str] = []
     action_type = str(action.get("action_type") or "").strip()
@@ -200,6 +243,9 @@ def evaluate_action(action: dict[str, Any]) -> ActionPolicyResult:
 
     if is_myworld_local_operator_scope(action, target_repo) and risk == "low" and privacy == "local":
         return ActionPolicyResult("allow", ["myworld_local_operator_scope"], False, True)
+
+    if is_owner_bound_human_approved_dispatch(action, target_repo) and risk == "low":
+        return ActionPolicyResult("allow", ["owner_bound_human_approved_dispatch"], False, True)
 
     if risk == "low" and privacy == "local":
         return ActionPolicyResult("allow", ["low_risk_local_contract_evidence"], False, True)

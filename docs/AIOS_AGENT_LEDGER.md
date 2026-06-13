@@ -7420,3 +7420,17 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: baseline is source-backed research, not implementation; MemoryOS/CapabilityOS/GenesisOS still need owner-bound follow-up to turn it into reviewed memory, routes, and launch challenge.
 - next: Product Design brief playback/confirmation, then Slice 1 ideation with three visual options; keep `build_allowed=false` until a concrete visual target is selected.
 - status: closed
+
+---
+- when: 2026-06-13T20:13:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane dispatcher / verifier
+- goal: close ASC-0263..ASC-0266 owner-bound serving infrastructure fanout
+- changed: docs/contracts/ASC-0263-hivemind-serving-worker-resume.md, docs/contracts/ASC-0264-memoryos-serving-memory-lifecycle.md, docs/contracts/ASC-0265-capabilityos-serving-access-routing.md, docs/contracts/ASC-0266-genesisos-serving-prelaunch-challenge.md, scripts/aios_action_policy.py, tests/test_aios_action_policy.py, child repo gitlinks, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: dispatched `asc-0263` to `claude@hivemind`, `asc-0264` to `claude@memoryOS`, `asc-0265` to `claude@CapabilityOS`, and `asc-0266` to `claude@GenesisOS`; result packets report Claude exit_code=0 with no fallback; child commits pushed: hivemind `7295e9e`, memoryOS `dd8acba`, CapabilityOS `12e7b38`, GenesisOS `4670471`; focused child tests passed 28/28, 22/22, 26/26, and 16/16 respectively; MyWorld action policy/dispatch tests passed 69/69.
+- decision: owner-bound, human-approved child dispatch packets are now a specific action-policy path when allowed files stay inside the target repo and no private transfer, paid action, public/legal authority, or irreversible action is requested.
+- release_gate: `python3 scripts/aios_serving_release_gate.py assess --root . --json` reports `ready_for_production_serving=false`, met=5, partial=4, missing=0.
+- risk: Product Design visual target, serving UI/browser proof, observability/support redaction, and runtime Genesis launch proof remain incomplete; world readiness remains false.
+- next: Product Design Slice 1 brief confirmation/ideation, then serving UI prototype; add redacted support/incident view before launch-candidate Genesis proof.
+- status: closed

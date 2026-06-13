@@ -213,6 +213,95 @@ class AiosActionPolicyTest(unittest.TestCase):
         self.assertEqual(result.decision, "hold")
         self.assertTrue(any(reason.startswith("authority_denied:") for reason in result.reason_codes))
 
+    def test_owner_bound_human_approved_dispatch_allows_child_repo_boundary_work(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "hivemind",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "remote",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0263-hivemind-serving-worker-resume.md"],
+                "human_approved": True,
+                "irreversible": False,
+                "external_effect": True,
+                "uses_credentials": True,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["hivemind"],
+                "allowed_files": [
+                    "hivemind/hivemind/serving_worker.py",
+                    "hivemind/tests/test_serving_worker.py",
+                    "hivemind/docs/**",
+                ],
+                "forbidden_files": [".env", "credential vault contents", "raw provider logs"],
+            }
+        )
+
+        self.assertEqual(result.decision, "allow")
+        self.assertTrue(result.allowed_to_execute)
+        self.assertIn("owner_bound_human_approved_dispatch", result.reason_codes)
+
+    def test_owner_bound_dispatch_does_not_allow_cross_repo_files(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "hivemind",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "remote",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0263-hivemind-serving-worker-resume.md"],
+                "human_approved": True,
+                "irreversible": False,
+                "external_effect": True,
+                "uses_credentials": True,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["hivemind"],
+                "allowed_files": ["hivemind/hivemind/serving_worker.py", "memoryOS/memoryos/serving_memory.py"],
+                "forbidden_files": [".env"],
+            }
+        )
+
+        self.assertEqual(result.decision, "hold")
+        self.assertIn("requires_more_specific_policy", result.reason_codes)
+
+    def test_owner_bound_dispatch_still_escalates_without_human_approval(self) -> None:
+        result = evaluate_action(
+            {
+                "action_type": "dispatch_packet",
+                "target_repo": "hivemind",
+                "authority": "accepted_contract",
+                "risk": "low",
+                "privacy": "remote",
+                "cost": "free",
+                "has_contract": True,
+                "evidence_refs": ["docs/contracts/ASC-0263-hivemind-serving-worker-resume.md"],
+                "human_approved": False,
+                "irreversible": False,
+                "external_effect": True,
+                "uses_credentials": True,
+                "public_communication": False,
+                "legal_or_safety_impact": False,
+                "real_world_authority": False,
+                "sends_private_data": False,
+                "repos": ["hivemind"],
+                "allowed_files": ["hivemind/hivemind/serving_worker.py"],
+                "forbidden_files": [".env"],
+            }
+        )
+
+        self.assertEqual(result.decision, "escalate")
+        self.assertIn("human_checkpoint_required:external_effect", result.reason_codes)
+
 
 if __name__ == "__main__":
     unittest.main()
