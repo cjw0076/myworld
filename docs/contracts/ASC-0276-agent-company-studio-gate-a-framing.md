@@ -1,8 +1,9 @@
 ---
 contract_id: ASC-0276
 slug: agent-company-studio-gate-a-framing
-status: accepted
+status: closed
 accepted: 2026-06-14T03:10:00+09:00
+closed: 2026-06-14T04:15:00+09:00
 goal: Preserve the Agent Company Studio product framing as a Gate A docs-only artifact without creating serving UI before visual target selection.
 created: 2026-06-14T03:20:00+09:00
 human_approved: true

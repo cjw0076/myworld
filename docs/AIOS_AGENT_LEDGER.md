@@ -7637,3 +7637,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: Schema-level blocking catches known patterns but not all future credential formats. Opaque ref convention (vault://) is advisory, not enforced against external credential managers.
 - next: Gate A complete (ASC-0272..0275 closed). ASC-0276 (myworld/codex) in inbox. Gate B requires visual target selection. Process WORK-20260612-001 (Akashic Records), WORK-20260612-003 (session checkpoint/resume).
 - status: closed
+
+---
+- when: 2026-06-14T04:15:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: product framing gatekeeper
+- goal: preserve Agent Company Studio product framing as Gate A docs-only artifact (ASC-0276)
+- changed: (no new files; verified existing docs/product/AIOS_AGENT_COMPANY_STUDIO_BRIEF.md, AIOS_SERVING_DESIGN_BRIEF.md)
+- evidence: design gate build_allowed=false; release gate ready_for_production_serving=false; no apps/** diff; product framing maps 7 OS departments to user-visible service concepts; aios.product_framing.v1 receipt confirmed
+- decision: Gate A framing preserved. Agent Company Studio brief exists with OS-to-department mapping, approval UX, credential consent, and memory draft UX. No UI code allowed until visual target selected.
+- risk: Framing may diverge from implementation if design gate is opened without updating product brief. Review brief when Gate B opens.
+- next: Gate B requires visual target selection: `python3 scripts/aios_serving_design_gate.py select --option <id> --root .`. Then ASC-0253 (end-user serving UI prototype). Process WORK-20260612-001 (Akashic Records), WORK-20260612-003 (session checkpoint/resume).
+- status: closed
