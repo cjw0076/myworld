@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import hashlib
 import subprocess
@@ -5,6 +6,21 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+_SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+
+
+def _load_dispatch():
+    name = "aios_dispatch_under_test_lease"
+    if name in sys.modules:
+        return sys.modules[name]
+    if str(_SCRIPTS) not in sys.path:
+        sys.path.insert(0, str(_SCRIPTS))
+    spec = importlib.util.spec_from_file_location(name, _SCRIPTS / "aios_dispatch.py")
+    m = importlib.util.module_from_spec(spec)
+    sys.modules[name] = m
+    spec.loader.exec_module(m)
+    return m
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "aios_dispatch.py"
@@ -1033,6 +1049,97 @@ class AiosDispatchTest(unittest.TestCase):
 
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("dispatch_id asc-0012.CapabilityOS != asc-0012", result.stderr)
+
+
+class DispatchLeaseTest(unittest.TestCase):
+    """ASC-0248 — lease/claim collision control."""
+
+    def setUp(self):
+        self.mod = _load_dispatch()
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def test_first_claim_succeeds(self):
+        """First agent to claim a dispatch lease must succeed."""
+        result = self.mod.claim_dispatch_lease(
+            self.root, "asc-test-001", "myworld", "claude@myworld",
+            ttl_seconds=300,
+        )
+        self.assertEqual(result["status"], "claimed")
+        lease = result["lease"]
+        self.assertEqual(lease["dispatch_id"], "asc-test-001")
+        self.assertEqual(lease["repo"], "myworld")
+        self.assertEqual(lease["agent"], "claude@myworld")
+        self.assertIn("expires_at", lease)
+        self.assertIn("started_at", lease)
+        self.assertEqual(lease["schema_version"], "aios.lease.v0")
+
+    def test_concurrent_second_claim_is_blocked(self):
+        """Second agent claiming the same live dispatch must get a collision."""
+        self.mod.claim_dispatch_lease(
+            self.root, "asc-test-002", "myworld", "claude@myworld", ttl_seconds=300,
+        )
+        result2 = self.mod.claim_dispatch_lease(
+            self.root, "asc-test-002", "myworld", "codex@myworld", ttl_seconds=300,
+        )
+        self.assertEqual(result2["status"], "collision")
+        self.assertFalse(result2["stale"], "live lease should report stale=False")
+        self.assertEqual(result2["owner"]["agent"], "claude@myworld")
+
+    def test_stale_lease_can_be_reclaimed_with_evidence(self):
+        """An expired lease must be reclaimed explicitly with a reason."""
+        # Create a lease that's already expired
+        from datetime import datetime, timezone, timedelta
+        expired_dt = (datetime.now(timezone.utc) - timedelta(seconds=10)).isoformat(
+            timespec="seconds"
+        ).replace("+00:00", "Z")
+        stale_lease = {
+            "schema_version": "aios.lease.v0",
+            "dispatch_id": "asc-test-003",
+            "repo": "myworld",
+            "agent": "old-agent@myworld",
+            "pid": 99999,
+            "started_at": expired_dt,
+            "expires_at": expired_dt,
+            "ttl_seconds": 5,
+        }
+        lease_dir = self.root / self.mod.LEASE_DIR
+        lease_dir.mkdir(parents=True, exist_ok=True)
+        (lease_dir / "asc-test-003.myworld.lease.json").write_text(
+            json.dumps(stale_lease), encoding="utf-8"
+        )
+        # Attempt reclaim
+        result = self.mod.reclaim_dispatch_lease(
+            self.root, "asc-test-003", "myworld", "claude@myworld",
+            reason="previous agent timed out",
+        )
+        self.assertEqual(result["status"], "reclaimed")
+        self.assertEqual(result["lease"]["agent"], "claude@myworld")
+        self.assertEqual(result["evicted"]["agent"], "old-agent@myworld")
+        self.assertIn("reclaim_reason", result["lease"])
+        # New lease must be fresh
+        self.assertFalse(self.mod.is_lease_stale(result["lease"]))
+
+    def test_collision_does_not_mark_dispatch_implemented(self):
+        """A collision result must not mark the dispatch as successfully implemented."""
+        self.mod.claim_dispatch_lease(
+            self.root, "asc-test-004", "myworld", "claude@myworld", ttl_seconds=300,
+        )
+        collision = self.mod.claim_dispatch_lease(
+            self.root, "asc-test-004", "myworld", "codex@myworld", ttl_seconds=300,
+        )
+        self.assertEqual(collision["status"], "collision")
+        # The dispatch must NOT have a result packet created by collision
+        result_path = self.root / ".aios" / "outbox" / "myworld" / "asc-test-004.myworld.result.json"
+        self.assertFalse(result_path.exists(),
+                         "collision must not create a result packet")
+        # The lease should still belong to the original claimant
+        current = self.mod.get_dispatch_lease(self.root, "asc-test-004", "myworld")
+        self.assertIsNotNone(current)
+        self.assertEqual(current["agent"], "claude@myworld")
 
 
 if __name__ == "__main__":

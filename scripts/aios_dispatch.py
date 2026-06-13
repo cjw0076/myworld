@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -31,6 +32,8 @@ STATE_LOG = STATE_DIR / "dispatches.jsonl"
 INBOX_DIR = Path(".aios/inbox")
 OUTBOX_DIR = Path(".aios/outbox")
 LOG_DIR = Path(".aios/logs")
+LEASE_DIR = Path(".aios/leases")       # runtime-only, not committed
+LEASE_TTL_DEFAULT = 300                # seconds
 TERMINAL_STATES = ("released", "held", "retried", "escalated")
 STATE_COMMANDS = {
     "release": "released",
@@ -75,6 +78,7 @@ def repo_root() -> Path:
 def ensure_layout(root: Path) -> None:
     (root / STATE_DIR).mkdir(parents=True, exist_ok=True)
     (root / LOG_DIR).mkdir(parents=True, exist_ok=True)
+    (root / LEASE_DIR).mkdir(parents=True, exist_ok=True)
     for repo in REPOS:
         (root / INBOX_DIR / repo).mkdir(parents=True, exist_ok=True)
         (root / OUTBOX_DIR / repo).mkdir(parents=True, exist_ok=True)
@@ -253,6 +257,127 @@ def hook_preflight(root: Path, contract: "Contract") -> dict[str, Any] | None:
     except Exception:  # noqa: BLE001
         return None
     return decision if decision.get("verdict") == "block" else None
+
+
+# --- Dispatch Lease / Collision Control (ASC-0248) ---------------------------
+
+def _lease_path(root: Path, dispatch_id: str, repo: str) -> Path:
+    return root / LEASE_DIR / f"{dispatch_id}.{repo}.lease.json"
+
+
+def is_lease_stale(lease: dict[str, Any]) -> bool:
+    """Return True when the lease has passed its expires_at timestamp."""
+    expires_at = lease.get("expires_at")
+    if not expires_at:
+        return True
+    try:
+        exp = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+        return datetime.now(timezone.utc) >= exp
+    except (ValueError, TypeError):
+        return True
+
+
+def get_dispatch_lease(root: Path, dispatch_id: str, repo: str) -> dict[str, Any] | None:
+    """Return the current lease dict or None if no lease file exists."""
+    p = _lease_path(root, dispatch_id, repo)
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def claim_dispatch_lease(
+    root: Path,
+    dispatch_id: str,
+    repo: str,
+    agent: str,
+    *,
+    ttl_seconds: int = LEASE_TTL_DEFAULT,
+) -> dict[str, Any]:
+    """Atomically claim a dispatch lease.
+
+    Returns:
+      {"status": "claimed", "lease": {...}}
+      {"status": "collision", "stale": False, "owner": {...}}
+      {"status": "collision", "stale": True,  "owner": {...}}   # caller may reclaim
+    """
+    ensure_layout(root)
+    lease_path = _lease_path(root, dispatch_id, repo)
+    now = datetime.now(timezone.utc)
+    expires_dt = datetime.fromtimestamp(now.timestamp() + ttl_seconds, tz=timezone.utc)
+    lease = {
+        "schema_version": "aios.lease.v0",
+        "dispatch_id": dispatch_id,
+        "repo": repo,
+        "agent": agent,
+        "pid": os.getpid(),
+        "started_at": now.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "expires_at": expires_dt.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "ttl_seconds": ttl_seconds,
+    }
+    # Atomic exclusive create: O_CREAT | O_EXCL raises FileExistsError if present.
+    try:
+        fd = os.open(str(lease_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(json.dumps(lease, indent=2, ensure_ascii=False))
+        return {"status": "claimed", "lease": lease}
+    except FileExistsError:
+        existing = get_dispatch_lease(root, dispatch_id, repo) or {}
+        stale = is_lease_stale(existing)
+        return {"status": "collision", "stale": stale, "owner": existing}
+
+
+def release_dispatch_lease(root: Path, dispatch_id: str, repo: str) -> None:
+    """Remove the lease file. Idempotent; silent if absent."""
+    p = _lease_path(root, dispatch_id, repo)
+    try:
+        p.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def reclaim_dispatch_lease(
+    root: Path,
+    dispatch_id: str,
+    repo: str,
+    agent: str,
+    *,
+    reason: str,
+    ttl_seconds: int = LEASE_TTL_DEFAULT,
+) -> dict[str, Any]:
+    """Force-take a stale lease, recording why.
+
+    Returns:
+      {"status": "reclaimed", "lease": {...}, "evicted": {...}}
+      {"status": "refused",   "reason": "lease is still active", "owner": {...}}
+    """
+    ensure_layout(root)
+    existing = get_dispatch_lease(root, dispatch_id, repo)
+    if existing and not is_lease_stale(existing):
+        return {"status": "refused", "reason": "lease is still active", "owner": existing}
+    now = datetime.now(timezone.utc)
+    expires_dt = datetime.fromtimestamp(now.timestamp() + ttl_seconds, tz=timezone.utc)
+    lease = {
+        "schema_version": "aios.lease.v0",
+        "dispatch_id": dispatch_id,
+        "repo": repo,
+        "agent": agent,
+        "pid": os.getpid(),
+        "started_at": now.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "expires_at": expires_dt.isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "ttl_seconds": ttl_seconds,
+        "reclaimed_from": existing,
+        "reclaim_reason": reason,
+    }
+    tmp = _lease_path(root, dispatch_id, repo).with_suffix(".tmp")
+    tmp.write_text(json.dumps(lease, indent=2, ensure_ascii=False), encoding="utf-8")
+    os.replace(str(tmp), str(_lease_path(root, dispatch_id, repo)))
+    return {"status": "reclaimed", "lease": lease, "evicted": existing}
+
+
+# --- end Dispatch Lease -------------------------------------------------------
 
 
 def enqueue_dispatch_job(root: Path, dispatch_id: str, repo: str, contract: "Contract") -> None:
