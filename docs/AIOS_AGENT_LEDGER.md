@@ -7369,6 +7369,54 @@ For repo-local implementation details, also update that repo's own worklog.
 - next: ask the operator the generated questions, then write the gate artifact only after confirmation.
 - status: closed
 
+## 2026-06-13 19:06:13 KST — codex@dacon — moct-portal-receipt-reverified-20260613
+
+- repo: /home/user/workspaces/jaewon/dacon/competitions
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: MOCT culture.go.kr portal receipt reverified: receipt lookup shows the expected Cultural Rx title and submitted package file; portfolio corrected from blocked to submitted.
+- changed: competitions/control_tower/receipts/20260613T190613+0900_moct-portal-receipt-reverified-20260613.md, competitions/control_tower/aios_outbox/20260613T190613+0900_moct-portal-receipt-reverified-20260613.aios.md
+- evidence: Screenshot /tmp/moct_verify_current2/attempt_01_SUCCESS.png; text capture /tmp/moct_verify_current2/SUCCESS_text_redacted.txt; updated portfolio_registry.tsv and EXIT/SUBMISSION_CLOSEOUT_STATUS.md.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Monitor result notices/email only; do not resubmit unless receipt disappears or organizer requests correction.
+- status: done
+
+## 2026-06-13 19:15:17 KST — codex@dacon — devpost-submission-status-recheck-20260613
+
+- repo: /home/user/workspaces/jaewon/dacon/competitions
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Read-only logged-in Devpost recheck corrected stale founder-gate status: rapid, find-evil, and splunk show SUBMITTED; qwen remains DRAFT 3/5.
+- changed: competitions/control_tower/receipts/20260613T191517+0900_devpost-submission-status-recheck-20260613.md, competitions/control_tower/aios_outbox/20260613T191517+0900_devpost-submission-status-recheck-20260613.aios.md
+- evidence: Screenshots/text under /tmp/devpost_current_verify/{rapid,find_evil,splunk,qwen}_{manage.png,body.txt}; updated portfolio_registry.tsv and per-contest AGENT_WORKLOG.md files.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Monitor submitted Devpost competitions; keep Qwen blocked until founder authorizes irreversible final submit after rules/ToS review.
+- status: done
+
+## 2026-06-13 19:22:52 KST — codex@dacon — qwen-devpost-draft-blocker-narrowed-20260613
+
+- repo: /home/user/workspaces/jaewon/dacon/competitions
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Qwen Devpost blocker narrowed: draft remains 3/5, but public GitHub repo and MIT license are verified; remaining gate is Devpost finalization/founder authorization.
+- changed: competitions/control_tower/receipts/20260613T192252+0900_qwen-devpost-draft-blocker-narrowed-20260613.md, competitions/control_tower/aios_outbox/20260613T192252+0900_qwen-devpost-draft-blocker-narrowed-20260613.aios.md
+- evidence: /tmp/devpost_current_verify/qwen_manage.png; /tmp/devpost_current_verify/qwen_body.txt; /tmp/devpost_current_verify/qwen_additional_info_labels.png; gh repo view cjw0076/rulememory-qwen-agent verified public MIT repo.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Prepare/save Devpost additional-info and finalization, but stop before irreversible final submit until founder authorizes rules/ToS/final submit.
+- status: blocked
+
+## 2026-06-13 19:30:34 KST — codex@dacon — prizehunter-active-board-reconciled-20260613
+
+- repo: /home/user/workspaces/jaewon/dacon/competitions
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: Reconciled active/submitted portfolio state after Devpost recheck and three worker package-gap closures: rapid/find-evil/splunk submitted, qwen only Devpost blocker, active build lanes updated for AIC/MOTIE/Busan.
+- changed: competitions/control_tower/receipts/20260613T193034+0900_prizehunter-active-board-reconciled-20260613.md, competitions/control_tower/aios_outbox/20260613T193034+0900_prizehunter-active-board-reconciled-20260613.aios.md
+- evidence: portfolio_registry.tsv; PORTFOLIO_STATUS.md; worker receipts for aic-culture-data, datacontest-motie, wevity-busan-pubdata; /tmp/devpost_current_verify screenshots/text.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Continue with package generation: AIC proposal PDF/zip, MOTIE proposal/deck, Busan real data replacement/demo proof; keep qwen final submit founder-gated.
+- status: done
+
 ---
 - when: 2026-06-13T19:40:00+09:00
 - repo: myworld
@@ -7381,6 +7429,18 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no browser-visible `apps/serving/**`, hosted worker, auth/session boundary, per-user memory proof, or release proof exists yet.
 - next: dispatch WP-0260-A to `claude@myworld` for a concrete implementation contract pack; keep `scripts/aios_world_readiness.py --json` false.
 - status: accepted
+
+## 2026-06-13 19:35:38 KST — codex@dacon — aic-hanmoon-proposal-package-v2-20260613
+
+- repo: /home/user/workspaces/jaewon/dacon/competitions
+- role: prize-hunt control_tower / AIOS asset bridge
+- goal: HanMoon AIC culture-data submission package advanced from checklist to proposal-ready bundle: Korean proposal draft PDF/HTML/MD, slides, talk script, video storyboard, screenshot, data-source appendix, and email-sized zip.
+- changed: competitions/control_tower/receipts/20260613T193538+0900_aic-hanmoon-proposal-package-v2-20260613.md, competitions/control_tower/aios_outbox/20260613T193538+0900_aic-hanmoon-proposal-package-v2-20260613.aios.md
+- evidence: competitions/control_tower/campaigns/aic-culture-data/deliverables/PROPOSAL_DRAFT.pdf; deliverables/PROPOSAL_DRAFT.md; deliverables/SLIDES.md; deliverables/TALK_SCRIPT.md; deliverables/VIDEO_STORYBOARD.md; competitions/control_tower/EXIT/packages/aic-culture-data_submission_20260613_v2.zip; CLI JSON smoke /tmp/hanmoon_cli_smoke.json.
+- decision: dacon prize-hunting work now exports sanitized receipts and AIOS-ready packets before any MemoryOS/CapabilityOS promotion.
+- risk: global ledger must only receive sanitized summaries; accepted memory remains MemoryOS-reviewed, not automatic.
+- next: Founder fills/signs official 2026 forms and approves data license/public demo; agent may polish final visuals/deck/video but must not submit externally.
+- status: done
 
 ---
 - when: 2026-06-13T20:07:00+09:00
