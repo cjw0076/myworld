@@ -5900,3 +5900,24 @@ schema_version: aios.agent_worklog.v1
   confirmation.
 - next: obtain/confirm the serving design brief; if no visual source is
   provided, route ASC-0253 to Product Design ideation before implementation.
+
+## 2026-06-13 19:40 KST — codex@myworld — ASC-0260 real-user serving release spine accepted
+
+- status: accepted / dispatched
+- scope: reframe serving as a real end-user served product, not local demo or
+  operator UI reuse.
+- operator confirmation: "아예 User들이 사용할 때 진짜 서빙용".
+- gate update: `.aios/serving/design_gate.json` now records the product goal as
+  real end-user AIOS serving, with `visual_target_type=needs_ideation`,
+  `next_product_design_step=ideate`, and `build_allowed=false`.
+- result: added `docs/contracts/ASC-0260-real-user-serving-release-spine.md`
+  and narrowed `ASC-0253` to visual/prototype scope only.
+- routing: CapabilityOS recommended AIOS readiness scoring, route planning, and
+  child watcher orchestration; GenesisOS critique required schema/table-based
+  framing and explicit assumptions, so ASC-0260 uses an owner/evidence matrix.
+- decision: no `apps/serving/**` implementation until Product Design ideation
+  produces a concrete visual target; production readiness also requires runtime,
+  auth/session, memory, provider-access, observability, support, and
+  launch-proof contracts.
+- next: dispatch WP-0260-A to `claude@myworld` for an implementation contract
+  pack; keep world readiness false until real serving evidence exists.

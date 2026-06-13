@@ -7368,3 +7368,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: no user-confirmed `.aios/serving/design_gate.json` exists yet, so ASC-0253 remains blocked before ideation/build.
 - next: ask the operator the generated questions, then write the gate artifact only after confirmation.
 - status: closed
+
+---
+- when: 2026-06-13T19:40:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane router / serving release gatekeeper
+- goal: accept ASC-0260 real-user serving release spine
+- changed: docs/contracts/ASC-0260-real-user-serving-release-spine.md, docs/contracts/ASC-0253-end-user-serving-prototype-scope.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: operator clarified the serving target is for real users; `.aios/serving/design_gate.json` written with `visual_target_type=needs_ideation`, `next_product_design_step=ideate`, and `build_allowed=false`; AIOS MemoryOS retrieved `rtrace_68986cdf59c789fe`; CapabilityOS route recommended readiness/child-watcher capabilities; GenesisOS critique forced table/schema and assumption-negation framing.
+- decision: ASC-0253 remains a visual/prototype slice and cannot build UI until a concrete visual target is accepted. Production serving readiness is split into Product Design, UI prototype, runtime profile, Hivemind worker, MemoryOS lifecycle, CapabilityOS provider-access/rate/consent, observability/support, readiness gate, and Genesis pre-launch challenge slices.
+- risk: no browser-visible `apps/serving/**`, hosted worker, auth/session boundary, per-user memory proof, or release proof exists yet.
+- next: dispatch WP-0260-A to `claude@myworld` for a concrete implementation contract pack; keep `scripts/aios_world_readiness.py --json` false.
+- status: accepted

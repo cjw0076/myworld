@@ -17,6 +17,13 @@ ASC-0252 made that boundary part of the readiness gate. The next step is a
 prototype/build contract, but it must not start by reusing the operator Control
 Center or inventing visuals without a Product Design brief.
 
+ASC-0260 further narrows the meaning of "serving": the target is a real
+end-user served product, not a local demo. This contract remains the first
+visual/prototype slice only. Production readiness requires the ASC-0260
+release spine: account/session boundary, per-user runtime authority, worker
+queue/resume, memory lifecycle, credential/rate/consent routing, redacted
+observability, incident/support flow, and release proof.
+
 ## Proposed Scope
 
 repos:
@@ -62,6 +69,16 @@ Before this contract is accepted, confirm:
    split into a separate myworld runtime contract.
 4. Browser verification target viewports and required first workflow path.
 
+Current Product Design gate state:
+
+- `.aios/serving/design_gate.json` exists;
+- `visual_target_type=needs_ideation`;
+- `next_product_design_step=ideate`;
+- `build_allowed=false`.
+
+Therefore this contract cannot move to UI implementation until Product Design
+ideation produces a concrete visual target and the gate is updated.
+
 ## Minimum Future Build Gates
 
 The accepted implementation contract should prove:
@@ -89,3 +106,5 @@ The accepted implementation contract should prove:
 - `approval_path_missing`
 - `privacy_boundary_ambiguous`
 - `world_readiness_claim_without_browser_proof`
+- `prototype_claimed_as_world_ready`
+- `local_demo_claimed_as_real_serving`
