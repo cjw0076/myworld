@@ -136,7 +136,7 @@ class AiosWorldReadinessTest(unittest.TestCase):
         self.assertEqual(payload["partial_count"], 1)
         serving = next(c for c in payload["checks"] if c["axis_id"] == "end_user_serving_readiness")
         self.assertEqual(serving["status"], "partial")
-        self.assertIn("ASC-0252", serving["next_contract"])
+        self.assertEqual(serving["next_contract"], "ASC-0253")
 
 
 if __name__ == "__main__":

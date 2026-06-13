@@ -5676,3 +5676,22 @@ schema_version: aios.agent_worklog.v1
   `docs/AIOS_AGENT_LEDGER.md`, `docs/AGENT_WORKLOG.md`.
 - deferred: no `apps/serving/` implementation until a separate prototype
   contract and visual/product direction are accepted.
+
+## 2026-06-13 15:38 KST — codex@myworld — ASC-0252 verified after Claude
+
+- status: done
+- scope: verify Claude's ASC-0252 readiness gate correction and set the next
+  action to the follow-on serving prototype scope.
+- result: `scripts/aios_world_readiness.py` now includes
+  `end_user_serving_readiness`; current repo reports
+  `ready_for_world_deployment=false` with seven infrastructure axes met and
+  the serving axis partial.
+- verification: `python3 -m unittest tests.test_aios_world_readiness -v`
+  passed 6/6; `python3 -m py_compile scripts/aios_world_readiness.py` passed;
+  `git diff --check` passed; readiness JSON emitted a valid not-ready payload.
+- dispatch note: `.aios/outbox/myworld/asc-0252.myworld.result.json` reports
+  Claude passed; `scripts/aios_child_watcher.sh once --repo myworld` still
+  returns `unsupported repo: myworld`, so myworld-targeted Claude dispatch
+  execution needs a first-class bridge.
+- next: ASC-0253 proposed for the actual `apps/serving/` prototype after
+  Product Design brief/visual target confirmation.

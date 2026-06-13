@@ -7199,3 +7199,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: none; gate is now conservative — false-negative impossible until serving implementation exists
 - next: follow-on prototype contract for apps/serving/ (new task, visual target or brief required first)
 - status: closed
+
+---
+- when: 2026-06-13T15:38:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: verifier / follow-on router
+- goal: verify ASC-0252 and route service-readiness gap to ASC-0253
+- changed: scripts/aios_world_readiness.py, tests/test_aios_world_readiness.py, docs/contracts/ASC-0252-serving-readiness-gate-correction.md, docs/contracts/ASC-0253-end-user-serving-prototype-scope.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: focused world-readiness tests passed 6/6; py_compile passed; git diff check passed; readiness JSON now reports seven infrastructure axes met, `end_user_serving_readiness=partial`, `ready_for_world_deployment=false`, and `next_action=ASC-0253`.
+- decision: service-readiness overclaim is corrected. AIOS is not world-ready as a user-facing service until the serving surface/runtime/browser proof exists.
+- risk: `aios_child_watcher.sh` cannot execute `--repo myworld`, so myworld-targeted Claude dispatches still need a manual/provider-specific bridge or watcher support.
+- next: accept or refine ASC-0253 after Product Design brief/visual target; then build the first `apps/serving/` workflow.
+- status: closed

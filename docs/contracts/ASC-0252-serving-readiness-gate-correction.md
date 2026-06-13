@@ -213,12 +213,31 @@ serving_readiness.status != met
 
 - target_repo: `myworld`
 - target_agent: `claude`
-- status: issued
+- status: passed
 - instruction: Correct `scripts/aios_world_readiness.py` and
   `tests/test_aios_world_readiness.py` so the world readiness gate cannot
   report service deployment readiness until the end-user serving interface and
   runtime proof exist. Do not create UI code or touch forbidden paths.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0252.myworld.result.json`
+
+## Result
+
+Closed.
+
+Claude added the eighth readiness axis:
+
+- `end_user_serving_readiness`
+
+Codex verified and adjusted the follow-on pointer so current repository
+readiness now reports:
+
+- seven infrastructure axes `met`;
+- `end_user_serving_readiness=partial`;
+- `ready_for_world_deployment=false`;
+- `next_action=ASC-0253`.
+
+This prevents AIOS from claiming service deployment readiness while the user
+serving surface/runtime/browser proof remain absent.
 
 ## Stop Conditions
 

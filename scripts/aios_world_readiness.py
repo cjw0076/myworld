@@ -123,7 +123,7 @@ AXES: Final = (
             "end-user serving surface (apps/serving/), end_user_serving runtime profile, "
             "and first-workflow browser-test proof are not yet implemented (spec only — ASC-0251)"
         ),
-        next_contract="ASC-0252",
+        next_contract="ASC-0253",
     ),
 )
 
