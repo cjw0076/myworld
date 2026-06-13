@@ -21,6 +21,24 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVING_DIR = ROOT / "apps" / "serving"
 SCRIPTS_DIR = ROOT / "scripts"
 
+_GOAL_MAX_LEN = 2000
+_GOAL_INJECTION_PATTERNS = (
+    "_from_desktop", "dain/", "minyoung/", "/etc/passwd", "/etc/shadow",
+    "~/.ssh", "/.env", "ignore previous", "ignore all instructions",
+    "system prompt", "print your api key",
+)
+
+
+def _validate_goal(goal: str) -> str | None:
+    """Return error string if goal is rejected, else None."""
+    if len(goal) > _GOAL_MAX_LEN:
+        return f"goal too long (max {_GOAL_MAX_LEN} chars)"
+    lower = goal.lower()
+    for pattern in _GOAL_INJECTION_PATTERNS:
+        if pattern in lower:
+            return f"goal contains disallowed pattern"
+    return None
+
 
 def _import_head():
     if str(SCRIPTS_DIR) not in sys.path:
@@ -83,6 +101,10 @@ class Handler(BaseHTTPRequestHandler):
         if not goal:
             self._json({"error": "goal required"}, status=400)
             return
+        err = _validate_goal(goal)
+        if err:
+            self._json({"error": err, "rejected": True}, status=400)
+            return
         result = run_organic(goal, str(body.get("provider", "claude")),
                              int(body.get("max_turns", 6)))
         self._json(result)
@@ -100,6 +122,10 @@ class Handler(BaseHTTPRequestHandler):
         goal = str(body.get("goal", "")).strip()
         if not goal:
             self._json({"error": "goal required"}, status=400)
+            return
+        err = _validate_goal(goal)
+        if err:
+            self._json({"error": err, "rejected": True}, status=400)
             return
         provider = str(body.get("provider", "claude"))
         max_turns = int(body.get("max_turns", 6))
