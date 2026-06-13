@@ -342,17 +342,23 @@ def main(argv: list[str] | None = None) -> int:
         retriever = lambda g: bridge.retrieve(g, root_path)
         memory_sink = lambda c: bridge.writeback(c, root_path)
 
-    try:
-        contract, errors = compile_goal(
-            args.goal, workspace_root=args.root, planner=planner,
-            allow_write=args.allow_write, allow_network=args.allow_network,
-            retriever=retriever)
-    except ValueError as exc:
-        print(json.dumps({"status": "plan_parse_error", "detail": str(exc)}, indent=2))
-        return 1
+    contract, errors = compile_goal(
+        args.goal, workspace_root=args.root, planner=planner,
+        allow_write=args.allow_write, allow_network=args.allow_network,
+        retriever=retriever, planner_label=args.provider)
 
     if args.save:
         Path(args.save).write_text(contract.to_json(), encoding="utf-8")
+
+    pr = contract.planner_receipt
+    if pr is not None and pr.parse_status == "failed":
+        # Failed planning is not invisible: surface the receipt diagnostic
+        # (hash + length, never the raw planner body).
+        print(json.dumps({"status": "plan_parse_error", "detail": pr.error,
+                          "planner_receipt": {"raw_body_hash": pr.raw_body_hash,
+                                              "raw_body_len": pr.raw_body_len,
+                                              "parse_status": pr.parse_status}}, indent=2))
+        return 1
 
     if errors:
         print(json.dumps({"status": "plan_rejected", "reason": "exceeds granted authority",
