@@ -7043,3 +7043,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — purely additive check; audit trail preserved; no dispatch records mutated
 - next: round controller now unblocked from hold_for_monitor; verify service-readiness loop resumes
 - status: done
+
+---
+- when: 2026-06-13T14:40:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: ASC-0245 + ASC-0246 — kernel authority correctness (P0 security fixes)
+- changed: scripts/aios_contract_object.py, scripts/aios_contract_runner.py, scripts/aios_frontier_question.py, scripts/aios_dogfood_route.py, tests/test_aios_contract_object.py, tests/test_aios_contract_runner.py
+- evidence: commit 4e7291d (38/38 tests pass); commit a3f964c (AIOS_MEMORY_DIR portability); .aios/outbox/myworld/asc-0245.myworld.result.json; .aios/outbox/myworld/asc-0246.myworld.result.json
+- decision: fixed 3 P0 kernel authority holes: (1) fs.list bypassed authorize_step, (2) path traversal via ../ not caught before scope check, (3) user.checkpoint fell to unknown syscall on approved resume. Also fixed symlink escape via Path.resolve() and hardcoded memory path portability in 2 scripts. ASC-0246 was rendered complete by 4e7291d before its packet arrived.
+- risk: low — all changes are additive guards; no existing behavior removed; 38 tests green
+- next: monitor incoming packets; collect dispatch watcher results
+- status: done

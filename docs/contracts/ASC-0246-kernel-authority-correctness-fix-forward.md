@@ -1,12 +1,12 @@
 ---
 contract_id: ASC-0246
 slug: kernel-authority-correctness-fix-forward
-status: accepted
+status: closed
 goal: Finish ASC-0245 after failed verification by fixing test imports and completing the missing authority regression coverage without broadening scope.
 created: 2026-06-13T14:26:00+09:00
 accepted: 2026-06-13T14:26:00+09:00
 human_approved: true
-closed:
+closed: 2026-06-13T14:40:00+09:00
 origin: ASC-0245 produced partial implementation but failed its verification gate.
 ---
 

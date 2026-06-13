@@ -1,12 +1,12 @@
 ---
 contract_id: ASC-0245
 slug: kernel-authority-correctness
-status: accepted
+status: closed
 goal: Close the first AIOS product-kernel authority holes before service packaging by hardening filesystem scope enforcement and checkpoint continuation.
 created: 2026-06-13T14:22:00+09:00
 accepted: 2026-06-13T14:22:00+09:00
 human_approved: true
-closed:
+closed: 2026-06-13T14:40:00+09:00
 origin: external architecture review in `1.md` identified PR-1 kernel authority correctness as the shortest next productization slice.
 ---
 
