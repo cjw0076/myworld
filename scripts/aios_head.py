@@ -305,8 +305,12 @@ def _organ_preamble(goal: str, root: Path) -> dict:
                   "--task", goal, "--json"], root / "memoryOS")
     cap = _shell([sys.executable, "-m", "capabilityos.cli", "recommend",
                   "--task", goal, "--json"], root / "CapabilityOS")
+    mem_data = (mem.get("data") or {}) if mem["status"] == "ok" else {}
+    # context build returns `context_items` (int count) not `selected` (list)
+    mem_hit_count = mem_data.get("context_items", 0) or len(mem_data.get("selected", []))
     return {
-        "memory_hits": len((mem.get("data") or {}).get("selected", [])) if mem["status"] == "ok" else 0,
+        "memory_hits": mem_hit_count,
+        "memory_accepted": mem_data.get("total_accepted", 0),
         "memory_status": mem["status"],
         "capability_status": cap["status"],
         "top_capability": ((cap.get("data") or {}).get("top", []) or [{}])[0].get("id") if cap["status"] == "ok" else None,
