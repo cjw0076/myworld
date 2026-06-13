@@ -828,3 +828,28 @@ AIOS가 이것을 흡수하려면:
   - **Verifier hooks enforce operator checkpoint invariant**: the Write tool has a hook that detects `status: accepted` + `human_approved: true` in contract files and blocks it unless a legitimate acceptance flow was followed. This is a production AIOS invariant enforcement, not an error. Work with it, not around it.
   - **Two ASC-0271 files coexist legitimately**: (1) canonical stub `proposed` (8 invariants + sequencing + stop conditions from prior session); (2) AUX comprehensive draft (10 invariants + 5 follow-on contracts + growth gates). Founder can choose either or merge. Having two is fine; circular-supersede between them is not.
 - aios_absorption_candidate: post-compaction state check as a named operator primitive (check_session_state_before_act). The pattern: after any context gap, run `ls .aios/outbox/`, tail worklog, tail ledger, check inbox before deciding next action.
+
+## 2026-06-14 03:50 KST — claude@myworld — Gate A complete; genesis entropy injection; session final approach
+
+- session_id: loop-20260614-compact-resume-2
+- mode_breakdown: observe:5 verify:10 decide:8 intervene:3 escalate:0 minutes:~50
+- tools_used: Bash(dispatch status, git, pytest), Edit(contract status→closed), Write(result packets, aios_session_entropy.py), Read(checkpoint, contract, ledger), Agent, Workflow(none)
+- tools_NOT_used (because of CLI gap): no persistent monitor (loop already armed), no Workflow (single sequential chain was correct)
+- substrate_specific_behaviors_observed:
+  - **Post-compaction pickup**: wrote ASC-0272 result packet, then ran `aios_dispatch.py collect` — returned empty. Packets were already marked collected by dispatch script. Had to check contract status directly.
+  - **Checkpoint resume bug**: `python3 scripts/aios_checkpoint.py resume chk-2026-06-14T03-27-34` returned "No checkpoint to resume from" because checkpoint files are named `YYYY-MM-DDTHH-MM-SS.json` but the ID is `chk-YYYY-MM-DDTHH-MM-SS`. Glob `*chk-*` found nothing. Fixed by `stripprefix("chk-")` before glob.
+  - **Backlog reader bug**: `_read_backlog()` included completed items (from the "완료" section) because it matched any line starting with `| WORK-`. Fixed with section-aware parser that stops at "진행 중"/"완료" headers.
+  - **Genesis entropy injection**: session at 10.8 hours (pressure 5/5). Genesis critic found 2 prison signatures: mono-language (prose without schema/table/code) and single-frame (no cross-domain analogies). Applied escape vectors: (1) restated work as table, (2) applied airport analogy → "final approach" mode for remaining session.
+  - **Genesis challenger changes decisions**: the `mono-language` + `single-frame` findings caused me to shift from "start WORK-0001 Akashic Records" to "WORK-0001 is too big for final approach mode — complete small items, checkpoint, handoff."
+- failures_recovered:
+  - `aios_checkpoint.py resume <id>`: `chk-` prefix stripped before glob lookup
+  - `_read_backlog`: section-aware parser stops at 완료 section
+  - `aios_dispatch.py collect`: returned empty (correct — packets already collected); contract status check needed instead
+- failures_escalated_to_founder: none
+- key_decision: gate A complete — ASC-0272~0276 all closed. WORK-0001 (Akashic Records) deferred to next session per genesis challenge (too big for 10.8h session final approach). Gate B still blocked on founder visual target selection.
+- new_invariant_or_pattern_discovered:
+  - **Session entropy injection as anti-convergence tool**: after >4h sessions, pressure reaches level 5, genesis critic runs every 10 minutes. First injection found mono-language + single-frame prison signatures in a prose-heavy operator session. The critic actually changed the trajectory of work — that's the point.
+  - **"Final approach" session frame**: use the airport analogy for long sessions. >8h = final approach. Don't start new long-term projects; instead: complete small items, write checkpoint, write self-observation log, prepare clean handoff for next session.
+  - **Gate A work can be done from myworld context**: all 4 child-repo implementations (memoryOS, CapabilityOS, GenesisOS×2) were executed from myworld without needing separate session context. The child repos are accessible via filesystem; tests run with `python3 -m pytest` from the child dir.
+- self-correction-of-prior-observation: none
+- aios_absorption_candidate: session entropy injection as a named AIOS primitive. `aios_session_entropy.py check/inject` with pressure levels 1-5, min-interval scaling, genesis critic integration, and event emission to primitives bus. Pattern: as session length grows, entropy injection frequency grows to combat convergence. ASC absorption: this is the behavioral loop AIOS needs to self-maintain reasoning quality in long sessions.
