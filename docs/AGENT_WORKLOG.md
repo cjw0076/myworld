@@ -6214,3 +6214,32 @@ oversight once their dependencies close.
   `python3 scripts/aios_serving_design_gate.py select --root . --option-id <id> --confirmed-by-user --write --json`.
 - This command only updates the local ignored design gate. It still does not
   build `apps/serving/**`; ASC-0253 owns that follow-up.
+
+## 2026-06-14 Codex — Starting AIOS Dream Expansion / Claude Hardening Split
+
+### Planned work
+- Preserve an aggressive AIOS dream/growth map as speculative evidence.
+- Delegate system hardening to Claude through an accepted MyWorld contract.
+
+### Files I expect to touch
+- `docs/discoveries/2026-06-14-aios-dream-explosive-expansion.md`
+- `docs/contracts/ASC-0270-aios-dream-expansion-claude-hardening.md`
+- `docs/AGENT_WORKLOG.md`
+- `docs/AIOS_AGENT_LEDGER.md`
+
+### Coordination note for other agents
+- Codex owns product/growth/frontier framing here.
+- Claude owns hardening, invariants, and contract pack critique.
+- No `apps/**`, child repo, credential, or private-history file should be
+  touched in this slice.
+
+### Completion evidence
+- External baseline checked: OpenAI Agents SDK/sandbox material, Anthropic MCP
+  docs, and Google A2A docs.
+- Verification passed: `test -f docs/discoveries/2026-06-14-aios-dream-explosive-expansion.md`.
+- Verification passed: `python3 scripts/aios_serving_release_gate.py assess --root . --json`
+  kept `ready_for_production_serving=false`.
+- Verification passed: `python3 scripts/aios_world_readiness.py --json` kept
+  `ready_for_world_deployment=false`.
+- Verification passed: `git diff --check`.
+- Next: commit/push the Codex dream slice, then retry Claude hardening dispatch.

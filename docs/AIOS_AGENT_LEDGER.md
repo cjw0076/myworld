@@ -7534,3 +7534,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: operator still has not selected option 1, 2, 3, or a revised hybrid, so production serving remains not ready and `apps/serving/**` remains blocked.
 - next: after operator selection, run `aios_serving_design_gate.py select --option-id <id> --confirmed-by-user --write --json`, then dispatch ASC-0253 serving UI prototype.
 - status: closed
+
+---
+- when: 2026-06-14T02:30:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: GenesisOS-assisted dream / growth router
+- goal: accept ASC-0270 and split AIOS dream expansion from Claude hardening
+- changed: docs/discoveries/2026-06-14-aios-dream-explosive-expansion.md, docs/contracts/ASC-0270-aios-dream-expansion-claude-hardening.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: GenesisOS `diverge` produced five branches with local qwen3:8b helper output; GenesisOS `discomfort` named `provider_blindspot`; GenesisOS `critic` flagged mono-language, single-frame, assumption-silent, and time-frozen; external baseline checked OpenAI Agents SDK/sandbox material, Anthropic MCP docs, and Google A2A docs.
+- decision: Codex opens aggressive product/growth vectors; Claude is assigned to harden the dream into invariants, stop conditions, and owner-bound contract packs without broad implementation.
+- risk: dream artifacts can become vague unless Claude turns them into bounded invariants; serving UI remains blocked until visual target selection and browser proof.
+- next: dispatch ASC-0270 to `claude@myworld`; after Claude hardening, keep Codex on visible serving/product growth lane.
+- status: accepted
