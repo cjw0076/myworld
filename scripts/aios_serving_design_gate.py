@@ -12,8 +12,16 @@ from typing import Any, Final
 SCHEMA_VERSION: Final = "aios.serving_design_gate.v1"
 DEFAULT_ARTIFACT: Final = Path(".aios/serving/design_gate.json")
 INTERACTIVITY_LEVELS: Final = {"full", "static"}
-VISUAL_TARGET_TYPES: Final = {"url", "screenshot", "figma", "image", "design_system", "needs_ideation"}
-NEXT_PRODUCT_DESIGN_STEPS: Final = {"ideate", "prototype"}
+VISUAL_TARGET_TYPES: Final = {
+    "url",
+    "screenshot",
+    "figma",
+    "image",
+    "design_system",
+    "needs_ideation",
+    "needs_selection",
+}
+NEXT_PRODUCT_DESIGN_STEPS: Final = {"ideate", "select_visual_target", "prototype"}
 REQUIRED_STOP_CONDITIONS: Final = {
     "ui_implementation_before_visual_target",
     "serving_ui_reuses_operator_control_center",
@@ -63,9 +71,9 @@ def validate_gate(payload: dict[str, Any]) -> list[str]:
     if visual_target_type and visual_target_type not in VISUAL_TARGET_TYPES:
         errors.append(f"visual_target_type must be one of {', '.join(sorted(VISUAL_TARGET_TYPES))}")
     visual_target_ref = payload.get("visual_target_ref")
-    if visual_target_type != "needs_ideation":
+    if visual_target_type not in {"needs_ideation", "needs_selection"}:
         if not isinstance(visual_target_ref, str) or not visual_target_ref.strip():
-            errors.append("visual_target_ref is required unless visual_target_type is needs_ideation")
+            errors.append("visual_target_ref is required unless visual_target_type is needs_ideation or needs_selection")
     next_step = nonempty_string(payload, "next_product_design_step", errors)
     if next_step and next_step not in NEXT_PRODUCT_DESIGN_STEPS:
         errors.append(f"next_product_design_step must be one of {', '.join(sorted(NEXT_PRODUCT_DESIGN_STEPS))}")
@@ -74,6 +82,23 @@ def validate_gate(payload: dict[str, Any]) -> list[str]:
             errors.append("needs_ideation requires next_product_design_step=ideate")
         if payload.get("build_allowed") is not False:
             errors.append("needs_ideation requires build_allowed=false")
+    elif visual_target_type == "needs_selection":
+        if next_step and next_step != "select_visual_target":
+            errors.append("needs_selection requires next_product_design_step=select_visual_target")
+        if payload.get("build_allowed") is not False:
+            errors.append("needs_selection requires build_allowed=false")
+        options = payload.get("ideation_options")
+        if not isinstance(options, list) or not options:
+            errors.append("needs_selection requires non-empty ideation_options")
+        elif not all(
+            isinstance(item, dict)
+            and isinstance(item.get("id"), str)
+            and item["id"].strip()
+            and isinstance(item.get("path"), str)
+            and item["path"].strip()
+            for item in options
+        ):
+            errors.append("ideation_options entries require non-empty id and path")
     elif visual_target_type:
         if next_step and next_step != "prototype":
             errors.append("concrete visual_target_type requires next_product_design_step=prototype")
@@ -134,6 +159,10 @@ def build_questions() -> dict[str, Any]:
                 "next_product_design_step": "ideate",
                 "build_allowed": False,
             },
+            "needs_selection": {
+                "next_product_design_step": "select_visual_target",
+                "build_allowed": False,
+            },
             "concrete_visual_target": {
                 "next_product_design_step": "prototype",
                 "build_allowed": True,
@@ -150,8 +179,13 @@ def build_draft(
     confirmed_by_user: bool,
 ) -> dict[str, Any]:
     visual_type = visual_target_type.strip()
-    next_step = "ideate" if visual_type == "needs_ideation" else "prototype"
-    build_allowed = bool(confirmed_by_user and visual_type != "needs_ideation")
+    if visual_type == "needs_ideation":
+        next_step = "ideate"
+    elif visual_type == "needs_selection":
+        next_step = "select_visual_target"
+    else:
+        next_step = "prototype"
+    build_allowed = bool(confirmed_by_user and visual_type not in {"needs_ideation", "needs_selection"})
     return {
         "schema_version": SCHEMA_VERSION,
         "product_goal": product_goal.strip(),
@@ -163,6 +197,17 @@ def build_draft(
         "build_allowed": build_allowed,
         "stop_conditions": sorted(REQUIRED_STOP_CONDITIONS),
     }
+
+
+def next_action_for(payload: dict[str, Any] | None, ready: bool) -> str:
+    if not ready or payload is None:
+        return "product_design_get_context"
+    step = payload.get("next_product_design_step")
+    if step == "ideate":
+        return "product_design_ideate"
+    if step == "select_visual_target":
+        return "product_design_select_visual_target"
+    return "ASC-0253"
 
 
 def assess(root: Path, raw_path: str | None = None) -> dict[str, Any]:
@@ -178,7 +223,7 @@ def assess(root: Path, raw_path: str | None = None) -> dict[str, Any]:
         "ready": ready,
         "status": "ready" if ready else "missing" if payload is None else "incomplete",
         "errors": errors,
-        "next_action": "ASC-0253" if ready else "product_design_get_context",
+        "next_action": next_action_for(payload, ready),
         "artifact": payload if ready else None,
     }
 
@@ -239,6 +284,74 @@ def cmd_draft(args: argparse.Namespace) -> int:
     return 0 if args.json or not errors else 1
 
 
+def select_option(payload: dict[str, Any], option_id: str, root: Path) -> tuple[dict[str, Any], list[str]]:
+    errors = validate_gate(payload)
+    if errors:
+        return payload, errors
+    if payload.get("visual_target_type") != "needs_selection":
+        return payload, ["select requires visual_target_type=needs_selection"]
+    options = payload.get("ideation_options")
+    assert isinstance(options, list)
+    selected = next(
+        (
+            item
+            for item in options
+            if isinstance(item, dict) and item.get("id") == option_id
+        ),
+        None,
+    )
+    if selected is None:
+        return payload, [f"unknown option_id: {option_id}"]
+    visual_ref = str(selected["path"]).strip()
+    visual_path = root / visual_ref
+    if not visual_path.exists():
+        return payload, [f"selected visual target does not exist: {visual_ref}"]
+    updated = dict(payload)
+    updated["visual_target_type"] = "image"
+    updated["visual_target_ref"] = visual_ref
+    updated["selected_option_id"] = option_id
+    updated["next_product_design_step"] = "prototype"
+    updated["build_allowed"] = True
+    updated["selection_status"] = "visual_target_selected"
+    updated["selected_option_label"] = selected.get("label", option_id)
+    return updated, validate_gate(updated)
+
+
+def cmd_select(args: argparse.Namespace) -> int:
+    root = Path(args.root).resolve()
+    path = artifact_path(root, args.artifact)
+    payload, load_errors = load_artifact(path)
+    errors = list(load_errors)
+    selected: dict[str, Any] | None = None
+    if payload is not None:
+        if not args.confirmed_by_user:
+            errors.append("select requires --confirmed-by-user")
+        else:
+            selected, selection_errors = select_option(payload, args.option_id, root)
+            errors.extend(selection_errors)
+    output = {
+        "schema_version": "aios.serving_design_gate.select.v1",
+        "ready": not errors,
+        "status": "ready" if not errors else "incomplete",
+        "errors": errors,
+        "artifact_path": path.relative_to(root).as_posix() if path.is_relative_to(root) else path.as_posix(),
+        "selected_option_id": args.option_id,
+        "artifact": selected if selected is not None and not errors else None,
+        "written": False,
+    }
+    if args.write and not errors and selected is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(selected, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        output["written"] = True
+    if args.json:
+        print(json.dumps(output, ensure_ascii=False, indent=2, sort_keys=True))
+    else:
+        print(f"serving_design_gate_select={output['status']} ready={output['ready']} written={output['written']}")
+        for error in errors:
+            print(f"- {error}")
+    return 0 if args.json or not errors else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Assess AIOS serving Product Design gate readiness")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -257,6 +370,15 @@ def build_parser() -> argparse.ArgumentParser:
     draft_cmd.add_argument("--write", action="store_true")
     draft_cmd.add_argument("--json", action="store_true")
     draft_cmd.set_defaults(func=cmd_draft)
+
+    select_cmd = sub.add_parser("select", help="select one generated serving design option as the concrete visual target")
+    select_cmd.add_argument("--root", default=".")
+    select_cmd.add_argument("--artifact")
+    select_cmd.add_argument("--option-id", required=True)
+    select_cmd.add_argument("--confirmed-by-user", action="store_true")
+    select_cmd.add_argument("--write", action="store_true")
+    select_cmd.add_argument("--json", action="store_true")
+    select_cmd.set_defaults(func=cmd_select)
 
     assess_cmd = sub.add_parser("assess", help="assess serving design gate artifact")
     assess_cmd.add_argument("--root", default=".")

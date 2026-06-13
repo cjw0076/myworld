@@ -35,6 +35,31 @@ def complete_gate() -> dict:
     }
 
 
+def selection_gate(root: Path) -> dict:
+    asset = root / "docs" / "product" / "assets" / "aios-serving-option-01-task-cabin.png"
+    asset.parent.mkdir(parents=True, exist_ok=True)
+    asset.write_text("fake image fixture\n", encoding="utf-8")
+    return {
+        "schema_version": "aios.serving_design_gate.v1",
+        "product_goal": "End user creates an AIOS task and reviews progress, approval, memory draft, and artifact output.",
+        "visual_target_type": "needs_selection",
+        "visual_target_ref": "",
+        "interactivity_level": "full",
+        "confirmed_by_user": True,
+        "next_product_design_step": "select_visual_target",
+        "build_allowed": False,
+        "ideation_options": [
+            {
+                "id": "option_1_task_cabin",
+                "label": "Task Cabin",
+                "path": "docs/product/assets/aios-serving-option-01-task-cabin.png",
+            }
+        ],
+        "selected_option_id": "",
+        "stop_conditions": REQUIRED_STOP_CONDITIONS,
+    }
+
+
 class AiosServingDesignGateTest(unittest.TestCase):
     def run_gate(self, root: Path, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
@@ -111,7 +136,7 @@ class AiosServingDesignGateTest(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertTrue(payload["ready"])
             self.assertEqual(payload["status"], "ready")
-            self.assertEqual(payload["next_action"], "ASC-0253")
+            self.assertEqual(payload["next_action"], "product_design_ideate")
             self.assertEqual(payload["artifact"]["next_product_design_step"], "ideate")
             self.assertFalse(payload["artifact"]["build_allowed"])
 
@@ -150,6 +175,23 @@ class AiosServingDesignGateTest(unittest.TestCase):
             self.assertTrue(payload["ready"], payload["errors"])
             self.assertEqual(payload["artifact"]["next_product_design_step"], "prototype")
             self.assertTrue(payload["artifact"]["build_allowed"])
+            self.assertEqual(payload["next_action"], "ASC-0253")
+
+    def test_needs_selection_gate_is_ready_for_selection_not_build(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text(json.dumps(selection_gate(root)), encoding="utf-8")
+
+            result = self.run_gate(root, "assess", "--root", root.as_posix(), "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ready"], payload["errors"])
+            self.assertEqual(payload["next_action"], "product_design_select_visual_target")
+            self.assertEqual(payload["artifact"]["next_product_design_step"], "select_visual_target")
+            self.assertFalse(payload["artifact"]["build_allowed"])
 
     def test_questions_outputs_required_intake_fields(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -197,6 +239,80 @@ class AiosServingDesignGateTest(unittest.TestCase):
             self.assertEqual(payload["artifact"]["next_product_design_step"], "ideate")
             self.assertFalse(payload["artifact"]["build_allowed"])
             self.assertFalse((root / ".aios" / "serving" / "design_gate.json").exists())
+
+    def test_select_requires_user_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text(json.dumps(selection_gate(root)), encoding="utf-8")
+
+            result = self.run_gate(
+                root,
+                "select",
+                "--root",
+                root.as_posix(),
+                "--option-id",
+                "option_1_task_cabin",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ready"])
+            self.assertTrue(any("--confirmed-by-user" in error for error in payload["errors"]))
+
+    def test_select_unknown_option_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text(json.dumps(selection_gate(root)), encoding="utf-8")
+
+            result = self.run_gate(
+                root,
+                "select",
+                "--root",
+                root.as_posix(),
+                "--option-id",
+                "option_9_missing",
+                "--confirmed-by-user",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ready"])
+            self.assertTrue(any("unknown option_id" in error for error in payload["errors"]))
+
+    def test_select_option_can_write_concrete_image_target(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            artifact = root / ".aios" / "serving" / "design_gate.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text(json.dumps(selection_gate(root)), encoding="utf-8")
+
+            result = self.run_gate(
+                root,
+                "select",
+                "--root",
+                root.as_posix(),
+                "--option-id",
+                "option_1_task_cabin",
+                "--confirmed-by-user",
+                "--write",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ready"], payload["errors"])
+            self.assertTrue(payload["written"])
+            selected = json.loads(artifact.read_text(encoding="utf-8"))
+            self.assertEqual(selected["visual_target_type"], "image")
+            self.assertEqual(selected["selected_option_id"], "option_1_task_cabin")
+            self.assertEqual(selected["next_product_design_step"], "prototype")
+            self.assertTrue(selected["build_allowed"])
 
     def test_draft_concrete_visual_target_can_write_ready_gate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

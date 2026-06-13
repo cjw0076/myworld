@@ -6193,3 +6193,24 @@ oversight once their dependencies close.
   `visual_target_type=needs_selection`, `build_allowed=false`.
 - Next owner action: operator selects option 1, 2, or 3, or requests a revised
   hybrid before ASC-0253 UI prototype work starts.
+
+## 2026-06-14 Codex — Completed Serving Design Target Selection CLI
+
+### What I Changed
+- Added ASC-0269 as the replayable selection contract.
+- Extended `scripts/aios_serving_design_gate.py` with `needs_selection` and
+  `select`.
+- Added tests proving selection requires user confirmation, known option ids,
+  existing image files, and keeps build blocked until an option is selected.
+
+### Commands Run
+- `python3 -m unittest tests.test_aios_serving_design_gate -v` -> 14/14 passed.
+- `python3 -m py_compile scripts/aios_serving_design_gate.py` -> passed.
+- `python3 scripts/aios_serving_design_gate.py assess --root . --json` ->
+  valid gate, `next_action=product_design_select_visual_target`.
+
+### Notes For Other Agents
+- The operator can now select an option with
+  `python3 scripts/aios_serving_design_gate.py select --root . --option-id <id> --confirmed-by-user --write --json`.
+- This command only updates the local ignored design gate. It still does not
+  build `apps/serving/**`; ASC-0253 owns that follow-up.

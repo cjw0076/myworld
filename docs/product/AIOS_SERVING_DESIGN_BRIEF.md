@@ -94,6 +94,23 @@ Recommended next step:
 2. Update `.aios/serving/design_gate.json` to a concrete visual target.
 3. Only then accept/build the `apps/serving/**` prototype contract.
 
+Replayable selection command after the operator chooses an option:
+
+```bash
+python3 scripts/aios_serving_design_gate.py select \
+  --root . \
+  --option-id option_1_task_cabin \
+  --confirmed-by-user \
+  --write \
+  --json
+```
+
+Valid option ids:
+
+- `option_1_task_cabin`
+- `option_2_mission_control`
+- `option_3_memory_first_service_desk`
+
 ## Stop Conditions
 
 - `ui_implementation_before_visual_target`

@@ -7521,3 +7521,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: Image Gen in this tool surface could not accept local screenshot attachments, so inspected screenshots were summarized into text prompts instead of attached directly.
 - next: operator selects option 1, 2, or 3, or requests a revised hybrid; only then update the design gate to a concrete image target and dispatch the serving UI prototype.
 - status: closed
+
+---
+- when: 2026-06-14T02:20:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane implementer / Product Design gatekeeper
+- goal: close ASC-0269 serving design target selection CLI
+- changed: scripts/aios_serving_design_gate.py, tests/test_aios_serving_design_gate.py, docs/contracts/ASC-0269-serving-design-target-selection-cli.md, docs/product/AIOS_SERVING_DESIGN_BRIEF.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: focused design-gate tests passed 14/14; py_compile passed; current design gate assesses as valid `product_design_select_visual_target`.
+- decision: AIOS now has a replayable `select` command that promotes a known generated option into a concrete `image` target only with `--confirmed-by-user`; this removes hand-edit ambiguity without starting UI implementation.
+- risk: operator still has not selected option 1, 2, 3, or a revised hybrid, so production serving remains not ready and `apps/serving/**` remains blocked.
+- next: after operator selection, run `aios_serving_design_gate.py select --option-id <id> --confirmed-by-user --write --json`, then dispatch ASC-0253 serving UI prototype.
+- status: closed
