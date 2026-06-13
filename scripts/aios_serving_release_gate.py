@@ -128,6 +128,7 @@ SLICES: Final = (
         title="Production-serving release readiness gate",
         owner="myworld",
         required_markers=(
+            "docs/research/AIOS_AGENT_SERVICE_BASELINE_2026-06-13.md",
             "scripts/aios_serving_release_gate.py",
             "tests/test_aios_serving_release_gate.py",
             "scripts/aios_world_readiness.py",

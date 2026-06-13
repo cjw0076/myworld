@@ -7407,3 +7407,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: current repo still lacks Product Design concrete visual target, serving UI proof, Hivemind worker, MemoryOS per-user lifecycle, CapabilityOS serving access routing, observability/support redaction, and Genesis launch proof.
 - next: run Product Design ideation for Slice 1; dispatch owner-bound contracts for Hivemind/MemoryOS/CapabilityOS slices when authorized.
 - status: closed
+
+---
+- when: 2026-06-13T20:25:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane researcher / release gate binder
+- goal: close ASC-0262 agent-service baseline and serving ideation brief
+- changed: docs/research/AIOS_AGENT_SERVICE_BASELINE_2026-06-13.md, docs/contracts/ASC-0262-agent-service-baseline-and-serving-ideation-brief.md, scripts/aios_serving_release_gate.py, tests/test_aios_serving_release_gate.py, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: official OpenAI Agents SDK/Sandbox Agents/Codex cloud docs checked; Anthropic Claude Managed Agents release notes checked; Google Gemini Interactions/Deep Research/session-resumption docs checked; Product Design user-context preflight reported no saved visual context; serving release gate remains not ready and world readiness remains false.
+- decision: external agent-service evolution is now a release-readiness input. AIOS must prove durable session state, resumable sandbox workspaces, typed execution/background work, access-grant credentials, governed memory, cited research ingestion, observability, and Genesis anti-convergence before real serving launch.
+- risk: baseline is source-backed research, not implementation; MemoryOS/CapabilityOS/GenesisOS still need owner-bound follow-up to turn it into reviewed memory, routes, and launch challenge.
+- next: Product Design brief playback/confirmation, then Slice 1 ideation with three visual options; keep `build_allowed=false` until a concrete visual target is selected.
+- status: closed

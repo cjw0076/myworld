@@ -6077,3 +6077,26 @@ oversight once their dependencies close.
 - next: Slice 1 Product Design ideation remains the first release blocker; in
   parallel, owner-bound child contracts can prepare Hivemind, MemoryOS, and
   CapabilityOS slice implementations.
+
+## 2026-06-13 20:25 KST — codex@myworld — ASC-0262 agent-service baseline absorbed
+
+- status: closed
+- scope: refresh official agent-service infrastructure baseline and bind it to
+  the AIOS serving release path without building UI.
+- sources checked: OpenAI Agents SDK/Responses/Sandbox Agents/Codex cloud;
+  Anthropic Claude Managed Agents release notes; Google Gemini Interactions,
+  Deep Research, and session-resumption notes.
+- result: added `docs/research/AIOS_AGENT_SERVICE_BASELINE_2026-06-13.md`.
+  The baseline maps external provider evolution into AIOS primitives:
+  durable session state, resumable sandbox workspaces, typed execution steps,
+  background jobs, vault/access-grant credentials, governed memory, cited web
+  ingestion, and pre-release anti-convergence challenge.
+- release gate binding: `scripts/aios_serving_release_gate.py` now requires
+  the baseline doc in the release-readiness slice.
+- Product Design state: user-context preflight reports no saved design context;
+  the serving brief is playable but not yet visually grounded. Next design
+  workflow remains ideation, not prototype/build.
+- verification: serving release gate remains not ready; world readiness remains
+  false; no `apps/serving/**` implementation was created.
+- next: ask/confirm Product Design brief playback, then run Slice 1 ideation
+  to produce exactly three visual options before any prototype work.

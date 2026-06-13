@@ -118,6 +118,7 @@ class AiosServingReleaseGateTest(unittest.TestCase):
                 "CapabilityOS/tests/test_serving_access.py",
                 "scripts/aios_serving_support.py",
                 "tests/test_aios_serving_support.py",
+                "docs/research/AIOS_AGENT_SERVICE_BASELINE_2026-06-13.md",
                 "scripts/aios_serving_release_gate.py",
                 "tests/test_aios_serving_release_gate.py",
                 "scripts/aios_world_readiness.py",
