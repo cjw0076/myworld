@@ -877,3 +877,48 @@ AIOS가 이것을 흡수하려면:
   - **`memoryos ingest-doc-radar` shows the absorption pattern**: for any external signal (star_radar, web evidence, contract closeouts), the flow is: receipts → `make_memory_object()` → `GraphStore.append_memory_objects()` → draft in `memory/objects.jsonl` → operator review → accepted.
 - self-correction-of-prior-observation: prior session's `_organ_postamble` implementation (dream_agora in-memory) was marked as "wired" but was actually ephemeral. This session replaced it with the real persistent path.
 - aios_absorption_candidate: the 5-OS circular wiring pattern as a named AIOS architecture primitive: every output must write to a file that a subsequent subprocess reads. No in-memory passing across process boundaries. Tracing the data flow across process boundaries is the verification step for "organic wiring."
+
+---
+
+## Entry 2026-06-14 — Serving Release Gate + Learning Loop Closure
+
+**Session goal**: AIOS를 세계 배포 가능한 AI OS로 완성 (founder directive: 결핍을 느끼고 창의를 발현)
+
+**Mode sequence**: observe → verify → decide (Gate B self-decision) → intervene (learning loop fix)
+
+### Tool patterns discovered
+
+**Pattern: Adversarial challenge as spec generator**
+`GenesisOS/genesisos/serving_prelaunch.py`의 `challenge(manifest)` API를 사용해
+7개 차원을 검사하고 real gap (goal_injection_test missing)을 발견 →
+`_validate_goal()` 구현으로 즉시 보안 수정. Adversarial review가 단순 체크리스트보다
+구체적인 구현 방향을 제시.
+
+**Pattern: Format mismatch surface via test failure**
+`memoryos import-run`이 `.runs/<id>/run_state.json`을 기대하고
+`RunLog`가 `.aios/runs/<id>.jsonl`을 쓰는 포맷 불일치를 발견.
+진단: 테스트 실패 trace가 아니라 실제 코드를 읽어 갭을 추적.
+수정: subprocess call → `make_memory_object` + `GraphStore` 직접 API.
+
+**Pattern: "Not ready" tests as milestone markers**
+`test_current_repo_not_ready` 같은 negative state tests는
+milestone을 추적하는 고고학적 기록. 달성하면 positive로 반전해야 함 —
+삭제하지 말고 이름을 바꾸고 assertion을 뒤집어 milestone 날짜를 주석으로 남길 것.
+
+### What AIOS should absorb
+
+1. **Injection validation as first-class gate**: serving API에 `_validate_goal()` 패턴을
+   `CapabilityOS` route spec의 일부로 흡수. 모든 external input이 통과하는 validation layer.
+
+2. **Direct memory write > subprocess**: 외부 CLI subprocess를 통한 memory write는
+   format coupling을 생성. 언제나 `make_memory_object` + `GraphStore` 직접 API 선호.
+
+3. **Tunnel-as-deployment**: `aios serve --tunnel`이 cloudflared를 통한 zero-config 배포.
+   install.sh 이후 첫 public expose가 이 커맨드 하나. "세계 배포 가능"의 최소 경로.
+
+### Discomfort I felt (창업자 지시: 결핍을 느껴)
+
+- MemoryOS 그래프가 비어있다고 생각했는데 경로를 잘못 봤음 (`.aios/memory/objects/` vs `memory/objects.jsonl`)
+- serving이 localhost:8741에 갇혀있다는 불편 → cloudflared tunnel
+- adversarial review가 "launch_blocked"를 돌려줬을 때 → 실제로 수정하고 re-run
+
