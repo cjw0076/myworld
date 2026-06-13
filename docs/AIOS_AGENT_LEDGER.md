@@ -7095,3 +7095,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: build-control and live-agent runtime still share `.aios` state until ASC-0249 is implemented
 - next: dispatch ASC-0249 to Claude and verify profile/status guardrails
 - status: proposed
+
+---
+- when: 2026-06-13T15:07:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: control-plane verifier / product-boundary planner
+- goal: ASC-0250 + ASC-0251 — finish build/runtime isolation evidence before designing the real end-user serving surface
+- changed: docs/contracts/ASC-0250-build-runtime-isolation-finish-forward.md, docs/contracts/ASC-0251-end-user-serving-interface-spine.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: ASC-0249 partial dirty changes pass 75/75 focused tests plus py_compile/bash-n/diff-check, but lack dedicated tests and closeout; current `apps/control` and `aios_workbench.py` are local/operator surfaces, not a real user-facing service UI; external docs show OpenAI Agents SDK sandbox/session/memory, Claude Managed Agents, and Gemini Interactions/Deep Research have moved toward hosted/sessionful agent harnesses.
+- decision: do not overclaim UI readiness. Create ASC-0250 to finish isolation tests/closeout first, and ASC-0251 as a proposed separate end-user serving interface spine.
+- risk: until ASC-0250 closes, build-control and live-agent runtime remain only partially separated; until ASC-0251 is implemented, AIOS has no well-made user serving interface.
+- next: dispatch ASC-0250 to Claude with the existing partial dirty files as allowed baseline; keep ASC-0251 proposed.
+- status: proposed

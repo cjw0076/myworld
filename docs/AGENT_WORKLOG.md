@@ -5560,3 +5560,26 @@ schema_version: aios.agent_worklog.v1
 - next: future contracts should cite actual `rtrace_...` and positive
   `signal_coverage` where MemoryOS retrieval is truly required, instead of
   relying on justified absence.
+
+## 2026-06-13 15:07 KST — codex@myworld — Runtime isolation finish-forward and serving UI boundary
+
+- status: started
+- scope: `docs/contracts/ASC-0250-build-runtime-isolation-finish-forward.md`,
+  `docs/contracts/ASC-0251-end-user-serving-interface-spine.md`, and dispatch
+  packet preparation.
+- context: ASC-0249 left useful partial changes in
+  `scripts/aios_dispatch.py`, `scripts/aios_monitor.py`, and
+  `scripts/aios_round_controller.py`; focused tests pass, but dedicated
+  ASC-0249 tests and closeout evidence are missing.
+- external evidence: checked current OpenAI Agents SDK docs for sessions,
+  tracing, tools, sandbox agents, sandbox memory, and provider/runtime
+  separation; checked Anthropic Claude Managed Agents release notes; checked
+  Gemini Interactions API and Deep Research Agent docs.
+- local helper evidence: `cap_helper_operator_review` classified the partial
+  ASC-0249 state as `NEEDS-REVIEW`; `cap_helper_consolidate` was used as
+  non-authoritative local context.
+- decision: do not claim AIOS has a true end-user serving interface. Current
+  `apps/control` is an operator/local workbench. Finish ASC-0249 first, then
+  build a separate serving surface.
+- next: dispatch ASC-0250 to Claude for tests/closeout; keep ASC-0251 proposed
+  until the runtime boundary is closed.
