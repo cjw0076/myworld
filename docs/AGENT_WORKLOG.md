@@ -5662,3 +5662,17 @@ schema_version: aios.agent_worklog.v1
   boundary and future acceptance gates; it does not implement `apps/serving/`.
 - next: create a separate prototype contract for the first end-user workflow
   once a visual direction/target is selected.
+
+## 2026-06-13 15:47 KST — codex@myworld — starting ASC-0252 readiness gate correction
+
+- status: starting
+- scope: correct the world-deployment readiness gate so it no longer claims
+  service deployment readiness while the end-user serving surface is only a
+  spec.
+- owner split: Codex creates the contract, records the overclaim evidence, and
+  dispatches; Claude owns the bounded CLI/test/docs correction.
+- expected files: `docs/contracts/ASC-0252-serving-readiness-gate-correction.md`,
+  `scripts/aios_world_readiness.py`, `tests/test_aios_world_readiness.py`,
+  `docs/AIOS_AGENT_LEDGER.md`, `docs/AGENT_WORKLOG.md`.
+- deferred: no `apps/serving/` implementation until a separate prototype
+  contract and visual/product direction are accepted.

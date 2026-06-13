@@ -7173,3 +7173,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: AIOS still lacks a runnable end-user serving interface until that prototype/build contract closes.
 - next: serving prototype contract with Product Design brief confirmation and visual target selection.
 - status: done
+
+---
+- when: 2026-06-13T15:47:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: dispatcher / verifier
+- goal: open ASC-0252 to correct world readiness overclaim for real user serving
+- changed: docs/contracts/ASC-0252-serving-readiness-gate-correction.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: `python3 scripts/aios_world_readiness.py --json` currently reports `ready_for_world_deployment=true`; ASC-0251 result packet and product docs state that `end_user_serving`, `apps/serving/`, serving auth/transport, and browser-visible first workflow proof are not implemented.
+- decision: treat current world readiness as infrastructure-complete but service-readiness-overclaimed. Delegate the correction to Claude under ASC-0252 instead of directly absorbing the code change in Codex.
+- risk: until ASC-0252 closes, `scripts/aios_world_readiness.py` may mislead operators into thinking AIOS is ready for end-user service deployment.
+- next: dispatch WP-0252-A to `claude@myworld`; verify focused tests and readiness JSON after the result packet.
+- status: opened
