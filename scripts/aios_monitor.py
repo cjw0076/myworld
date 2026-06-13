@@ -86,6 +86,12 @@ ALERT_RULES = {
         "action": "repair_or_reconcile_dispatch_state_log",
         "reason": "The dispatch event log contains malformed JSONL; monitor skipped the bad line but the audit trail needs repair.",
     },
+    "stale_provider_session_for_closed_dispatch": {
+        "severity": "high",
+        "owner": "myworld",
+        "action": "release_lease_and_verify_provider_session_terminated",
+        "reason": "A dispatch already wrote a result packet but still holds a runtime lease, so a provider session may be lingering after closeout — a build/runtime isolation risk, not successful work (ASC-0249).",
+    },
 }
 
 
@@ -367,6 +373,59 @@ def orphan_result_packets(root: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def stale_provider_sessions(root: Path) -> list[dict[str, Any]]:
+    """ASC-0249 — find runtime leases for dispatches that already closed.
+
+    A lease under ``.aios/leases/`` is held by a provider session while it
+    works a dispatch (ASC-0248). Once the dispatch writes its result packet,
+    the session is expected to release the lease and exit. A lease that
+    survives a written result packet is the signature of a provider session
+    lingering past closeout (the exact event in the ASC-0249 evidence). We
+    surface it as an isolation risk rather than treating the closed result as
+    clean success. PID liveness is reported as advisory context only — the
+    finding does not depend on it, because a leaked lease is a problem whether
+    or not this monitor can see the original process.
+    """
+    leases_dir = root / ".aios" / "leases"
+    if not leases_dir.exists():
+        return []
+    # Dispatches that have written a result packet (i.e. produced a closeout).
+    closed_dispatches: dict[str, str] = {}
+    outbox = root / ".aios" / "outbox"
+    if outbox.exists():
+        for path in sorted(outbox.glob("*/*.result.json")):
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            dispatch_id = str(payload.get("dispatch_id") or "")
+            if dispatch_id:
+                closed_dispatches[dispatch_id] = path.relative_to(root).as_posix()
+    rows: list[dict[str, Any]] = []
+    for lease_path in sorted(leases_dir.glob("*.lease.json")):
+        try:
+            lease = json.loads(lease_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        dispatch_id = str(lease.get("dispatch_id") or "")
+        if dispatch_id not in closed_dispatches:
+            continue
+        pid = lease.get("pid")
+        pid_running = bool(isinstance(pid, int) and is_pid_running(pid))
+        rows.append(
+            {
+                "dispatch_id": dispatch_id,
+                "repo": lease.get("repo"),
+                "agent": lease.get("agent"),
+                "pid": pid,
+                "pid_running": pid_running,
+                "lease": lease_path.relative_to(root).as_posix(),
+                "result_packet": closed_dispatches[dispatch_id],
+            }
+        )
+    return rows
+
+
 def contract_rows(root: Path) -> list[dict[str, Any]]:
     rows = []
     for path in sorted((root / "docs/contracts").glob("ASC-*.md")):
@@ -409,6 +468,8 @@ def snapshot(root: Path) -> dict[str, Any]:
         repo = str(result.get("repo") or "")
         if repo_by_name.get(repo, {}).get("dirty"):
             alerts.append({"code": "orphan_dirty_post_failure", **result})
+    for session in stale_provider_sessions(root):
+        alerts.append({"code": "stale_provider_session_for_closed_dispatch", **session})
     reconciliations = load_reconciliations(root)
     alerts, reconciliations_applied = reconcile_alerts(alerts, reconciliations)
     return {

@@ -34,6 +34,9 @@ OUTBOX_DIR = Path(".aios/outbox")
 LOG_DIR = Path(".aios/logs")
 LEASE_DIR = Path(".aios/leases")       # runtime-only, not committed
 LEASE_TTL_DEFAULT = 300                # seconds
+RUNTIME_PROFILE_FILE = Path(".aios/runtime_profile.json")  # runtime-only, not committed (ASC-0249)
+RUNTIME_PROFILES = ("build_control", "live_agent_runtime")
+DEFAULT_RUNTIME_PROFILE = "build_control"
 TERMINAL_STATES = ("released", "held", "retried", "escalated")
 STATE_COMMANDS = {
     "release": "released",
@@ -378,6 +381,78 @@ def reclaim_dispatch_lease(
 
 
 # --- end Dispatch Lease -------------------------------------------------------
+
+
+# --- Build/Runtime Isolation Profile (ASC-0249) ------------------------------
+
+def runtime_profile_state(root: Path, override: str | None = None) -> dict[str, Any]:
+    """Resolve the active build-vs-runtime isolation profile.
+
+    Two labeled rooms on one machine:
+      - ``build_control``      — contracts, code changes, verification, delegation;
+      - ``live_agent_runtime`` — actual AIOS agent workloops/pulses.
+
+    Resolution order (later overrides earlier): default -> file under .aios/
+    -> environment -> explicit caller override. The default is
+    ``build_control`` with live child execution disallowed: the conservative
+    "we are building AIOS" assumption, so a build context never *silently*
+    spawns a live child provider session. ``live_agent_runtime`` implies live
+    child execution is allowed by definition.
+
+    State lives under ``.aios/`` which is gitignored, so the profile never
+    enters commits (ASC-0249 negated check ``runtime_profile_committed``).
+    """
+    profile = DEFAULT_RUNTIME_PROFILE
+    allow_live = False
+    source = "default"
+    path = root / RUNTIME_PROFILE_FILE
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if str(data.get("profile")) in RUNTIME_PROFILES:
+                profile = str(data["profile"])
+                source = "file"
+            allow_live = bool(data.get("allow_live_child_execution", allow_live))
+        except (OSError, json.JSONDecodeError, ValueError):
+            pass
+    env_profile = os.environ.get("AIOS_RUNTIME_PROFILE", "").strip()
+    if env_profile in RUNTIME_PROFILES:
+        profile = env_profile
+        source = "env"
+    env_allow = os.environ.get("AIOS_ALLOW_LIVE_CHILD_EXECUTION", "").strip().lower()
+    if env_allow in {"1", "true", "yes"}:
+        allow_live = True
+    elif env_allow in {"0", "false", "no"}:
+        allow_live = False
+    if override in RUNTIME_PROFILES:
+        profile = override
+        source = "override"
+    effective_allow = allow_live or profile == "live_agent_runtime"
+    return {
+        "schema_version": "aios.runtime_profile.v1",
+        "profile": profile,
+        "allow_live_child_execution": effective_allow,
+        "live_child_execution_blocked": not effective_allow,
+        "source": source,
+    }
+
+
+def write_runtime_profile(root: Path, profile: str, allow_live_child_execution: bool) -> dict[str, Any]:
+    ensure_layout(root)
+    payload = {
+        "schema_version": "aios.runtime_profile.v1",
+        "profile": profile,
+        "allow_live_child_execution": bool(allow_live_child_execution),
+        "updated_at": now_iso(),
+    }
+    (root / RUNTIME_PROFILE_FILE).write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    return payload
+
+
+# --- end Build/Runtime Isolation Profile -------------------------------------
 
 
 def enqueue_dispatch_job(root: Path, dispatch_id: str, repo: str, contract: "Contract") -> None:
@@ -1099,7 +1174,12 @@ def summarize(root: Path) -> dict[str, Any]:
             row["reason"] = event.get("reason")
     inbox_counts = {repo: len(list((root / INBOX_DIR / repo).glob("*.json"))) for repo in REPOS}
     outbox_counts = {repo: len(list((root / OUTBOX_DIR / repo).glob("*.json"))) for repo in REPOS}
-    return {"dispatches": list(dispatches.values()), "inbox": inbox_counts, "outbox": outbox_counts}
+    return {
+        "dispatches": list(dispatches.values()),
+        "inbox": inbox_counts,
+        "outbox": outbox_counts,
+        "runtime_profile": runtime_profile_state(root),
+    }
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -1108,14 +1188,33 @@ def cmd_status(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True))
         return 0
+    profile = data["runtime_profile"]
+    profile_line = f"runtime_profile={profile['profile']} live_child_execution_blocked={profile['live_child_execution_blocked']}"
     if not data["dispatches"]:
         print("No dispatches.")
+        print(profile_line)
         return 0
     for row in data["dispatches"]:
         sent = ",".join(str(repo) for repo in row.get("sent") or []) or "-"
         collected = ",".join(str(repo) for repo in row.get("collected") or []) or "-"
         print(f"{row['dispatch_id']}: {row.get('status', 'unknown')} contract={row.get('contract_id')} sent={sent} collected={collected}")
     print(f"inbox={data['inbox']} outbox={data['outbox']}")
+    print(profile_line)
+    return 0
+
+
+def cmd_profile(args: argparse.Namespace) -> int:
+    root = repo_root()
+    profile_cmd = getattr(args, "profile_cmd", None) or "show"
+    if profile_cmd == "set":
+        write_runtime_profile(root, args.profile, args.allow_live_child_execution)
+        print(json.dumps({"ok": True, **runtime_profile_state(root)}, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    if profile_cmd == "clear":
+        (root / RUNTIME_PROFILE_FILE).unlink(missing_ok=True)
+        print(json.dumps({"ok": True, **runtime_profile_state(root)}, ensure_ascii=False, indent=2, sort_keys=True))
+        return 0
+    print(json.dumps(runtime_profile_state(root), ensure_ascii=False, indent=2, sort_keys=True))
     return 0
 
 
@@ -1854,6 +1953,19 @@ def build_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status", help="show dispatch state")
     status.add_argument("--json", action="store_true")
     status.set_defaults(func=cmd_status)
+
+    profile = sub.add_parser("profile", help="show or set the build/runtime isolation profile")
+    profile.set_defaults(func=cmd_profile, profile_cmd="show")
+    profile_sub = profile.add_subparsers(dest="profile_cmd")
+    p_show = profile_sub.add_parser("show", help="print the active runtime profile")
+    p_show.set_defaults(func=cmd_profile, profile_cmd="show")
+    p_set = profile_sub.add_parser("set", help="write a local runtime profile under .aios/")
+    p_set.add_argument("--profile", required=True, choices=RUNTIME_PROFILES)
+    p_set.add_argument("--allow-live-child-execution", action="store_true",
+                       help="explicitly permit live child execution under build_control")
+    p_set.set_defaults(func=cmd_profile, profile_cmd="set")
+    p_clear = profile_sub.add_parser("clear", help="remove the local runtime profile (revert to default)")
+    p_clear.set_defaults(func=cmd_profile, profile_cmd="clear")
 
     collect = sub.add_parser("collect", help="collect result packets from outboxes")
     collect.add_argument("--repo", choices=REPOS)

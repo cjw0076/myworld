@@ -174,6 +174,106 @@ esac
             self.assertIn("latest_next=open_next_contract", status.stdout)
 
 
+class RuntimeProfileIsolationTest(AiosRoundControllerTest):
+    """ASC-0249/ASC-0250 — the round controller honors the build/runtime
+    isolation profile when deciding whether to spawn live child watchers."""
+
+    def write_profile(self, root: Path, profile: str, allow_live: bool = False) -> None:
+        profile_path = root / ".aios" / "runtime_profile.json"
+        profile_path.parent.mkdir(parents=True, exist_ok=True)
+        profile_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.runtime_profile.v1",
+                    "profile": profile,
+                    "allow_live_child_execution": allow_live,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    def test_default_build_control_blocks_explicit_child_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=1)
+            # No profile file written: default is build_control.
+
+            result = self.run_controller(root, "once", "--root", root.as_posix(), "--execute-children", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "build_control")
+            self.assertFalse(data["live_child_execution_allowed"])
+            self.assertTrue(data["child_execution_blocked"])
+            blocked = data["child_executions"]
+            self.assertEqual([item["status"] for item in blocked], ["blocked"])
+            self.assertEqual(blocked[0]["reason"], "build_control_profile_blocks_live_child_execution")
+            self.assertEqual(data["recommended_next"]["action"], "hold_for_runtime_profile_isolation")
+
+    def test_live_agent_runtime_profile_opens_child_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=1)
+            self.write_profile(root, "live_agent_runtime")
+
+            result = self.run_controller(root, "once", "--root", root.as_posix(), "--execute-children", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "live_agent_runtime")
+            self.assertTrue(data["live_child_execution_allowed"])
+            self.assertFalse(data["child_execution_blocked"])
+            self.assertEqual(["child_once_hivemind"], [item["name"] for item in data["child_executions"]])
+
+    def test_explicit_per_run_allowance_opens_door_under_build_control(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=1)
+            # build_control default, but operator passes explicit per-run allowance.
+
+            result = self.run_controller(
+                root,
+                "once",
+                "--root",
+                root.as_posix(),
+                "--execute-children",
+                "--allow-live-child-execution",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "build_control")
+            self.assertTrue(data["live_child_execution_allowed"])
+            self.assertFalse(data["child_execution_blocked"])
+            self.assertEqual(["child_once_hivemind"], [item["name"] for item in data["child_executions"]])
+
+    def test_build_control_without_pending_does_not_emit_blocked_noise(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root, pending=0)
+
+            result = self.run_controller(root, "once", "--root", root.as_posix(), "--execute-children", "--json")
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(result.stdout)
+            self.assertEqual(data["child_executions"], [])
+            self.assertFalse(data["child_execution_blocked"])
+
+    def test_status_reports_runtime_profile_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.write_fixture(root)
+            once = self.run_controller(root, "once", "--root", root.as_posix(), "--json")
+            self.assertEqual(once.returncode, 0, once.stderr)
+
+            status = self.run_controller(root, "status", "--root", root.as_posix())
+
+            self.assertEqual(status.returncode, 0, status.stderr)
+            self.assertIn("runtime_profile=build_control", status.stdout)
+            self.assertIn("live_child_execution_blocked=True", status.stdout)
+
+
 class BuildRecommendedNextHoldTest(unittest.TestCase):
     """ASC-0116 — dispatch holds only on a genuinely BROKEN monitor state,
     not on every non-clear health (busy/stale must not freeze the loop)."""

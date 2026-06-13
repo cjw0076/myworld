@@ -7108,3 +7108,29 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: until ASC-0250 closes, build-control and live-agent runtime remain only partially separated; until ASC-0251 is implemented, AIOS has no well-made user serving interface.
 - next: dispatch ASC-0250 to Claude with the existing partial dirty files as allowed baseline; keep ASC-0251 proposed.
 - status: proposed
+
+---
+- when: 2026-06-13T15:20:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: control-plane finish-forward engineer
+- goal: ASC-0250 — finish ASC-0249 build/runtime profile isolation with dedicated tests + closeout evidence
+- changed: tests/test_aios_dispatch.py, tests/test_aios_round_controller.py, tests/test_aios_monitor.py, scripts/aios_dispatch.py (status print), docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: 101/101 focused tests pass (+26 new over 75 baseline); py_compile + bash -n + git diff --check clean; dispatch status and round_controller status both report runtime_profile=build_control live_child_execution_blocked=True; monitor stale_provider_session_for_closed_dispatch alert fires on a lease surviving a result packet and clears when the lease is removed
+- decision: preserved profile schema aios.runtime_profile.v1 (build_control default, no defect found); fixed dispatch status to always print the profile line; did NOT build the end-user serving UI (left as ASC-0251 next-step). No child repos or private stores touched.
+- risk: low and reversible — test-only additions plus one status-print fix under .aios-gated profile state; live monitor blocked health is only asc-0250 dispatch_results_pending, not a real lease leak (.aios/leases empty)
+- next: Codex verifies + collects .aios/outbox/myworld/asc-0250.myworld.result.json, then closes ASC-0249 and ASC-0250; serving interface remains ASC-0251 (proposed)
+- status: closed
+
+---
+- when: 2026-06-13T15:24:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: verifier / closeout
+- goal: verify and close ASC-0249 + ASC-0250 build/runtime isolation boundary
+- changed: docs/contracts/ASC-0249-build-runtime-isolation-boundary.md, docs/contracts/ASC-0250-build-runtime-isolation-finish-forward.md, docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md
+- evidence: Codex reran the full ASC-0250 verification gate: 101/101 focused tests passed; py_compile passed; `bash -n scripts/aios_child_watcher.sh` passed; `git diff --check` passed; `aios_dispatch.py status` and `aios_round_controller.py status` show `runtime_profile=build_control live_child_execution_blocked=True`; monitor health returned to `watch` after result collection with `.aios/leases` empty.
+- decision: ASC-0249 and ASC-0250 are closed. The local build/runtime profile boundary is now evidence-backed. This does not claim a true end-user serving UI; ASC-0251 remains proposed for that product surface.
+- risk: runtime profile separation is local and visible, not a complete hosted multi-tenant service boundary.
+- next: use ASC-0251 to design/build the real end-user serving interface after this boundary.
+- status: done

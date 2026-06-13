@@ -24,6 +24,9 @@ from typing import Any
 
 SCHEMA_VERSION = "aios.round_controller.v1"
 REPOS = ("hivemind", "memoryOS", "CapabilityOS")
+RUNTIME_PROFILE_FILE = Path(".aios/runtime_profile.json")  # runtime-only, not committed (ASC-0249)
+RUNTIME_PROFILES = ("build_control", "live_agent_runtime")
+DEFAULT_RUNTIME_PROFILE = "build_control"
 STATE_DIR = Path(".aios/state")
 RUN_DIR = Path(".aios/run")
 LOG_DIR = Path(".aios/logs")
@@ -37,6 +40,28 @@ DEFAULT_GOAL = Path("docs/goals/AIOS-GOAL-0001-make-something-great.md")
 
 def aios_loop_module() -> Any:
     return importlib.import_module("aios_loop")
+
+
+def runtime_profile_state(root: Path) -> dict[str, Any]:
+    """Resolve the active build-vs-runtime isolation profile (ASC-0249).
+
+    Delegates to ``aios_dispatch.runtime_profile_state`` so the round
+    controller and the dispatch CLI agree on a single source of truth for the
+    profile. Falls back to the conservative ``build_control`` default (live
+    child execution blocked) if the dispatch module cannot be imported, so a
+    missing helper never *opens* the live-execution door silently.
+    """
+    try:
+        dispatch = importlib.import_module("aios_dispatch")
+    except Exception:  # noqa: BLE001 — never let profile lookup break a round
+        return {
+            "schema_version": "aios.runtime_profile.v1",
+            "profile": DEFAULT_RUNTIME_PROFILE,
+            "allow_live_child_execution": False,
+            "live_child_execution_blocked": True,
+            "source": "fallback_default",
+        }
+    return dispatch.runtime_profile_state(root)
 
 
 def now_iso() -> str:
@@ -413,16 +438,45 @@ def policy_bound_dispatch_loop(root: Path, policy: dict[str, Any] | None) -> dic
     }
 
 
-def execute_pending_children(root: Path, child_status: dict[str, Any]) -> list[dict[str, Any]]:
+def execute_pending_children(
+    root: Path,
+    child_status: dict[str, Any],
+    *,
+    live_allowed: bool = True,
+    profile: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Run one child watcher pass per repo with a pending packet.
+
+    ASC-0249: when the active build/runtime profile does not permit live child
+    execution (the default ``build_control`` room), do NOT silently spawn the
+    child watcher. Instead emit a ``blocked`` step per pending repo so the
+    crossover is visible as an isolation finding rather than masquerading as
+    successful work. ``live_allowed`` is the resolved permission (profile flag
+    OR explicit operator allowance); ``profile`` is carried only for receipts.
+    """
     script = root / "scripts/aios_child_watcher.sh"
     if not script.exists():
         return []
     parsed = child_status.get("parsed") or {}
     repos = parsed.get("repos") or {}
+    pending_repos = [repo for repo in REPOS if int((repos.get(repo) or {}).get("pending") or 0) > 0]
+    if not pending_repos:
+        return []
+    profile_name = (profile or {}).get("profile", DEFAULT_RUNTIME_PROFILE)
+    if not live_allowed:
+        return [
+            {
+                "name": f"child_once_{repo}",
+                "status": "blocked",
+                "reason": "build_control_profile_blocks_live_child_execution",
+                "profile": profile_name,
+                "repo": repo,
+                "remedy": "set live_agent_runtime profile or pass --allow-live-child-execution",
+            }
+            for repo in pending_repos
+        ]
     executions: list[dict[str, Any]] = []
-    for repo in REPOS:
-        if int((repos.get(repo) or {}).get("pending") or 0) <= 0:
-            continue
+    for repo in pending_repos:
         executions.append(text_step(root, f"child_once_{repo}", [script.as_posix(), "once", "--repo", repo], timeout=1800))
     return executions
 
@@ -463,6 +517,15 @@ def build_recommended_next(steps: dict[str, Any], child_status: dict[str, Any], 
     pending_total = int(((child_status.get("parsed") or {}).get("pending_total")) or 0)
     if pending_total and not child_executions:
         return {"action": "run_child_watchers", "reason": f"{pending_total} pending packet(s)"}
+    if any(item.get("status") == "blocked" for item in child_executions):
+        # ASC-0249 — build_control profile refused live child execution. This
+        # is an isolation outcome, not a failure: surface it distinctly so the
+        # operator opens the explicit door rather than debugging a phantom
+        # watcher error.
+        return {
+            "action": "hold_for_runtime_profile_isolation",
+            "reason": "live child execution blocked by build_control profile",
+        }
     if any(item.get("status") != "passed" for item in child_executions):
         return {"action": "hold_for_child_execution", "reason": "child watcher execution failed"}
 
@@ -483,8 +546,13 @@ def append_receipt(root: Path, receipt: dict[str, Any]) -> None:
     (root / LATEST_FILE).write_text(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def run_round(root: Path, *, goal: Path, execute_children: bool) -> dict[str, Any]:
+def run_round(root: Path, *, goal: Path, execute_children: bool, allow_live_child_execution: bool = False) -> dict[str, Any]:
     ensure_layout(root)
+    profile_state = runtime_profile_state(root)
+    # Live child execution is permitted only when the profile says so OR the
+    # operator passes an explicit per-run allowance. build_control (default)
+    # therefore cannot silently spawn a live child watcher (ASC-0249).
+    live_allowed = bool(profile_state.get("allow_live_child_execution")) or allow_live_child_execution
     steps: dict[str, Any] = {}
 
     persistent_script = root / "scripts/aios_coevolution/persistent.py"
@@ -556,7 +624,12 @@ def run_round(root: Path, *, goal: Path, execute_children: bool) -> dict[str, An
         steps["dispatch_loop"] = {"name": "dispatch_loop", "status": "skipped", "reason": "missing_dispatch_loop"}
 
     child_status = child_watcher_status(root)
-    child_executions = execute_pending_children(root, child_status) if execute_children else []
+    child_executions = (
+        execute_pending_children(root, child_status, live_allowed=live_allowed, profile=profile_state)
+        if execute_children
+        else []
+    )
+    child_execution_blocked = any(item.get("status") == "blocked" for item in child_executions)
     recommended_next = build_recommended_next(steps, child_status, child_executions)
     failed_steps = [name for name, step in steps.items() if step.get("status") == "failed"]
     if child_status.get("status") == "failed":
@@ -567,6 +640,9 @@ def run_round(root: Path, *, goal: Path, execute_children: bool) -> dict[str, An
         "generated_at": now_iso(),
         "root": root.as_posix(),
         "mode": "execute_children" if execute_children else "control_only",
+        "runtime_profile": profile_state,
+        "live_child_execution_allowed": live_allowed,
+        "child_execution_blocked": child_execution_blocked,
         "status": "passed" if not failed_steps else "failed",
         "steps": steps,
         "child_watcher_status": child_status,
@@ -594,7 +670,12 @@ def pid_running(pid_path: Path) -> bool:
 
 def cmd_once(args: argparse.Namespace) -> int:
     root = Path(args.root).resolve()
-    receipt = run_round(root, goal=Path(args.goal), execute_children=args.execute_children)
+    receipt = run_round(
+        root,
+        goal=Path(args.goal),
+        execute_children=args.execute_children,
+        allow_live_child_execution=getattr(args, "allow_live_child_execution", False),
+    )
     if args.json:
         print(json.dumps(receipt, ensure_ascii=False, indent=2, sort_keys=True))
     else:
@@ -612,7 +693,12 @@ def cmd_run(args: argparse.Namespace) -> int:
     while True:
         if stop_path.exists():
             return 0
-        receipt = run_round(root, goal=Path(args.goal), execute_children=args.execute_children)
+        receipt = run_round(
+            root,
+            goal=Path(args.goal),
+            execute_children=args.execute_children,
+            allow_live_child_execution=getattr(args, "allow_live_child_execution", False),
+        )
         iterations += 1
         if args.iterations and iterations >= args.iterations:
             return 0 if receipt["status"] == "passed" else 1
@@ -641,6 +727,8 @@ def cmd_start(args: argparse.Namespace) -> int:
     ]
     if args.execute_children:
         command.append("--execute-children")
+    if getattr(args, "allow_live_child_execution", False):
+        command.append("--allow-live-child-execution")
     process = subprocess.Popen(command, cwd=root, stdout=log_fh, stderr=subprocess.STDOUT, start_new_session=True)
     pid_path.write_text(f"{process.pid}\n", encoding="utf-8")
     print(f"started AIOS round controller pid {process.pid}")
@@ -674,6 +762,8 @@ def cmd_status(args: argparse.Namespace) -> int:
     else:
         print("running=false")
     print(f"stop_file={(root / STOP_FILE).exists()}")
+    profile = runtime_profile_state(root)
+    print(f"runtime_profile={profile.get('profile')} live_child_execution_blocked={profile.get('live_child_execution_blocked')}")
     if latest_path.exists():
         latest = json.loads(latest_path.read_text(encoding="utf-8"))
         print(f"latest_status={latest.get('status')}")
@@ -692,9 +782,19 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("--root", default=".", help="workspace root")
         p.add_argument("--goal", default=DEFAULT_GOAL.as_posix(), help="active goal file")
 
+    def add_live_allowance(p: argparse.ArgumentParser) -> None:
+        # ASC-0249 — explicit per-run door for live child execution under a
+        # build_control profile. Without it, build_control blocks live children.
+        p.add_argument(
+            "--allow-live-child-execution",
+            action="store_true",
+            help="explicitly permit live child execution even under the build_control profile",
+        )
+
     once = sub.add_parser("once", help="run one bounded control-plane round")
     add_common(once)
     once.add_argument("--execute-children", action="store_true", help="also run one pending child watcher packet per repo")
+    add_live_allowance(once)
     once.add_argument("--json", action="store_true")
     once.set_defaults(func=cmd_once)
 
@@ -703,12 +803,14 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--interval", type=float, default=30.0)
     run.add_argument("--iterations", type=int, default=0, help="0 means run until stopped")
     run.add_argument("--execute-children", action="store_true")
+    add_live_allowance(run)
     run.set_defaults(func=cmd_run)
 
     start = sub.add_parser("start", help="start background round controller")
     add_common(start)
     start.add_argument("--interval", type=float, default=30.0)
     start.add_argument("--execute-children", action="store_true")
+    add_live_allowance(start)
     start.set_defaults(func=cmd_start)
 
     stop = sub.add_parser("stop", help="request background controller stop")

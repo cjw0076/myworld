@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0249
 slug: build-runtime-isolation-boundary
-status: accepted
+status: closed
 goal: Separate AIOS system-building work from live AIOS agent runtime work so control-plane development cannot accidentally mix with production-like agent execution on the same machine.
 created: 2026-06-13T14:45:00+09:00
 accepted: 2026-06-13T14:45:00+09:00
+closed: 2026-06-13T15:24:00+09:00
 human_approved: true
 origin: Operator flagged that AIOS is being built while real AIOS-using agents also run from this machine; Codex observed shared .aios state, long-running pulses, round controller, and provider sessions under the same workspace.
 ---
@@ -207,11 +208,12 @@ Pass criteria:
 
 - target_repo: `myworld`
 - target_agent: `claude`
-- status: issued
+- status: closed
 - instruction: Implement the Required Work For Claude section. Keep the slice
   tight. Return a result packet with changed files, tests run, profile schema,
   isolation behavior, and remaining gaps.
-- result: pending
+- result: completed through ASC-0250 finish-forward after the first ASC-0249
+  run produced useful partial changes but no clean closeout packet.
 
 ## Stop Conditions
 

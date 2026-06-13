@@ -4,6 +4,33 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-13 15:20 KST — claude — ASC-0250 build/runtime isolation finish-forward
+
+- status: completed (Claude finish-forward; awaiting Codex verify/collect)
+- scope: `tests/test_aios_dispatch.py`, `tests/test_aios_round_controller.py`,
+  `tests/test_aios_monitor.py`, `scripts/aios_dispatch.py` (status print fix),
+  with the ASC-0249 partial dirty changes in `scripts/aios_dispatch.py`,
+  `scripts/aios_monitor.py`, `scripts/aios_round_controller.py` as baseline.
+- work: added dedicated ASC-0249/0250 tests — runtime profile default/file/env/
+  override resolution + malformed-file fallback (`RuntimeProfileTest`), dispatch
+  CLI profile/status surface (`RuntimeProfileCliTest`), round-controller
+  build_control block / live_agent_runtime + explicit-allowance open / status
+  boundary (`RuntimeProfileIsolationTest`), and monitor stale-lease-after-result
+  detection + health recovery + in-flight-not-flagged guard.
+- fix: `aios_dispatch.py status` now prints the `runtime_profile=` line even
+  with no dispatches (was returning early), satisfying contract requirement #3.
+- evidence: 101/101 focused tests pass (was 75; +26 new); py_compile, bash -n,
+  git diff --check all clean; `dispatch status` and `round_controller status`
+  both show `runtime_profile=build_control live_child_execution_blocked=True`.
+- profile schema preserved: `aios.runtime_profile.v1`, profiles
+  `build_control`/`live_agent_runtime`, file `.aios/runtime_profile.json`,
+  default `build_control` (no defect found, no schema change).
+- live monitor health is `blocked` only from `dispatch_results_pending` for
+  asc-0250 itself (its result packet is pending collection) — not a stale lease;
+  `.aios/leases/` is empty, so no real provider session leak exists.
+- next: serving UI must sit OUTSIDE the operator Control Center (ASC-0251,
+  proposed) — not built here. Codex verifies + collects asc-0250 result packet.
+
 ## 2026-06-05 20:10 KST — codex — ASC-0227 autodraft boundary gate closed
 
 - status: closed
@@ -5583,3 +5610,23 @@ schema_version: aios.agent_worklog.v1
   build a separate serving surface.
 - next: dispatch ASC-0250 to Claude for tests/closeout; keep ASC-0251 proposed
   until the runtime boundary is closed.
+
+## 2026-06-13 15:24 KST — codex@myworld — ASC-0250 verified and collected
+
+- status: done
+- scope: ASC-0249/ASC-0250 closeout and verification.
+- result: Claude finished the build/runtime profile boundary with dedicated
+  tests and a passed result packet at
+  `.aios/outbox/myworld/asc-0250.myworld.result.json`.
+- verification: Codex reran
+  `python3 -m unittest tests.test_aios_dispatch tests.test_aios_child_watcher tests.test_aios_round_controller tests.test_aios_monitor -v`
+  and got 101/101 OK; `python3 -m py_compile
+  scripts/aios_dispatch.py scripts/aios_round_controller.py
+  scripts/aios_monitor.py`, `bash -n scripts/aios_child_watcher.sh`, and
+  `git diff --check` passed.
+- decision: ASC-0249 and ASC-0250 are closed. `build_control` is the default
+  runtime profile and visibly blocks live child execution; `live_agent_runtime`
+  or explicit per-run allowance opens it. Stale provider-session leases after
+  result packets now surface as monitor risk and clear after lease removal.
+- next: ASC-0251 remains proposed for the first true end-user serving
+  interface, separate from `apps/control`.

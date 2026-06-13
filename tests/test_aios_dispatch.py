@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import hashlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -1140,6 +1141,160 @@ class DispatchLeaseTest(unittest.TestCase):
         current = self.mod.get_dispatch_lease(self.root, "asc-test-004", "myworld")
         self.assertIsNotNone(current)
         self.assertEqual(current["agent"], "claude@myworld")
+
+
+class RuntimeProfileTest(unittest.TestCase):
+    """ASC-0249/ASC-0250 — build/runtime isolation profile.
+
+    Two labeled rooms on one machine: ``build_control`` (we are building AIOS,
+    no live child execution) and ``live_agent_runtime`` (agents doing live
+    work). The default must be the conservative ``build_control`` so a build
+    context never silently spawns a live child provider session.
+    """
+
+    def setUp(self):
+        self.mod = _load_dispatch()
+        self._td = tempfile.TemporaryDirectory()
+        self.root = Path(self._td.name)
+        # Make sure inherited env never leaks into the deterministic tests.
+        self._saved_env = {
+            key: os.environ.pop(key, None)
+            for key in ("AIOS_RUNTIME_PROFILE", "AIOS_ALLOW_LIVE_CHILD_EXECUTION")
+        }
+
+    def tearDown(self):
+        for key, value in self._saved_env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        self._td.cleanup()
+
+    def test_default_profile_is_build_control_and_blocks_live(self):
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["schema_version"], "aios.runtime_profile.v1")
+        self.assertEqual(state["profile"], "build_control")
+        self.assertEqual(state["source"], "default")
+        self.assertFalse(state["allow_live_child_execution"])
+        self.assertTrue(state["live_child_execution_blocked"])
+
+    def test_file_profile_live_runtime_opens_the_door(self):
+        written = self.mod.write_runtime_profile(self.root, "live_agent_runtime", False)
+        self.assertEqual(written["schema_version"], "aios.runtime_profile.v1")
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "live_agent_runtime")
+        self.assertEqual(state["source"], "file")
+        # live_agent_runtime implies live child execution is allowed by definition
+        self.assertTrue(state["allow_live_child_execution"])
+        self.assertFalse(state["live_child_execution_blocked"])
+
+    def test_file_build_control_with_explicit_allow_flag_opens_door(self):
+        self.mod.write_runtime_profile(self.root, "build_control", True)
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "build_control")
+        self.assertEqual(state["source"], "file")
+        # explicit allow flag opens live execution even under build_control
+        self.assertTrue(state["allow_live_child_execution"])
+        self.assertFalse(state["live_child_execution_blocked"])
+
+    def test_env_profile_overrides_file(self):
+        self.mod.write_runtime_profile(self.root, "build_control", False)
+        os.environ["AIOS_RUNTIME_PROFILE"] = "live_agent_runtime"
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "live_agent_runtime")
+        self.assertEqual(state["source"], "env")
+        self.assertTrue(state["allow_live_child_execution"])
+
+    def test_env_allow_flag_opens_build_control_door(self):
+        os.environ["AIOS_ALLOW_LIVE_CHILD_EXECUTION"] = "1"
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "build_control")
+        self.assertTrue(state["allow_live_child_execution"])
+        self.assertFalse(state["live_child_execution_blocked"])
+
+    def test_env_allow_flag_false_keeps_door_closed(self):
+        # live_agent_runtime profile but an explicit env "no" must still block.
+        os.environ["AIOS_RUNTIME_PROFILE"] = "build_control"
+        os.environ["AIOS_ALLOW_LIVE_CHILD_EXECUTION"] = "false"
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertFalse(state["allow_live_child_execution"])
+        self.assertTrue(state["live_child_execution_blocked"])
+
+    def test_explicit_override_wins_over_env_and_file(self):
+        self.mod.write_runtime_profile(self.root, "build_control", False)
+        os.environ["AIOS_RUNTIME_PROFILE"] = "build_control"
+        state = self.mod.runtime_profile_state(self.root, override="live_agent_runtime")
+        self.assertEqual(state["profile"], "live_agent_runtime")
+        self.assertEqual(state["source"], "override")
+        self.assertTrue(state["allow_live_child_execution"])
+
+    def test_malformed_profile_file_falls_back_to_default(self):
+        (self.root / self.mod.RUNTIME_PROFILE_FILE).parent.mkdir(parents=True, exist_ok=True)
+        (self.root / self.mod.RUNTIME_PROFILE_FILE).write_text("{not json", encoding="utf-8")
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "build_control")
+        self.assertEqual(state["source"], "default")
+        self.assertTrue(state["live_child_execution_blocked"])
+
+    def test_unknown_profile_value_in_file_is_ignored(self):
+        (self.root / self.mod.RUNTIME_PROFILE_FILE).parent.mkdir(parents=True, exist_ok=True)
+        (self.root / self.mod.RUNTIME_PROFILE_FILE).write_text(
+            json.dumps({"profile": "rogue_room"}), encoding="utf-8"
+        )
+        state = self.mod.runtime_profile_state(self.root)
+        self.assertEqual(state["profile"], "build_control")
+        self.assertEqual(state["source"], "default")
+
+
+class RuntimeProfileCliTest(unittest.TestCase):
+    """ASC-0250 — the dispatch CLI surfaces the runtime profile boundary."""
+
+    def run_cli(self, root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+        result = subprocess.run(
+            [sys.executable, SCRIPT.as_posix(), *args],
+            cwd=root,
+            text=True,
+            capture_output=True,
+        )
+        if check and result.returncode != 0:
+            self.fail(result.stderr or result.stdout)
+        return result
+
+    def test_status_shows_default_profile_and_block_state(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            result = self.run_cli(root, "status")
+            self.assertIn("runtime_profile=build_control", result.stdout)
+            self.assertIn("live_child_execution_blocked=True", result.stdout)
+
+    def test_status_json_includes_runtime_profile(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            data = json.loads(self.run_cli(root, "status", "--json").stdout)
+            self.assertEqual(data["runtime_profile"]["profile"], "build_control")
+            self.assertTrue(data["runtime_profile"]["live_child_execution_blocked"])
+
+    def test_profile_set_then_show_round_trips_through_local_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.run_cli(root, "profile", "set", "--profile", "live_agent_runtime")
+            profile_file = root / ".aios" / "runtime_profile.json"
+            self.assertTrue(profile_file.exists())
+            show = json.loads(self.run_cli(root, "profile", "show").stdout)
+            self.assertEqual(show["profile"], "live_agent_runtime")
+            self.assertFalse(show["live_child_execution_blocked"])
+            # status must reflect the open door too
+            self.assertIn("runtime_profile=live_agent_runtime", self.run_cli(root, "status").stdout)
+
+    def test_profile_clear_reverts_to_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self.run_cli(root, "profile", "set", "--profile", "live_agent_runtime")
+            self.run_cli(root, "profile", "clear")
+            self.assertFalse((root / ".aios" / "runtime_profile.json").exists())
+            show = json.loads(self.run_cli(root, "profile", "show").stdout)
+            self.assertEqual(show["profile"], "build_control")
+            self.assertTrue(show["live_child_execution_blocked"])
 
 
 if __name__ == "__main__":

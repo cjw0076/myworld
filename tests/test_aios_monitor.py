@@ -566,6 +566,121 @@ ringing the alarm bell after the owner acknowledged it.
             self.assertIsInstance(payload["latest_alert_count"], int)
 
 
+    def run_assess(self, root: Path) -> dict:
+        result = subprocess.run(
+            [sys.executable, SCRIPT.as_posix(), "assess", "--json"],
+            cwd=root,
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        return json.loads(result.stdout)
+
+    def _write_stale_lease_after_result(self, root: Path) -> Path:
+        """A dispatch wrote a result packet but a runtime lease still survives —
+        the ASC-0249 signature of a provider session lingering past closeout."""
+        result_dir = root / ".aios" / "outbox" / "myworld"
+        result_dir.mkdir(parents=True)
+        (result_dir / "asc-0249.myworld.result.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.dispatch.result.v1",
+                    "target_repo": "myworld",
+                    "dispatch_id": "asc-0249",
+                    "contract_id": "ASC-0249",
+                    "status": "passed",
+                    "evidence": [],
+                    "stop_conditions_triggered": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        lease_dir = root / ".aios" / "leases"
+        lease_dir.mkdir(parents=True)
+        lease_path = lease_dir / "asc-0249.myworld.lease.json"
+        lease_path.write_text(
+            json.dumps(
+                {
+                    "schema_version": "aios.lease.v0",
+                    "dispatch_id": "asc-0249",
+                    "repo": "myworld",
+                    "agent": "claude@myworld",
+                    "pid": 999999,
+                    "started_at": "2026-06-13T00:00:00Z",
+                    "expires_at": "2026-06-13T00:05:00Z",
+                    "ttl_seconds": 300,
+                }
+            ),
+            encoding="utf-8",
+        )
+        return lease_path
+
+    def test_snapshot_reports_stale_lease_after_result_packet(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._write_stale_lease_after_result(root)
+
+            payload = self.run_snapshot(root)
+
+            alerts = {alert["code"]: alert for alert in payload["alerts"]}
+            self.assertIn("stale_provider_session_for_closed_dispatch", alerts)
+            alert = alerts["stale_provider_session_for_closed_dispatch"]
+            self.assertEqual(alert["dispatch_id"], "asc-0249")
+            self.assertEqual(alert["repo"], "myworld")
+            self.assertEqual(alert["result_packet"], ".aios/outbox/myworld/asc-0249.myworld.result.json")
+            self.assertEqual(alert["lease"], ".aios/leases/asc-0249.myworld.lease.json")
+            self.assertFalse(alert["pid_running"])
+
+    def test_assess_blocks_on_stale_lease_then_returns_to_watch_when_cleared(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            lease_path = self._write_stale_lease_after_result(root)
+
+            blocked = self.run_assess(root)
+            self.assertEqual(blocked["health"], "blocked")
+            codes = {finding["code"] for finding in blocked["findings"]}
+            self.assertIn("stale_provider_session_for_closed_dispatch", codes)
+
+            # Releasing the lease (provider session terminated) clears the risk.
+            # Health must leave the blocked state; in this isolated fixture with
+            # no other findings it returns all the way to clean (clear is a
+            # strict superset of watch — no alerts at any severity).
+            lease_path.unlink()
+
+            cleared = self.run_assess(root)
+            self.assertNotEqual(cleared["health"], "blocked")
+            self.assertIn(cleared["health"], ("watch", "clear"))
+            cleared_codes = {finding["code"] for finding in cleared["findings"]}
+            self.assertNotIn("stale_provider_session_for_closed_dispatch", cleared_codes)
+
+    def test_open_dispatch_without_result_packet_is_not_flagged_stale(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # Lease present but NO result packet: the dispatch is still in flight,
+            # so holding the lease is correct, not a leak.
+            lease_dir = root / ".aios" / "leases"
+            lease_dir.mkdir(parents=True)
+            (lease_dir / "asc-0249.myworld.lease.json").write_text(
+                json.dumps(
+                    {
+                        "schema_version": "aios.lease.v0",
+                        "dispatch_id": "asc-0249",
+                        "repo": "myworld",
+                        "agent": "claude@myworld",
+                        "pid": 999999,
+                        "started_at": "2026-06-13T00:00:00Z",
+                        "expires_at": "2026-06-13T00:05:00Z",
+                        "ttl_seconds": 300,
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            payload = self.run_snapshot(root)
+
+            codes = {alert["code"] for alert in payload["alerts"]}
+            self.assertNotIn("stale_provider_session_for_closed_dispatch", codes)
+
     def test_history_archive_suppresses_missing_contract_alert(self) -> None:
         """A contract moved to _history/contracts/ must NOT raise dispatch_contract_path_missing."""
         with tempfile.TemporaryDirectory() as tmp:

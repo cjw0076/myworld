@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0250
 slug: build-runtime-isolation-finish-forward
-status: accepted
+status: closed
 goal: Finish ASC-0249 build/runtime profile isolation from the existing partial Claude changes by adding missing tests, closeout evidence, and a clean handoff to the end-user serving interface work.
 created: 2026-06-13T15:07:00+09:00
 accepted: 2026-06-13T15:07:00+09:00
+closed: 2026-06-13T15:24:00+09:00
 human_approved: true
 origin: ASC-0249 produced useful partial changes but both Claude runs were manually isolated after long no-output windows and no Claude result packet.
 ---
@@ -212,10 +213,11 @@ Pass criteria:
 
 - target_repo: `myworld`
 - target_agent: `claude`
-- status: issued
+- status: closed
 - instruction: Work with the existing dirty ASC-0249 changes. Add the missing
   tests and closeout evidence. Do not build the serving UI in this slice.
-- result: pending
+- result: `.aios/outbox/myworld/asc-0250.myworld.result.json` reported
+  `status=passed`; Codex independently verified the gate and collected it.
 
 ## Stop Conditions
 
