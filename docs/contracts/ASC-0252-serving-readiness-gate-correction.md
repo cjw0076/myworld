@@ -40,8 +40,11 @@ ASC-0251 also records the remaining gaps:
 - no browser-visible user workflow has passed.
 
 Therefore, `ready_for_world_deployment=true` is currently an overclaim for
-service deployment. This contract corrects the gate before any product claims
-or hosting work are made from false evidence.
+service deployment. This contract deliberates; it does not deploy. It produces
+only deliberation artifacts plus a local CLI/test correction. No deployment
+code, hosting manifest, network route, provider account, or user data path is
+created here. This contract corrects the gate before any product claims or
+hosting work are made from false evidence.
 
 ## Scope
 
@@ -172,7 +175,7 @@ accepted.
 
 ## Plain-Language Framing
 
-The old gate says "the factory has tools, power, safety rules, and inspectors,
+The old gate says "the factory has tools, power, guardrails, and inspectors,
 so the product is ready for customers." That is not enough. Customers still
 need a front door, a counter, receipts, private lockers, and a working first
 service flow. ASC-0252 makes the readiness gate stop confusing factory
