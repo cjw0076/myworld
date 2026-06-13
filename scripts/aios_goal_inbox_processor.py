@@ -121,11 +121,11 @@ THEMES: dict[str, dict[str, Any]] = {
             "writable provider",
         ],
         "verification": [
-            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/hivemind"",
+            'cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/hivemind"',
             "python -m pytest tests/test_provider_loop.py tests/test_local_worker_routing.py -v",
-            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/CapabilityOS"",
+            'cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}/CapabilityOS"',
             "python -m pytest tests/test_cli.py tests/test_observation.py -v",
-            "cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}"
+            'cd "${AIOS_ROOT:-$(git rev-parse --show-toplevel)}"',
             "python scripts/aios_monitor.py assess --json",
         ],
         "stop_conditions": [

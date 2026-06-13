@@ -268,7 +268,8 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
 
 
 def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
-                  max_turns: int = 12) -> dict:
+                  max_turns: int = 12,
+                  turn_sink: Callable[[dict], None] | None = None) -> dict:
     """Run a goal as a real agent TURN-LOOP (the kernel spine) with AIOS organs as
     kernel tools behind an authority gate — not a single-pass batch over a pre-planned
     step list. The model is a sampler (DI for tests, provider-backed live)."""
@@ -278,7 +279,8 @@ def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
         return {"schema_version": "aios.turn_loop.v1", "exit": "no_sampler",
                 "detail": "pass a sampler, or run --loop with an available provider"}
     return tl.run_loop(goal, sampler, tools.build_registry(),
-                       gate=tools.gate_for(agent_id), max_turns=max_turns)
+                       gate=tools.gate_for(agent_id), max_turns=max_turns,
+                       turn_sink=turn_sink)
 
 
 def _organ_preamble(goal: str, root: Path) -> dict:
@@ -311,41 +313,57 @@ def _organ_preamble(goal: str, root: Path) -> dict:
     }
 
 
-def _organ_postamble(goal: str, result: dict, root: Path) -> dict:
-    """Mandatory postamble: Dream Agora ingest + Akashic record.
+def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None = None) -> dict:
+    """Mandatory postamble: MemoryOS run import + Akashic record.
 
     Runs after every completed turn loop so AIOS learns from each execution.
-    Draft-first: Dream Agora produces status=draft records only.
+    Draft-first: memoryos import-run creates status=draft MemoryObject records.
     Degrades honestly if MemoryOS or Akashic are unavailable.
     """
     import importlib.util as _ilu
     import hashlib as _hl
+    import subprocess as _sp
 
     preamble_errors: list[str] = []
 
-    # 1. Dream Agora ingest — the result summary becomes a source-backed draft
-    try:
-        mem_path = root / "memoryOS"
-        if str(mem_path) not in sys.path:
-            sys.path.insert(0, str(mem_path))
-        spec = _ilu.spec_from_file_location("dream_agora", mem_path / "memoryos" / "dream_agora.py")
-        da_mod = _ilu.module_from_spec(spec)
-        spec.loader.exec_module(da_mod)
-        store = da_mod.DreamAgoraStore(mem_path)
-        ref_hash = _hl.sha256(goal.encode()).hexdigest()[:16]
-        receipt = da_mod.SourceReceipt(
-            source_ref=f"aios_head_run:{ref_hash}",
-            source_type="aios_run_trace",
-            source_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
-            provider="aios_head",
-            privacy_class="internal",
-        )
-        import json as _json
-        store.ingest(receipt, content_summary=f"goal={goal[:120]} exit={result.get('exit','?')} turns={result.get('turns',0)}")
-        dream_status = "ok"
-    except Exception as exc:  # noqa: BLE001
-        dream_status = f"unavailable:{str(exc)[:60]}"
-        preamble_errors.append(dream_status)
+    # 1. MemoryOS run import — write the run as draft MemoryObjects to the real graph.
+    #    This closes the learning loop: turn loop → import-run → context build (next preamble).
+    #    Falls back to in-memory DreamAgora log if no run_id (e.g. test / no RunLog).
+    if run_id:
+        try:
+            r = _sp.run(
+                [sys.executable, "-m", "memoryos", "--root", ".", "import-run", run_id],
+                cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=60,
+            )
+            dream_status = "ok" if r.returncode == 0 else f"import_run_failed:{r.stderr[:60]}"
+            if r.returncode != 0:
+                preamble_errors.append(dream_status)
+        except Exception as exc:  # noqa: BLE001
+            dream_status = f"unavailable:{str(exc)[:60]}"
+            preamble_errors.append(dream_status)
+    else:
+        # No persisted run — record in-memory DreamAgora event (not durable, but auditable).
+        try:
+            mem_path = root / "memoryOS"
+            if str(mem_path) not in sys.path:
+                sys.path.insert(0, str(mem_path))
+            spec = _ilu.spec_from_file_location("dream_agora", mem_path / "memoryos" / "dream_agora.py")
+            da_mod = _ilu.module_from_spec(spec)
+            spec.loader.exec_module(da_mod)
+            store = da_mod.DreamAgoraStore()
+            ref_hash = _hl.sha256(goal.encode()).hexdigest()[:16]
+            receipt = da_mod.SourceReceipt(
+                source_ref=f"aios_head_run:{ref_hash}",
+                source_type="aios_run_trace",
+                source_time=__import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
+                provider="aios_head",
+                privacy_class="internal",
+            )
+            store.ingest(receipt, content_summary=f"goal={goal[:120]} exit={result.get('exit','?')} turns={result.get('turns',0)}")
+            dream_status = "ok_ephemeral"
+        except Exception as exc:  # noqa: BLE001
+            dream_status = f"unavailable:{str(exc)[:60]}"
+            preamble_errors.append(dream_status)
 
     # 2. Akashic index — record work lineage
     akashic_status = "skipped"
@@ -383,21 +401,32 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     This is what 'make AIOS actually run organically' means:
       1. memory.retrieve  — recall before planning (always)
       2. capability.route — select the right organ/provider (always)
-      3. turn loop        — execute with all organs available as kernel tools
-      4. dream_agora      — ingest result as source-backed draft (always)
+      3. turn loop        — execute with all organs available as kernel tools; persisted via RunLog
+      4. memoryos import-run — ingest run as MemoryObject drafts in the real graph (always)
       5. akashic          — record work lineage (always)
 
     No step is optional. Each degrades honestly but never silently skips.
+    The learning loop: run → RunLog → import-run → context build → next preamble recalls it.
     """
+    import datetime as _dt
+
     if root is None:
         root = Path(__file__).resolve().parents[1]
 
+    # Create a RunLog to persist the turn-loop to .aios/runs/ so memoryos import-run can read it.
+    run_id = f"organic-{_dt.datetime.now(_dt.timezone.utc).strftime('%Y%m%dT%H%M%S')}"
+    rl = _load("aios_run_log")
+    run_log = rl.RunLog(run_id=run_id, agent=agent_id, runs_dir=root / ".aios" / "runs")
+    run_log.open(ts=_dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"))
+
     preamble = _organ_preamble(goal, root)
-    result = run_loop_goal(goal, agent_id=agent_id, sampler=sampler, max_turns=max_turns)
-    postamble = _organ_postamble(goal, result, root)
+    result = run_loop_goal(goal, agent_id=agent_id, sampler=sampler, max_turns=max_turns,
+                           turn_sink=run_log.sink)
+    postamble = _organ_postamble(goal, result, root, run_id=run_id)
 
     return {
         **result,
+        "run_id": run_id,
         "organic_pipeline": {
             "preamble": preamble,
             "postamble": postamble,
