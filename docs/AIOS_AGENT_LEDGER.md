@@ -7160,3 +7160,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: open questions on auth, hosting, transport not blocking spec; deferred to implementation contract
 - next: prototype contract for apps/serving/ targeting first user workflow (new task → approval → artifact)
 - status: closed
+
+---
+- when: 2026-06-13T15:39:00+09:00
+- repo: myworld
+- agent: codex@myworld
+- role: verifier / closeout hygiene
+- goal: verify ASC-0251 end-user serving interface spec
+- changed: docs/AGENT_WORKLOG.md, docs/AIOS_AGENT_LEDGER.md, docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md
+- evidence: `.aios/outbox/myworld/asc-0251.myworld.result.json` reports status=passed; dispatch status shows ASC-0251 collected; monitor health is `watch`; docs/product spec and route map cover roles, routes, runtime mapping, per-user memory, approvals, observability, first workflow proof targets, and mock data schema.
+- decision: ASC-0251 is closed as a design/spec artifact. It intentionally does not implement UI; the next aligned step is a separate prototype contract for `apps/serving/` after a visual direction is selected.
+- risk: AIOS still lacks a runnable end-user serving interface until that prototype/build contract closes.
+- next: serving prototype contract with Product Design brief confirmation and visual target selection.
+- status: done

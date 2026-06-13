@@ -5647,3 +5647,18 @@ schema_version: aios.agent_worklog.v1
   implementation explicitly forbidden in this slice.
 - next: dispatch ASC-0251 to Claude; Codex verifies the spec is concrete enough
   for a later prototype contract.
+
+## 2026-06-13 15:39 KST — codex@myworld — ASC-0251 spec verified
+
+- status: done
+- scope: ASC-0251 product spec/route-map verification and closeout hygiene.
+- result: Claude produced `docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md`
+  and `docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md`, plus a passed result
+  packet at `.aios/outbox/myworld/asc-0251.myworld.result.json`.
+- verification: dispatch status shows ASC-0251 collected; monitor health is
+  `watch`; `.aios/leases` was cleared after the collected result; `git diff
+  --check` passed after a small whitespace cleanup in the spec header.
+- decision: ASC-0251 is closed as design/spec only. It proves the serving UI
+  boundary and future acceptance gates; it does not implement `apps/serving/`.
+- next: create a separate prototype contract for the first end-user workflow
+  once a visual direction/target is selected.

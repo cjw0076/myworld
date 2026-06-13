@@ -1,8 +1,12 @@
 # AIOS End-User Serving Interface Spec
 
-**Contract**: ASC-0251  
-**Status**: draft  
-**Date**: 2026-06-13  
+**Contract**: ASC-0251
+**Status**: draft (design/spec only — no UI code in this slice)
+**Author**: claude@myworld
+**Date**: 2026-06-13
+**Companion**: `docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md` — explicit route
+table, first-workflow state machine, and `aios.serving.mock.v1` mock data schema
+(contract-required acceptance-gate artifacts).
 
 ---
 
@@ -277,7 +281,7 @@ Support reviewers access:
 - Job timeline (stage names + status + error type — not message bodies).
 - Approval queue history for a specific incident (approved/rejected + timestamp).
 - Memory draft lifecycle (proposed/accepted/rejected — not memory body unless
-  user-scented only via a secure redaction gate).
+  the user has granted explicit consent via a secure redaction gate).
 
 Support reviewers may **not** access:
 - Raw memory bodies without explicit user consent grant.
