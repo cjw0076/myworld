@@ -243,19 +243,71 @@
       document.getElementById('nextList').innerHTML = '<li>—</li>';
 
       try {
-        const resp = await fetch(`${API_BASE}/run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ goal, provider, max_turns: maxTurns }),
-        });
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const data = await resp.json();
-        renderResult(data);
+        // Use /run/stream (SSE) so each turn renders as it arrives — no full-page block
+        // Falls back to /run (blocking) if EventSource can't be used for POST
+        await runStreaming(goal, provider, maxTurns);
       } catch (err) {
-        // Server not running — show the error honestly + instructions
         renderOffline(goal, err.message);
       } finally {
         document.getElementById('runBtn').disabled = false;
+      }
+    }
+
+    async function runStreaming(goal, provider, maxTurns) {
+      // POST body via fetch with streaming read (network: chunked transfer)
+      const resp = await fetch(`${API_BASE}/run/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, provider, max_turns: maxTurns }),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+
+      const trajEl = document.getElementById('trajectoryList');
+      trajEl.innerHTML = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        // Parse SSE events from buffer
+        const blocks = buf.split('\n\n');
+        buf = blocks.pop(); // keep incomplete last block
+
+        for (const block of blocks) {
+          const eventLine = block.split('\n').find(l => l.startsWith('event:'));
+          const dataLine  = block.split('\n').find(l => l.startsWith('data:'));
+          if (!eventLine || !dataLine) continue;
+          const event = eventLine.slice(7).trim();
+          let data;
+          try { data = JSON.parse(dataLine.slice(6)); } catch { continue; }
+
+          if (event === 'preamble') {
+            setStep('p-memory',
+              data.memory_status === 'ok' ? 'ok' : 'warn',
+              data.memory_hits != null ? `${data.memory_hits} hits` : data.memory_status || '?');
+            setStep('p-capability',
+              data.capability_status === 'ok' ? 'ok' : 'warn',
+              data.top_capability || data.capability_status || '?');
+            document.getElementById('statusContent').innerHTML =
+              '<span class="spinner"></span>preamble 완료 — turn 루프 실행 중…';
+          } else if (event === 'turn') {
+            setStep('p-loop', '', `T${data.turn}/${maxTurns}`);
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="turn-num">T${data.turn}</span>
+              <span class="tool-name">${data.tool || '?'}</span>
+              <span class="tool-status">${data.status || ''} ${data.decision ? '('+data.decision+')' : ''}</span>`;
+            trajEl.appendChild(li);
+          } else if (event === 'done') {
+            renderResult(data);
+          } else if (event === 'error') {
+            renderOffline(goal, data.error || 'unknown error');
+          }
+        }
       }
     }
 
@@ -319,9 +371,9 @@
     function renderOffline(goal, errMsg) {
       document.getElementById('statusContent').innerHTML =
         `<div class="error-box">
-          <strong>서버 미실행</strong> — aios_serving_session.py가 :8741에서 실행 중이 아닙니다.<br>
+          <strong>서버 미실행</strong> — aios_serving_api.py가 :8741에서 실행 중이 아닙니다.<br>
           <code style="font-size:0.8rem;display:block;margin-top:6px">
-            python3 scripts/aios_serving_session.py serve --port 8741
+            python3 scripts/aios_serving_api.py --port 8741
           </code>
           <span style="font-size:0.78rem;color:#c0392b;margin-top:4px;display:block">
             ${errMsg}

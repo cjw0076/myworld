@@ -13,7 +13,7 @@ import argparse
 import json
 import sys
 import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -51,30 +51,116 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(SERVING_DIR / "index.html", "text/html; charset=utf-8")
         elif path == "/health":
             self._json({"status": "ok", "service": "aios_serving_api"})
+        elif path in ("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json"):
+            self.send_response(204)
+            self.end_headers()
         else:
             self.send_error(404, "Not found")
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path != "/run":
+        if path == "/run":
+            self._handle_run()
+        elif path == "/run/stream":
+            self._handle_run_stream()
+        else:
             self.send_error(404, "Not found")
-            return
+
+    def _parse_run_body(self) -> dict | None:
         length = int(self.headers.get("Content-Length", 0))
         try:
-            body = json.loads(self.rfile.read(length))
+            return json.loads(self.rfile.read(length))
         except json.JSONDecodeError:
             self.send_error(400, "Invalid JSON")
-            return
+            return None
 
+    def _handle_run(self):
+        """Blocking POST /run — waits for completion, returns full result."""
+        body = self._parse_run_body()
+        if body is None:
+            return
+        goal = str(body.get("goal", "")).strip()
+        if not goal:
+            self._json({"error": "goal required"}, status=400)
+            return
+        result = run_organic(goal, str(body.get("provider", "claude")),
+                             int(body.get("max_turns", 6)))
+        self._json(result)
+
+    def _handle_run_stream(self):
+        """Streaming POST /run/stream — sends Server-Sent Events as turns complete.
+
+        Network pattern: chunked streaming (like TCP window updates) so the browser
+        renders progress incrementally instead of blocking until the full run finishes.
+        Each turn emits one SSE event; the final event includes the full result.
+        """
+        body = self._parse_run_body()
+        if body is None:
+            return
         goal = str(body.get("goal", "")).strip()
         if not goal:
             self._json({"error": "goal required"}, status=400)
             return
         provider = str(body.get("provider", "claude"))
-        max_turns = int(body.get("max_turns", 12))
+        max_turns = int(body.get("max_turns", 6))
 
-        result = run_organic(goal, provider, max_turns)
-        self._json(result)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Transfer-Encoding", "chunked")
+        self._cors_headers()
+        self.end_headers()
+
+        def emit(event: str, data: dict) -> None:
+            line = f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+            try:
+                self.wfile.write(line.encode())
+                self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+
+        emit("start", {"goal": goal[:120], "provider": provider, "max_turns": max_turns})
+
+        head = _import_head()
+        adapters = head._default_adapters(provider)
+        if provider not in adapters:
+            emit("error", {"error": f"provider '{provider}' not available"})
+            return
+
+        # Turn-level streaming: emit each turn as it completes (network: packet-by-packet)
+        turn_events: list[dict] = []
+
+        def streaming_turn_sink(rec: dict) -> None:
+            if rec.get("kind") == "trajectory":
+                turn_events.append(rec)
+                emit("turn", {"turn": rec.get("turn"), "tool": rec.get("tool"),
+                              "status": rec.get("status"), "decision": rec.get("decision")})
+
+        from pathlib import Path
+        root = Path(__file__).resolve().parents[1]
+
+        import datetime as _dt
+        run_id = f"stream-{_dt.datetime.now(_dt.timezone.utc).strftime('%Y%m%dT%H%M%S')}"
+        rl_mod = head._load("aios_run_log")
+        run_log = rl_mod.RunLog(run_id=run_id, agent="codex@myworld",
+                                runs_dir=root / ".aios" / "runs")
+        run_log.open(ts=_dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"))
+
+        def combined_sink(rec: dict) -> None:
+            run_log.sink(rec)
+            streaming_turn_sink(rec)
+
+        emit("preamble", head._organ_preamble(goal, root))
+
+        sampler = head.make_provider_sampler(provider, adapters)
+        result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
+                                    turn_sink=combined_sink)
+
+        postamble = head._organ_postamble(goal, result, root, run_id=run_id)
+        result["run_id"] = run_id
+        result["organic_pipeline"] = {"postamble": postamble}
+
+        emit("done", result)
 
     def do_OPTIONS(self):
         self.send_response(200)
@@ -109,7 +195,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def serve(host: str = "127.0.0.1", port: int = 8741) -> None:
-    server = HTTPServer((host, port), Handler)
+    # ThreadingHTTPServer: each request gets its own thread — LLM calls don't block other requests
+    server = ThreadingHTTPServer((host, port), Handler)
     print(f"[aios-serving] http://{host}:{port}/  (Ctrl-C to stop)", flush=True)
     try:
         server.serve_forever()
