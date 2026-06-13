@@ -7056,3 +7056,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: low — all changes are additive guards; no existing behavior removed; 38 tests green
 - next: monitor incoming packets; collect dispatch watcher results
 - status: done
+
+---
+- when: 2026-06-13T15:10:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator
+- goal: ASC-0247 — planner-call receipt boundary (auditability)
+- changed: scripts/aios_head.py, scripts/aios_contract_object.py, tests/test_aios_head.py
+- evidence: commit 6a8eefa (35/35 tests pass); .aios/outbox/myworld/asc-0247.myworld.result.json
+- decision: added PlannerReceipt dataclass + planner_receipt field on ContractObject; compile_goal() attaches receipt before steps trusted; parse failures also produce receipt (hash/len diagnostic); raw body never stored; memory count only; 4 new tests cover all requirements
+- risk: low — additive only; no execution authority changed; existing tests unaffected
+- next: monitor for next Codex packet
+- status: done

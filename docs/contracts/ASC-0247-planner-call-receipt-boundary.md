@@ -1,12 +1,12 @@
 ---
 contract_id: ASC-0247
 slug: planner-call-receipt-boundary
-status: accepted
+status: closed
 goal: Make AIOS head planning auditable by recording planner-call receipts before parsed steps are trusted or executed.
 created: 2026-06-13T14:45:00+09:00
 accepted: 2026-06-13T14:45:00+09:00
 human_approved: true
-closed:
+closed: 2026-06-13T15:10:00+09:00
 origin: `1.md` product-kernel review: plan generation currently happens outside the auditable runtime evidence chain.
 ---
 
