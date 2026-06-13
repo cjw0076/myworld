@@ -1,10 +1,11 @@
 ---
 contract_id: ASC-0251
 slug: end-user-serving-interface-spine
-status: accepted
+status: closed
 goal: Define the first true end-user serving interface for AIOS as a product surface separate from the local operator Control Center.
 created: 2026-06-13T15:07:00+09:00
 accepted: 2026-06-13T15:31:00+09:00
+closed: 2026-06-13T15:37:00+09:00
 human_approved: true
 origin: The current AIOS UI is a local operator workbench, not a well-made hosted interface for real users.
 ---

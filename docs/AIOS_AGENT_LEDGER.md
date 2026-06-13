@@ -7147,3 +7147,16 @@ For repo-local implementation details, also update that repo's own worklog.
 - risk: until the spec/prototype contracts close, AIOS still has no well-made end-user serving interface.
 - next: dispatch ASC-0251 to Claude for `docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md` and route map.
 - status: proposed
+
+---
+- when: 2026-06-13T15:37:00+09:00
+- repo: myworld
+- agent: claude@myworld
+- role: operator + architect
+- goal: Define end-user serving interface spec separate from operator Control Center (ASC-0251)
+- changed: docs/product/AIOS_END_USER_SERVING_INTERFACE_SPEC.md (new), docs/product/AIOS_SERVING_INTERFACE_ROUTE_MAP.md (new), docs/contracts/ASC-0251 status→closed
+- evidence: asc-0251.myworld.result.json; 10-section spec covers 4 user roles, 6 routes, end_user_serving profile semantics, memory boundary, 6 readiness gates, 4 UI proof flows, 8 acceptance gates; route map covers 9 routes with authority constraints and fixture schema
+- decision: spec-first approach; no UI code produced; end_user_serving runtime profile and apps/serving/ deferred to implementation contracts
+- risk: open questions on auth, hosting, transport not blocking spec; deferred to implementation contract
+- next: prototype contract for apps/serving/ targeting first user workflow (new task → approval → artifact)
+- status: closed
