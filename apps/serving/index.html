@@ -166,11 +166,12 @@
     <div class="provider-row">
       <span>Provider:</span>
       <select id="providerSelect">
-        <option value="ollama_rest" selected>ollama REST (fast, local)</option>
+        <option value="auto" selected>auto (complexity-aware)</option>
+        <option value="ollama_rest">ollama REST 1.7b (fast)</option>
+        <option value="ollama_rest_8b">ollama REST 8b (capable)</option>
         <option value="claude">claude</option>
         <option value="codex">codex</option>
         <option value="gemini">gemini</option>
-        <option value="ollama_local">ollama CLI (local)</option>
       </select>
       <span>Max turns:</span>
       <select id="maxTurns">

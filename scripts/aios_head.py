@@ -551,8 +551,31 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     }
 
 
+def _auto_provider(goal: str) -> str:
+    """Choose the best available provider based on goal complexity.
+
+    Simple/short goals → qwen3:1.7b via ollama_rest (fast, ~0.2s/turn)
+    Complex/long/code goals → qwen3:8b via ollama_rest (smarter, ~2-5s/turn)
+    Always falls back to ollama_rest if either model is missing.
+    """
+    adapters_mod = _load("aios_adapters")
+    if not adapters_mod._ollama_rest_available():
+        return "ollama_rest"   # will be handled as unavailable downstream
+    # Complexity heuristics
+    word_count = len(goal.split())
+    has_code_hint = any(kw in goal.lower() for kw in
+                        ("코드", "code", "파일", "file", "script", "함수", "function",
+                         "버그", "bug", "error", "읽어", "read", "fetch", "url"))
+    if word_count > 20 or has_code_hint:
+        return "ollama_rest_8b"
+    return "ollama_rest"
+
+
 def _default_adapters(authorized_provider: str) -> dict[str, Callable[[str], str]]:
     adapters_mod = _load("aios_adapters")
+    if authorized_provider == "auto":
+        # auto provider builds both fast (1.7b) and capable (8b) and routes per-goal
+        return adapters_mod.build_adapters(providers=["ollama_rest", "ollama_rest_8b"])
     return adapters_mod.build_adapters(providers=[authorized_provider])
 
 

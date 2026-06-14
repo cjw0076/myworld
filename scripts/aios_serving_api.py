@@ -217,8 +217,13 @@ class Handler(BaseHTTPRequestHandler):
         emit("start", {"goal": goal[:120], "provider": provider, "max_turns": max_turns})
 
         head = _import_head()
+        # auto provider: pick qwen3:8b vs 1.7b based on goal complexity
+        actual_provider = head._auto_provider(goal) if provider == "auto" else provider
         adapters = head._default_adapters(provider)
-        if provider not in adapters:
+        if actual_provider not in adapters:
+            # Fall back gracefully if chosen model unavailable
+            actual_provider = "ollama_rest" if "ollama_rest" in adapters else provider
+        if actual_provider not in adapters:
             emit("error", {"error": f"provider '{provider}' not available"})
             return
 
@@ -249,7 +254,7 @@ class Handler(BaseHTTPRequestHandler):
         emit("preamble", preamble_data)
 
         try:
-            sampler = head.make_provider_sampler(provider, adapters, goal=goal)
+            sampler = head.make_provider_sampler(actual_provider, adapters, goal=goal)
             result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
                                         turn_sink=combined_sink)
             # Synthesis step: generate a concise final answer using fast local LLM

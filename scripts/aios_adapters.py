@@ -182,6 +182,10 @@ def build_adapters(
             if _rest_ok():
                 registry["ollama_rest"] = make_ollama_rest_adapter()
             continue
+        if name == "ollama_rest_8b":
+            if _rest_ok():
+                registry["ollama_rest_8b"] = make_ollama_rest_adapter(model="qwen3:8b", timeout=120)
+            continue
         spec = SPECS.get(name)
         if spec is None:
             continue
