@@ -467,7 +467,15 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
         line = f"  turn {t.get('turn')}: {t.get('tool', '?')} → {t.get('status', '?')}"
         res = t.get("result", {})
         if res:
-            line += f" ({', '.join(f'{k}={v}' for k, v in list(res.items())[:3])})"
+            # Show key metadata fields compactly
+            meta = {k: v for k, v in res.items() if k not in ("snippet", "top")}
+            parts = [f"{k}={v}" for k, v in list(meta.items())[:4]]
+            if parts:
+                line += f" ({', '.join(parts)})"
+            # Show snippet/top separately if present (most informative content)
+            snippet = str(res.get("snippet", "") or res.get("top", ""))[:200].strip()
+            if snippet:
+                line += f"\n    content: {snippet}"
         traj_lines.append(line)
     traj_summary = "\n".join(traj_lines) or "  (no tool calls)"
 
