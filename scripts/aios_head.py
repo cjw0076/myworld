@@ -401,7 +401,15 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
         from memoryos.store import GraphStore  # noqa: PLC0415
         exit_status = result.get("exit", "unknown")
         turns = result.get("turns", 0)
+        tool_calls_count = result.get("tool_calls", 0)
         final_answer = str(result.get("final_answer") or result.get("answer") or "")[:300]
+        # Only record executions that used multiple turns or had interesting exits.
+        # Single-turn model_finished (trivial synthesis) → skip to avoid memory noise.
+        _is_significant = (turns > 1 or tool_calls_count >= 2
+                           or exit_status not in ("model_finished", "unknown"))
+        if not _is_significant:
+            dream_status = f"skipped:trivial(turns={turns},tools={tool_calls_count},exit={exit_status})"
+            return {"dream_agora_ingest": dream_status, "akashic_record": "skipped", "errors": []}
         content = (
             f"Goal: {goal[:200]}\n"
             f"Exit: {exit_status}  Turns: {turns}\n"
