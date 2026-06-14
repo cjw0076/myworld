@@ -465,7 +465,10 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     """
     adapters_mod = _load("aios_adapters")
     if not adapters_mod._ollama_rest_available():
-        return ""
+        return ("Ollama를 찾을 수 없습니다. `aios setup apply`로 로컬 모델을 설치한 뒤 "
+                "`aios serve`를 다시 시작하세요.\n\n"
+                "Ollama not found. Run `aios setup apply` to install local models, "
+                "then restart `aios serve`.")
     adapter = adapters_mod.make_ollama_rest_adapter(model="qwen3:8b", timeout=60)
 
     traj = result.get("trajectory", [])
