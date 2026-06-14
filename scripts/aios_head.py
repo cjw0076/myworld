@@ -432,7 +432,7 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
 
 
 def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
-                      root: "Path | None" = None) -> str:
+                      root: "Path | None" = None, prior_context: str = "") -> str:
     """Synthesis step: after the turn loop, generate a concise final answer.
 
     Uses ollama_rest (fast, local) so this never adds frontier API latency.
@@ -493,13 +493,15 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     is_korean = any('가' <= c <= '힣' for c in goal)
     lang_hint = "한국어로 답하세요. " if is_korean else ""
 
+    prior_section = f"{prior_context.strip()}\n\n" if prior_context.strip() else ""
     synthesis_prompt = (
+        f"{prior_section}"
         f"Goal: {goal}\n\n"
         f"{mem_context}\n\n"
         f"Agent loop ({turns} turns, exit={exit_status}):\n{traj_summary}\n\n"
         f"{lang_hint}"
         "Write a concise, direct answer to the goal (1-3 sentences, plain text, no markdown). "
-        "Use the memory records and tool results above as evidence. "
+        "Use the memory records, tool results, and prior conversation above as evidence. "
         "If the goal cannot be fully answered from available data, state what was found."
     )
     try:

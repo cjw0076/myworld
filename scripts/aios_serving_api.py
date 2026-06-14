@@ -50,6 +50,42 @@ def _check_rate_limit(ip: str) -> bool:
         return True
 
 
+_SESSION_TTL = 3600      # sessions expire after 1 hour of inactivity
+_SESSION_MAX_TURNS = 3   # carry forward last N goal/answer pairs
+_session_lock = threading.Lock()
+_sessions: dict[str, dict] = {}   # session_id → {turns: [...], last_seen: float}
+
+
+def _session_push(session_id: str, goal: str, answer: str) -> None:
+    """Append a goal+answer pair to the session history."""
+    now = time.monotonic()
+    with _session_lock:
+        # Prune expired sessions opportunistically
+        expired = [k for k, v in _sessions.items() if now - v["last_seen"] > _SESSION_TTL]
+        for k in expired:
+            del _sessions[k]
+        sess = _sessions.setdefault(session_id, {"turns": [], "last_seen": now})
+        sess["last_seen"] = now
+        sess["turns"].append({"goal": goal[:300], "answer": answer[:500]})
+        sess["turns"] = sess["turns"][-_SESSION_MAX_TURNS:]
+
+
+def _session_context(session_id: str | None) -> str:
+    """Return a compact prior-conversation context string for the synthesis prompt."""
+    if not session_id:
+        return ""
+    with _session_lock:
+        sess = _sessions.get(session_id)
+    if not sess or not sess["turns"]:
+        return ""
+    lines = ["Prior conversation in this session:"]
+    for t in sess["turns"]:
+        lines.append(f"  Q: {t['goal']}")
+        if t["answer"]:
+            lines.append(f"  A: {t['answer']}")
+    return "\n".join(lines)
+
+
 def _validate_goal(goal: str) -> str | None:
     """Return error string if goal is rejected, else None."""
     if len(goal) > _GOAL_MAX_LEN:
@@ -159,6 +195,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         provider = str(body.get("provider", "claude"))
         max_turns = int(body.get("max_turns", 6))
+        session_id = str(body.get("session_id", "")).strip()[:64] or None
+        prior_ctx = _session_context(session_id)
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -215,9 +253,13 @@ class Handler(BaseHTTPRequestHandler):
             result = head.run_loop_goal(goal, sampler=sampler, max_turns=max_turns,
                                         turn_sink=combined_sink)
             # Synthesis step: generate a concise final answer using fast local LLM
-            final_answer = head._organ_synthesis(goal, result, preamble=preamble_data, root=root)
+            final_answer = head._organ_synthesis(goal, result, preamble=preamble_data,
+                                                 root=root, prior_context=prior_ctx)
             if final_answer:
                 result["final_answer"] = final_answer
+            # Save to session so next request in the same session has context
+            if session_id and final_answer:
+                _session_push(session_id, goal, final_answer)
             postamble = head._organ_postamble(goal, result, root, run_id=run_id)
             result["run_id"] = run_id
             result["organic_pipeline"] = {"preamble": preamble_data, "postamble": postamble}

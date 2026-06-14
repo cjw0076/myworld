@@ -255,6 +255,13 @@
     // or falls back to a static demo if the server is not running.
     const API_BASE = 'http://localhost:8741';
 
+    // Session ID: stable for this browser tab, stored in sessionStorage
+    const SESSION_ID = (() => {
+      let id = sessionStorage.getItem('aios_session_id');
+      if (!id) { id = crypto.randomUUID(); sessionStorage.setItem('aios_session_id', id); }
+      return id;
+    })();
+
     function setStep(id, status, val) {
       const el = document.getElementById(id);
       if (!el) return;
@@ -298,7 +305,7 @@
       const resp = await fetch(`${API_BASE}/run/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, provider, max_turns: maxTurns }),
+        body: JSON.stringify({ goal, provider, max_turns: maxTurns, session_id: SESSION_ID }),
       });
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
