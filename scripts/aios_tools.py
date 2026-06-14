@@ -227,14 +227,69 @@ def _h_web_fetch(a: dict) -> dict:
     return {"status": "ok", "url": url[:100], "snippet": text[:1000]}
 
 
+def _ko_wikipedia(query: str) -> dict:
+    """Korean Wikipedia search + summary — free, no API key, degrades gracefully.
+
+    Normalises the query (strip particles + request suffixes) before sending to
+    the MediaWiki search API so "서울에 대해 알려줘" → "서울" and returns the
+    correct article instead of a spurious off-topic match.
+    """
+    import json as _json
+    import urllib.parse as _up
+    import urllib.request as _req
+    # Strip Korean grammatical particles + request phrases so only the topic remains
+    _REQUEST_PHRASES = ["에 대해 알려줘", "에 대해 설명해줘", "이 뭔가요", "가 뭔가요",
+                        "은 뭔가요", "는 뭔가요", "을 알려줘", "를 알려줘",
+                        "에 대해", "알려줘", "설명해줘", "뭔가요", "뭐야"]
+    topic = query
+    for phrase in _REQUEST_PHRASES:
+        topic = topic.replace(phrase, "").strip()
+    topic = _korean_norm(topic) if any('가' <= c <= '힣' for c in topic) else topic
+    topic = topic.strip()[:80] or query[:40]
+    try:
+        # Step 1: search for the best matching article title
+        params = {"action": "query", "list": "search", "srsearch": topic,
+                  "format": "json", "srlimit": 1, "srnamespace": 0}
+        search_url = "https://ko.wikipedia.org/w/api.php?" + _up.urlencode(params)
+        req = _req.Request(search_url, headers={"User-Agent": "AIOS/1.0"})
+        with _req.urlopen(req, timeout=8) as resp:
+            data = _json.loads(resp.read(100_000))
+        results = (data.get("query") or {}).get("search", [])
+        if not results:
+            return {"status": "no_results"}
+        title = results[0].get("title", "")
+        if not title:
+            return {"status": "no_results"}
+        # Step 2: get the page summary (plain text intro paragraph)
+        summary_url = (
+            "https://ko.wikipedia.org/api/rest_v1/page/summary/"
+            + _up.quote(title, safe="")
+        )
+        req2 = _req.Request(summary_url, headers={"User-Agent": "AIOS/1.0"})
+        with _req.urlopen(req2, timeout=8) as resp2:
+            sdata = _json.loads(resp2.read(200_000))
+        extract = (sdata.get("extract") or "").strip()[:500]
+        if not extract:
+            return {"status": "no_results"}
+        return {"status": "ok", "source": "ko.wikipedia.org",
+                "title": title, "abstract": extract}
+    except Exception as exc:
+        return {"status": "unavailable", "reason": str(exc)[:80]}
+
+
 def _h_web_search(a: dict) -> dict:
-    """DuckDuckGo Instant Answer — no API key, no quota, degrades gracefully."""
+    """DuckDuckGo Instant Answer with Korean Wikipedia fallback.
+
+    For Korean queries DDG rarely has an AbstractText; Korean Wikipedia provides
+    a clean summary for factual/encyclopedic topics (no API key, no quota).
+    """
     import json as _json
     import urllib.parse as _up
     import urllib.request as _req
     query = str(a.get("query", "")).strip()[:200]
     if not query:
         return {"status": "empty"}
+    is_korean = any('가' <= c <= '힣' for c in query)
     url = f"https://api.duckduckgo.com/?q={_up.quote(query)}&format=json&no_html=1&skip_disambig=1"
     try:
         req = _req.Request(url, headers={"User-Agent": "AIOS/1.0"})
@@ -246,12 +301,18 @@ def _h_web_search(a: dict) -> dict:
     source = (data.get("AbstractSource") or "").strip()[:80]
     answer = (data.get("Answer") or "").strip()[:200]
     topics = [t.get("Text", "")[:100] for t in (data.get("RelatedTopics") or []) if t.get("Text")][:3]
-    if not abstract and not answer and not topics:
-        return {"status": "no_results", "query": query[:80]}
-    return {"status": "ok", "query": query[:80],
-            **({"answer": answer} if answer else {}),
-            **({"abstract": abstract, "source": source} if abstract else {}),
-            **({"related": topics} if topics else {})}
+    if abstract or answer or topics:
+        return {"status": "ok", "query": query[:80],
+                **({"answer": answer} if answer else {}),
+                **({"abstract": abstract, "source": source} if abstract else {}),
+                **({"related": topics} if topics else {})}
+    # DDG returned nothing — try Korean Wikipedia for Korean factual queries
+    if is_korean:
+        ko_result = _ko_wikipedia(query)
+        if ko_result["status"] == "ok":
+            ko_result["query"] = query[:80]
+            return ko_result
+    return {"status": "no_results", "query": query[:80]}
 
 
 def _h_note_write(a: dict) -> dict:
