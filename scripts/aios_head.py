@@ -504,9 +504,14 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
             _gl = goal.lower()
             _aios_self = any(kw in _gl for kw in ("뭐야", "뭔가요", "무엇", "소개", "설명", "어떻게 작동", "what is", "how does"))
             _tool_query = any(kw in _gl for kw in ("도구", "tool", "기능", "feature", "명령", "command"))
+            _install_q = any(kw in _gl for kw in ("install", "설치", "setup", "curl", "how to"))
+            # install intent always gets a dedicated first query (before other anchors fill the budget)
+            if _install_q:
+                queries.insert(0, "AIOS install curl setup one-line command aios serve")
             if _aios_self:
                 queries.append("AIOS 5-OS architecture myworld hivemind memoryOS organic pipeline")
-                queries.append("AIOS serving UI localhost install DNA invariants")
+                if not _install_q:
+                    queries.append("AIOS serving UI localhost install DNA invariants")
             elif _tool_query or aux_tool_query:
                 queries.append(f"AIOS {aux_tool_query}" if aux_tool_query else "AIOS 12 kernel tools")
             elif is_korean and aux_tool_query:
@@ -526,14 +531,14 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
                     if content and content not in seen_contents:
                         seen_contents.add(content)
                         mem_snippets.append(f"[decision] {content}")
-                        if len(mem_snippets) >= 6:
+                        if len(mem_snippets) >= 8:
                             break
                 for item in (data.get("constraints") or [])[:2]:
                     content = str(item.get("content", ""))[:80].strip()
                     if content and content not in seen_contents:
                         seen_contents.add(content)
                         mem_snippets.append(f"[constraint] {content}")
-                if len(mem_snippets) >= 6:
+                if len(mem_snippets) >= 8:
                     break
         except Exception:  # noqa: BLE001
             pass
