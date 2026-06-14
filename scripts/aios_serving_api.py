@@ -107,6 +107,42 @@ def _import_head():
     return mod
 
 
+_RETRIEVAL_KEYWORDS = {
+    # Korean
+    "검색", "찾아", "찾아줘", "조회", "알려줘", "뉴스", "날씨", "주가", "가격",
+    "오늘", "지금", "현재", "최근", "실시간", "목록", "리스트", "파일",
+    # English
+    "search", "find", "look up", "today", "now", "current", "weather",
+    "price", "news", "latest", "list", "file", "read file",
+}
+
+
+def _needs_retrieval(goal: str) -> bool:
+    """True if the goal likely needs web search or file access; False for pure knowledge queries."""
+    lower = goal.lower()
+    # URL or file path present
+    if any(p in lower for p in ("http://", "https://", "www.", "/home/", "~/", ".py", ".txt", ".json")):
+        return True
+    return any(kw in lower for kw in _RETRIEVAL_KEYWORDS)
+
+
+def run_fast(goal: str, provider: str, prior_context: str = "") -> dict:
+    """Skip the turn loop and synthesize directly for knowledge/conversational queries."""
+    head = _import_head()
+    adapters = head._default_adapters(provider)
+    _pkey = head._auto_provider(goal) if provider == "auto" else provider
+    if _pkey not in adapters:
+        return {"exit": "no_provider", "turns": 0}
+    adapter = adapters[_pkey]
+    result = {"exit": "fast_path", "turns": 0, "tool_calls": 0, "trajectory": [],
+              "organic_pipeline": {"preamble": {}, "postamble": {}}}
+    final_answer = head._organ_synthesis(goal, result, preamble=None,
+                                         root=ROOT, prior_context=prior_context)
+    if final_answer:
+        result["final_answer"] = final_answer
+    return result
+
+
 def run_organic(goal: str, provider: str, max_turns: int) -> dict:
     head = _import_head()
     adapters = head._default_adapters(provider)
@@ -182,13 +218,20 @@ class Handler(BaseHTTPRequestHandler):
             return
         session_id = str(body.get("session_id", "")).strip()[:64] or None
         prior_ctx = _session_context(session_id)
-        result = run_organic(goal, str(body.get("provider", "auto")),
-                             int(body.get("max_turns", 6)))
-        # Add synthesis so API callers get a usable answer (same as streaming path)
+        provider = str(body.get("provider", "auto"))
+        max_turns = int(body.get("max_turns", 6))
+        if not _needs_retrieval(goal):
+            result = run_fast(goal, provider, prior_context=prior_ctx)
+        else:
+            result = run_organic(goal, provider, max_turns)
+        # Add synthesis for organic path (fast path already synthesized)
         head = _import_head()
         preamble_data = result.get("organic_pipeline", {}).get("preamble", {})
-        final_answer = head._organ_synthesis(goal, result, preamble=preamble_data,
-                                             root=ROOT, prior_context=prior_ctx)
+        if result.get("exit") != "fast_path":
+            final_answer = head._organ_synthesis(goal, result, preamble=preamble_data,
+                                                 root=ROOT, prior_context=prior_ctx)
+        else:
+            final_answer = result.get("final_answer", "")
         if final_answer:
             result["final_answer"] = final_answer
         if session_id and final_answer:
@@ -241,6 +284,15 @@ class Handler(BaseHTTPRequestHandler):
         emit("start", {"goal": goal[:120], "provider": provider, "max_turns": max_turns})
 
         head = _import_head()
+
+        # Fast path: knowledge/conversational queries skip the tool loop entirely
+        if not _needs_retrieval(goal):
+            result = run_fast(goal, provider, prior_context=prior_ctx)
+            if session_id and result.get("final_answer"):
+                _session_push(session_id, goal, result["final_answer"])
+            emit("done", result)
+            return
+
         # auto provider: pick qwen3:8b vs 1.7b based on goal complexity
         actual_provider = head._auto_provider(goal) if provider == "auto" else provider
         adapters = head._default_adapters(provider)
