@@ -1139,3 +1139,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: "web.search 한국어 실패"를 loop 10까지
   개선 후보로만 분류했으나 실제로는 간단한 Wikipedia API fallback으로 해결 가능.
   DDG no_results → Wikipedia로의 2단계 fallback이 most factual Korean queries를 커버.
+
+## 2026-06-14 ~14:00 KST — claude@myworld — Loop 12: 실시간 날씨 + result propagation 버그
+
+- session_id: CTO loop, loop 12
+- mode_breakdown: observe:20% verify:40% decide:30% intervene:10% escalate:0%
+- tools_used: Bash (curl, python3, Open-Meteo API), Read, Edit
+- substrate_specific_behaviors_observed:
+  - aios_turn_loop.py의 result_summary 필드 목록: 하드코딩된 20개 필드만 pass-through
+  - abstract, title, answer 누락 → web.search 결과가 {"status":"ok"}만 trajectory에 기록됨
+  - synthesis prompt에 날씨/Wikipedia 내용이 없어서 "확인할 수 없습니다" 반환
+  - Open-Meteo API: 무료, API key 불필요, 실시간 기온/풍속/날씨코드/습도 제공
+  - WMO 날씨 코드를 한국어로 매핑 (0=맑음, 61=비, 80=소나기 등)
+  - topic extraction이 날씨 쿼리에도 작동 ("서울 날씨 알려줘" → city="서울")
+- failures_recovered:
+  - "서울 날씨 알려줘" → web.search ok → synthesis "확인할 수 없습니다"
+  - 원인 추적: trajectory result_summary에 abstract 누락
+  - 수정: turn_loop에 abstract/title/answer/city/temperature/description 추가
+  - 수정 후: 날씨 정보가 sampler(모델)에게 전달됨 → 정확한 날씨 답변
+- key_decision: result_summary를 구체적 필드 목록이 아니라
+  "status + metadata + content key loop"로 리팩터 (일반화)
+- new_invariant_or_pattern_discovered:
+  "Content key propagation must be explicit" — turn loop의 result filtering이
+  너무 엄격하면 새 tool의 content가 sampler/synthesis에 도달하지 못한다.
+  새 tool 추가 시 반드시 result_summary 필드 목록 또는 content key loop 업데이트 필요.
+  이것을 "tool result propagation invariant"라고 명명.
+- self-correction-of-prior-observation: loop 11에서 Wikipedia를 추가했을 때
+  "작동한다"고 판단했으나 실제로는 content가 synthesis에 안 들어가고 있었음.
+  tool이 ok를 반환해도 synthesis가 그 내용을 쓰는지 별도 검증 필요.
