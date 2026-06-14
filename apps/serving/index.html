@@ -195,6 +195,14 @@
         <option value="6" selected>6</option>
         <option value="12">12</option>
       </select>
+      <button id="newChatBtn" onclick="newChat()" title="새 대화 시작 (기록 삭제)" style="
+        padding:4px 10px;background:transparent;border:1px solid var(--line);
+        border-radius:6px;font-size:0.75rem;color:var(--muted);cursor:pointer;
+        transition:border-color 0.15s,color 0.15s;
+      " onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
+         onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">
+        새 대화
+      </button>
     </div>
   </div>
 
@@ -203,9 +211,10 @@
       <h2>AIOS에게 물어보세요</h2>
       <p>메모리, 외부 URL, 파일, 메모 저장 등을 통해<br>자연어 goal을 실행합니다.</p>
       <div class="examples">
-        <span class="example-chip" onclick="fillGoal('AIOS의 핵심 설계 원칙을 설명해줘')">AIOS의 핵심 설계 원칙을 설명해줘</span>
-        <span class="example-chip" onclick="fillGoal('scripts/aios_tools.py 파일에서 사용 가능한 도구 목록을 알려줘')">scripts/aios_tools.py 파일에서 사용 가능한 도구 목록을 알려줘</span>
-        <span class="example-chip" onclick="fillGoal('https://httpbin.org/json 에서 slideshow 제목을 알려줘')">https://httpbin.org/json 에서 slideshow 제목을 알려줘</span>
+        <span class="example-chip" onclick="fillGoal('AIOS가 뭔가요?')">AIOS가 뭔가요?</span>
+        <span class="example-chip" onclick="fillGoal('서울 날씨 알려줘')">서울 날씨 알려줘</span>
+        <span class="example-chip" onclick="fillGoal('파이썬으로 피보나치 수열 구현해줘')">파이썬으로 피보나치 수열 구현해줘</span>
+        <span class="example-chip" onclick="fillGoal('AIOS 설치 방법 알려줘')">AIOS 설치 방법 알려줘</span>
       </div>
     </div>
   </div>
@@ -250,6 +259,14 @@
         appendAiosMsg(item.answer, item.meta, item.ts, true /* restored */);
       }
       scrollToBottom();
+    }
+
+    function newChat() {
+      if (_running) return;  // don't clear while a request is in flight
+      localStorage.removeItem(HISTORY_KEY);
+      sessionStorage.removeItem('aios_session_id');
+      // Reload so session ID + thread are fully fresh
+      window.location.reload();
     }
 
     // ── Markdown renderer (no external deps — works offline) ─────────────────

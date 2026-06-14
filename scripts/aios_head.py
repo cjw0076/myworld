@@ -569,7 +569,9 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     )
     try:
         raw = adapter(synthesis_prompt)
-        return raw.strip()[:800]
+        # Code responses may be longer; cap at 1500 to avoid context bloat
+        limit = 1500 if _code_hint else 800
+        return raw.strip()[:limit]
     except Exception as exc:  # noqa: BLE001
         return f"synthesis unavailable: {str(exc)[:60]}"
 
