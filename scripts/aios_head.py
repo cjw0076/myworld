@@ -553,15 +553,19 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     lang_hint = "한국어로 답하세요. " if is_korean else ""
 
     prior_section = f"{prior_context.strip()}\n\n" if prior_context.strip() else ""
+    _code_hint = any(kw in goal.lower() for kw in (
+        "코드", "구현", "작성", "code", "implement", "write", "function", "def ", "class "))
     synthesis_prompt = (
         f"{prior_section}"
         f"Goal: {goal}\n\n"
         f"{mem_context}\n\n"
         f"Agent loop ({turns} turns, exit={exit_status}):\n{traj_summary}\n\n"
         f"{lang_hint}"
-        "Write a concise, direct answer to the goal (1-3 sentences, plain text, no markdown). "
-        "Use the memory records, tool results, and prior conversation above as evidence. "
-        "If the goal cannot be fully answered from available data, state what was found."
+        "Write a concise, direct answer to the goal. "
+        + ("Use fenced markdown code blocks (```lang) for any code. " if _code_hint else "")
+        + "Use the memory records, tool results, and prior conversation above as evidence. "
+        "If the goal cannot be fully answered from available data, state what was found. "
+        "Keep prose responses to 1-3 sentences unless code is requested."
     )
     try:
         raw = adapter(synthesis_prompt)
