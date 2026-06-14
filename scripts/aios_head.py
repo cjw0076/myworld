@@ -289,9 +289,15 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
         if used_in_recent:
             no_repeat_hint = (f"Already called: {', '.join(used_in_recent[:4])}. "
                               "Pick a DIFFERENT tool next.\n")
+        early_exit_hint = (
+            'If this goal can be answered directly from general knowledge '
+            '(math, basic code, concepts, how-to) without searching or reading files — '
+            'emit {"done":true} immediately on turn 1.\n'
+        ) if turn_num == 0 else ""
         prompt = (
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
+            + early_exit_hint
             + "STRATEGY: For questions about AIOS, its tools, architecture, or internal state — "
             "call memory.retrieve FIRST to recall stored knowledge before searching the web or reading files.\n"
             + done_hint
@@ -578,7 +584,9 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
         "the Memory context is background hints, use it only when clearly relevant to the goal. "
         "NEVER mention 'memory context', 'provided data', internal system names (ASC-*, contracts), "
         "or any internal system details in your answer. "
-        "If specific information is unavailable, give a helpful general answer from your knowledge. "
+        "For real-time information (weather, prices, news, live data): if the tool results do not "
+        "contain it, say you could not retrieve it rather than guessing. "
+        "For general knowledge (code, concepts, how-to): you may answer from your knowledge. "
         "Keep prose responses to 1-3 sentences unless more detail is needed."
     )
     try:
