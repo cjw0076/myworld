@@ -1377,3 +1377,40 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 **pattern_for_absorption**:
   serving 품질 검증 루프는 "유형별 benchmark → latency/quality 분석 → 근본 원인
   코드 수정 → 테스트 → 커밋"의 5단계 패턴. AIOS CI에 자동화할 수 있는 구조.
+
+
+## 2026-06-14 KST — claude@myworld — 세계 배포 2단계: Codespaces + Anthropic REST fallback (loop 24-25)
+
+- session_id: loop_24_25_world_deploy_tier2
+- mode_breakdown: observe:1:verify:2:decide:2:intervene:0:escalate:0:~40min
+- tools_used: Bash, Read, Edit, Write (devcontainer files 생성)
+- tools_NOT_used: aios_invoke (코드 변경이 주이라 불필요), memoryOS
+- substrate_specific_behaviors_observed:
+  - 컨텍스트 압축 후 재개: 요약에서 pending 작업(devcontainer commit) 정확히 식별
+  - `build_adapters()` provider registry 패턴 — 각 provider type을 continue로 분기
+  - `_organ_synthesis()` 내부에서 자체적으로 adapter를 재생성하는 구조 발견
+    (run_fast()의 adapter 체크와 synthesis의 adapter 생성이 분리되어 있음)
+
+- failures_recovered:
+  - README 편집 후 "Easiest" 문단 추가: 이미 badge만 있던 상태에서 사용자 안내 텍스트 누락 확인
+  - `_organ_synthesis()`의 Ollama 체크가 두 독립적 경로(합성어댑터 생성 + `_auto_provider`)에
+    분산되어 있어 3곳 모두 수정 필요했음 (한 곳만 고치면 fallback 미완성)
+
+- failures_escalated_to_founder: 없음
+
+**Loop 24 — GitHub Codespaces 지원**:
+  - `.devcontainer/devcontainer.json`: Python 3.12, port 8741 auto-forward
+  - `.devcontainer/setup.sh`: Ollama 설치 + qwen3 모델 pull (graceful skip)
+  - README.md: Codespaces badge + "click the badge" 안내
+  - 목표: 클릭 한 번으로 브라우저에서 AIOS 체험 (로컬 설치 불필요)
+
+**Loop 25 — Anthropic REST fallback**:
+  - `ANTHROPIC_API_KEY` 설정 시 Ollama 없어도 AIOS chat 작동
+  - Provider stack: Ollama(로컬, 0비용) → Anthropic REST(클라우드) → 에러 메시지(이중언어)
+  - 5개 테스트 추가: 1099 passed, 4 skipped
+  - 목표: Codespaces 무료 플랜(GPU 없음)에서 API 키만 있으면 즉시 사용 가능
+
+**pattern_for_absorption**:
+  Provider fallback 체인 패턴: "로컬(0비용) → 클라우드(API 키) → 에러(이중언어)"는
+  AIOS가 다양한 배포 환경에서 graceful degradation하는 핵심 구조. 각 추가 provider는
+  `_available()` 체크 + `build_adapters()` 분기 + synthesis fallback 3곳에 동시 추가 필요.
