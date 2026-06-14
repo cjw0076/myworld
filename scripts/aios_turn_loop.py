@@ -133,13 +133,21 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                 status, tool_result = registry.dispatch(call)   # result fed back next turn
                 entry["status"] = status
                 # Include a compact result summary so the sampler can see what was returned
-                # and avoid redundant re-calls (names/status only, never content blobs)
+                # and avoid redundant re-calls. Content fields (snippet, top) are passed
+                # through so synthesis can cite them; blobs >500 chars are truncated.
                 result_summary: dict = {}
                 if isinstance(tool_result, dict):
                     for k in ("hits", "status", "itch", "ambiguities", "backed_rate",
-                              "trustworthy", "bytes", "prediction_id", "would_write"):
+                              "trustworthy", "bytes", "prediction_id", "would_write",
+                              "decisions", "top", "count", "top_id", "top_desc",
+                              "confidence", "top_vector", "vector_count"):
                         if k in tool_result:
                             result_summary[k] = tool_result[k]
+                    if "snippet" in tool_result:
+                        # Include snippet for synthesis; truncate to avoid context bloat
+                        result_summary["snippet"] = str(tool_result["snippet"])[:500]
+                if result_summary:
+                    entry["result"] = result_summary
                 history.append({"role": "tool", "tool": call.name, "status": status,
                                  **({"result": result_summary} if result_summary else {})})
             trajectory.append(entry)

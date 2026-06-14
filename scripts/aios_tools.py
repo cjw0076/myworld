@@ -40,7 +40,7 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "genesis.challenge": ("advisory", "", "Stress-test a plan or assumption; find weak points"),
     "self.audit":        ("read", "",    "Check agent state, health, or recent decisions"),
     "interior.read":     ("read", "",    "Read internal reasoning trace or agent reflection"),
-    "fs.read":           ("read", "",    "Read a file from the local filesystem"),
+    "fs.read":           ("read", "",    "Read a file from docs/, scripts/, or apps/ — returns first 600 chars"),
     "stakes.record":     ("write", "propose_contract", "Record a formal proposal or contract draft"),
     "fs.write":          ("write", "commit_to_child_repo", "Write or update a file (requires authority)"),
 }
@@ -121,13 +121,24 @@ def _h_stakes(a: dict) -> dict:
     return {"status": "ok", "prediction_id": pid}
 
 
+_CONTENT_SAFE_PREFIXES = ("docs/", "scripts/", "apps/")  # safe paths for content snippets
+
 def _h_fs_read(a: dict) -> dict:
     p = (ROOT / str(a.get("path", ""))).resolve()
     if ROOT not in p.parents and p != ROOT:
         return {"status": "denied_scope"}            # bounded to the repo
     if not p.is_file():
         return {"status": "not_found"}
-    return {"status": "ok", "bytes": p.stat().st_size}   # size only, never content
+    rel = p.relative_to(ROOT)
+    size = p.stat().st_size
+    # Return a content snippet for safe public paths; size-only for everything else
+    if any(str(rel).startswith(pfx) for pfx in _CONTENT_SAFE_PREFIXES) and size < 200_000:
+        try:
+            snippet = p.read_text(encoding="utf-8", errors="replace")[:600]
+            return {"status": "ok", "bytes": size, "snippet": snippet}
+        except OSError:
+            pass
+    return {"status": "ok", "bytes": size}
 
 
 def _h_fs_write(a: dict) -> dict:
