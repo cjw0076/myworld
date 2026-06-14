@@ -1113,3 +1113,29 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: /run이 synthesis 없다는 것을 이 루프까지 놓침.
   스트리밍 경로만 테스트해왔고 비스트리밍은 "raw loop state"만 반환하고 있었음.
   API 통합(SDK, curl)을 위해서는 양쪽 경로 모두 검증 필요.
+
+## 2026-06-14 ~13:30 KST — claude@myworld — Loop 11: Korean web.search fallback + E2E 검증 완성
+
+- session_id: CTO loop, loop 11
+- mode_breakdown: observe:15% verify:45% decide:30% intervene:10% escalate:0%
+- tools_used: Bash (curl, python3, aios_tools direct import), Edit
+- substrate_specific_behaviors_observed:
+  - DDG Instant Answer: 한국어 쿼리에 100% no_results (abstract=False, answer=False, topics=0)
+  - ko.wikipedia.org MediaWiki API: 무료, API key 불필요, REST summary endpoint 작동
+  - 초기 구현 버그: "서울에 대해 알려줘" → "한국교육방송공사(EBS)" 반환
+    원인: 쿼리 전체를 Wikipedia에 보냄, "에 대해 알려줘" suffix가 오매치 유발
+  - 수정: _REQUEST_PHRASES 제거 + _korean_norm → topic only 추출 후 검색
+  - 수정 후: 서울→서울특별시, 파이썬→파이썬, 인공지능→인공지능 모두 정확 매칭
+- failures_recovered:
+  - Wikipedia 쿼리 오매치 → topic extraction: suffix 제거 + particle normalization
+  - 서버 재시작 후 old PID(3983553)가 살아있어 새 코드 미로드 → kill -9 명시적 필요
+- key_decision: Wikipedia 사용 (external 의존성) vs 검색 포기 중 Wikipedia 선택
+  (AIOS = provider symbiosis; Wikipedia는 항상 free, 안정적 API, 쿼터 없음)
+- new_invariant_or_pattern_discovered:
+  "Topic extraction before external search" — 사용자의 자연어 쿼리(질문형)를
+  외부 검색 API에 보내기 전에 핵심 토픽으로 변환해야 한다. 질문 suffix
+  ("에 대해 알려줘", "뭐야?")는 한국어 Wikipedia 검색 정확도를 크게 낮춤.
+  _REQUEST_PHRASES 제거 → _korean_norm 패턴으로 표준화.
+- self-correction-of-prior-observation: "web.search 한국어 실패"를 loop 10까지
+  개선 후보로만 분류했으나 실제로는 간단한 Wikipedia API fallback으로 해결 가능.
+  DDG no_results → Wikipedia로의 2단계 fallback이 most factual Korean queries를 커버.
