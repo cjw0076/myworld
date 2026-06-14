@@ -1014,3 +1014,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 이전 `hits: 179` = 전체 메모리 수 (misleading). 실제 관련 결정 수는 `decisions: 10`.
 수정: `hits = len(decisions)`, `total_memories = context_items`.
 
+
+## 2026-06-14 Loop 7 — claude@myworld — Product-Domain Memory + Auto Provider Fix
+
+- session_id: CTO loop compact resumption, loop 7
+- mode_breakdown: observe:20% verify:30% decide:30% intervene:20% escalate:0%
+- tools_used: Bash (memoryOS CLI, curl, git), Read, Edit
+- tools_NOT_used: web search (local focus)
+- substrate_specific_behaviors_observed:
+  - 7개 product-domain draft 승인 → `approve-batch --project AIOS --min-confidence 0.9`
+  - auto provider KeyError: `adapters["auto"]` 키 없음 → sampler `except Exception` → 빈 루프
+  - Korean 쿼리 임베딩 약점: "도구 목록" ≠ "tool catalog" (embeddings not bilingual enough)
+  - dual-query synthesis 패턴: goal(KR) + tool-names(EN) 병행 → cross-lingual 갭 보완
+- failures_recovered:
+  - run_organic `if provider not in adapters` check → "auto" 예외처리 추가
+  - sampler `adapters[provider]` KeyError → `_auto_provider(goal)` 로 per-turn resolve
+  - synthesis memory 한국어 쿼리 → 보조 English 쿼리 병행
+- failures_escalated_to_founder: none
+- key_decision: synthesis에서 trajectory tool names → 보조 English 쿼리 자동 생성
+- new_invariant_or_pattern_discovered:
+  "Korean goal → English tool names"  dual-query 패턴 — 한국어 사용자 환경에서
+  cross-lingual embedding 갭을 보완하는 synthesis 전략. 메모리 검색에서 언어 장벽이
+  product-domain recall을 막을 때 trajectory의 영어 tool/API 이름을 보조 쿼리로
+  재사용하면 관련 메모리가 top-1에 올라옴.
+- self-correction-of-prior-observation: none
