@@ -75,7 +75,7 @@ def _h_retrieve(a: dict) -> dict:
     # decisions = curated relevant subset; context_items = total accepted count (misleading as "hits")
     decisions = data.get("decisions", [])
     total = data.get("context_items", 0)
-    top_decision = decisions[0].get("content", "")[:80] if decisions else ""
+    top_decision = decisions[0].get("content", "")[:250] if decisions else ""
     return {"status": "ok", "hits": len(decisions), "total_memories": total,
             **({"top": top_decision} if top_decision else {})}
 
