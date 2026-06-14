@@ -1167,3 +1167,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: loop 11에서 Wikipedia를 추가했을 때
   "작동한다"고 판단했으나 실제로는 content가 synthesis에 안 들어가고 있었음.
   tool이 ok를 반환해도 synthesis가 그 내용을 쓰는지 별도 검증 필요.
+
+## 2026-06-14 ~14:20 KST — claude@myworld — Loop 13: 마크다운 렌더링 + synthesis 품질
+
+- session_id: CTO loop, loop 13
+- mode_breakdown: observe:15% verify:35% decide:40% intervene:10% escalate:0%
+- tools_used: Bash (node, curl, grep, git), Read, Edit
+- substrate_specific_behaviors_observed:
+  - serving UI: escHtml(answer)로 인해 코드 블록이 raw text 표시됨
+  - synthesis_prompt에 "no markdown" 제약이 있어도 qwen3:8b가 무시하고 코드 블록 생성
+  - renderMd split-on-fences 패턴: code block 내부 \n이 <br>로 변환되는 버그 방지
+  - XSS: 먼저 esc() 처리 후 HTML tag 삽입 → <script> 안전하게 escape됨
+  - node.js 인라인 테스트로 renderMd 로직 빠른 검증 가능
+- failures_recovered:
+  - escHtml → renderMd 교체 필요 발견: 기존 코드 블록이 화면에 raw markdown으로 표시
+  - synthesis "no markdown" 제약과 실제 마크다운 출력 불일치 → 제약 제거 + 코드 힌트
+- key_decision: 외부 라이브러리(marked.js) 대신 내부 구현 선택
+  (AIOS = 로컬 우선 원칙; CDN 불필요 의존성은 offline 환경에서 fail)
+- new_invariant_or_pattern_discovered:
+  "Split-protect pattern for mixed content rendering" — prose+code 혼재 텍스트에서
+  code fence를 먼저 split으로 분리한 뒤 각 segment를 독립 처리.
+  code 내부 개행이 <br>로 변환되는 버그 방지 + XSS-safe 유지 가능.
+- self-correction-of-prior-observation: "synthesis: 코드 답변이 code block으로 나옴"을
+  loop 9에서 긍정적으로 기록했으나, synthesis_prompt에 "no markdown" 제약이 있었음.
+  모델이 제약을 무시한 덕에 우연히 올바른 결과가 나온 것. 이제 명시적으로 허용.
