@@ -356,8 +356,11 @@ def _organ_preamble(goal: str, root: Path) -> dict:
         except Exception as exc:  # noqa: BLE001
             return {"status": "unavailable", "reason": str(exc)[:80]}
 
+    # Normalize Korean queries: memoryOS text search is keyword-based, so strip
+    # grammatical particles that prevent "AIOS가" from matching "AIOS" in memory text.
+    mem_task = _korean_keywords(goal) if any('가' <= c <= '힣' for c in goal) else goal
     mem = _shell([sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
-                  "--task", goal, "--json"], root / "memoryOS")
+                  "--task", mem_task, "--json"], root / "memoryOS")
     cap = _shell([sys.executable, "-m", "capabilityos.cli", "recommend",
                   "--task", goal, "--json"], root / "CapabilityOS")
     mem_data = (mem.get("data") or {}) if mem["status"] == "ok" else {}
@@ -492,12 +495,22 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     if root is not None:
         try:
             import subprocess as _sp
-            # Build auxiliary English query from trajectory tool names (boosts Korean goals)
+            # Build auxiliary English queries (boosts Korean goals + adds semantic anchors)
             tool_names_used = [t.get("tool", "") for t in traj if t.get("tool")]
-            aux_query = " ".join(dict.fromkeys(tool_names_used))  # unique, order-preserving
+            aux_tool_query = " ".join(dict.fromkeys(tool_names_used))
             queries = [goal]
-            if aux_query and any('가' <= c <= '힣' for c in goal):
-                queries.append(f"AIOS {aux_query}")
+            is_korean = any('가' <= c <= '힣' for c in goal)
+            # Semantic anchor: detect goal intent and add precise English keyword query
+            _gl = goal.lower()
+            _aios_self = any(kw in _gl for kw in ("뭐야", "뭔가요", "무엇", "소개", "설명", "어떻게 작동", "what is", "how does"))
+            _tool_query = any(kw in _gl for kw in ("도구", "tool", "기능", "feature", "명령", "command"))
+            if _aios_self:
+                queries.append("AIOS 5-OS architecture myworld hivemind memoryOS organic pipeline")
+                queries.append("AIOS serving UI localhost install DNA invariants")
+            elif _tool_query or aux_tool_query:
+                queries.append(f"AIOS {aux_tool_query}" if aux_tool_query else "AIOS 12 kernel tools")
+            elif is_korean and aux_tool_query:
+                queries.append(f"AIOS {aux_tool_query}")
             seen_contents: set[str] = set()
             for q in queries:
                 p = _sp.run(
@@ -590,6 +603,40 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
             "postamble": postamble,
         },
     }
+
+
+def _korean_keywords(text: str) -> str:
+    """Strip Korean grammatical suffixes so keywords match memory text.
+
+    Korean particles/endings commonly attached to nouns: 가, 이, 은, 는, 을, 를,
+    에, 에서, 의, 과, 와, 로, 으로, 도, 만, 까지, 부터.
+    Verb endings stripped: 해요, 해, 했다, 한다, 인가요, 뭔가요.
+    Returns space-joined root keywords (best-effort, not full NLP).
+    """
+    _SUFFIXES = [
+        "에서", "이에요", "인가요", "뭔가요", "했다", "한다", "해요", "해서",
+        "해요", "했어", "하나요", "하는", "까지", "부터", "으로", "만큼",
+        "에게", "으로", "이라", "라서", "해서", "에도", "에서", "이라",
+        "이다", "하다", "이란", "라는", "가요", "나요", "네요",
+        "해", "가", "이", "은", "는", "을", "를", "에", "의", "과", "와",
+        "로", "도", "만",
+    ]
+    _STOP_WORDS = {"어떻게", "무엇", "왜", "언제", "어디", "누가", "얼마나",
+                   "그리고", "하지만", "그런데", "또한", "그래서", "따라서"}
+    tokens = text.split()
+    keywords = []
+    for tok in tokens:
+        tok_l = tok.lower()
+        if tok_l in _STOP_WORDS:
+            continue
+        root = tok_l
+        for suf in sorted(_SUFFIXES, key=len, reverse=True):
+            if root.endswith(suf) and len(root) > len(suf) + 1:
+                root = root[: -len(suf)]
+                break
+        if len(root) >= 2:
+            keywords.append(root)
+    return " ".join(dict.fromkeys(keywords))
 
 
 def _auto_provider(goal: str) -> str:

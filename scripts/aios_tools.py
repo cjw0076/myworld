@@ -66,10 +66,33 @@ def _sibling(cmd: list[str], cwd: Path) -> dict:
 
 # --- handlers: each adapts an existing organ; returns names/status, not content ----
 
+def _korean_norm(text: str) -> str:
+    """Strip Korean grammatical particles so keyword search hits memory text."""
+    _SFX = ["에서", "이에요", "인가요", "뭔가요", "했다", "한다", "해요", "해서",
+            "했어", "하나요", "하는", "까지", "부터", "으로", "만큼", "에게",
+            "이다", "하다", "이란", "라는", "가요", "나요", "네요",
+            "해", "가", "이", "은", "는", "을", "를", "에", "의", "과", "와", "로", "도", "만"]
+    _STOP = {"어떻게", "무엇", "왜", "언제", "어디", "누가", "그리고", "하지만", "그런데"}
+    out = []
+    for tok in text.split():
+        t = tok.lower()
+        if t in _STOP:
+            continue
+        for suf in sorted(_SFX, key=len, reverse=True):
+            if t.endswith(suf) and len(t) > len(suf) + 1:
+                t = t[:-len(suf)]
+                break
+        if len(t) >= 2:
+            out.append(t)
+    return " ".join(dict.fromkeys(out)) or text
+
+
 def _h_retrieve(a: dict) -> dict:
     task = str(a.get("task", ""))
+    # Normalize Korean grammatical particles so memoryOS keyword search hits
+    mem_task = _korean_norm(task) if any('가' <= c <= '힣' for c in task) else task
     r = _sibling([sys.executable, "-m", "memoryos", "context", "build", "--task",
-                  task, "--json"], ROOT / "memoryOS")
+                  mem_task, "--json"], ROOT / "memoryOS")
     if r["status"] == "ok":
         data = r.get("data") or {}
         # decisions = curated relevant subset; context_items = total accepted count (misleading as "hits")
