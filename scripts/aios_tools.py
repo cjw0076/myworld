@@ -35,16 +35,16 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # tool → (class, authority action, one-line description for sampler prompts)
 TOOL_SPEC: dict[str, tuple[str, str, str]] = {
-    "memory.retrieve":   ("advisory", "", "Recall past knowledge or context relevant to the goal"),
-    "capability.route":  ("advisory", "", "Recommend the best provider/tool for a given sub-task"),
-    "genesis.challenge": ("advisory", "", "Stress-test a plan or assumption; find weak points"),
-    "self.audit":        ("read", "",    "Check agent state, health, or recent decisions"),
-    "interior.read":     ("read", "",    "Read internal reasoning trace or agent reflection"),
-    "fs.read":           ("read", "",    "Read a file from docs/, scripts/, or apps/ — returns first 600 chars"),
-    "web.fetch":         ("advisory", "", "Fetch a public URL and return first 1000 chars of text content"),
-    "note.write":        ("write", "propose_contract", "Save a short note or result to .aios/notes/ (max 2000 chars)"),
-    "stakes.record":     ("write", "propose_contract", "Record a formal proposal or contract draft"),
-    "fs.write":          ("write", "commit_to_child_repo", "Write or update a file (requires authority)"),
+    "memory.retrieve":   ("advisory", "", 'Recall past knowledge. Args: {"task":"<topic or goal>"}'),
+    "capability.route":  ("advisory", "", 'Recommend best provider. Args: {"task":"<sub-task description>"}'),
+    "genesis.challenge": ("advisory", "", 'Stress-test a plan. Args: {"text":"<claim or plan to challenge>"}'),
+    "self.audit":        ("read", "",    'Check agent health. Args: {"claims":[]}'),
+    "interior.read":     ("read", "",    'Read internal traces. Args: {"traces":[]}'),
+    "fs.read":           ("read", "",    'Read a file. Args: {"path":"docs/AIOS_NORTHSTAR.md"} (docs/, scripts/, apps/ only)'),
+    "web.fetch":         ("advisory", "", 'Fetch a public URL. Args: {"url":"https://..."}'),
+    "note.write":        ("write", "propose_contract", 'Save a note. Args: {"title":"<title>","content":"<text up to 2000 chars>"}'),
+    "stakes.record":     ("write", "propose_contract", 'Record a proposal. Args: {"claim":"<proposal>","confidence":0.8}'),
+    "fs.write":          ("write", "commit_to_child_repo", 'Write a file (requires authority). Args: {"path":"...","content":"..."}'),
 }
 
 
