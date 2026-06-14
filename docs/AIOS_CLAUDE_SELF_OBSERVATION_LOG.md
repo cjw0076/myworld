@@ -1215,3 +1215,32 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   loop 10 초반 언급 → 실제로는 welcome chips가 이미 있었음.
   진짜 문제는 chips 내용이 내부 도구 예시(aios_tools.py 파일 읽기)여서 비직관적이었던 것.
   chips를 실사용 예시(날씨/설치/파이썬코드)로 교체해 해결.
+
+## 2026-06-14 ~15:30 KST — claude@myworld — Loop 15: 배포 경로 검증 + 신규 사용자 UX 강화
+
+- session_id: CTO loop, loop 15
+- mode_breakdown: observe:30% verify:50% decide:15% intervene:5% escalate:0%
+- tools_used: Bash (curl, pytest, python3 시뮬레이션), Read, Edit
+- substrate_specific_behaviors_observed:
+  - GitHub raw URL 200 → myworld 이미 공개 상태 (curl | sh 오늘부터 가능)
+  - cloudflared tunnel: Seoul icn06, QUIC 연결 성공 (URL: mercury-compatibility-enclosure-justify.trycloudflare.com)
+  - aios serve --tunnel 코드 검증: URL 파싱 정규식 [\w.-]+ 가 하이픈 도메인 정확히 매칭
+  - multi-turn: 같은 session_id 사용 시 391의 제곱근(≈19.77) 정확 참조
+  - Flask 코드: 3 routes 완전 (364자, 설명 포함 372자) - 이전에 [:300] 표시 오해
+  - Ollama 없는 환경 시뮬레이션: subprocess monkey-patch로 정확한 UX 경로 추적
+- failures_recovered:
+  - multi-turn 첫 테스트: session_id 미전달로 실패 → 동일 SID 전달 후 완벽 작동
+  - aios_setup.py: Ollama 없을 때 FileNotFoundError 크래시 → shutil.which() 선행 체크
+  - aios_head.py: synthesis ""반환 → "(답변 없음)" → bilingual 도움 메시지로 교체
+  - AIOS_INSTALL.md: Ollama 선행요구 미기재 → Prerequisites 테이블 추가
+- key_decision: 3개 변경 모두 "신규 사용자 첫 5분 UX" 관점으로 선택
+  setup partial, synthesis hint, install docs — 기능 추가 아닌 friction 제거
+- new_invariant_or_pattern_discovered:
+  "Deployment readiness test = simulate Ollama missing + tunnel + multi-turn"
+  세계 배포 검증의 최소 체크리스트:
+  (1) raw GitHub URL → 200, (2) setup partial 에러 메시지 명확, (3) synthesis fallback 힌트,
+  (4) tunnel URL 캡처, (5) multi-turn session_id 유지
+  이 5개가 모두 통과되면 배포 준비 완료.
+- self-correction-of-prior-observation: loop 14에서 "품질 mode shift signal 도달"이라고 했는데
+  실제로는 UX friction 3개가 남아있었음(Ollama crash, 빈 답변, 문서 누락).
+  품질 점수(8.75→9.2)와 배포 준비(deployment readiness)는 별개 지표임. 둘 다 추적 필요.
