@@ -2,6 +2,18 @@
 
 AIOS installs with one command. Contract: ASC-0189.
 
+## Prerequisites
+
+| Requirement | Notes |
+|---|---|
+| `git` | clones the AIOS repos |
+| `python3 >= 3.10` | runs all AIOS scripts |
+| **Ollama** (for AI responses) | `curl -fsSL https://ollama.com/install.sh \| sh` |
+
+The installer checks `git` and `python3` for you. Ollama is needed for `aios serve`
+and `aios setup apply` (model pulls). If Ollama is absent, setup will warn you and
+skip model pulls — everything else still installs.
+
 ## Quick install
 
 ```sh
