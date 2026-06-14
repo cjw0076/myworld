@@ -574,9 +574,12 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
         f"{lang_hint}"
         "Write a concise, direct answer to the goal. "
         + ("Use fenced markdown code blocks (```lang) for any code. " if _code_hint else "")
-        + "Use the memory records, tool results, and prior conversation above as evidence. "
-        "If the goal cannot be fully answered from available data, state what was found. "
-        "Keep prose responses to 1-3 sentences unless code is requested."
+        + "Use only the tool results and prior conversation as evidence — "
+        "the Memory context is background hints, use it only when clearly relevant to the goal. "
+        "NEVER mention 'memory context', 'provided data', internal system names (ASC-*, contracts), "
+        "or any internal system details in your answer. "
+        "If specific information is unavailable, give a helpful general answer from your knowledge. "
+        "Keep prose responses to 1-3 sentences unless more detail is needed."
     )
     try:
         raw = adapter(synthesis_prompt)
