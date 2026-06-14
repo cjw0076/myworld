@@ -227,6 +227,83 @@ def _h_web_fetch(a: dict) -> dict:
     return {"status": "ok", "url": url[:100], "snippet": text[:1000]}
 
 
+_CITIES_LATLON: dict[str, tuple[float, float]] = {
+    # Korean cities
+    "서울": (37.5665, 126.9780), "부산": (35.1796, 129.0756),
+    "대구": (35.8714, 128.6014), "인천": (37.4563, 126.7052),
+    "광주": (35.1595, 126.8526), "대전": (36.3504, 127.3845),
+    "울산": (35.5384, 129.3114), "세종": (36.4801, 127.2890),
+    "수원": (37.2636, 127.0286), "창원": (35.2279, 128.6811),
+    "제주": (33.4996, 126.5312), "춘천": (37.8813, 127.7300),
+    # International
+    "tokyo": (35.6762, 139.6503), "도쿄": (35.6762, 139.6503),
+    "new york": (40.7128, -74.0060), "뉴욕": (40.7128, -74.0060),
+    "london": (51.5074, -0.1278), "런던": (51.5074, -0.1278),
+    "beijing": (39.9042, 116.4074), "베이징": (39.9042, 116.4074),
+    "paris": (48.8566, 2.3522), "파리": (48.8566, 2.3522),
+}
+
+_WMO_KR = {
+    0: "맑음", 1: "대체로 맑음", 2: "구름 조금", 3: "흐림",
+    45: "안개", 48: "서리 안개", 51: "가벼운 이슬비", 53: "이슬비",
+    55: "강한 이슬비", 61: "가벼운 비", 63: "비", 65: "강한 비",
+    71: "가벼운 눈", 73: "눈", 75: "강한 눈", 77: "싸락눈",
+    80: "소나기", 81: "강한 소나기", 82: "폭우", 95: "뇌우",
+    96: "우박 동반 뇌우", 99: "강한 우박 뇌우",
+}
+
+
+def _open_meteo_weather(query: str) -> dict:
+    """Open-Meteo current weather — free, no API key, no quota.
+
+    Extracts city from query ("서울 날씨" → lat=37.57, lon=126.98),
+    calls the Open-Meteo forecast API, and returns a human-readable summary.
+    """
+    import json as _json
+    import urllib.request as _req
+    query_lower = query.lower()
+    city_name = None
+    lat = lon = None
+    for city, coords in _CITIES_LATLON.items():
+        if city in query or city in query_lower:
+            city_name, (lat, lon) = city, coords
+            break
+    if lat is None:
+        return {"status": "no_results"}   # city not in built-in table
+    url = (
+        f"https://api.open-meteo.com/v1/forecast"
+        f"?latitude={lat}&longitude={lon}"
+        f"&current_weather=true"
+        f"&hourly=relative_humidity_2m"
+        f"&forecast_days=1"
+    )
+    try:
+        req = _req.Request(url, headers={"User-Agent": "AIOS/1.0"})
+        with _req.urlopen(req, timeout=8) as resp:
+            data = _json.loads(resp.read(50_000))
+    except Exception as exc:
+        return {"status": "unavailable", "reason": str(exc)[:80]}
+    cw = data.get("current_weather", {})
+    temp = cw.get("temperature")
+    wind = cw.get("windspeed")
+    code = cw.get("weathercode", -1)
+    description = _WMO_KR.get(int(code), f"날씨코드 {code}") if code is not None else "알 수 없음"
+    is_day = cw.get("is_day", 1)
+    time_label = "낮" if is_day else "밤"
+    humidity = None
+    if "hourly" in data:
+        hrs = data["hourly"].get("relative_humidity_2m", [])
+        if hrs:
+            humidity = hrs[0]
+    summary = (
+        f"{city_name} 현재 날씨: {description}, 기온 {temp}°C, "
+        f"풍속 {wind}km/h ({time_label})"
+        + (f", 습도 {humidity}%" if humidity is not None else "")
+    )
+    return {"status": "ok", "source": "open-meteo.com", "city": city_name,
+            "abstract": summary, "temperature": temp, "description": description}
+
+
 def _ko_wikipedia(query: str) -> dict:
     """Korean Wikipedia search + summary — free, no API key, degrades gracefully.
 
@@ -306,8 +383,17 @@ def _h_web_search(a: dict) -> dict:
                 **({"answer": answer} if answer else {}),
                 **({"abstract": abstract, "source": source} if abstract else {}),
                 **({"related": topics} if topics else {})}
-    # DDG returned nothing — try Korean Wikipedia for Korean factual queries
+    # DDG returned nothing — try specialised fallbacks
+    if is_korean or any(w in query.lower() for w in ("weather", "날씨", "기온", "temperature")):
+        # Weather fallback: Open-Meteo (free, no API key, real-time)
+        _weather_kw = ("날씨", "기온", "weather", "temperature", "비", "눈", "맑")
+        if any(kw in query.lower() for kw in _weather_kw):
+            w_result = _open_meteo_weather(query)
+            if w_result["status"] == "ok":
+                w_result["query"] = query[:80]
+                return w_result
     if is_korean:
+        # General Korean factual queries → Korean Wikipedia
         ko_result = _ko_wikipedia(query)
         if ko_result["status"] == "ok":
             ko_result["query"] = query[:80]

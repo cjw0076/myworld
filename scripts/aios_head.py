@@ -483,8 +483,8 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
             parts = [f"{k}={v}" for k, v in list(meta.items())[:4]]
             if parts:
                 line += f" ({', '.join(parts)})"
-            # Show snippet/top separately if present (most informative content)
-            snippet = str(res.get("snippet", "") or res.get("top", ""))[:200].strip()
+            # Show snippet/top/abstract separately if present (most informative content)
+            snippet = str(res.get("snippet", "") or res.get("top", "") or res.get("abstract", ""))[:200].strip()
             if snippet:
                 line += f"\n    content: {snippet}"
         traj_lines.append(line)

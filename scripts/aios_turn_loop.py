@@ -140,12 +140,15 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                     for k in ("hits", "status", "itch", "ambiguities", "backed_rate",
                               "trustworthy", "bytes", "prediction_id", "would_write",
                               "decisions", "top", "count", "top_id", "top_desc",
-                              "confidence", "top_vector", "vector_count"):
+                              "confidence", "top_vector", "vector_count",
+                              "title", "source", "answer", "related",
+                              "city", "temperature", "description"):
                         if k in tool_result:
                             result_summary[k] = tool_result[k]
-                    if "snippet" in tool_result:
-                        # Include snippet for synthesis; truncate to avoid context bloat
-                        result_summary["snippet"] = str(tool_result["snippet"])[:500]
+                    # Content fields: pass through for synthesis, truncate to avoid bloat
+                    for content_key in ("snippet", "abstract"):
+                        if content_key in tool_result:
+                            result_summary[content_key] = str(tool_result[content_key])[:500]
                 if result_summary:
                     entry["result"] = result_summary
                 history.append({"role": "tool", "tool": call.name, "status": status,
