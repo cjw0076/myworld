@@ -1038,3 +1038,28 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   product-domain recall을 막을 때 trajectory의 영어 tool/API 이름을 보조 쿼리로
   재사용하면 관련 메모리가 top-1에 올라옴.
 - self-correction-of-prior-observation: none
+
+## 2026-06-14 Loop 8 — claude@myworld — 세계 배포 감사 + Local Memory Fallback
+
+- session_id: CTO loop, loop 8
+- mode_breakdown: observe:35% verify:25% decide:30% intervene:10% escalate:0%
+- tools_used: Bash (curl, pgrep, git, python3), Read, Edit
+- tools_NOT_used: none (all needed tools available)
+- substrate_specific_behaviors_observed:
+  - memoryOS + CapabilityOS GitHub 404 확인 → 세계 배포 블로커
+  - hivemind/.local/ollama/bin/ollama 발견 → Ollama 별도 설치 불필요
+  - preamble degrade 확인: sibling 없으면 {memory_hits: 0, capability_status: unavailable}
+  - _h_retrieve fallback: memoryOS 없을 때 aios_local_memory.py 활성화
+  - 재임베딩: 198,986개 캐시됨, 1,329개 실패 (빈 콘텐츠)
+- failures_recovered:
+  - install.sh warning이 모든 실패를 동일하게 처리 → expected-absent vs truly-failed 분리
+  - Korean query embedding mismatch → dual-query synthesis로 완화 (이전 루프)
+- failures_escalated_to_founder:
+  - [PENDING DECISION] memoryOS + CapabilityOS GitHub 공개 여부: 현재 404.
+    신규 사용자는 lite mode로만 실행 가능. full semantic memory는 public release 필요.
+- key_decision: lite mode 내장 (local keyword memory) → memoryOS 없어도 note.write 인덱싱
+- new_invariant_or_pattern_discovered:
+  "Sibling-first, fallback-local" 패턴 — 외부 sibling OS가 있으면 위임,
+  없으면 myworld 내 경량 구현으로 폴백. 이 패턴을 모든 sibling 의존 도구에 적용하면
+  AIOS가 단일 레포로도 최소 기능을 유지함.
+- self-correction-of-prior-observation: none
