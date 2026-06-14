@@ -275,10 +275,21 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
         done_hint = ""
         if turn_num >= 2:
             done_hint = 'If the goal is satisfied or cannot be completed, emit {"done":true} now.\n'
+        # Identify already-used tools to steer model toward variety before exhaustion
+        used_tools: list[str] = []
+        for h in recent:
+            used_tools.extend(h.get("tools", []))
+        no_repeat_hint = ""
+        if used_tools:
+            once_used = [t for t, n in tool_counts.items() if n == 1]
+            if once_used:
+                no_repeat_hint = (f"Already called: {', '.join(once_used)}. "
+                                  "Pick a DIFFERENT tool for more information.\n")
         prompt = (
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
             + done_hint
+            + no_repeat_hint
             + "Trajectory:\n"
             + json.dumps(recent, ensure_ascii=False) + "\n"
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
@@ -566,7 +577,11 @@ def _auto_provider(goal: str) -> str:
     has_code_hint = any(kw in goal.lower() for kw in
                         ("코드", "code", "파일", "file", "script", "함수", "function",
                          "버그", "bug", "error", "읽어", "read", "fetch", "url"))
-    if word_count > 20 or has_code_hint:
+    # Korean: space-split underestimates complexity (fewer tokens than English equivalent)
+    # Use char count as secondary signal — 25+ chars in Korean ≈ 20+ English words
+    has_korean = any('가' <= c <= '힣' for c in goal)
+    char_threshold = 15 if has_korean else 120
+    if word_count > 20 or len(goal) > char_threshold or has_code_hint:
         return "ollama_rest_8b"
     return "ollama_rest"
 

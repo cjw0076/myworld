@@ -31,17 +31,27 @@ deadline — and watches the code catch it. Every result leaves a provenance fil
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/cjw0076/myworld/main/install.sh | sh
-```
-
-Then:
-
-```sh
-aios demo               # the 30-second showcase above
-aios setup apply        # provision local models + config + the always-on service
-aios self-model build   # what AIOS knows about itself
+aios setup apply        # provision local models (qwen3:1.7b / qwen3:8b via Ollama)
 ```
 
 Full instructions: [`docs/AIOS_INSTALL.md`](docs/AIOS_INSTALL.md).
+
+## Chat UI — talk to your AIOS
+
+After install, start the web interface:
+
+```sh
+aios serve              # → http://localhost:8741/
+aios serve --tunnel     # → https://xxxx.trycloudflare.com  (shareable public URL)
+```
+
+The UI is a conversation thread backed by the organic pipeline: each message
+runs through memory retrieval → tool loop (up to 6 turns) → local LLM
+synthesis → Korean / English answer. Session history persists in the browser;
+conversation context carries across messages in the same tab.
+
+No API key required if Ollama is running locally with qwen3 models.
+Provider can be switched (claude / codex / gemini / local) per message.
 
 ## Orientation
 
