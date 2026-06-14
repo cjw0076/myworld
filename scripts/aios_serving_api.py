@@ -224,6 +224,11 @@ class Handler(BaseHTTPRequestHandler):
             result = run_fast(goal, provider, prior_context=prior_ctx)
         else:
             result = run_organic(goal, provider, max_turns)
+        # Propagate provider-unavailable as a visible error (both paths)
+        if result.get("exit") == "no_provider":
+            result["error"] = f"provider '{provider}' not available"
+            self._json(result)
+            return
         # Add synthesis for organic path (fast path already synthesized)
         head = _import_head()
         preamble_data = result.get("organic_pipeline", {}).get("preamble", {})
