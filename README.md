@@ -43,6 +43,31 @@ aios setup apply        # provision local models (qwen3:1.7b / qwen3:8b via Olla
 
 Full instructions: [`docs/AIOS_INSTALL.md`](docs/AIOS_INSTALL.md).
 
+## Provider options — choose what fits your environment
+
+AIOS auto-selects the best available provider in this order:
+
+| Provider | Requires | Cost | Latency |
+|----------|----------|------|---------|
+| Ollama (local) | GPU + `aios setup apply` | Free | ~0.2–7s |
+| Gemini REST | `GEMINI_API_KEY` | Free tier (1500 req/day) | ~1–3s |
+| Anthropic REST | `ANTHROPIC_API_KEY` | Pay-per-token | ~1–3s |
+
+```sh
+# Check which providers are active right now:
+curl http://localhost:8741/status
+
+# Use Gemini (no GPU needed):
+export GEMINI_API_KEY=your_key_here
+aios serve
+
+# Use Anthropic Claude (no GPU needed):
+export ANTHROPIC_API_KEY=your_key_here
+aios serve
+```
+
+In GitHub Codespaces: add your API key as a **Codespaces Secret** (`Settings → Codespaces → Secrets`) and it will be available as an environment variable when the container starts.
+
 ## Chat UI — talk to your AIOS
 
 After install, start the web interface:
@@ -56,9 +81,6 @@ The UI is a conversation thread backed by the organic pipeline: each message
 runs through memory retrieval → tool loop (up to 6 turns) → local LLM
 synthesis → Korean / English answer. Session history persists in the browser;
 conversation context carries across messages in the same tab.
-
-No API key required if Ollama is running locally with qwen3 models.
-Provider can be switched (claude / codex / gemini / local) per message.
 
 ## Orientation
 

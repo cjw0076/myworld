@@ -184,6 +184,34 @@ class TestServingApiServer(unittest.TestCase):
         self.assertIsNotNone(mod._validate_goal("x" * 2001))
         self.assertIsNone(mod._validate_goal("x" * 100))
 
+    def test_status_endpoint_has_provider_info(self):
+        status, body = self._get("/status")
+        self.assertEqual(status, 200)
+        d = json.loads(body)
+        self.assertEqual(d["status"], "ok")
+        self.assertIn("providers", d)
+        self.assertIn("ollama", d["providers"])
+        self.assertIn("gemini_rest", d["providers"])
+        self.assertIn("anthropic_rest", d["providers"])
+        for prov in d["providers"].values():
+            self.assertIn("available", prov)
+        self.assertIn("active_provider", d)
+        # active_provider is None or one of the known provider keys
+        if d["active_provider"] is not None:
+            self.assertIn(d["active_provider"], d["providers"])
+
+    def test_status_provider_hints_when_unavailable(self):
+        """Unavailable providers include a hint about how to enable them."""
+        status, body = self._get("/status")
+        self.assertEqual(status, 200)
+        d = json.loads(body)
+        for name, info in d["providers"].items():
+            if not info["available"]:
+                self.assertIn("hint", info,
+                              f"unavailable provider '{name}' should include a hint")
+                self.assertIsNotNone(info["hint"],
+                                     f"hint for '{name}' should be a non-null string")
+
 
 if __name__ == "__main__":
     unittest.main()

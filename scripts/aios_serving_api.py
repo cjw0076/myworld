@@ -170,8 +170,33 @@ class Handler(BaseHTTPRequestHandler):
                 active_ips = len(_rate_buckets)
             with _session_lock:
                 active_sessions = len(_sessions)
+            head = _import_head()
+            adapters_mod = head._load("aios_adapters")
+            ollama_ok = adapters_mod._ollama_rest_available()
+            gemini_ok = adapters_mod._gemini_rest_available()
+            anthropic_ok = adapters_mod._anthropic_rest_available()
+            if ollama_ok:
+                active_provider = "ollama"
+            elif gemini_ok:
+                active_provider = "gemini_rest"
+            elif anthropic_ok:
+                active_provider = "anthropic_rest"
+            else:
+                active_provider = None
             self._json({
                 "status": "ok", "service": "aios_serving_api",
+                "providers": {
+                    "ollama": {"available": ollama_ok},
+                    "gemini_rest": {
+                        "available": gemini_ok,
+                        "hint": None if gemini_ok else "set GEMINI_API_KEY (free tier available)",
+                    },
+                    "anthropic_rest": {
+                        "available": anthropic_ok,
+                        "hint": None if anthropic_ok else "set ANTHROPIC_API_KEY",
+                    },
+                },
+                "active_provider": active_provider,
                 "active_ips_rate_tracked": active_ips,
                 "active_sessions": active_sessions,
                 "rate_limit": f"{_RATE_MAX_REQUESTS} req/{_RATE_WINDOW}s per IP",
