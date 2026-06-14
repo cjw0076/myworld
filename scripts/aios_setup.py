@@ -109,16 +109,26 @@ def cmd_apply(root: Path, full: bool, json_mode: bool) -> int:
 
     # 1. models — pull missing wanted models (idempotent: skip present)
     obin = ollama_bin(root)
-    for m in a["models"]:
-        if m["model"] not in a["wanted"]:
-            continue
-        if m["present"]:
-            steps.append({"step": f"model:{m['model']}", "status": "already_present"})
-            continue
-        proc = subprocess.run([obin, "pull", m["model"]], capture_output=True, text=True, timeout=3600)
-        steps.append({"step": f"model:{m['model']}",
-                      "status": "pulled" if proc.returncode == 0 else "pull_failed",
-                      "detail": (proc.stderr or "")[-200:]})
+    _ollama_ok = shutil.which(obin) is not None or Path(obin).exists()
+    if not _ollama_ok:
+        msg = ("Ollama not found. Install from https://ollama.com then re-run: aios setup apply\n"
+               "  macOS/Linux:  curl -fsSL https://ollama.com/install.sh | sh")
+        if not json_mode:
+            print(f"  [WARN] {msg}")
+        steps.append({"step": "ollama_check", "status": "ollama_missing",
+                      "detail": msg})
+    else:
+        for m in a["models"]:
+            if m["model"] not in a["wanted"]:
+                continue
+            if m["present"]:
+                steps.append({"step": f"model:{m['model']}", "status": "already_present"})
+                continue
+            proc = subprocess.run([obin, "pull", m["model"]], capture_output=True, text=True,
+                                  timeout=3600)
+            steps.append({"step": f"model:{m['model']}",
+                          "status": "pulled" if proc.returncode == 0 else "pull_failed",
+                          "detail": (proc.stderr or "")[-200:]})
 
     # 2. config — copy missing config from deploy/ templates (idempotent)
     for dst, tpl in CONFIG_FILES:
