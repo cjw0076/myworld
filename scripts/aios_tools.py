@@ -42,6 +42,7 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "interior.read":     ("read", "",    'Read internal traces. Args: {"traces":[]}'),
     "fs.list":           ("read", "",    'List readable docs files to find valid paths. Args: {}'),
     "fs.read":           ("read", "",    'Read a file (use fs.list first to find paths). Args: {"path":"docs/README.md"}'),
+    "web.search":        ("advisory", "", 'Search the web. Args: {"query":"<search terms>"}'),
     "web.fetch":         ("advisory", "", 'Fetch a public URL. Args: {"url":"https://..."}'),
     "note.write":        ("write", "propose_contract", 'Save a note. Args: {"title":"<title>","content":"<text up to 2000 chars>"}'),
     "stakes.record":     ("write", "propose_contract", 'Record a proposal. Args: {"claim":"<proposal>","confidence":0.8}'),
@@ -190,6 +191,33 @@ def _h_web_fetch(a: dict) -> dict:
     return {"status": "ok", "url": url[:100], "snippet": text[:1000]}
 
 
+def _h_web_search(a: dict) -> dict:
+    """DuckDuckGo Instant Answer — no API key, no quota, degrades gracefully."""
+    import json as _json
+    import urllib.parse as _up
+    import urllib.request as _req
+    query = str(a.get("query", "")).strip()[:200]
+    if not query:
+        return {"status": "empty"}
+    url = f"https://api.duckduckgo.com/?q={_up.quote(query)}&format=json&no_html=1&skip_disambig=1"
+    try:
+        req = _req.Request(url, headers={"User-Agent": "AIOS/1.0"})
+        with _req.urlopen(req, timeout=8) as resp:
+            data = _json.loads(resp.read(200_000))
+    except Exception as exc:
+        return {"status": "unavailable", "reason": str(exc)[:80]}
+    abstract = (data.get("AbstractText") or "").strip()[:400]
+    source = (data.get("AbstractSource") or "").strip()[:80]
+    answer = (data.get("Answer") or "").strip()[:200]
+    topics = [t.get("Text", "")[:100] for t in (data.get("RelatedTopics") or []) if t.get("Text")][:3]
+    if not abstract and not answer and not topics:
+        return {"status": "no_results", "query": query[:80]}
+    return {"status": "ok", "query": query[:80],
+            **({"answer": answer} if answer else {}),
+            **({"abstract": abstract, "source": source} if abstract else {}),
+            **({"related": topics} if topics else {})}
+
+
 def _h_note_write(a: dict) -> dict:
     """Save a note to .aios/notes/ — the one low-risk write any authorized agent can do."""
     import hashlib as _hl
@@ -217,7 +245,7 @@ HANDLERS = {
     "genesis.challenge": _h_challenge, "self.audit": _h_self_audit,
     "interior.read": _h_interior, "stakes.record": _h_stakes,
     "fs.list": _h_fs_list, "fs.read": _h_fs_read, "fs.write": _h_fs_write,
-    "web.fetch": _h_web_fetch, "note.write": _h_note_write,
+    "web.search": _h_web_search, "web.fetch": _h_web_fetch, "note.write": _h_note_write,
 }
 
 
