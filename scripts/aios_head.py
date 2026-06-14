@@ -264,27 +264,31 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
                 tool_counts[t] = tool_counts.get(t, 0) + 1
         turn_num = sum(1 for h in recent if h.get("role") == "assistant")
 
-        # Filter out exhausted tools (used ≥2 times) from the catalog so small models
-        # can't keep selecting them — removing from the list is stronger than a hint.
+        # Filter out exhausted tools (used ≥2 times) from the catalog.
         exhausted = {t for t, n in tool_counts.items() if n >= 2}
+        # Also exhaust any tool whose last result was terminal (no_results/unavailable/
+        # not_found/empty) — retrying in the same run won't produce different output.
+        _terminal_statuses = {"no_results", "unavailable", "not_found", "empty",
+                              "denied", "denied_scope"}
+        for h in recent:
+            if h.get("role") == "tool":
+                result_status = (h.get("result") or {}).get("status", "")
+                if result_status in _terminal_statuses:
+                    exhausted.add(h.get("tool", ""))
         active_catalog = "\n".join(
             f"  {t['name']} — {t.get('description', t['class'])}"
             for t in _tool_list if t['name'] not in exhausted
         ) or "  (no tools available — emit {\"done\":true})"
 
         done_hint = ""
-        if turn_num >= 2:
+        if turn_num >= 3:
             done_hint = 'If the goal is satisfied or cannot be completed, emit {"done":true} now.\n'
-        # Identify already-used tools to steer model toward variety before exhaustion
-        used_tools: list[str] = []
-        for h in recent:
-            used_tools.extend(h.get("tools", []))
+        # Steer toward variety: name already-used tools so model picks differently
+        used_in_recent = [t for t, n in tool_counts.items() if n >= 1]
         no_repeat_hint = ""
-        if used_tools:
-            once_used = [t for t, n in tool_counts.items() if n == 1]
-            if once_used:
-                no_repeat_hint = (f"Already called: {', '.join(once_used)}. "
-                                  "Pick a DIFFERENT tool for more information.\n")
+        if used_in_recent:
+            no_repeat_hint = (f"Already called: {', '.join(used_in_recent[:4])}. "
+                              "Pick a DIFFERENT tool next.\n")
         prompt = (
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
