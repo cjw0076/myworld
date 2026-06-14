@@ -110,7 +110,8 @@ def _import_head():
 def run_organic(goal: str, provider: str, max_turns: int) -> dict:
     head = _import_head()
     adapters = head._default_adapters(provider)
-    if provider not in adapters:
+    # "auto" builds a multi-model adapter set and routes per-goal; skip the single-key check
+    if provider != "auto" and provider not in adapters:
         return {"error": f"provider '{provider}' not available", "exit": "no_provider"}
     sampler = head.make_provider_sampler(provider, adapters, goal=goal)
     return head.run_organic_goal(goal, sampler=sampler, max_turns=max_turns, root=ROOT)

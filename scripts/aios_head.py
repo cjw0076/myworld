@@ -292,6 +292,8 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
         prompt = (
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
+            + "STRATEGY: For questions about AIOS, its tools, architecture, or internal state — "
+            "call memory.retrieve FIRST to recall stored knowledge before searching the web or reading files.\n"
             + done_hint
             + no_repeat_hint
             + "Trajectory:\n"
@@ -299,7 +301,9 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
             'action, or {"done":true} when complete. No prose.')
         try:
-            raw = adapters[provider](prompt)
+            # "auto" routes per-turn based on goal complexity; resolve to actual key
+            _pkey = _auto_provider(goal) if provider == "auto" else provider
+            raw = adapters[_pkey](prompt)
         except Exception:  # noqa: BLE001 — provider unreachable → end loop honestly
             return {"tool_calls": []}
         try:
@@ -488,22 +492,36 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     if root is not None:
         try:
             import subprocess as _sp
-            p = _sp.run(
-                [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
-                 "--task", goal, "--json"],
-                cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20,
-            )
-            if p.returncode == 0:
+            # Build auxiliary English query from trajectory tool names (boosts Korean goals)
+            tool_names_used = [t.get("tool", "") for t in traj if t.get("tool")]
+            aux_query = " ".join(dict.fromkeys(tool_names_used))  # unique, order-preserving
+            queries = [goal]
+            if aux_query and any('가' <= c <= '힣' for c in goal):
+                queries.append(f"AIOS {aux_query}")
+            seen_contents: set[str] = set()
+            for q in queries:
+                p = _sp.run(
+                    [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
+                     "--task", q, "--json"],
+                    cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20,
+                )
+                if p.returncode != 0:
+                    continue
                 data = json.loads(p.stdout)
-                # decisions and feedback_directives carry actual content snippets
-                for item in (data.get("decisions") or [])[:4]:
+                for item in (data.get("decisions") or [])[:5]:
                     content = str(item.get("content", ""))[:120].strip()
-                    if content:
+                    if content and content not in seen_contents:
+                        seen_contents.add(content)
                         mem_snippets.append(f"[decision] {content}")
+                        if len(mem_snippets) >= 6:
+                            break
                 for item in (data.get("constraints") or [])[:2]:
                     content = str(item.get("content", ""))[:80].strip()
-                    if content:
+                    if content and content not in seen_contents:
+                        seen_contents.add(content)
                         mem_snippets.append(f"[constraint] {content}")
+                if len(mem_snippets) >= 6:
+                    break
         except Exception:  # noqa: BLE001
             pass
 
