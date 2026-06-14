@@ -479,13 +479,17 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     """
     adapters_mod = _load("aios_adapters")
     _ollama_ok = adapters_mod._ollama_rest_available()
+    _gemini_ok = adapters_mod._gemini_rest_available()
     _anthropic_ok = adapters_mod._anthropic_rest_available()
-    if not _ollama_ok and not _anthropic_ok:
-        return ("로컬 모델(Ollama)도 Anthropic API 키도 없습니다.\n"
-                "  • 로컬 모델: `aios setup apply` 후 `aios serve` 재시작\n"
-                "  • API 키: 환경 변수 `ANTHROPIC_API_KEY` 설정 후 재시작\n\n"
-                "No provider available. Either run `aios setup apply` to install local models "
-                "or set the ANTHROPIC_API_KEY environment variable, then restart `aios serve`.")
+    if not _ollama_ok and not _gemini_ok and not _anthropic_ok:
+        return ("사용 가능한 AI 제공자가 없습니다. 아래 중 하나를 설정하세요:\n"
+                "  • 로컬 모델(무료): `aios setup apply` 후 `aios serve` 재시작\n"
+                "  • Google Gemini(무료): 환경 변수 `GEMINI_API_KEY` 설정\n"
+                "  • Anthropic Claude: 환경 변수 `ANTHROPIC_API_KEY` 설정\n\n"
+                "No provider available. Choose one:\n"
+                "  • Local models (free): run `aios setup apply`, then restart `aios serve`\n"
+                "  • Google Gemini (free tier): set GEMINI_API_KEY\n"
+                "  • Anthropic Claude: set ANTHROPIC_API_KEY")
     if _ollama_ok:
         # Fast path (exit=fast_path) or short conversational goals → 1.7b (0.2s/call)
         # Code/complex goals or organic loop results → 8b (smarter, 2-5s/call)
@@ -494,8 +498,11 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
             "코드", "구현", "함수", "알고리즘", "code", "implement", "function", "algorithm", "class"))
         _synth_model = "qwen3:1.7b" if (_is_fast_exit and not _is_code_goal) else "qwen3:8b"
         adapter = adapters_mod.make_ollama_rest_adapter(model=_synth_model, timeout=60)
+    elif _gemini_ok:
+        # Gemini REST — free tier (1500 req/day), no billing required
+        adapter = adapters_mod.make_gemini_rest_adapter(timeout=60)
     else:
-        # Ollama unavailable — fall back to Anthropic REST (claude-haiku, fast + cheap)
+        # Anthropic REST — paid, but high quality
         adapter = adapters_mod.make_anthropic_rest_adapter(timeout=60)
 
     traj = result.get("trajectory", [])
@@ -694,6 +701,8 @@ def _auto_provider(goal: str) -> str:
     """
     adapters_mod = _load("aios_adapters")
     if not adapters_mod._ollama_rest_available():
+        if adapters_mod._gemini_rest_available():
+            return "gemini_rest"
         if adapters_mod._anthropic_rest_available():
             return "anthropic_rest"
         return "ollama_rest"   # will be handled as unavailable downstream
@@ -714,8 +723,8 @@ def _auto_provider(goal: str) -> str:
 def _default_adapters(authorized_provider: str) -> dict[str, Callable[[str], str]]:
     adapters_mod = _load("aios_adapters")
     if authorized_provider == "auto":
-        # auto provider builds Ollama (fast local) + Anthropic REST (cloud fallback)
-        providers = ["ollama_rest", "ollama_rest_8b", "anthropic_rest"]
+        # Ollama (fast local) → Gemini REST (free cloud) → Anthropic REST (paid cloud)
+        providers = ["ollama_rest", "ollama_rest_8b", "gemini_rest", "anthropic_rest"]
         return adapters_mod.build_adapters(providers=providers)
     return adapters_mod.build_adapters(providers=[authorized_provider])
 

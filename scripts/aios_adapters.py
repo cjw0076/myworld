@@ -87,6 +87,9 @@ _OLLAMA_REST_MODEL = "qwen3:1.7b"   # fast; swappable per deployment
 _ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 _ANTHROPIC_REST_MODEL = "claude-haiku-4-5-20251001"  # fastest + cheapest frontier
 
+_GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+_GEMINI_REST_MODEL = "gemini-2.0-flash-lite"  # free tier: 1500 req/day, 30 req/min
+
 
 def make_ollama_rest_adapter(
     *,
@@ -136,6 +139,48 @@ def _anthropic_rest_available() -> bool:
     """Return True if ANTHROPIC_API_KEY is set (Anthropic REST API usable)."""
     import os
     return bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+
+def _gemini_rest_available() -> bool:
+    """Return True if GEMINI_API_KEY or GOOGLE_API_KEY is set (Gemini REST API usable)."""
+    import os
+    return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
+
+
+def make_gemini_rest_adapter(
+    *,
+    model: str = _GEMINI_REST_MODEL,
+    timeout: int = 60,
+) -> "Callable[[str], str]":
+    """Build an adapter that calls the Gemini generateContent API directly.
+
+    Activates when GEMINI_API_KEY or GOOGLE_API_KEY is set. Free tier:
+    gemini-2.0-flash-lite → 1500 req/day, 30 req/min. No billing required.
+    Priority: Ollama (free local) → Gemini (free cloud) → Anthropic (paid cloud).
+    """
+    import json as _json
+    import os as _os
+    import urllib.request as _req
+
+    def adapter(prompt: str) -> str:
+        api_key = _os.environ.get("GEMINI_API_KEY") or _os.environ.get("GOOGLE_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("gemini_rest: GEMINI_API_KEY or GOOGLE_API_KEY not set")
+        url = (_GEMINI_API_URL.format(model=model) + f"?key={api_key}")
+        body = _json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": 2048},
+        }).encode()
+        request = _req.Request(url, data=body, headers={"Content-Type": "application/json"})
+        try:
+            with _req.urlopen(request, timeout=timeout) as resp:
+                data = _json.loads(resp.read())
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+        except Exception as exc:
+            raise RuntimeError(f"gemini_rest: {exc}") from exc
+
+    adapter.__name__ = "adapter_gemini_rest"
+    return adapter
 
 
 def make_anthropic_rest_adapter(
@@ -242,6 +287,10 @@ def build_adapters(
             if _anthropic_rest_available():
                 registry["anthropic_rest"] = make_anthropic_rest_adapter()
             continue
+        if name == "gemini_rest":
+            if _gemini_rest_available():
+                registry["gemini_rest"] = make_gemini_rest_adapter()
+            continue
         spec = SPECS.get(name)
         if spec is None:
             continue
@@ -255,6 +304,9 @@ def build_adapters(
     # Auto-register anthropic_rest when ANTHROPIC_API_KEY is present
     if providers is None and "anthropic_rest" not in registry and _anthropic_rest_available():
         registry["anthropic_rest"] = make_anthropic_rest_adapter()
+    # Auto-register gemini_rest when GEMINI_API_KEY / GOOGLE_API_KEY is present
+    if providers is None and "gemini_rest" not in registry and _gemini_rest_available():
+        registry["gemini_rest"] = make_gemini_rest_adapter()
 
     return registry
 

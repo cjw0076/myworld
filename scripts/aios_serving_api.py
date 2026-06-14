@@ -385,10 +385,31 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
+def _print_provider_status() -> None:
+    """Print which providers are available at startup so users can diagnose issues instantly."""
+    head = _import_head()
+    adapters_mod = head._load("aios_adapters")
+    lines = ["[aios-serving] providers:"]
+    if adapters_mod._ollama_rest_available():
+        lines.append("  ✓ ollama/qwen3:1.7b + qwen3:8b  (local, free)")
+    else:
+        lines.append("  ✗ ollama  (not running — run `aios setup apply` to install)")
+    if adapters_mod._gemini_rest_available():
+        lines.append("  ✓ gemini-rest/gemini-2.0-flash-lite  (free tier)")
+    else:
+        lines.append("  ✗ gemini-rest  (set GEMINI_API_KEY to enable — free tier available)")
+    if adapters_mod._anthropic_rest_available():
+        lines.append("  ✓ anthropic-rest/claude-haiku-4-5  (paid)")
+    else:
+        lines.append("  ✗ anthropic-rest  (set ANTHROPIC_API_KEY to enable)")
+    print("\n".join(lines), flush=True)
+
+
 def serve(host: str = "127.0.0.1", port: int = 8741) -> None:
     # ThreadingHTTPServer: each request gets its own thread — LLM calls don't block other requests
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"[aios-serving] http://{host}:{port}/  (Ctrl-C to stop)", flush=True)
+    _print_provider_status()
     try:
         server.serve_forever()
     except KeyboardInterrupt:

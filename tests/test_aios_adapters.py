@@ -126,6 +126,68 @@ class AdaptersTest(unittest.TestCase):
         self.assertTrue(c.receipts[0].success)
 
 
+class GeminiRestAdapterTest(unittest.TestCase):
+    def setUp(self):
+        self.a = _load("aios_adapters")
+
+    def test_gemini_rest_available_with_gemini_key(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "AIza-test"}):
+            self.assertTrue(self.a._gemini_rest_available())
+
+    def test_gemini_rest_available_with_google_key(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {"GOOGLE_API_KEY": "AIza-test"}):
+            self.assertTrue(self.a._gemini_rest_available())
+
+    def test_gemini_rest_not_available_when_no_key(self):
+        import os
+        import unittest.mock as mock
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("GEMINI_API_KEY", "GOOGLE_API_KEY")}
+        with mock.patch.dict(os.environ, env, clear=True):
+            self.assertFalse(self.a._gemini_rest_available())
+
+    def test_make_gemini_rest_adapter_calls_api(self):
+        import json
+        import os
+        import unittest.mock as mock
+
+        response_body = json.dumps({
+            "candidates": [{"content": {"parts": [{"text": "hello from gemini"}]}}],
+        }).encode()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = response_body
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "AIza-test"}):
+            with mock.patch("urllib.request.urlopen", return_value=mock_resp) as mock_open:
+                adapter = self.a.make_gemini_rest_adapter(timeout=10)
+                result = adapter("test prompt")
+                self.assertEqual(result, "hello from gemini")
+                args, _ = mock_open.call_args
+                req = args[0]
+                self.assertIn("generativelanguage.googleapis.com", req.full_url)
+                self.assertIn("AIza-test", req.full_url)
+
+    def test_build_adapters_includes_gemini_rest_when_key_set(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {"GEMINI_API_KEY": "AIza-test"}):
+            reg = self.a.build_adapters(
+                providers=["gemini_rest"],
+                runner=lambda argv, s, t: (0, "ok", ""),
+                which=lambda b: None,
+                require_present=False,
+                rest_available=lambda: False,
+            )
+            self.assertIn("gemini_rest", reg)
+
+
 class AnthropicRestAdapterTest(unittest.TestCase):
     def setUp(self):
         self.a = _load("aios_adapters")
