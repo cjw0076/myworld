@@ -136,6 +136,22 @@
     }
     .example-chip:hover { border-color: var(--teal); color: var(--teal); }
 
+    /* ── Markdown rendering in AIOS bubbles ── */
+    .msg-bubble pre.code-block {
+      background: #1e1e2e; color: #cdd6f4;
+      border-radius: 8px; padding: 12px 14px; margin: 8px 0;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.82rem; line-height: 1.55; overflow-x: auto;
+      white-space: pre; border: 1px solid rgba(205,214,244,0.1);
+    }
+    .msg-bubble code.inline-code {
+      background: rgba(8,127,140,0.12); color: var(--teal);
+      padding: 1px 5px; border-radius: 4px;
+      font-family: monospace; font-size: 0.88em;
+    }
+    .msg-bubble strong { font-weight: 700; }
+    .msg-bubble em { font-style: italic; color: var(--muted); }
+
     /* ── Input bar ── */
     .input-bar {
       background: var(--panel); border-top: 1px solid var(--line);
@@ -236,6 +252,32 @@
       scrollToBottom();
     }
 
+    // ── Markdown renderer (no external deps — works offline) ─────────────────
+    function renderMd(text) {
+      if (!text) return '(답변 없음)';
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // Split on fenced code blocks to protect their content
+      const parts = text.split(/(```[\s\S]*?```)/g);
+      return parts.map((part, i) => {
+        if (i % 2 === 1) {
+          // Fenced code block: ```lang\ncode```
+          const m = part.match(/```(\w*)\n?([\s\S]*?)```/);
+          if (m) {
+            const code = esc(m[2].replace(/\n$/, ''));
+            return `<pre class="code-block"><code>${code}</code></pre>`;
+          }
+          return esc(part);
+        }
+        // Regular prose: escape first, then apply inline formatting
+        let s = esc(part);
+        s = s.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
+        s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+        s = s.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+        s = s.replace(/\n/g, '<br>');
+        return s;
+      }).join('');
+    }
+
     // ── Message rendering ─────────────────────────────────────────────────────
     function appendUserMsg(goal, ts) {
       const thread = document.getElementById('chatThread');
@@ -317,7 +359,7 @@
       const div = document.createElement('div');
       div.className = 'msg aios';
       div.innerHTML = `
-        <div class="msg-bubble">${escHtml(answer || '(답변 없음)')}</div>
+        <div class="msg-bubble">${renderMd(answer || '')}</div>
         ${metaBarHtml}
         ${traceHtml}
         <div class="msg-meta">${ts || ''}</div>`;
