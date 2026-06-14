@@ -165,7 +165,7 @@ class Handler(BaseHTTPRequestHandler):
             return None
 
     def _handle_run(self):
-        """Blocking POST /run — waits for completion, returns full result."""
+        """Blocking POST /run — waits for completion, returns full result with synthesis."""
         if not _check_rate_limit(self.client_address[0]):
             self._json({"error": "rate limit exceeded — 10 requests per minute"}, status=429)
             return
@@ -180,8 +180,19 @@ class Handler(BaseHTTPRequestHandler):
         if err:
             self._json({"error": err, "rejected": True}, status=400)
             return
+        session_id = str(body.get("session_id", "")).strip()[:64] or None
+        prior_ctx = _session_context(session_id)
         result = run_organic(goal, str(body.get("provider", "claude")),
                              int(body.get("max_turns", 6)))
+        # Add synthesis so API callers get a usable answer (same as streaming path)
+        head = _import_head()
+        preamble_data = head._organ_preamble(goal, ROOT)
+        final_answer = head._organ_synthesis(goal, result, preamble=preamble_data,
+                                             root=ROOT, prior_context=prior_ctx)
+        if final_answer:
+            result["final_answer"] = final_answer
+        if session_id and final_answer:
+            _session_push(session_id, goal, final_answer)
         self._json(result)
 
     def _handle_run_stream(self):
