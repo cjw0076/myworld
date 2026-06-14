@@ -145,7 +145,8 @@ def _h_fs_read(a: dict) -> dict:
 
 _WEB_BLOCKED_HOSTS = (
     "localhost", "127.", "192.168.", "10.", "172.16.", "172.17.",
-    "169.254.",  # link-local
+    "169.254.",   # link-local
+    "0.0.0.0", "::1", "::ffff:127.", "fe80:",   # IPv6 loopback + link-local
 )
 
 def _h_web_fetch(a: dict) -> dict:

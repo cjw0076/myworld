@@ -128,6 +128,18 @@ class Handler(BaseHTTPRequestHandler):
             self._serve_file(SERVING_DIR / "index.html", "text/html; charset=utf-8")
         elif path == "/health":
             self._json({"status": "ok", "service": "aios_serving_api"})
+        elif path == "/status":
+            with _rate_lock:
+                active_ips = len(_rate_buckets)
+            with _session_lock:
+                active_sessions = len(_sessions)
+            self._json({
+                "status": "ok", "service": "aios_serving_api",
+                "active_ips_rate_tracked": active_ips,
+                "active_sessions": active_sessions,
+                "rate_limit": f"{_RATE_MAX_REQUESTS} req/{_RATE_WINDOW}s per IP",
+                "session_ttl_seconds": _SESSION_TTL,
+            })
         elif path in ("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json"):
             self.send_response(204)
             self.end_headers()
