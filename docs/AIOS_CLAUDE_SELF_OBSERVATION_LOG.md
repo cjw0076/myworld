@@ -1301,3 +1301,29 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   내부 vocabulary leak + AIOS memory bias = 실제 외부 사용자가 실망하는 케이스
   (발표 체크리스트가 ASC-0095 목록으로 나오는 것). "배포 가능" ≠ "사용자 경험 완성".
   Deployment readiness와 UX completeness를 구분해야 함.
+
+## 2026-06-14 KST — claude@myworld — 서빙 레이턴시 4-8x 개선 (27-60s → 7s)
+
+- session_id: loop_18_latency_fix
+- mode_breakdown: observe:3:verify:2:decide:2:intervene:1:escalate:0:~20min
+- tools_used: Bash, Read, Edit, grep
+- tools_NOT_used: aios_invoke, memoryOS_cli (단순 코드 디버그라 불필요)
+- substrate_specific_behaviors_observed:
+  - context compaction 이후 loop 재개 — 이전 코드 상태를 grep으로 즉시 재확인
+  - _default_adapters("claude") = subprocess spawn; _default_adapters("auto") = Ollama REST
+  - serving API에 두 개의 독립적 버그가 레이턴시를 합산으로 악화시킴
+- failures_recovered:
+  - pkill exit 144 (no processes found) → pgrep으로 PID 직접 확인 후 kill
+  - --debug flag가 serving_api에 없음 → log tail로 대체
+- failures_escalated_to_founder: 없음
+- key_decision: default provider를 "auto"(Ollama)로 전환 — 외부 API 의존성 제거
+
+**루트 코즈 분석**: 두 버그가 합산:
+1. `_handle_run()` default provider = "claude" → Claude CLI subprocess spawn → 없으면 timeout
+2. `/run` 핸들러가 `run_organic_goal()` 이후 `_organ_preamble()` 한번 더 호출 (double call)
+
+**수치**: /run endpoint 27-60s → 6.9s; /run/stream 5-6s (이미 double-free)
+
+**pattern_for_absorption**: API 서빙 레이어에서 "default fallback provider"는 로컬
+  fallback이어야 함. 외부 API를 default로 쓰면 API key 없는 사용자에게 silent timeout.
+  룰: default = local, explicit opt-in = external.
