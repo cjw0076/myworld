@@ -483,7 +483,13 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
                 "`aios serve`를 다시 시작하세요.\n\n"
                 "Ollama not found. Run `aios setup apply` to install local models, "
                 "then restart `aios serve`.")
-    adapter = adapters_mod.make_ollama_rest_adapter(model="qwen3:8b", timeout=60)
+    # Fast path (exit=fast_path) or short conversational goals → 1.7b (0.2s/call)
+    # Code/complex goals or organic loop results → 8b (smarter, 2-5s/call)
+    _is_fast_exit = result.get("exit") == "fast_path"
+    _is_code_goal = any(kw in goal.lower() for kw in (
+        "코드", "구현", "함수", "알고리즘", "code", "implement", "function", "algorithm", "class"))
+    _synth_model = "qwen3:1.7b" if (_is_fast_exit and not _is_code_goal) else "qwen3:8b"
+    adapter = adapters_mod.make_ollama_rest_adapter(model=_synth_model, timeout=60)
 
     traj = result.get("trajectory", [])
     exit_status = result.get("exit", "unknown")
