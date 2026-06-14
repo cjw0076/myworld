@@ -41,6 +41,7 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "self.audit":        ("read", "",    "Check agent state, health, or recent decisions"),
     "interior.read":     ("read", "",    "Read internal reasoning trace or agent reflection"),
     "fs.read":           ("read", "",    "Read a file from docs/, scripts/, or apps/ — returns first 600 chars"),
+    "web.fetch":         ("advisory", "", "Fetch a public URL and return first 1000 chars of text content"),
     "stakes.record":     ("write", "propose_contract", "Record a formal proposal or contract draft"),
     "fs.write":          ("write", "commit_to_child_repo", "Write or update a file (requires authority)"),
 }
@@ -141,6 +142,34 @@ def _h_fs_read(a: dict) -> dict:
     return {"status": "ok", "bytes": size}
 
 
+_WEB_BLOCKED_HOSTS = (
+    "localhost", "127.", "192.168.", "10.", "172.16.", "172.17.",
+    "169.254.",  # link-local
+)
+
+def _h_web_fetch(a: dict) -> dict:
+    import re as _re
+    import urllib.request as _req
+    url = str(a.get("url", "")).strip()
+    if not url.startswith(("http://", "https://")):
+        return {"status": "denied", "reason": "only http/https allowed"}
+    from urllib.parse import urlparse as _up
+    host = _up(url).hostname or ""
+    if any(host.startswith(b) or host == b.rstrip(".") for b in _WEB_BLOCKED_HOSTS):
+        return {"status": "denied", "reason": "private address blocked"}
+    try:
+        req = _req.Request(url, headers={"User-Agent": "AIOS/1.0"})
+        with _req.urlopen(req, timeout=8) as resp:
+            ct = resp.headers.get("Content-Type", "")
+            raw = resp.read(40_000).decode("utf-8", errors="replace")
+    except Exception as exc:
+        return {"status": "unavailable", "reason": str(exc)[:80]}
+    # Strip HTML tags for cleaner synthesis context
+    text = _re.sub(r"<[^>]+>", " ", raw)
+    text = _re.sub(r"\s+", " ", text).strip()
+    return {"status": "ok", "url": url[:100], "snippet": text[:1000]}
+
+
 def _h_fs_write(a: dict) -> dict:
     # the gate decides IF this runs; the handler records intent (real write wiring is
     # the contract_runner's backed-up syscall — kept behind the gate here)
@@ -152,6 +181,7 @@ HANDLERS = {
     "genesis.challenge": _h_challenge, "self.audit": _h_self_audit,
     "interior.read": _h_interior, "stakes.record": _h_stakes,
     "fs.read": _h_fs_read, "fs.write": _h_fs_write,
+    "web.fetch": _h_web_fetch,
 }
 
 
