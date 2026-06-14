@@ -1327,3 +1327,23 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 **pattern_for_absorption**: API 서빙 레이어에서 "default fallback provider"는 로컬
   fallback이어야 함. 외부 API를 default로 쓰면 API key 없는 사용자에게 silent timeout.
   룰: default = local, explicit opt-in = external.
+
+## 2026-06-14 KST — claude@myworld — fast path: 인사말 5s→0.5s (loop 19-20)
+
+- session_id: loop_19_20_fast_path
+- mode_breakdown: observe:2:verify:3:decide:2:intervene:2:escalate:0:~40min
+- tools_used: Bash, Read, Edit
+- substrate_specific_behaviors_observed:
+  - qwen3:8b는 agent role에서 항상 도구 호출 먼저 — 지식 쿼리도 4 turns 소모
+  - early_exit_hint 추가해도 모델이 무시함 (role binding이 더 강함)
+  - synthesis LLM이 tool trajectory 없을 때 hallucinate — "맑고 따뜻해요"
+  - fast path 접근(loop bypass)이 tool-level steering보다 훨씬 효과적
+- failures_recovered:
+  - early_exit_hint로 모델 steering 시도 → 실패 → architecture-level 해결로 전환
+  - weather hallucination in synthesis → 실시간/지식 분리 지시어로 해결
+- key_decision: 모델 prompt 조율보다 architecture bypass가 더 확실. prompt-prison 패턴.
+
+**pattern_for_absorption**: 
+  "knowledge query vs retrieval query" 분기는 prompt 수준이 아닌 routing 수준에서.
+  모델이 역할(agent loop)에 들어오면 탈출 instruction 무시. 
+  → AIOS routing layer에서 query type을 선분류해야 함.
