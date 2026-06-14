@@ -1063,3 +1063,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   없으면 myworld 내 경량 구현으로 폴백. 이 패턴을 모든 sibling 의존 도구에 적용하면
   AIOS가 단일 레포로도 최소 기능을 유지함.
 - self-correction-of-prior-observation: none
+
+## 2026-06-14 Loop 9 — claude@myworld — 한국어 조사 정규화 + AIOS 자기설명 품질
+
+- session_id: CTO loop, loop 9
+- mode_breakdown: observe:20% verify:30% decide:30% intervene:20% escalate:0%
+- tools_used: Bash (curl, python3, memoryOS CLI, git), Read, Edit
+- substrate_specific_behaviors_observed:
+  - memoryOS context build = 순수 텍스트 키워드 매칭, 임베딩 기반이 아님
+  - "AIOS가 뭔가요" → terms=["aios가","뭔가요","어떻게","작동해요"] → 0 matches
+  - nomic-embed-text 유사도: Korean↔Korean = 0.9282, Korean↔English = 0.46
+  - _korean_norm("AIOS가 뭔가요") → "aios 뭔가요 작동" → 10 decisions 반환
+- failures_recovered:
+  - context build가 임베딩 유사도를 직접 쓰지 않음 → 한국어 조사 스트리핑으로 우회
+  - ingest-founder-directive가 list 입력 거부 → schema_version + directives wrapper 필요
+- key_decision: memoryOS 내부 코드 수정 대신 쿼리 정규화로 우회
+  (sibling repo 수정은 소유권 경계 위반; 인터페이스만 조정)
+- new_invariant_or_pattern_discovered:
+  "Query-side normalization over storage-side change" — 외부 OS의 내부 알고리즘에
+  의존하는 대신, 아이오에스 쪽에서 쿼리를 변환해 호환성을 맞춤. 시스템 경계를
+  존중하면서 크로스링궐 갭을 해소하는 패턴.
+- self-correction-of-prior-observation: 임베딩이 높은 유사도(0.93)여도 context build가
+  반환을 못 할 수 있음 — context build가 임베딩이 아닌 키워드 매칭임을 확인.
+  ASC-0066 코퍼스에 중요한 오해 수정 사례.
