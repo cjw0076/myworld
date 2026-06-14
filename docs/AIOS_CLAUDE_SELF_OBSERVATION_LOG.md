@@ -1086,3 +1086,30 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: 임베딩이 높은 유사도(0.93)여도 context build가
   반환을 못 할 수 있음 — context build가 임베딩이 아닌 키워드 매칭임을 확인.
   ASC-0066 코퍼스에 중요한 오해 수정 사례.
+
+## 2026-06-14 ~13:00 KST — claude@myworld — Loop 10: E2E 품질 검증 + install 앵커 + /run synthesis
+
+- session_id: CTO loop, loop 10 (context resumption)
+- mode_breakdown: observe:20% verify:40% decide:30% intervene:10% escalate:0%
+- tools_used: Bash (curl SSE stream parsing, python3, git), Read, Edit
+- tools_NOT_used: aios_invoke, genesis.challenge (time pressure)
+- substrate_specific_behaviors_observed:
+  - /run (non-streaming)에 synthesis 없음 발견 → synthesis는 /run/stream에만 있었음
+  - semantic anchor의 snippet 예산(6개)이 첫 쿼리에서 다 차면 install 쿼리 미실행
+  - DDG Instant Answer: English abstract는 나오는 편, 한국어 쿼리는 여전히 no_results
+  - 세션 연속성(1시간 TTL in-memory): 이름 기억 테스트 통과
+  - prompt injection → rejected: true (validation gate 정상 작동)
+  - 길이 초과 goal → "goal too long" 에러 (2000자 제한 작동)
+- failures_recovered:
+  - /run에 final_answer 없는 문제 → _organ_preamble + _organ_synthesis 추가
+  - install 쿼리가 5-OS 쿼리에 묻히는 문제 → _install_q 탐지 + queries.insert(0,...)
+  - snippet 예산 6 → 8로 확장 (anchor 쿼리 여러 개가 동작할 공간 확보)
+- key_decision: snippet 예산보다 anchor 순서 우선으로 해결
+  (예산 늘리기는 synthesis prompt 길어져 LLM 부담; 순서 우선이 더 정밀)
+- new_invariant_or_pattern_discovered:
+  "Install-intent-first anchor pattern" — 신규 사용자의 첫 번째 필요(설치)를
+  semantic anchor queries 배열에서 앞자리로 배치, 아키텍처 설명 앞에 처리.
+  우선순위가 있는 anchor는 insert(0,...) + _install_q 탐지로 구현.
+- self-correction-of-prior-observation: /run이 synthesis 없다는 것을 이 루프까지 놓침.
+  스트리밍 경로만 테스트해왔고 비스트리밍은 "raw loop state"만 반환하고 있었음.
+  API 통합(SDK, curl)을 위해서는 양쪽 경로 모두 검증 필요.
