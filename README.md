@@ -1,6 +1,7 @@
 # AIOS — myworld control plane
 
 [![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
 **AIOS** is a local-first agent operating layer. It wraps provider agent CLIs
 (Claude Code, Codex CLI, local LLMs) in symbiosis — giving their one-shot
@@ -17,6 +18,10 @@ sibling OS repos:
 - **GenesisOS** — divergence layer (re-framing reasoning across fixed axes)
 
 ## See it in 30 seconds (no API key, no GPU, no network)
+
+**Easiest — no install needed:** click the badge above to open in GitHub Codespaces (browser IDE, free tier available). Then run `aios demo` in the terminal.
+
+Or locally:
 
 ```sh
 git clone https://github.com/cjw0076/myworld && cd myworld

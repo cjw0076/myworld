@@ -1,0 +1,26 @@
+{
+  "name": "AIOS Dev",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12-bullseye",
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "forwardPorts": [8741],
+  "portsAttributes": {
+    "8741": {
+      "label": "AIOS Chat UI",
+      "onAutoForward": "openBrowser"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-python.vscode-pylance"],
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}
