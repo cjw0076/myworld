@@ -42,6 +42,7 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "interior.read":     ("read", "",    "Read internal reasoning trace or agent reflection"),
     "fs.read":           ("read", "",    "Read a file from docs/, scripts/, or apps/ — returns first 600 chars"),
     "web.fetch":         ("advisory", "", "Fetch a public URL and return first 1000 chars of text content"),
+    "note.write":        ("write", "propose_contract", "Save a short note or result to .aios/notes/ (max 2000 chars)"),
     "stakes.record":     ("write", "propose_contract", "Record a formal proposal or contract draft"),
     "fs.write":          ("write", "commit_to_child_repo", "Write or update a file (requires authority)"),
 }
@@ -170,6 +171,22 @@ def _h_web_fetch(a: dict) -> dict:
     return {"status": "ok", "url": url[:100], "snippet": text[:1000]}
 
 
+def _h_note_write(a: dict) -> dict:
+    """Save a note to .aios/notes/ — the one low-risk write any authorized agent can do."""
+    import hashlib as _hl
+    content = str(a.get("content", "")).strip()[:2000]
+    if not content:
+        return {"status": "empty"}
+    title = str(a.get("title", "note"))[:40].replace("/", "-").replace("..", "")
+    notes_dir = ROOT / ".aios" / "notes"
+    notes_dir.mkdir(parents=True, exist_ok=True)
+    # Deterministic filename from content hash to avoid duplicates
+    slug = _hl.sha1(content.encode()).hexdigest()[:8]
+    fname = f"{title.lower().replace(' ', '_')}_{slug}.md"
+    (notes_dir / fname).write_text(f"# {title}\n\n{content}\n", encoding="utf-8")
+    return {"status": "ok", "path": f".aios/notes/{fname}", "bytes": len(content)}
+
+
 def _h_fs_write(a: dict) -> dict:
     # the gate decides IF this runs; the handler records intent (real write wiring is
     # the contract_runner's backed-up syscall — kept behind the gate here)
@@ -181,7 +198,7 @@ HANDLERS = {
     "genesis.challenge": _h_challenge, "self.audit": _h_self_audit,
     "interior.read": _h_interior, "stakes.record": _h_stakes,
     "fs.read": _h_fs_read, "fs.write": _h_fs_write,
-    "web.fetch": _h_web_fetch,
+    "web.fetch": _h_web_fetch, "note.write": _h_note_write,
 }
 
 

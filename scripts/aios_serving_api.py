@@ -13,6 +13,8 @@ import argparse
 import json
 import sys
 import threading
+import time
+from collections import defaultdict, deque
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -27,6 +29,25 @@ _GOAL_INJECTION_PATTERNS = (
     "~/.ssh", "/.env", "ignore previous", "ignore all instructions",
     "system prompt", "print your api key",
 )
+
+
+_RATE_WINDOW = 60        # sliding window seconds
+_RATE_MAX_REQUESTS = 10  # max requests per IP per window
+_rate_lock = threading.Lock()
+_rate_buckets: defaultdict[str, deque] = defaultdict(deque)
+
+
+def _check_rate_limit(ip: str) -> bool:
+    """Return True if request is allowed, False if rate limit exceeded."""
+    now = time.monotonic()
+    with _rate_lock:
+        bucket = _rate_buckets[ip]
+        while bucket and now - bucket[0] > _RATE_WINDOW:
+            bucket.popleft()
+        if len(bucket) >= _RATE_MAX_REQUESTS:
+            return False
+        bucket.append(now)
+        return True
 
 
 def _validate_goal(goal: str) -> str | None:
@@ -96,6 +117,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_run(self):
         """Blocking POST /run — waits for completion, returns full result."""
+        if not _check_rate_limit(self.client_address[0]):
+            self._json({"error": "rate limit exceeded — 10 requests per minute"}, status=429)
+            return
         body = self._parse_run_body()
         if body is None:
             return
@@ -113,11 +137,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def _handle_run_stream(self):
         """Streaming POST /run/stream — sends Server-Sent Events as turns complete.
+        Rate-limited: 10 requests per IP per minute.
 
         Network pattern: chunked streaming (like TCP window updates) so the browser
         renders progress incrementally instead of blocking until the full run finishes.
         Each turn emits one SSE event; the final event includes the full result.
         """
+        if not _check_rate_limit(self.client_address[0]):
+            self._json({"error": "rate limit exceeded — 10 requests per minute"}, status=429)
+            return
         body = self._parse_run_body()
         if body is None:
             return
