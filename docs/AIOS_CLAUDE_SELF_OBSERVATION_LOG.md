@@ -1347,3 +1347,33 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   "knowledge query vs retrieval query" 분기는 prompt 수준이 아닌 routing 수준에서.
   모델이 역할(agent loop)에 들어오면 탈출 instruction 무시. 
   → AIOS routing layer에서 query type을 선분류해야 함.
+
+## 2026-06-14 KST — claude@myworld — 배포 종합 검증 (loop 21-23)
+
+- session_id: loop_21_23_deployment_verification
+- mode_breakdown: observe:3:verify:4:decide:2:intervene:0:escalate:0:~60min
+- tools_used: Bash, Read, Edit, grep
+- tools_NOT_used: aios_invoke, memoryOS (주로 코드 검증이라 불필요)
+- substrate_specific_behaviors_observed:
+  - web.search 실제 작동 (서울 날씨 25.7°C 실시간 반환)
+  - note.write가 serving context에서 허용 → 지식 누적 기능으로 판단해 유지
+  - ThreadingHTTPServer 이미 구현 (동시 사용자 처리)
+  - test_install_sh.py 4개 모두 통과
+  - 1094 tests passed consistently
+- failures_recovered:
+  - no_provider exit이 synthesis로 누출 → _handle_run에서 early return 추가
+  - adaptive synthesis model 추가 (1.7b/8b 라우팅)
+- failures_escalated_to_founder: 없음
+
+**serving 배포 준비 상태 (2026-06-14 기준)**:
+  - 인사/지식: 1.6s ✓
+  - 수학/코드: 2s ✓  
+  - AIOS 설명: 3.1s ✓
+  - 날씨(실시간): 11.4s (web.search+note.write, 허용 가능)
+  - session 다중 턴: 작동 ✓
+  - markdown 렌더링: 구현됨 ✓
+  - note.write: 지식 누적 기능, 의도적 유지
+
+**pattern_for_absorption**:
+  serving 품질 검증 루프는 "유형별 benchmark → latency/quality 분석 → 근본 원인
+  코드 수정 → 테스트 → 커밋"의 5단계 패턴. AIOS CI에 자동화할 수 있는 구조.
