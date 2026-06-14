@@ -1244,3 +1244,32 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: loop 14에서 "품질 mode shift signal 도달"이라고 했는데
   실제로는 UX friction 3개가 남아있었음(Ollama crash, 빈 답변, 문서 누락).
   품질 점수(8.75→9.2)와 배포 준비(deployment readiness)는 별개 지표임. 둘 다 추적 필요.
+
+## 2026-06-14 ~16:00 KST — claude@myworld — Loop 16: memoryOS draft 정화 + memory noise 설계 결함 수정
+
+- session_id: CTO loop, loop 16
+- mode_breakdown: observe:20% verify:30% decide:35% intervene:15% escalate:0%
+- tools_used: Bash (memoryos CLI, python3, curl, git), Read, Edit
+- substrate_specific_behaviors_observed:
+  - memoryOS drafts list: 102개 발견 (예상 12개보다 훨씬 많음)
+  - reject-batch: --project aios_execution으로 90개 일괄 reject
+  - 개별 reject: for 루프로 8개 (Gate Chair 5 + visual check 3)
+  - approve 2개: GenesisOS 설계 철학 (inversion-goal, inversion-aios)
+  - _organ_postamble 수정: trivial query (turns=1, tools<2, model_finished) 스킵
+  - 테스트 2077 통과 (이전 1094에서 상승 — 미결 subtests 포함)
+- failures_recovered:
+  - serving --root 인자 없음 → aios_serving_api.py --help 확인 후 제거
+  - pkill exit 144 → kill -9 PID 직접 지정
+  - early return dict key mismatch (dream vs dream_agora_ingest) → 수정
+- key_decision: aios_execution 전체 reject 후 설계 변경
+  "모든 실행을 기록" → "의미있는 실행만 기록" (turns>1 or tools>=2 or 비정상 exit)
+  이 기준으로 serving 사용자 query의 ~90%가 기록 생략됨 (noise 제거)
+- new_invariant_or_pattern_discovered:
+  "Memory signal-to-noise invariant" — 메모리 시스템이 모든 실행을 기록하면
+  O(query) 속도로 noise가 축적됨. Draft queue가 signal 처리 병목이 됨.
+  필터 기준: (1) 다중 tool 사용, (2) 복수 turns, (3) 비정상 exit
+  이 3가지 외 단순 1-turn synthesis는 memory worthy하지 않음.
+- self-correction-of-prior-observation: loop 12에서 "memoryOS context build가
+  text keyword matching" 발견 후 "12개 draft 처리 필요"를 [P2]로 기록했으나
+  실제 102개였음. 숫자 오차는 codex@myworld의 자동 생성이 지속되어서인 듯.
+  다음 세션 시작 시 draft count를 실제로 세는 것이 중요.
