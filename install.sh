@@ -42,7 +42,15 @@ for repo in $REPOS; do
   else
     say "cloning $repo"
     if ! git clone --quiet "$GH/$repo.git" "$dest" 2>/dev/null; then
-      warn "could not clone $repo from $GH/$repo.git"
+      # Distinguish expected-absent (private/unreleased) repos from real failures
+      case "$repo" in
+        memoryOS|CapabilityOS)
+          warn "$repo not yet publicly released — AIOS runs in lite mode (local keyword memory only)"
+          ;;
+        *)
+          warn "could not clone $repo from $GH/$repo.git"
+          ;;
+      esac
       failed="$failed $repo"
     fi
   fi
@@ -97,8 +105,19 @@ fi
 
 # --- 5. done ----------------------------------------------------------------
 if [ -n "$failed" ]; then
-  warn "some repos did not clone:$failed (GenesisOS has no public remote and is expected to be absent)"
+  # Separate expected-absent from truly failed
+  _expected=" memoryOS CapabilityOS GenesisOS"
+  _truly_failed=""
+  for r in $failed; do
+    case " $_expected " in
+      *" $r "*) : ;;
+      *) _truly_failed="$_truly_failed $r" ;;
+    esac
+  done
+  [ -n "$_truly_failed" ] && warn "repos that failed to clone (unexpected):$_truly_failed"
 fi
 say "AIOS installed at $AIOS_HOME"
-say "next:  aios setup apply      # provision local models + config + service"
-say "       aios self-model build # see what AIOS knows about itself"
+say "mode: $([ -d "$AIOS_HOME/memoryOS" ] && echo 'full (myworld+hivemind+memoryOS+CapabilityOS)' || echo 'lite (myworld+hivemind; semantic memory via local keyword store)')"
+say "next:  aios setup apply      # provision local models (qwen3:1.7b + qwen3:8b via Ollama)"
+say "       aios serve            # start chat UI at http://localhost:8741/"
+say "       aios demo             # 30-second verifiable AI demo (no API key needed)"
