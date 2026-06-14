@@ -1273,3 +1273,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   text keyword matching" 발견 후 "12개 draft 처리 필요"를 [P2]로 기록했으나
   실제 102개였음. 숫자 오차는 codex@myworld의 자동 생성이 지속되어서인 듯.
   다음 세션 시작 시 draft count를 실제로 세는 것이 중요.
+
+## 2026-06-14 ~16:30 KST — claude@myworld — Loop 17: 영어 품질 검증 + synthesis 내부 유출 수정
+
+- session_id: CTO loop, loop 17
+- mode_breakdown: observe:25% verify:40% decide:25% intervene:10% escalate:0%
+- tools_used: Bash (curl, python3, pgrep, kill, pytest), Read, Edit
+- substrate_specific_behaviors_observed:
+  - BrokenPipeError: client 45s timeout 후 disconnect → 서버 200 완료 but write 실패
+    → 실제 버그 아님, timeout 늘려 해결 (90s)
+  - importlib 격리 로딩: @dataclass __module__ None AttributeError
+    → serving 정상 import에서는 발생 안 함, test artifact
+  - synthesis fix 효과: 발표 체크리스트 ASC-*→일반 조언, France→Paris 클린
+  - 소수 판별 O(√n) 구현: 286chars, edge case(1, 2, 3) 완전 처리
+- failures_recovered:
+  - serving kill exit 144 → pgrep로 PID 개별 확인 후 kill -9 직접 지정
+  - python3 timeout 45s → 90s로 증가 (일부 synthesis 오래 걸림)
+- key_decision: synthesis_prompt에 "NEVER mention 'memory context', ASC-*, internal names" 추가
+  "state what was found" → "give a helpful general answer from your knowledge" 교체
+  이것으로 2개 증상 동시 해결: 내부 노출 + 메모리 편향
+- new_invariant_or_pattern_discovered:
+  "Internal vocabulary leakage invariant" — synthesis prompt가 "state what was found"
+  → 모델이 retrieved memory를 그대로 사용자에게 인용. 
+  해결 패턴: negative constraint ("NEVER mention X") + positive fallback ("use general knowledge")
+  를 synthesis_prompt에 명시해야 함. 외부 facing synthesis는 항상 이 두 조건 포함.
+- self-correction-of-prior-observation: loop 14에서 "품질 9.2/10" 선언했으나
+  내부 vocabulary leak + AIOS memory bias = 실제 외부 사용자가 실망하는 케이스
+  (발표 체크리스트가 ASC-0095 목록으로 나오는 것). "배포 가능" ≠ "사용자 경험 완성".
+  Deployment readiness와 UX completeness를 구분해야 함.
