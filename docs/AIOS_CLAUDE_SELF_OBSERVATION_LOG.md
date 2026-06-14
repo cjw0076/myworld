@@ -1191,3 +1191,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation: "synthesis: 코드 답변이 code block으로 나옴"을
   loop 9에서 긍정적으로 기록했으나, synthesis_prompt에 "no markdown" 제약이 있었음.
   모델이 제약을 무시한 덕에 우연히 올바른 결과가 나온 것. 이제 명시적으로 허용.
+
+## 2026-06-14 ~15:00 KST — claude@myworld — Loop 14: 품질 최종 채점 + UX 완성
+
+- session_id: CTO loop, loop 14
+- mode_breakdown: observe:20% verify:45% decide:25% intervene:10% escalate:0%
+- tools_used: Bash (curl 병렬, python3 threading, aios demo, git), Read, Edit
+- substrate_specific_behaviors_observed:
+  - aios demo: 완벽 작동 (PASS ✓ / CAUGHT ✗ 명확, provenance record 생성)
+  - 4개 쿼리 병렬 테스트: AIOS설명 9/10, 날씨 9/10, 파이썬설명 8/10, 설치방법 9/10
+  - 버블소트 + 주석: 637자 완전한 코드 (마크다운 블록, docstring 포함)
+  - synthesis 800자 cap이 주석 있는 코드에서도 충분함을 확인 (637자)
+- failures_recovered:
+  - newChat 버튼 없음 → localStorage.removeItem + 세션 reload로 단순 구현
+  - welcome chips가 내부 도구 예시였음 → 실사용 예시(날씨/설치/코드)로 교체
+- key_decision: synthesis 응답 길이 prose 800→, 코드 요청 시 1500
+  _code_hint 변수를 synthesis_prompt 생성에 재활용 (새 변수 안 만듦)
+- new_invariant_or_pattern_discovered:
+  "Quality milestone → mode shift signal" — serving이 평균 8.75/10 도달 시
+  "기능 추가" 모드에서 "polish + distribution" 모드로 전환해야 함.
+  품질 기준 달성 = 내부 반복 중단 신호, 외부 노출(공개 배포/CI smoke) 전환 신호.
+- self-correction-of-prior-observation: "신규 사용자가 빈 채팅창 보면 온보딩 없어 혼란"
+  loop 10 초반 언급 → 실제로는 welcome chips가 이미 있었음.
+  진짜 문제는 chips 내용이 내부 도구 예시(aios_tools.py 파일 읽기)여서 비직관적이었던 것.
+  chips를 실사용 예시(날씨/설치/파이썬코드)로 교체해 해결.
