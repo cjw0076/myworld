@@ -40,7 +40,8 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "genesis.challenge": ("advisory", "", 'Stress-test a plan. Args: {"text":"<claim or plan to challenge>"}'),
     "self.audit":        ("read", "",    'Check agent health. Args: {"claims":[]}'),
     "interior.read":     ("read", "",    'Read internal traces. Args: {"traces":[]}'),
-    "fs.read":           ("read", "",    'Read a file. Args: {"path":"docs/AIOS_NORTHSTAR.md"} (docs/, scripts/, apps/ only)'),
+    "fs.list":           ("read", "",    'List readable docs files to find valid paths. Args: {}'),
+    "fs.read":           ("read", "",    'Read a file (use fs.list first to find paths). Args: {"path":"docs/README.md"}'),
     "web.fetch":         ("advisory", "", 'Fetch a public URL. Args: {"url":"https://..."}'),
     "note.write":        ("write", "propose_contract", 'Save a note. Args: {"title":"<title>","content":"<text up to 2000 chars>"}'),
     "stakes.record":     ("write", "propose_contract", 'Record a proposal. Args: {"claim":"<proposal>","confidence":0.8}'),
@@ -125,6 +126,23 @@ def _h_stakes(a: dict) -> dict:
 
 _CONTENT_SAFE_PREFIXES = ("docs/", "scripts/", "apps/")  # safe paths for content snippets
 
+_KEY_DOCS = [
+    "docs/AIOS_NORTHSTAR.md", "docs/AIOS_DNA.md", "docs/AIOS_DEFINITION.md",
+    "docs/AIOS_MINIMUM_KERNEL_AUDIT.md", "docs/AIOS_AGENT_PROTOCOL.md",
+    "docs/WORKSTREAMS.md", "docs/AIOS_DEPLOY_MANIFEST.md",
+    "AGENTS.md", "README.md",
+]
+
+def _h_fs_list(_a: dict) -> dict:
+    """List key readable documentation files so the model can discover valid paths."""
+    files = []
+    for rel in _KEY_DOCS:
+        p = ROOT / rel
+        if p.is_file():
+            files.append({"path": rel, "bytes": p.stat().st_size})
+    return {"status": "ok", "files": files, "count": len(files)}
+
+
 def _h_fs_read(a: dict) -> dict:
     p = (ROOT / str(a.get("path", ""))).resolve()
     if ROOT not in p.parents and p != ROOT:
@@ -198,7 +216,7 @@ HANDLERS = {
     "memory.retrieve": _h_retrieve, "capability.route": _h_route,
     "genesis.challenge": _h_challenge, "self.audit": _h_self_audit,
     "interior.read": _h_interior, "stakes.record": _h_stakes,
-    "fs.read": _h_fs_read, "fs.write": _h_fs_write,
+    "fs.list": _h_fs_list, "fs.read": _h_fs_read, "fs.write": _h_fs_write,
     "web.fetch": _h_web_fetch, "note.write": _h_note_write,
 }
 

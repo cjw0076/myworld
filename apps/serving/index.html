@@ -79,6 +79,16 @@
     .msg-meta { font-size: 0.72rem; color: var(--muted); margin-top: 4px; padding: 0 4px; }
 
     /* Inline tool trace (collapsible) */
+    /* Always-visible metadata bar under AIOS bubble */
+    .msg-meta-bar {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; padding: 0 4px;
+    }
+    .meta-tag {
+      font-size: 0.7rem; padding: 1px 6px; border-radius: 10px;
+      background: var(--teal-light); color: var(--teal); font-weight: 500;
+    }
+    .meta-tag.tool { background: #f0f0f8; color: #5a5aaa; }
+
     .trace-toggle {
       font-size: 0.72rem; color: var(--teal); cursor: pointer; margin-top: 6px;
       padding: 0 4px; user-select: none;
@@ -293,10 +303,22 @@
           </div>`;
       }
 
+      // Always-visible meta bar: memory + unique tools used
+      const memHits = (m.pipe?.preamble?.memory_hits) || 0;
+      const uniqueTools = [...new Set(traj.map(t => t.tool))];
+      let metaBarHtml = '';
+      if (memHits > 0 || uniqueTools.length > 0) {
+        const memTag = memHits > 0 ? `<span class="meta-tag">메모리 ${memHits}건</span>` : '';
+        const toolTags = uniqueTools.slice(0, 4).map(t =>
+          `<span class="meta-tag tool">${escHtml(t.split('.')[1] || t)}</span>`).join('');
+        metaBarHtml = `<div class="msg-meta-bar">${memTag}${toolTags}</div>`;
+      }
+
       const div = document.createElement('div');
       div.className = 'msg aios';
       div.innerHTML = `
         <div class="msg-bubble">${escHtml(answer || '(답변 없음)')}</div>
+        ${metaBarHtml}
         ${traceHtml}
         <div class="msg-meta">${ts || ''}</div>`;
       return div;
