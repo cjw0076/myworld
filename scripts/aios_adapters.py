@@ -84,6 +84,9 @@ SPECS: dict[str, AdapterSpec] = {
 _OLLAMA_REST_URL = "http://localhost:11434/api/generate"
 _OLLAMA_REST_MODEL = "qwen3:1.7b"   # fast; swappable per deployment
 
+_ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+_ANTHROPIC_REST_MODEL = "claude-haiku-4-5-20251001"  # fastest + cheapest frontier
+
 
 def make_ollama_rest_adapter(
     *,
@@ -127,6 +130,55 @@ def _ollama_rest_available(url: str = _OLLAMA_REST_URL) -> bool:
         return True
     except Exception:
         return False
+
+
+def _anthropic_rest_available() -> bool:
+    """Return True if ANTHROPIC_API_KEY is set (Anthropic REST API usable)."""
+    import os
+    return bool(os.environ.get("ANTHROPIC_API_KEY"))
+
+
+def make_anthropic_rest_adapter(
+    *,
+    model: str = _ANTHROPIC_REST_MODEL,
+    timeout: int = 60,
+) -> "Callable[[str], str]":
+    """Build an adapter that calls the Anthropic Messages API directly.
+
+    Activates automatically when ANTHROPIC_API_KEY is set — no CLI binary needed.
+    Used as a fallback when Ollama is unavailable (e.g. GitHub Codespaces free tier).
+    """
+    import json as _json
+    import os as _os
+    import urllib.request as _req
+
+    def adapter(prompt: str) -> str:
+        api_key = _os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("anthropic_rest: ANTHROPIC_API_KEY not set")
+        body = _json.dumps({
+            "model": model,
+            "max_tokens": 2048,
+            "messages": [{"role": "user", "content": prompt}],
+        }).encode()
+        request = _req.Request(
+            _ANTHROPIC_API_URL,
+            data=body,
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
+        try:
+            with _req.urlopen(request, timeout=timeout) as resp:
+                data = _json.loads(resp.read())
+                return data["content"][0]["text"]
+        except Exception as exc:
+            raise RuntimeError(f"anthropic_rest: {exc}") from exc
+
+    adapter.__name__ = "adapter_anthropic_rest"
+    return adapter
 
 
 @dataclass
@@ -186,6 +238,10 @@ def build_adapters(
             if _rest_ok():
                 registry["ollama_rest_8b"] = make_ollama_rest_adapter(model="qwen3:8b", timeout=120)
             continue
+        if name == "anthropic_rest":
+            if _anthropic_rest_available():
+                registry["anthropic_rest"] = make_anthropic_rest_adapter()
+            continue
         spec = SPECS.get(name)
         if spec is None:
             continue
@@ -196,6 +252,9 @@ def build_adapters(
     # Auto-register ollama_rest when asking for all providers and REST is reachable
     if providers is None and "ollama_rest" not in registry and _rest_ok():
         registry["ollama_rest"] = make_ollama_rest_adapter()
+    # Auto-register anthropic_rest when ANTHROPIC_API_KEY is present
+    if providers is None and "anthropic_rest" not in registry and _anthropic_rest_available():
+        registry["anthropic_rest"] = make_anthropic_rest_adapter()
 
     return registry
 

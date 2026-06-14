@@ -478,18 +478,25 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
     to give the synthesizer material to answer from.
     """
     adapters_mod = _load("aios_adapters")
-    if not adapters_mod._ollama_rest_available():
-        return ("Ollama를 찾을 수 없습니다. `aios setup apply`로 로컬 모델을 설치한 뒤 "
-                "`aios serve`를 다시 시작하세요.\n\n"
-                "Ollama not found. Run `aios setup apply` to install local models, "
-                "then restart `aios serve`.")
-    # Fast path (exit=fast_path) or short conversational goals → 1.7b (0.2s/call)
-    # Code/complex goals or organic loop results → 8b (smarter, 2-5s/call)
-    _is_fast_exit = result.get("exit") == "fast_path"
-    _is_code_goal = any(kw in goal.lower() for kw in (
-        "코드", "구현", "함수", "알고리즘", "code", "implement", "function", "algorithm", "class"))
-    _synth_model = "qwen3:1.7b" if (_is_fast_exit and not _is_code_goal) else "qwen3:8b"
-    adapter = adapters_mod.make_ollama_rest_adapter(model=_synth_model, timeout=60)
+    _ollama_ok = adapters_mod._ollama_rest_available()
+    _anthropic_ok = adapters_mod._anthropic_rest_available()
+    if not _ollama_ok and not _anthropic_ok:
+        return ("로컬 모델(Ollama)도 Anthropic API 키도 없습니다.\n"
+                "  • 로컬 모델: `aios setup apply` 후 `aios serve` 재시작\n"
+                "  • API 키: 환경 변수 `ANTHROPIC_API_KEY` 설정 후 재시작\n\n"
+                "No provider available. Either run `aios setup apply` to install local models "
+                "or set the ANTHROPIC_API_KEY environment variable, then restart `aios serve`.")
+    if _ollama_ok:
+        # Fast path (exit=fast_path) or short conversational goals → 1.7b (0.2s/call)
+        # Code/complex goals or organic loop results → 8b (smarter, 2-5s/call)
+        _is_fast_exit = result.get("exit") == "fast_path"
+        _is_code_goal = any(kw in goal.lower() for kw in (
+            "코드", "구현", "함수", "알고리즘", "code", "implement", "function", "algorithm", "class"))
+        _synth_model = "qwen3:1.7b" if (_is_fast_exit and not _is_code_goal) else "qwen3:8b"
+        adapter = adapters_mod.make_ollama_rest_adapter(model=_synth_model, timeout=60)
+    else:
+        # Ollama unavailable — fall back to Anthropic REST (claude-haiku, fast + cheap)
+        adapter = adapters_mod.make_anthropic_rest_adapter(timeout=60)
 
     traj = result.get("trajectory", [])
     exit_status = result.get("exit", "unknown")
@@ -687,6 +694,8 @@ def _auto_provider(goal: str) -> str:
     """
     adapters_mod = _load("aios_adapters")
     if not adapters_mod._ollama_rest_available():
+        if adapters_mod._anthropic_rest_available():
+            return "anthropic_rest"
         return "ollama_rest"   # will be handled as unavailable downstream
     # Complexity heuristics
     word_count = len(goal.split())
@@ -705,8 +714,9 @@ def _auto_provider(goal: str) -> str:
 def _default_adapters(authorized_provider: str) -> dict[str, Callable[[str], str]]:
     adapters_mod = _load("aios_adapters")
     if authorized_provider == "auto":
-        # auto provider builds both fast (1.7b) and capable (8b) and routes per-goal
-        return adapters_mod.build_adapters(providers=["ollama_rest", "ollama_rest_8b"])
+        # auto provider builds Ollama (fast local) + Anthropic REST (cloud fallback)
+        providers = ["ollama_rest", "ollama_rest_8b", "anthropic_rest"]
+        return adapters_mod.build_adapters(providers=providers)
     return adapters_mod.build_adapters(providers=[authorized_provider])
 
 

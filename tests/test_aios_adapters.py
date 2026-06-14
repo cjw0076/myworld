@@ -126,5 +126,76 @@ class AdaptersTest(unittest.TestCase):
         self.assertTrue(c.receipts[0].success)
 
 
+class AnthropicRestAdapterTest(unittest.TestCase):
+    def setUp(self):
+        self.a = _load("aios_adapters")
+
+    def test_anthropic_rest_available_when_key_set(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-key"}):
+            self.assertTrue(self.a._anthropic_rest_available())
+
+    def test_anthropic_rest_not_available_when_no_key(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {}, clear=True):
+            env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+            with mock.patch.dict(os.environ, env, clear=True):
+                self.assertFalse(self.a._anthropic_rest_available())
+
+    def test_make_anthropic_rest_adapter_calls_api(self):
+        import json
+        import os
+        import unittest.mock as mock
+
+        response_body = json.dumps({
+            "content": [{"type": "text", "text": "hello from claude"}],
+        }).encode()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = response_body
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-key"}):
+            with mock.patch("urllib.request.urlopen", return_value=mock_resp) as mock_open:
+                adapter = self.a.make_anthropic_rest_adapter(timeout=10)
+                result = adapter("test prompt")
+                self.assertEqual(result, "hello from claude")
+                args, _ = mock_open.call_args
+                req = args[0]
+                self.assertIn("anthropic.com", req.full_url)
+                self.assertIn("sk-test-key", req.get_header("X-api-key"))
+
+    def test_build_adapters_includes_anthropic_rest_when_key_set(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "sk-test-key"}):
+            reg = self.a.build_adapters(
+                providers=["anthropic_rest"],
+                runner=lambda argv, s, t: (0, "ok", ""),
+                which=lambda b: None,
+                require_present=False,
+                rest_available=lambda: False,
+            )
+            self.assertIn("anthropic_rest", reg)
+
+    def test_build_adapters_excludes_anthropic_rest_when_no_key(self):
+        import os
+        import unittest.mock as mock
+        with mock.patch.dict(os.environ, {}, clear=True):
+            env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+            with mock.patch.dict(os.environ, env, clear=True):
+                reg = self.a.build_adapters(
+                    providers=["anthropic_rest"],
+                    runner=lambda argv, s, t: (0, "ok", ""),
+                    which=lambda b: None,
+                    require_present=False,
+                    rest_available=lambda: False,
+                )
+                self.assertNotIn("anthropic_rest", reg)
+
+
 if __name__ == "__main__":
     unittest.main()
