@@ -1,5 +1,7 @@
 # AIOS — myworld control plane
 
+[![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
+
 **AIOS** is a local-first agent operating layer. It wraps provider agent CLIs
 (Claude Code, Codex CLI, local LLMs) in symbiosis — giving their one-shot
 execution continuity, memory, governance, and recovery — and is spreading from
