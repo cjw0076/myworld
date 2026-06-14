@@ -182,11 +182,11 @@ class Handler(BaseHTTPRequestHandler):
             return
         session_id = str(body.get("session_id", "")).strip()[:64] or None
         prior_ctx = _session_context(session_id)
-        result = run_organic(goal, str(body.get("provider", "claude")),
+        result = run_organic(goal, str(body.get("provider", "auto")),
                              int(body.get("max_turns", 6)))
         # Add synthesis so API callers get a usable answer (same as streaming path)
         head = _import_head()
-        preamble_data = head._organ_preamble(goal, ROOT)
+        preamble_data = result.get("organic_pipeline", {}).get("preamble", {})
         final_answer = head._organ_synthesis(goal, result, preamble=preamble_data,
                                              root=ROOT, prior_context=prior_ctx)
         if final_answer:
@@ -217,7 +217,7 @@ class Handler(BaseHTTPRequestHandler):
         if err:
             self._json({"error": err, "rejected": True}, status=400)
             return
-        provider = str(body.get("provider", "claude"))
+        provider = str(body.get("provider", "auto"))
         max_turns = int(body.get("max_turns", 6))
         session_id = str(body.get("session_id", "")).strip()[:64] or None
         prior_ctx = _session_context(session_id)
