@@ -3,9 +3,9 @@ name: publish
 # Trigger: push a semver tag (e.g. v0.1.0)
 #   git tag -a v0.1.0 -m "v0.1.0" && git push origin v0.1.0
 #
-# Requires: set PYPI_API_TOKEN as a GitHub repository secret
-#   PyPI → Account settings → API tokens → Add API token (scope: aios-os project)
-#   GitHub → repo Settings → Secrets → Actions → New secret: PYPI_API_TOKEN
+# OIDC Trusted Publisher setup (no API token needed):
+#   pypi.org → aios-os project → Publishing → Add Publisher
+#   owner=cjw0076  repo=myworld  workflow=publish.yml  env=pypi
 on:
   push:
     tags: ["v*.*.*"]
@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write   # required for OIDC trusted publisher
 
 jobs:
   build:
@@ -34,12 +35,13 @@ jobs:
     name: publish to PyPI
     needs: build
     runs-on: ubuntu-latest
+    environment: pypi
     if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          password: ${{ secrets.PYPI_API_TOKEN }}
