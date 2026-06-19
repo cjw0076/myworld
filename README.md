@@ -34,6 +34,42 @@ answer if the check fails. The demo runs the same checker on a good study plan
 (passes) and on a plan with a realistic AI slip — a session scheduled past its
 deadline — and watches the code catch it. Every result leaves a provenance file.
 
+## Live AI pipeline demo (requires a provider)
+
+Once you have Ollama running (`aios setup apply`) or an API key set, run the
+full organic pipeline in one command:
+
+```sh
+aios demo --chat
+```
+
+Example output:
+
+```
+  ┌─────────────────────────────────────────────────────────────┐
+  │  AIOS demo --chat  — live organic pipeline run               │
+  └─────────────────────────────────────────────────────────────┘
+
+  Goal:     What is AIOS and how does the organic pipeline work?
+  Provider: ollama_rest (local Ollama — no cost)
+  Memory:   215 hit(s) recalled from memoryOS
+  Turns:    4   exit=max_turns
+
+  Answer:
+
+    AIOS is a system that enables end-users to control and view how AI
+    agents operate, ensuring transparency in their tasks. The organic
+    pipeline involves capturing directives, managing task distribution,
+    and allowing agents to perform their roles effectively while
+    maintaining control and visibility for the user.
+
+  Provenance: organic pipeline (preamble → loop → synthesis), no hardcoded output.
+  Next: `aios serve` → http://localhost:8741/ for the full interactive UI.
+```
+
+Use `--goal "your question"` to ask anything.
+Use `--json` for structured output.
+
 ## Install
 
 ```sh

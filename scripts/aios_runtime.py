@@ -146,7 +146,7 @@ def build_status(root: Path) -> dict[str, Any]:
         "schema_version": STATUS_SCHEMA,
         "generated_at": now_iso(),
         "root": root.as_posix(),
-        "status": "ready" if monitor_health == "clear" else "blocked",
+        "status": "ready" if monitor_health == "clear" else ("watch" if monitor_health == "attention" else "blocked"),
         "monitor": monitor,
         "readiness": readiness,
         "dispatch": {
@@ -274,7 +274,23 @@ def emit(payload: dict[str, Any], as_json: bool) -> None:
     if as_json:
         print(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True))
     else:
-        print(f"{payload.get('schema_version')} status={payload.get('status')}")
+        status = payload.get("status")
+        print(f"{payload.get('schema_version')} status={status}")
+        if status in {"blocked", "watch"}:
+            monitor_parsed = (payload.get("monitor") or {}).get("parsed") or {}
+            findings = monitor_parsed.get("findings") or []
+            high = [f for f in findings if f.get("severity") == "high"]
+            medium = [f for f in findings if f.get("severity") == "medium"]
+            if high:
+                print(f"  {len(high)} high-severity finding(s):")
+                for f in high:
+                    print(f"  - [{f.get('code')}] {f.get('action')}")
+            elif medium:
+                print(f"  {len(medium)} medium-severity finding(s) (non-blocking):")
+                for f in medium[:3]:
+                    print(f"  - [{f.get('code')}] {f.get('action')}")
+            if findings:
+                print("  tip: aios status --json  for full detail")
 
 
 def build_parser() -> argparse.ArgumentParser:

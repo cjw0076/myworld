@@ -66,6 +66,18 @@
       "accepted_by": "codex acting operator",
       "accepted_at": "2026-05-16 KST",
       "authorized_by_contract": "ASC-0174"
+    },
+    {
+      "id": "reconcile-asc-0270-reissued-to-claude-pending",
+      "match": {
+        "code": "dispatch_results_pending",
+        "dispatch_id": "asc-0270",
+        "repos": ["myworld"]
+      },
+      "reason": "asc-0270 was originally issued by codex then reissued by operator as asc-0270-claude. The original dispatch was superseded; result is in .aios/outbox/myworld/asc-0270-claude.myworld.result.json. No further collection needed for the original.",
+      "accepted_by": "claude@myworld operator",
+      "accepted_at": "2026-06-19 KST",
+      "authorized_by_contract": "ASC-0270"
     }
   ]
 }
