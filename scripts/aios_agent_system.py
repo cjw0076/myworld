@@ -131,6 +131,24 @@ def _ollama_available() -> bool:
         return False
 
 
+def _lm_studio_available() -> bool:
+    try:
+        base = os.environ.get("LM_STUDIO_URL", "http://127.0.0.1:1234")
+        with urllib.request.urlopen(base + "/v1/models", timeout=2) as r:
+            return len(json.loads(r.read()).get("data", [])) > 0
+    except Exception:
+        return False
+
+
+def _vllm_available() -> bool:
+    try:
+        base = os.environ.get("VLLM_URL", "http://127.0.0.1:8000")
+        with urllib.request.urlopen(base + "/v1/models", timeout=2) as r:
+            return True
+    except Exception:
+        return False
+
+
 def _cli_available(name: str) -> bool:
     import shutil
     return shutil.which(name) is not None
@@ -140,6 +158,10 @@ def auto_route(goal: str, predicted_tools: list[str]) -> str:
     """Pick best available provider. Local-first (free, private)."""
     if _ollama_available():
         return "local"
+    if _lm_studio_available():
+        return "lm-studio"
+    if _vllm_available():
+        return "vllm"
     if _cli_available("claude"):
         return "claude"
     if _cli_available("codex"):
@@ -164,32 +186,124 @@ def _build_prompt(goal: str, patterns: list[dict], predicted: list[str]) -> str:
     return "\n".join(lines)
 
 
-def _run_ollama(prompt: str) -> tuple[str, list[str]]:
-    """Call Ollama HTTP API with qwen3 (best available)."""
-    try:
-        # Pick model
-        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=3) as r:
-            tags = json.loads(r.read())
-        models = [m["name"] for m in tags.get("models", [])]
-        preferred = ["qwen3-coder:30b", "qwen3:30b-a3b", "qwen3:8b", "qwen3:1.7b"]
-        model = next((m for m in preferred if any(m in x for x in models)), models[0] if models else None)
-        if not model:
-            return "no ollama model available", []
+def _openai_compat(base_url: str, model: str, prompt: str,
+                    api_key: str = "none", timeout: int = 120) -> tuple[str, list[str]]:
+    """OpenAI-compatible /v1/chat/completions — works with any server that speaks it.
 
-        payload = {
-            "model":  model,
-            "prompt": prompt,
-            "stream": False,
-            "options": {"num_predict": 2048},
-        }
-        data = json.dumps(payload).encode()
-        req = urllib.request.Request(OLLAMA + "/api/generate", data=data,
-                                     headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=120) as r:
-            res = json.loads(r.read())
-        return res.get("response", ""), [model]
+    Covers: Ollama (/v1), vLLM, LM Studio, Jan.ai, llama.cpp server,
+    Hugging Face TGI, Codestral, any OpenAI-API-compatible endpoint.
+    """
+    payload = {
+        "model":    model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream":   False,
+        "max_tokens": 2048,
+    }
+    data = json.dumps(payload).encode()
+    headers = {
+        "Content-Type":  "application/json",
+        "Authorization": f"Bearer {api_key}",
+    }
+    req = urllib.request.Request(
+        base_url.rstrip("/") + "/v1/chat/completions",
+        data=data, headers=headers,
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        res = json.loads(r.read())
+    text = res["choices"][0]["message"]["content"]
+    return text, [model]
+
+
+def _list_ollama_models() -> list[str]:
+    """Return available Ollama model names via /api/tags."""
+    try:
+        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=3) as r:
+            return [m["name"] for m in json.loads(r.read()).get("models", [])]
+    except Exception:
+        return []
+
+
+# Preferred model priority — coder models first, fallback to general
+_PREFERRED_MODELS = [
+    "qwen3-coder:30b",
+    "deepseek-coder-v2:16b",
+    "codestral:22b",
+    "starcoder2:15b",
+    "qwen3:30b-a3b",
+    "qwen3:8b",
+    "llama3.1:8b",
+    "mistral:7b",
+    "phi3:mini",
+]
+
+
+def _best_local_model(available: list[str]) -> str | None:
+    """Pick the highest-priority model from what's installed."""
+    for pref in _PREFERRED_MODELS:
+        if any(pref in m or m in pref for m in available):
+            return next(m for m in available if pref in m or m in pref)
+    return available[0] if available else None
+
+
+def _run_ollama(prompt: str) -> tuple[str, list[str]]:
+    """Call local Ollama — auto-picks best available model."""
+    try:
+        models = _list_ollama_models()
+        model = _best_local_model(models)
+        if not model:
+            return "no ollama model available — run: ollama pull qwen3:8b", []
+        # Ollama supports OpenAI-compatible /v1 endpoint (v0.1.24+)
+        try:
+            return _openai_compat(OLLAMA, model, prompt)
+        except Exception:
+            # Fallback to Ollama native /api/generate
+            payload = {"model": model, "prompt": prompt,
+                       "stream": False, "options": {"num_predict": 2048}}
+            req = urllib.request.Request(
+                OLLAMA + "/api/generate",
+                data=json.dumps(payload).encode(),
+                headers={"Content-Type": "application/json"},
+            )
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return json.loads(r.read()).get("response", ""), [model]
     except Exception as e:
         return f"ollama error: {e}", []
+
+
+def _run_lm_studio(prompt: str) -> tuple[str, list[str]]:
+    """LM Studio (default port 1234) — OpenAI-compatible."""
+    try:
+        base = os.environ.get("LM_STUDIO_URL", "http://127.0.0.1:1234")
+        # GET /v1/models to find available model
+        with urllib.request.urlopen(base + "/v1/models", timeout=3) as r:
+            models = json.loads(r.read()).get("data", [])
+        model = models[0]["id"] if models else "local-model"
+        return _openai_compat(base, model, prompt)
+    except Exception as e:
+        return f"lm-studio error: {e}", []
+
+
+def _run_vllm(prompt: str) -> tuple[str, list[str]]:
+    """vLLM server — OpenAI-compatible. Set VLLM_URL env var."""
+    try:
+        base  = os.environ.get("VLLM_URL", "http://127.0.0.1:8000")
+        model = os.environ.get("VLLM_MODEL", "default")
+        return _openai_compat(base, model, prompt)
+    except Exception as e:
+        return f"vllm error: {e}", []
+
+
+def _run_custom_openai(prompt: str) -> tuple[str, list[str]]:
+    """Any OpenAI-compatible endpoint. Set OPENAI_COMPAT_URL + OPENAI_COMPAT_MODEL."""
+    try:
+        base  = os.environ.get("OPENAI_COMPAT_URL", "")
+        model = os.environ.get("OPENAI_COMPAT_MODEL", "gpt-4o-mini")
+        key   = os.environ.get("OPENAI_COMPAT_KEY", "none")
+        if not base:
+            return "set OPENAI_COMPAT_URL to use custom endpoint", []
+        return _openai_compat(base, model, prompt, api_key=key)
+    except Exception as e:
+        return f"openai-compat error: {e}", []
 
 
 def _run_claude(prompt: str) -> tuple[str, list[str]]:
@@ -225,22 +339,39 @@ def _run_gemini(prompt: str) -> tuple[str, list[str]]:
         return f"gemini error: {e}", []
 
 
-def execute(provider: str, prompt: str) -> tuple[str, list[str]]:
+def execute(provider: str, prompt: str,
+            base_url: str | None = None, model: str | None = None,
+            api_key_compat: str | None = None) -> tuple[str, list[str]]:
+    """Dispatch to provider. base_url/model override for any OpenAI-compat endpoint."""
+    # Direct custom endpoint (--base-url wins over everything)
+    if base_url:
+        m = model or os.environ.get("OPENAI_COMPAT_MODEL", "local-model")
+        k = api_key_compat or os.environ.get("OPENAI_COMPAT_KEY", "none")
+        try:
+            return _openai_compat(base_url, m, prompt, api_key=k)
+        except Exception as e:
+            return f"custom endpoint error ({base_url}): {e}", []
+
     dispatch = {
-        "local":  _run_ollama,
-        "claude": _run_claude,
-        "codex":  _run_codex,
-        "gemini": _run_gemini,
+        "local":      _run_ollama,
+        "lm-studio":  _run_lm_studio,
+        "vllm":       _run_vllm,
+        "openai":     _run_custom_openai,
+        "claude":     _run_claude,
+        "codex":      _run_codex,
+        "gemini":     _run_gemini,
     }
     fn = dispatch.get(provider)
     if fn is None:
         return (
             "No provider available.\n"
-            "  Install one:\n"
-            "    Local LLM: aios setup apply    (pulls Ollama + qwen3)\n"
-            "    Claude:    npm install -g @anthropic-ai/claude-code\n"
-            "    Codex:     npm install -g @openai/codex\n"
-            "    Gemini:    pip install google-generativeai",
+            "  Options:\n"
+            "    --provider local          (Ollama — ollama.ai)\n"
+            "    --provider lm-studio      (LM Studio — lmstudio.ai)\n"
+            "    --provider vllm           (vLLM — VLLM_URL env)\n"
+            "    --base-url http://...     (any OpenAI-compat endpoint)\n"
+            "    --provider claude|codex|gemini\n"
+            "  Quick install: aios setup apply",
             [],
         )
     return fn(prompt)
@@ -248,8 +379,11 @@ def execute(provider: str, prompt: str) -> tuple[str, list[str]]:
 
 # ── Interactive chat loop ─────────────────────────────────────────────────────
 
-def chat_loop(provider: str, api_key: str | None, verbose: bool) -> None:
-    print(f"[AIOS Agent] provider={provider}  type 'quit' to exit")
+def chat_loop(provider: str, api_key: str | None, verbose: bool,
+              base_url: str | None = None, model: str | None = None,
+              api_key_compat: str | None = None) -> None:
+    desc = base_url or provider
+    print(f"[AIOS Agent] provider={desc}  type 'quit' to exit")
     print("-" * 50)
     history: list[str] = []
     while True:
@@ -262,7 +396,9 @@ def chat_loop(provider: str, api_key: str | None, verbose: bool) -> None:
             break
 
         result = run_single(goal, provider=provider, api_key=api_key,
-                            verbose=verbose, history=history)
+                            verbose=verbose, history=history,
+                            base_url=base_url, model=model,
+                            api_key_compat=api_key_compat)
         print(f"\naios> {result['output']}\n")
         history.append(f"goal: {goal}\nresult: {result['output'][:200]}")
 
@@ -271,7 +407,9 @@ def chat_loop(provider: str, api_key: str | None, verbose: bool) -> None:
 
 def run_single(goal: str, provider: str | None = None,
                api_key: str | None = None, verbose: bool = False,
-               history: list[str] | None = None) -> dict:
+               history: list[str] | None = None,
+               base_url: str | None = None, model: str | None = None,
+               api_key_compat: str | None = None) -> dict:
     t0 = time.time()
 
     # 1. RECALL + PREDICT (in parallel — best-effort, fail silent)
@@ -287,8 +425,11 @@ def run_single(goal: str, provider: str | None = None,
     if verbose:
         print(f"[recall] {len(patterns)} patterns  [predict] {predicted}")
 
-    # 2. ROUTE
-    chosen = provider or auto_route(goal, predicted)
+    # 2. ROUTE (base_url bypasses routing entirely)
+    if base_url:
+        chosen = f"custom:{base_url.split('/')[2]}"
+    else:
+        chosen = provider or auto_route(goal, predicted)
     if verbose:
         print(f"[route] provider={chosen}")
 
@@ -298,7 +439,10 @@ def run_single(goal: str, provider: str | None = None,
         prompt = "\n".join(history[-3:]) + "\n\n" + prompt
 
     # 4. EXECUTE
-    output, tools_used = execute(chosen, prompt)
+    output, tools_used = execute(
+        chosen, prompt,
+        base_url=base_url, model=model, api_key_compat=api_key_compat,
+    )
 
     # 5. STORE (fire-and-forget, non-blocking)
     duration = time.time() - t0
@@ -337,8 +481,18 @@ def main(argv: list[str] | None = None) -> int:
                    help="Goal to execute (natural language)")
     p.add_argument("--chat", action="store_true",
                    help="Interactive chat mode")
-    p.add_argument("--provider", choices=["auto", "local", "claude", "codex", "gemini"],
-                   default="auto", help="Force a provider (default: auto-select)")
+    p.add_argument("--provider",
+                   choices=["auto", "local", "lm-studio", "vllm", "openai",
+                            "claude", "codex", "gemini"],
+                   default="auto",
+                   help="Force a provider (default: auto-select)")
+    p.add_argument("--base-url", default=None, metavar="URL",
+                   help="Any OpenAI-compatible endpoint, e.g. http://localhost:8080 "
+                        "(llama.cpp / Jan.ai / anything with /v1/chat/completions)")
+    p.add_argument("--model", default=None, metavar="MODEL",
+                   help="Model name to pass to --base-url or --provider vllm/openai")
+    p.add_argument("--compat-key", default=None, metavar="KEY",
+                   help="Bearer token for --base-url (default: 'none')")
     p.add_argument("--api-key", default=None,
                    help="AKR API key for token credits (or set AIOS_API_KEY)")
     p.add_argument("--verbose", "-v", action="store_true")
@@ -351,10 +505,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # Provider
     provider = None if args.provider == "auto" else args.provider
+    base_url = args.base_url or os.environ.get("OPENAI_COMPAT_URL") or None
+    model    = args.model or None
+    compat_k = args.compat_key or os.environ.get("OPENAI_COMPAT_KEY") or None
 
     if args.chat:
         actual = provider or auto_route("", [])
-        chat_loop(actual, api_key, args.verbose)
+        chat_loop(actual, api_key, args.verbose,
+                  base_url=base_url, model=model, api_key_compat=compat_k)
         return 0
 
     if not args.goal:
@@ -362,7 +520,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     result = run_single(args.goal, provider=provider,
-                        api_key=api_key, verbose=args.verbose)
+                        api_key=api_key, verbose=args.verbose,
+                        base_url=base_url, model=model, api_key_compat=compat_k)
 
     if args.as_json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
