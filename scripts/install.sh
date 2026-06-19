@@ -106,11 +106,23 @@ case "\$SUB" in
   primitives)
     exec python3 "\$AIOS_PREFIX/scripts/aios_primitives.py" "\$@"
     ;;
+  do|run)
+    exec python3 "\$AIOS_PREFIX/scripts/aios_head.py" --organic "\$@"
+    ;;
+  loop)
+    exec python3 "\$AIOS_PREFIX/scripts/aios_head.py" --loop "\$@"
+    ;;
+  plan)
+    exec python3 "\$AIOS_PREFIX/scripts/aios_head.py" --plan-only "\$@"
+    ;;
   help|*)
     cat <<EOH
 aios — operator CLI entrypoint
 usage: aios <command> [...args]
   --version          print commit sha
+  do <goal>          run a goal (organic: preamble + turn loop + postamble)
+  loop <goal>        run turn loop only (faster, skip preamble)
+  plan <goal>        generate execution plan without running it
   dispatch ...       AIOS contract dispatch
   memory ...         memoryOS CLI (drafts, audit, ...)
   contract           list contracts
