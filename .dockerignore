@@ -1,0 +1,55 @@
+# Git history
+.git
+.gitmodules
+
+# Submodule directories — aios demo/serve degrade gracefully without them
+hivemind/
+memoryOS/
+CapabilityOS/
+GenesisOS/
+uri/
+
+# External tool clones
+gemini/
+gemini-cli/
+
+# Python cache and build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Runtime state directories
+.local/
+.runs/
+.ai-runs/
+.aios/
+.hivemind/
+.memoryos/
+.agent/
+
+# CI / editor configs
+.github/
+.devcontainer/
+.vscode/
+
+# Secrets — never bake into image
+.env
+.env.*
+
+# Large/generated data
+data/
+raw_exports/
+weights/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+
+# Session artifacts
+artifacts/
+docs/imports/

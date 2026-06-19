@@ -1,6 +1,7 @@
 # AIOS — myworld control plane
 
 [![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
+[![docker](https://github.com/cjw0076/myworld/actions/workflows/docker.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/docker.yml)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
 **AIOS** is a local-first agent operating layer. It wraps provider agent CLIs
@@ -120,6 +121,26 @@ The UI is a conversation thread backed by the organic pipeline: each message
 runs through memory retrieval → tool loop (up to 6 turns) → local LLM
 synthesis → Korean / English answer. Session history persists in the browser;
 conversation context carries across messages in the same tab.
+
+## Docker quickstart
+
+No install needed — pull and run with your Gemini free-tier key:
+
+```sh
+docker run --rm -e GEMINI_API_KEY=your_key_here -p 8741:8741 \
+  ghcr.io/cjw0076/myworld:latest \
+  aios serve --host 0.0.0.0
+```
+
+Then open http://localhost:8741/ in your browser.
+
+The default image command works offline with no key:
+
+```sh
+docker run --rm ghcr.io/cjw0076/myworld:latest
+```
+
+> **Note:** `--host 0.0.0.0` is required when running inside Docker — without it the server binds to the container's loopback only and `-p 8741:8741` has nothing to forward to.
 
 ## Orientation
 

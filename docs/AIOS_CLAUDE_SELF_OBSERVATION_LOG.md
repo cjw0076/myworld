@@ -1414,3 +1414,32 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   Provider fallback 체인 패턴: "로컬(0비용) → 클라우드(API 키) → 에러(이중언어)"는
   AIOS가 다양한 배포 환경에서 graceful degradation하는 핵심 구조. 각 추가 provider는
   `_available()` 체크 + `build_adapters()` 분기 + synthesis fallback 3곳에 동시 추가 필요.
+
+## 2026-06-19 — claude@myworld — Loop 33-34: OpenAI-compat Ollama + deploy-gap audit
+
+- session_id: context-compacted resumption (loop_session_6)
+- mode_breakdown: observe:2 verify:2 decide:3 intervene:3 escalate:0
+- tools_used: Edit, Bash, Read, Agent(fork:research), Agent(Plan:dockerfile)
+- tools_NOT_used: aios_invoke (all work was local code changes)
+
+**Loop 33 — Ollama OpenAI-compat refactor**:
+  - `aios_adapters.py`: switched from `/api/generate` → `/v1/chat/completions`
+  - Added `_http_post_json()` shared helper eliminating 3x urllib boilerplate
+  - `/no_think` system message suppresses qwen3 CoT (qwen3 feature, not a param)
+  - 5 new `OllamaRestAdapterTest` cases: path check, /no_think presence, legacy URL upgrade
+  - LiteLLM blocked (2026-03-24 supply chain incident) — stdlib path chosen deliberately
+  - Lesson: OpenAI-compat unification means future providers reuse the same code path
+
+**Loop 34 — deploy-gap audit + devcontainer fix**:
+  - Research fork found `.devcontainer/setup.sh` was missing `pip install -e .`
+    → Ollama was installed but `aios` CLI was not registered in Codespaces
+  - `.gitignore` cleanup: gemini/, gemini-cli/, artifacts/, docs/imports/ suppressed
+    → monitor watch findings reduced (untracked noise → gitignored)
+  - Test regression fix: test_status_returns_aggregate_json needed {ready, watch, blocked}
+  - `watch` root cause: hivemind repo dirty (ollama scripts, codex@hivemind scope)
+    → non-blocking, hold_for_repo_owner_triage, correct behavior
+
+**pattern_for_absorption**:
+  Research fork while implementing in parallel: fork cost <90k tokens, returned 3
+  concrete gaps. Two closed in same loop. Right ratio: research finds target, implement
+  closes it same turn. Avoid researching without implementing — the value is in closure.
