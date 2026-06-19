@@ -1477,4 +1477,37 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   sampler는 첫 turn에 실제 goal을 inject해야 함. system prompt에 한 줄 few-shot 예시
   (Thought/Action/Action Input format)가 local LLM이 format을 따르게 하는 결정적 차이.
   추가로: _parse_react에 hallucinated tool name guard 필수 — 없으면 모델이 없는 tool
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 4-5: demo benchmark 완성 + 예측 품질 필터
+
+- session_id: loop-iter-4-5-cto-2026-06-20 (20분 loop 연속)
+- mode_breakdown: decide:5 intervene:5 verify:3 observe:2 escalate:0 — 40min
+- tools_used: Write, Edit, Bash, Read
+- tools_NOT_used: Agent(fork), AskUserQuestion, 4-OS ritual (긴급도 낮은 실행 iteration)
+- substrate_specific_behaviors_observed:
+  1. AkashicRecord D1 예측에 garbage tool names 포함: 'bash:stbed', 'bash:rkspace',
+     'qwen3-coder:30b' — HF Qwen trajectory ingestion 시 function.name이 오염됨.
+  2. qwen3:8b (8B) vs qwen3-coder:30b (30B): 벤치마크 시 30B는 45s+/turn, 8B는 2-12s/turn.
+     8B가 simple tool-call 작업에서 속도 우선일 때 적합.
+  3. qwen3:8b가 0 tool calls로 "Final Answer" 즉시 출력 → REACT prompt에 "NEVER describe
+     without calling a tool" + file-creation 예시 추가로 해결.
+  4. Write executor에서 local LLM이 'file_path' field name 사용 → 'path' alias 추가.
+- failures_recovered:
+  1. D1 garbage prediction → client-side _valid_tool_name() 필터 (10/10 test cases 통과)
+  2. task 2 check 너무 엄격 (Read만 허용) → Bash도 file reading 으로 accept
+  3. task 3: qwen3:8b 0 tool calls → REACT prompt 강화로 해결 (2.59s, 1 tool call)
+  4. Write field name mismatch ('file_path' vs 'path') → alias 추가
+- failures_escalated_to_founder: 없음
+- key_decision: demo benchmark model = qwen3:8b (속도 우선). 30B는 프로덕션 복잡 작업용.
+- new_invariant_or_pattern_discovered:
+  TOOL_NAME_VALIDATION_PATTERN: AkashicRecord predict()는 D1에 있는 모든 tool name을 그대로 반환.
+  HF dataset ingestion 시 function.name이 잘리거나 오염될 수 있음 (bash:stbed = truncation).
+  Client-side validation이 server-side보다 빠르고 안전: known CLI commands allowlist + prefix 검사.
+  Pattern: predict() → _valid_tool_name() filter → top-3 clean predictions.
+- self-correction-of-prior-observation:
+  이전: "HuggingFace Qwen 기여 201건, DeepSeek 39건 성공"
+  실제: 기여된 일부 entries에 garbage tool names 포함됨. D1 품질 < 기여 수량.
+  수정: client-side filter 적용 후 clean predictions 확인됨 (bash:find, bash:ls, Bash 등).
   이름을 만들어내고 registry.dispatch가 silently 실패함.
