@@ -498,12 +498,46 @@ def _organ_preamble(goal: str, root: Path) -> dict:
     # grammatical particles that prevent "AIOS가" from matching "AIOS" in memory text.
     mem_task = _korean_keywords(goal) if any('가' <= c <= '힣' for c in goal) else goal
 
-    # Run semantic search in parallel with keyword search subprocess
+    # Run all 4 blocking operations in parallel threads — wall-clock = slowest single op,
+    # not sum of all. Semantic embed, memoryOS, CapabilityOS, and GenesisOS each get
+    # their own thread; results collected via mutable containers after join.
     sem_results: list[dict] = []
+    mem_box: list[dict] = [{"status": "unavailable"}]
+    cap_box: list[dict] = [{"status": "unavailable"}]
+    gen_box: list[dict] = [{"status": "unavailable"}]
+
     def _run_semantic() -> None:
         sem_results.extend(_semantic_retrieve(goal, root, top_n=8))
-    t = _th.Thread(target=_run_semantic, daemon=True)
-    t.start()
+
+    def _run_mem() -> None:
+        mem_box[0] = _shell(
+            [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
+             "--task", mem_task, "--json"],
+            root / "memoryOS",
+        )
+
+    def _run_cap() -> None:
+        cap_box[0] = _shell(
+            [sys.executable, "-m", "capabilityos.cli", "recommend",
+             "--task", goal, "--json"],
+            root / "CapabilityOS",
+        )
+
+    def _run_gen() -> None:
+        gen_box[0] = _shell(
+            [sys.executable, "-m", "genesisos.cli", "critic",
+             "--text", goal[:200], "--json"],
+            root / "GenesisOS",
+        )
+
+    threads = [
+        _th.Thread(target=_run_semantic, daemon=True),
+        _th.Thread(target=_run_mem, daemon=True),
+        _th.Thread(target=_run_cap, daemon=True),
+        _th.Thread(target=_run_gen, daemon=True),
+    ]
+    for t in threads:
+        t.start()
 
     # CapabilityOS: load env scan (cached 1h) to inject real environment context
     _env_scan: dict = {}
@@ -526,14 +560,13 @@ def _organ_preamble(goal: str, root: Path) -> dict:
             ), daemon=True
         ).start()
 
-    mem = _shell([sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
-                  "--task", mem_task, "--json"], root / "memoryOS")
-    cap = _shell([sys.executable, "-m", "capabilityos.cli", "recommend",
-                  "--task", goal, "--json"], root / "CapabilityOS")
-    gen = _shell([sys.executable, "-m", "genesisos.cli", "critic", "--text", goal[:200], "--json"],
-                 root / "GenesisOS")
+    # Wait for all parallel organ calls (max = longest single subprocess, not sum)
+    for t in threads:
+        t.join(timeout=12)
 
-    t.join(timeout=6)  # warm cache <1s; cold embed skipped if >6s (serve without semantic)
+    mem = mem_box[0]
+    cap = cap_box[0]
+    gen = gen_box[0]
 
     mem_data = (mem.get("data") or {}) if mem["status"] == "ok" else {}
     # context build returns `context_items` (int count) not `selected` (list)
