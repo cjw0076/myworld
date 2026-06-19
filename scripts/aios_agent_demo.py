@@ -117,8 +117,10 @@ def _run_task(task: dict, quiet: bool, api_key: str | None) -> dict:
         stdout_buf = io.StringIO()
         stderr_buf = io.StringIO()
 
-        # Build harness args
-        harness_argv = [goal, "--tools", ",".join(resolved), "--json"]
+        # Build harness args — use qwen3:8b for benchmark speed
+        harness_argv = [goal, "--tools", ",".join(resolved), "--json",
+                        "--base-url", "http://localhost:11434",
+                        "--model", "qwen3:8b", "--max-turns", "6"]
         if api_key:
             harness_argv += ["--api-key", api_key]
 

@@ -215,32 +215,38 @@ _TOOL_LIST = "\n".join(
     for name, spec in TOOL_REGISTRY.items()
 )
 
-_REACT_SYSTEM = """You are a task-executing AI agent. You MUST use tools to complete tasks.
+_REACT_SYSTEM = """You are a task-executing AI agent. You MUST call tools — never describe what you would do without calling one.
 
 Available tools:
 {tools}
 
 RULES — follow exactly:
-1. Each response must have EITHER an Action OR a Final Answer, never both.
-2. Use Action when you need a tool. Use Final Answer only when the task is DONE.
-3. Format:
+1. Always start with Thought then Action. NEVER output prose alone.
+2. Use Action to call a tool. Use Final Answer ONLY when the task is fully done.
+3. For file creation tasks, use Bash with: echo or printf or cat > path.
 
-Thought: <one sentence reasoning>
+FORMAT (use EXACTLY):
+
+Thought: <brief plan>
 Action: <ToolName>
 Action Input: {{"key": "value"}}
 
 OR when done:
 
-Thought: task is complete
-Final Answer: <result>
+Final Answer: <outcome>
 
-EXAMPLE:
+EXAMPLES:
 User: list files in /tmp
-Thought: I need to run ls to list the files.
+Thought: I need ls.
 Action: Bash
 Action Input: {{"cmd": "ls /tmp"}}
 
-Now complete the task."""
+User: create /tmp/out.txt with content hello
+Thought: I will use echo to create the file.
+Action: Bash
+Action Input: {{"cmd": "echo 'hello' > /tmp/out.txt"}}
+
+DO NOT describe actions without calling them. ALWAYS call a tool first."""
 
 _ACTION_RE = re.compile(r"\bAction:\s*([A-Za-z][A-Za-z0-9_]*)", re.MULTILINE)
 _ARG_RE    = re.compile(r"Action Input:\s*```(?:json)?\s*(\{.*?\})\s*```|Action Input:\s*(\{.*?\})",
