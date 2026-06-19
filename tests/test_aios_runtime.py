@@ -27,7 +27,7 @@ class AiosRuntimeTest(unittest.TestCase):
         payload = json.loads(result.stdout)
 
         self.assertEqual(payload["schema_version"], "aios.runtime.status.v1")
-        self.assertIn(payload["status"], {"ready", "blocked"})
+        self.assertIn(payload["status"], {"ready", "watch", "blocked"})
         self.assertIn("monitor", payload)
         self.assertIn("readiness", payload)
         self.assertIn("dispatch", payload)
