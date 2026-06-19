@@ -1514,6 +1514,41 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 
 ---
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 8: head early-exit 버그 발견·수정
+
+- session_id: loop-iter-8-cto-2026-06-20
+- mode_breakdown: observe:3 verify:4 intervene:3 decide:2 escalate:0 — 20min
+- tools_used: Read, Edit, Bash
+- tools_NOT_used: Agent(fork), 4-OS ritual
+- substrate_specific_behaviors_observed:
+  1. aios_head.py run_organic_goal + ollama_rest_8b 조합이 90초 이상 소요.
+     preamble (memoryOS+CapabilityOS+GenesisOS CLI 3개 병렬) + turn_loop 8b 모델 = 느림.
+     단순 테스트에 full organic pipeline은 과도 — 30s 타임아웃 사용 시 실패.
+  2. early_exit_hint 버그: "list all python files" 같은 fs 목표에도 모델이
+     `{"done":true}` 즉시 반환. 직접 adapter 호출(preamble 없음)에선 올바르게 tool 호출.
+     → preamble의 memory context + early_exit_hint 조합이 모델 혼란 야기.
+  3. qwen3:8b는 fs.list tool 호출을 정확히 알고 있음 (직접 테스트 확인).
+     문제는 prompt에 early_exit_hint가 너무 광범위하여 fs 목표도 "지식으로 답 가능"으로
+     판단하게 만든 것.
+- failures_recovered:
+  1. early_exit_hint 오지시 → _goal_needs_filesystem() + 조건부 hint 비활성화
+  2. ollama_local provider timeout → ollama_rest/ollama_rest_8b 사용 확인 (HEAD 디폴트 미등록)
+- failures_escalated_to_founder: 없음
+- key_decision:
+  CC4 진행 중. preamble은 완성, turn_loop은 작동. 병목 = 속도(90s+ for 8b organic).
+  CI 테스트엔 fake sampler 사용; 실제 organic pipeline 테스트는 integration test 범위.
+- new_invariant_or_pattern_discovered:
+  EARLY_EXIT_SUPPRESSION_PATTERN: LLM sampler에 "지식으로 답 가능하면 done" 힌트를
+  넣을 때 반드시 도메인 가드 필요. 파일시스템/네트워크/상태 목표는 early exit 억제.
+  Pattern: `early_exit_hint = '' if _goal_needs_filesystem(goal) else '...'`
+  고려: 파일시스템 감지는 keyword 기반(fs_keywords frozenset) — 충분히 넓게 잡아야 함.
+- self-correction-of-prior-observation:
+  이전: "aios_head.py early_exit_hint는 math/concepts에만 적용"
+  실제: 구현상 hint 텍스트가 모호해서 qwen3:8b가 fs 목표도 "general knowledge"로 판단.
+  수정: 명시적 fs 키워드 검사로 hint 비활성화 (8 unit test 통과).
+
+---
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 6-7: test suite 클린 + D1 1500 달성
 
 - session_id: loop-iter-6-7-cto-2026-06-20 (context compaction 이후 재개)
