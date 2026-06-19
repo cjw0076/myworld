@@ -1514,6 +1514,41 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 
 ---
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 9: CC4 organic pipeline 작동 + 2개 버그 수정
+
+- session_id: loop-iter-9-cto-2026-06-20
+- mode_breakdown: verify:4 intervene:4 decide:2 observe:1 escalate:0 — 20min
+- tools_used: Read, Edit, Bash
+- tools_NOT_used: Agent(fork), 4-OS ritual
+- substrate_specific_behaviors_observed:
+  1. _organ_preamble() 병렬화 효과: 3.4s (이전 추정 ~30s). 병렬화가 효과적임.
+     단, preamble 이후 LLM 턴이 ~30s/turn(8b) — total ~90-120s.
+  2. make_provider_sampler() goal 인수 누락: main()에서 goal이 전달되지 않아
+     _goal_needs_filesystem("")가 항상 False → early_exit 억제 작동 안 함.
+     수정 후 fs.list 정상 호출 (tool_calls=4 확인).
+  3. CC5 (web→action): aios_tools.py에 web.search + web.fetch 이미 turn loop에 통합됨.
+     web 결과는 tool observation으로 history에 들어가고 모델이 다음 turn에 act.
+     kernel audit CC5는 이미 완료 상태 (primitives.py 구식 평가).
+- failures_recovered:
+  1. preamble 순차 → 병렬 (3개 subprocess → 4개 thread 동시 실행)
+  2. goal 인수 누락 → main()에 goal=args.goal 추가
+- failures_escalated_to_founder: 없음
+- key_decision:
+  CC4 effective: organic pipeline + local LLM 실제 작동 확인 (tool_calls=4).
+  CC5: 이미 완료 (turn loop에 web tools 통합됨). CC1-CC5 모두 작동.
+  잔여 개선: 속도 (8b + full pipeline ~90-120s)는 프로덕션 이슈, blocker 아님.
+- new_invariant_or_pattern_discovered:
+  SAMPLER_CLOSURE_PARAM_PATTERN: closure 내 goal 기반 로직 (early-exit 판단 등)은
+  반드시 closure 생성 시 goal을 명시 인수로 받아야 함. 기본값("")이면 조건 분기 불능.
+  Pattern: make_provider_sampler(provider, adapters, goal=actual_goal)
+  Antipattern: make_provider_sampler(provider, adapters)  # goal="" → 모든 억제 실패
+- self-correction-of-prior-observation:
+  이전: "CC5 (web→action) 미완"
+  실제: aios_tools.py의 web.search/web.fetch가 이미 turn loop에 통합됨. CC5 완료.
+  수정: kernel_audit.md CC5를 "✅ BUILT" 상태로 업데이트 필요.
+
+---
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 8: head early-exit 버그 발견·수정
 
 - session_id: loop-iter-8-cto-2026-06-20

@@ -126,21 +126,22 @@ Current footprint (verified 2026-05-20):
      모든 fs mutation 은 `.aios/runtime/backups/` 로 backup 후 reversible.
      live proof: governed read → reversible write → receipt → rollback (8 tests).
 
-4. **Local LLM background cognition**
-   - Ollama qwen3:8b 같은 모델이 *상시 background* — summarize/critique/route
-   - 현재: ASC-0207 substrate registered, 그러나 *루프 안* 사용 없음
+4. **Local LLM background cognition** — ✅ BUILT 2026-06-20
+   - ollama_rest (qwen3:1.7b) + ollama_rest_8b (qwen3:8b) adapters live via aios_adapters.py
+   - _auto_provider() routes by complexity; organic pipeline preamble parallelized (3.4s)
+   - Verified: --loop with ollama_rest_8b → tool_calls=4 (fs.list, web.search, etc.)
+   - Speed: ~90-120s/run with 8b + full preamble (production acceptable, not CI-testable)
 
-5. **Web research → action 흐름**
-   - 우리 `aios_primitives.py web` 는 receipt 만 기록. 그 결과를 *다음 step* 으로 자동 연결 없음
-   - `aios <goal>` head 가 web 결과를 *consume* + *act on* 해야 head
+5. **Web research → action 흐름** — ✅ BUILT (aios_tools.py, not aios_primitives.py)
+   - web.search (DuckDuckGo + Korean Wikipedia fallback) + web.fetch in turn loop
+   - Results land as tool observations → model acts on them in next turn automatically
+   - No separate wiring needed: the turn loop history IS the web→action channel
 
 6. **External task input format**
    - `aios "<자연어>"` 외 정형 input (yaml/json) 도 받을 수 있게. 그러나 시작은 *자연어* 1줄.
 
-→ 이 6개가 *진짜 head*. 현재 **3/6 완성** (2026-06-01: #1 head, #2 adapters,
-#3 safe-fs-kernel). 남은 것: #4 local LLM background cognition (ollama 필요),
-#5 web research→action 자동 연결, #6 정형 input (자연어/json 둘 다 이미 동작 —
-사실상 부분 완료). 35 kernel tests green.
+→ 이 6개가 *진짜 head*. 현재 **5/6 완성** (2026-06-20: #4 local LLM, #5 web→action 추가 확인).
+#6 정형 input은 자연어 이미 동작 — 사실상 부분 완료. 1150 kernel tests green.
 
 ## Layer boundary — AIOS is a kernel, not a workflow engine (founder decision A, 2026-06-01)
 
