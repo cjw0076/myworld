@@ -335,6 +335,7 @@ def build_parser() -> argparse.ArgumentParser:
             "ingest-conversations",
             "behavior",
             "agent",
+            "harness",
             "librarian",
             "setup",
             "capability-feedback",
@@ -432,6 +433,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "agent":
         cmd = [sys.executable, (root / "scripts" / "aios_agent_system.py").as_posix(), *args.args]
+        return run_delegate(cmd, cwd=Path.cwd())
+
+    if args.cmd == "harness":
+        cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *args.args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "librarian":
