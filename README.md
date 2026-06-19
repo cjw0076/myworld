@@ -21,12 +21,15 @@ sibling OS repos:
 
 **Easiest — no install needed:** click the badge above to open in GitHub Codespaces (browser IDE, free tier available). Then run `aios demo` in the terminal.
 
-Or locally:
+Or locally (3-line quickstart):
 
 ```sh
 git clone https://github.com/cjw0076/myworld && cd myworld
-python bin/aios demo        # or: bin/aios demo
+pip install -e .
+aios demo
 ```
+
+After `pip install -e .` the `aios` command is registered globally — no need for `python bin/aios` or activating a virtualenv each time.
 
 It shows the one idea AIOS is built around: the AI only *proposes*, then plain
 deterministic code checks the part that has to be exact — and **rejects** the

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=45"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aios-os"
+version = "0.1.0"
+description = "AIOS — personal AI Operating System (control plane)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["ai", "agent", "llm", "local-first", "personal-ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+# No required PyPI deps — AIOS uses stdlib + optional providers.
+# Install extras below for the provider you want.
+dependencies = []
+
+[project.optional-dependencies]
+gemini  = ["google-generativeai"]
+ollama  = []          # Ollama is a local binary — install via aios setup apply
+litellm = ["litellm"] # future: unified provider layer
+
+[project.scripts]
+aios = "aios_launcher:main"
+
+[tool.setuptools]
+# aios_launcher lives in scripts/ — expose it as a top-level module for the
+# entry_point. Editable install (-e) keeps the launcher at its original path
+# so launcher_relative_root() resolves to the correct myworld/ root.
+package-dir = {"" = "scripts"}
+py-modules  = ["aios_launcher"]
