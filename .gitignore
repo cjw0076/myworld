@@ -1,3 +1,6 @@
+# Product repos — URI is a consumer of AIOS, not part of AIOS core
+uri/
+
 # Local runtime state
 .local/
 .runs/

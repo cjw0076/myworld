@@ -13,11 +13,6 @@
 	url = https://github.com/cjw0076/CapabilityOS.git
 	ignore = dirty
 
-[submodule "uri"]
-	path = uri
-	url = https://github.com/cjw0076/uri-v3.git
-	ignore = dirty
-
 [submodule "GenesisOS"]
 	path = GenesisOS
 	url = https://github.com/cjw0076/GenesisOS.git

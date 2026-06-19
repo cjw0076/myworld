@@ -10,9 +10,11 @@ never double-process. Cursor stored at .aios/event_processor_cursor.
 
 Handlers registered (extensible):
   self_check  → log failures; trigger genesis critic on FAILURE_REAL
-  uri-work    → auto-attribution when uri-work:paid event emitted
   memory      → forward to MemoryOS memory pulse summary
   genesis     → accumulate for periodic challenge refresh
+
+Note: uri-work handler removed — URI product events are handled inside the
+URI repo (uri/scripts/uri_work.py). AIOS core does not depend on URI.
 
 Run modes:
   once   — process all pending events then exit (cron / shell call)
@@ -129,39 +131,6 @@ def _handle_self_check(event: dict, root: Path, state: ProcessorState) -> None:
         _log_alert(root, "DISPATCH_PARSE_BROKEN — run: scripts/aios_dispatch.py repair", payload_line)
 
 
-def _handle_uri_work(event: dict, root: Path, state: ProcessorState) -> None:
-    """When a uri-work:paid event arrives, auto-trigger attribution if not yet run."""
-    payload = event.get("payload", {})
-    event_type = payload.get("eventType", "")
-    if event_type != "uri-work:paid":
-        return
-
-    job_id = payload.get("jobId")
-    if not job_id:
-        return
-
-    # check if ledger already has an entry for this job
-    ledger_path = root / ".aios" / "uri-work" / "ledger.jsonl"
-    if ledger_path.exists():
-        for line in ledger_path.read_text(encoding="utf-8").splitlines():
-            try:
-                rec = json.loads(line)
-                if rec.get("jobId") == job_id and rec.get("kind") == "attribution":
-                    return  # already attributed
-            except json.JSONDecodeError:
-                pass
-
-    # invoke attribution
-    result = subprocess.run(
-        [sys.executable, str(_SCRIPT_DIR / "aios_uri_work.py"),
-         "--root", str(root), "job", "close", "--id", job_id, "--paid",
-         "--evidence", f"event-processor:auto:{now_iso()}"],
-        capture_output=True, text=True, timeout=30
-    )
-    state.dispatched_handlers.append(f"uri-work:attribution:{job_id}")
-    if result.returncode != 0:
-        _log_alert(root, f"uri-work auto-attribution failed for {job_id}", result.stderr[:200])
-
 
 def _invoke_genesis_on_failures(root: Path, state: ProcessorState) -> None:
     """Invoke GenesisOS critic on accumulated AIOS failures (advisory only)."""
@@ -210,9 +179,8 @@ def _dispatch(event: dict, root: Path, state: ProcessorState) -> None:
 
     if name == "aios-self-check":
         _handle_self_check(event, root, state)
-    elif name.startswith("uri-work") or payload.get("eventType", "").startswith("uri-work"):
-        _handle_uri_work(event, root, state)
     # capability / memory / hive pulses: currently just counted, not re-dispatched
+    # uri-work events: handled inside uri repo — AIOS core ignores them
     state.processed_total += 1
 
 

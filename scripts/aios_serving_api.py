@@ -203,6 +203,10 @@ class Handler(BaseHTTPRequestHandler):
                 "rate_limit": f"{_RATE_MAX_REQUESTS} req/{_RATE_WINDOW}s per IP",
                 "session_ttl_seconds": _SESSION_TTL,
             })
+        elif path == "/neural-map":
+            self._serve_file(SERVING_DIR / "neural-map.html", "text/html; charset=utf-8")
+        elif path == "/neural-map-data":
+            self._handle_neural_map_data()
         elif path in ("/favicon.ico", "/.well-known/appspecific/com.chrome.devtools.json"):
             self.send_response(204)
             self.end_headers()
@@ -400,6 +404,56 @@ class Handler(BaseHTTPRequestHandler):
         self._cors_headers()
         self.end_headers()
         self.wfile.write(data)
+
+    def _handle_neural_map_data(self):
+        from urllib.parse import parse_qs
+        qs = parse_qs(urlparse(self.path).query)
+        view = qs.get("view", ["curated"])[0]
+        if view not in ("curated", "raw"):
+            view = "curated"
+        try:
+            limit = max(50, min(2000, int(qs.get("limit", ["500"])[0])))
+        except ValueError:
+            limit = 500
+        include_drafts = qs.get("drafts", ["false"])[0].lower() == "true"
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(SCRIPTS_DIR))
+            memoryos_root = ROOT / "memoryOS"
+            import importlib
+            spec = importlib.util.spec_from_file_location(
+                "memoryos_nm",
+                memoryos_root / "memoryos" / "audit.py",
+            )
+            # Use neural-map export via CLI subprocess to stay isolated
+            import subprocess
+            cmd = [
+                _sys.executable, "-m", "memoryos",
+                "--root", str(memoryos_root),
+                "neural-map", "export",
+                "--view", view,
+                "--limit", str(limit),
+                "--json",
+            ]
+            if include_drafts:
+                cmd.append("--include-drafts")
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30,
+                cwd=str(memoryos_root),
+            )
+            if result.returncode != 0:
+                self._json({"error": result.stderr[:500] or "neural-map export failed"}, status=500)
+                return
+            payload = json.loads(result.stdout)
+            data = json.dumps(payload, ensure_ascii=False).encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self._cors_headers()
+            self.end_headers()
+            self.wfile.write(data)
+        except Exception as exc:
+            self._json({"error": str(exc)}, status=500)
 
     def _json(self, obj: dict, status: int = 200):
         data = json.dumps(obj, ensure_ascii=False).encode()
