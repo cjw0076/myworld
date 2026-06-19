@@ -486,11 +486,9 @@ export default {
       return handleGraph(env, url);
     }
 
-    return json({ error: "not found", endpoints: [
-      "GET  /health", "GET  /status", "GET  /root",
-      "GET  /proof/{id}", "POST /verify",
-      "POST /init", "POST /embed",
-      "POST /contribute", "POST /sync",
-    ]}, 404);
+    // Fall through to static assets (index.html, galaxy.html, etc.)
+    if (env.ASSETS) return env.ASSETS.fetch(request);
+
+    return json({ error: "not found" }, 404);
   },
 };

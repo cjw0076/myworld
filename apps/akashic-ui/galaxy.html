@@ -247,7 +247,9 @@
 <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1/dist/3d-force-graph.min.js"></script>
 
 <script>
-const API = "https://aios-akashic.cjw070690.workers.dev";
+const API = (window.location.protocol === "file:" || window.location.hostname === "localhost")
+  ? "https://aios-akashic.cjw070690.workers.dev"
+  : "";
 
 const COLORS = {
   code:          "#4fc3f7",

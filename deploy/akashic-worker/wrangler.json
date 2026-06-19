@@ -1,0 +1,20 @@
+{
+  "name": "aios-akashic",
+  "main": "src/worker.js",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "../../apps/akashic-ui",
+    "binding": "ASSETS"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "akashic-record",
+      "database_id": "758a9f45-30bf-4ff6-980c-b22ee617a21e"
+    }
+  ],
+  "workers_dev": true
+}

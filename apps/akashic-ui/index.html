@@ -351,7 +351,7 @@
     <div class="live-dot"></div>
     <span id="hdr-count">Loading…</span>
     &nbsp;·&nbsp;
-    <a href="galaxy.html" style="color:var(--cyan);text-decoration:none;font-size:12px;border:1px solid rgba(79,195,247,0.3);border-radius:6px;padding:3px 10px;transition:background 0.15s" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='none'">⊕ 3D Galaxy</a>
+    <a href="/galaxy" style="color:var(--cyan);text-decoration:none;font-size:12px;border:1px solid rgba(79,195,247,0.3);border-radius:6px;padding:3px 10px;transition:background 0.15s" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='none'">⊕ 3D Galaxy</a>
     &nbsp;·&nbsp;
     <span class="badge">v1</span>
   </div>
@@ -490,7 +490,9 @@
 </footer>
 
 <script>
-const API = "https://aios-akashic.cjw070690.workers.dev";
+const API = (window.location.protocol === "file:" || window.location.hostname === "localhost")
+  ? "https://aios-akashic.cjw070690.workers.dev"
+  : "";
 
 // ── Format helpers ──────────────────────────────────────────────────────────
 function fmt(n) { return Number(n).toLocaleString(); }
