@@ -836,23 +836,79 @@ def _akashic_request(endpoint: str, payload: dict, timeout: int = 15) -> dict:
         return json.loads(resp.read())
 
 
+def _get_stored_api_key() -> str | None:
+    """Read API key from ~/.aios/config.json or AIOS_API_KEY env."""
+    import os
+    key = os.environ.get("AIOS_API_KEY", "")
+    if key:
+        return key
+    cfg_path = Path.home() / ".aios" / "config.json"
+    if cfg_path.exists():
+        try:
+            cfg = json.loads(cfg_path.read_text())
+            return cfg.get("api_key") or None
+        except Exception:
+            pass
+    return None
+
+
+def _save_api_key(api_key: str) -> None:
+    cfg_path = Path.home() / ".aios" / "config.json"
+    cfg_path.parent.mkdir(parents=True, exist_ok=True)
+    cfg: dict = {}
+    if cfg_path.exists():
+        try:
+            cfg = json.loads(cfg_path.read_text())
+        except Exception:
+            pass
+    cfg["api_key"] = api_key
+    cfg_path.write_text(json.dumps(cfg, indent=2))
+
+
+def register_account(label: str = "", server: str | None = None) -> dict:
+    """Register a new AKR token account. Saves api_key to ~/.aios/config.json."""
+    global AKASHIC_SERVER
+    if server:
+        AKASHIC_SERVER = server
+
+    existing = _get_stored_api_key()
+    if existing:
+        return {"status": "already_registered", "api_key": existing,
+                "note": "Use `aios behavior balance` to check your balance"}
+
+    result = _akashic_request("/register", {"label": label or "aios-cli"})
+    if "api_key" in result:
+        _save_api_key(result["api_key"])
+    return result
+
+
 def contribute_to_global(
     memories: list[dict] | None = None,
     server: str | None = None,
+    opt_in: frozenset | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
     """Push local behavioral memories to Global AkashicRecord (opt-in).
 
     If memories is None, reads all agent_behavior memories from local store.
-    Returns {total, ok, dup, skip, errors}.
+    Returns {total, ok, dup, skip, errors, earned_akr}.
     """
     global AKASHIC_SERVER
     if server:
         AKASHIC_SERVER = server
 
     if memories is None:
-        memories = load_behavior_memories()
+        all_mems = load_behavior_memories()
+        if opt_in:
+            memories = [m for m in all_mems if m.get("category", "unknown") in opt_in]
+        else:
+            memories = all_mems
 
-    ok = dup = skip = err = 0
+    # Resolve API key
+    key = api_key or _get_stored_api_key() or ""
+
+    import urllib.request as _ur
+    ok = dup = skip = err = earned = 0
     for mem in memories:
         content = mem.get("content", "")
         if not content:
@@ -870,15 +926,24 @@ def contribute_to_global(
             "category":   mem.get("category", "unknown"),
             "provider":   mem.get("provider", "unknown"),
             "dataset":    mem.get("dataset", ""),
+            "os_origin":  mem.get("os_origin", "myworld"),
             "tool_freq":  tool_freq,
             "top_tools":  mem.get("top_tools", [])[:10],
             "confidence": float(mem.get("confidence", 0.75)),
         }
         try:
-            resp = _akashic_request("/contribute", payload)
+            headers = {"Content-Type": "application/json"}
+            if key:
+                headers["X-AIOS-Key"] = key
+            body = json.dumps(payload).encode()
+            req = _ur.Request(AKASHIC_SERVER + "/contribute", data=body,
+                              headers=headers, method="POST")
+            with _ur.urlopen(req, timeout=15) as r:
+                resp = json.loads(r.read())
             status_val = resp.get("status", "")
             if status_val == "ok":
                 ok += 1
+                earned += resp.get("earned_akr") or 0
             elif status_val == "duplicate":
                 dup += 1
             else:
@@ -887,12 +952,13 @@ def contribute_to_global(
             err += 1
 
     return {
-        "server":  AKASHIC_SERVER,
-        "total":   len(memories),
-        "ok":      ok,
-        "dup":     dup,
-        "skip":    skip,
-        "errors":  err,
+        "server":     AKASHIC_SERVER,
+        "total":      len(memories),
+        "ok":         ok,
+        "dup":        dup,
+        "skip":       skip,
+        "errors":     err,
+        "earned_akr": earned,
     }
 
 
@@ -1126,11 +1192,25 @@ def main(argv: list[str] | None = None) -> int:
     adp.add_argument("--dry-run", action="store_true")
     adp.add_argument("--json", dest="as_json", action="store_true")
 
+    # register — create AKR token account
+    reg = sub.add_parser("register",
+                         help="Create AKR token account on AkashicRecord (early users get 500 AKR)")
+    reg.add_argument("--label", default="",
+                     help="Human-readable label for this installation")
+    reg.add_argument("--server", default=None)
+    reg.add_argument("--json", dest="as_json", action="store_true")
+
     # contribute — push local memories to Global AkashicRecord
     con = sub.add_parser("contribute",
                          help="Push local behavioral memories to Global AkashicRecord")
     con.add_argument("--server", default=None,
                      help="Override server URL (default: $AIOS_AKASHIC_URL or bundled)")
+    con.add_argument("--opt-in", default="code,docs",
+                     help="Categories to include (code,docs,data,personal)")
+    con.add_argument("--api-key", default=None,
+                     help="AKR API key — override AIOS_API_KEY env var")
+    con.add_argument("--silent", action="store_true",
+                     help="Suppress all output (for hook invocation)")
     con.add_argument("--json", dest="as_json", action="store_true")
 
     # sync — pull from Global AkashicRecord
@@ -1217,14 +1297,37 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  rows={result.get('converted')} written={result.get('written')}")
         return 0
 
+    if args.cmd == "register":
+        result = register_account(label=getattr(args, "label", ""), server=args.server)
+        if args.as_json:
+            print(json.dumps(result, ensure_ascii=False))
+        else:
+            if result.get("status") == "already_registered":
+                print(f"[register] already registered — key stored at ~/.aios/config.json")
+            else:
+                print(f"[register] ✓ api_key={result.get('api_key','?')}")
+                print(f"  balance={result.get('balance')} AKR  "
+                      f"early_user={result.get('early_user')}  "
+                      f"user_number=#{result.get('user_number','?')}")
+                print(f"  {result.get('bonus_reason','')}")
+        return 0
+
     if args.cmd == "contribute":
-        result = contribute_to_global(server=args.server)
+        opt_in_set: frozenset | None = None
+        if hasattr(args, "opt_in") and args.opt_in:
+            opt_in_set = frozenset(c.strip() for c in args.opt_in.split(",")) & OPT_IN_CATEGORIES
+        api_key = getattr(args, "api_key", None) or None
+        result = contribute_to_global(server=args.server, opt_in=opt_in_set, api_key=api_key)
+        if getattr(args, "silent", False):
+            return 0
         if args.as_json:
             print(json.dumps(result, ensure_ascii=False))
         else:
             print(f"[contribute] server={result['server']}")
             print(f"  total={result['total']} ok={result['ok']} "
                   f"dup={result['dup']} skip={result['skip']} err={result['errors']}")
+            if result.get("earned_akr"):
+                print(f"  earned={result['earned_akr']} AKR")
         return 0
 
     if args.cmd == "verify":

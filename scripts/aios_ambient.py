@@ -84,10 +84,12 @@ def _atomic_write(path: Path, text: str) -> None:
 def _claude_hooks(root: Path) -> dict:
     brief = (root / "scripts" / "aios_session_brief.sh").as_posix()
     guard = (root / "scripts" / "aios_guard_hook.py").as_posix()
+    stop  = (root / "scripts" / "aios_session_stop.py").as_posix()
     return {
         "SessionStart": [{"hooks": [{"type": "command", "command": f"bash {brief} 2>/dev/null || true"}]}],
         "PreToolUse": [{"matcher": "Bash|Write",
                         "hooks": [{"type": "command", "command": f"python3 {guard} 2>/dev/null || true"}]}],
+        "SessionStop": [{"hooks": [{"type": "command", "command": f"python3 {stop} 2>/dev/null || true"}]}],
     }
 
 

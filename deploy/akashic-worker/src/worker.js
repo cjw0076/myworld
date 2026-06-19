@@ -22,8 +22,131 @@ const MAX_CONTENT = 500;   // chars — enough for behavioral summary
 const CORS = {
   "Access-Control-Allow-Origin":  "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, X-AIOS-Version",
+  "Access-Control-Allow-Headers": "Content-Type, X-AIOS-Version, X-AIOS-Key",
 };
+
+// ── Token Economy ─────────────────────────────────────────────────────────────
+const EARLY_THRESHOLD   = 1000;   // first N users get large airdrop
+const EARLY_BONUS       = 500;    // AKR — early adopter airdrop
+const NEW_USER_BONUS    = 100;    // AKR — standard welcome
+const CONTRIBUTE_REWARD = 10;     // AKR per session contributed
+const DOOM_LOOP_BONUS   = 5;      // AKR extra when doom_loop detected
+const CROSS_OS_BONUS    = 10;     // AKR extra for cross-OS sessions
+const PREDICT_COST      = 1;      // AKR per /predict call
+const SYNC_COST         = 1;      // AKR per /sync call
+const FREE_DAILY        = 10;     // free queries/day per IP (no key)
+
+async function generateApiKey() {
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return "akr_" + [...bytes].map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function getAccount(env, apiKey) {
+  const raw = await env.BALANCES.get("key:" + apiKey);
+  return raw ? JSON.parse(raw) : null;
+}
+
+async function saveAccount(env, apiKey, account) {
+  await env.BALANCES.put("key:" + apiKey, JSON.stringify(account));
+}
+
+async function checkTokens(env, apiKey, cost, ipAddr) {
+  if (!apiKey) {
+    const today   = new Date().toISOString().slice(0, 10);
+    const freeKey = "free:" + (ipAddr || "unknown") + ":" + today;
+    const used    = parseInt(await env.BALANCES.get(freeKey) || "0");
+    if (used >= FREE_DAILY) {
+      return { ok: false, error: "free tier exhausted (10/day) — register for AKR tokens: POST /register" };
+    }
+    await env.BALANCES.put(freeKey, String(used + 1), { expirationTtl: 86400 });
+    return { ok: true, free: true, free_remaining: FREE_DAILY - used - 1 };
+  }
+  const account = await getAccount(env, apiKey);
+  if (!account) return { ok: false, error: "invalid X-AIOS-Key" };
+  if (account.balance < cost) {
+    return { ok: false, error: `insufficient AKR: have ${account.balance}, need ${cost}. Earn by contributing: POST /contribute` };
+  }
+  account.balance -= cost;
+  await saveAccount(env, apiKey, account);
+  return { ok: true, remaining: account.balance };
+}
+
+async function handleRegister(req, env) {
+  let body = {};
+  try { body = await req.json(); } catch {}
+  const label = String(body.label || "").slice(0, 80);
+
+  const totalRaw = await env.BALANCES.get("total_registered");
+  const total    = parseInt(totalRaw || "0");
+  const isEarly  = total < EARLY_THRESHOLD;
+  const bonus    = isEarly ? EARLY_BONUS : NEW_USER_BONUS;
+  const apiKey   = await generateApiKey();
+
+  const account = {
+    balance:           bonus,
+    contributed_count: 0,
+    registered_at:     new Date().toISOString(),
+    early_user:        isEarly,
+    user_number:       total + 1,
+    label:             label || null,
+  };
+  await saveAccount(env, apiKey, account);
+  await env.BALANCES.put("total_registered", String(total + 1));
+
+  return json({
+    api_key:    apiKey,
+    balance:    bonus,
+    early_user: isEarly,
+    user_number: total + 1,
+    bonus_reason: isEarly
+      ? `Early adopter airdrop — you are user #${total + 1} of the first ${EARLY_THRESHOLD}`
+      : "Welcome bonus",
+    economy: {
+      predict_cost:      PREDICT_COST,
+      sync_cost:         SYNC_COST,
+      contribute_reward: CONTRIBUTE_REWARD,
+    },
+    note: "Save this api_key. Pass it as: X-AIOS-Key: <key>",
+  });
+}
+
+async function handleBalance(req, env) {
+  const apiKey = req.headers.get("X-AIOS-Key") || "";
+  if (!apiKey) return json({ error: "X-AIOS-Key header required" }, 401);
+  const account = await getAccount(env, apiKey);
+  if (!account) return json({ error: "invalid API key" }, 404);
+  return json({
+    balance:           account.balance,
+    contributed_count: account.contributed_count,
+    early_user:        account.early_user,
+    user_number:       account.user_number,
+    registered_at:     account.registered_at,
+  });
+}
+
+async function handleEconomy(env) {
+  const total = parseInt(await env.BALANCES.get("total_registered") || "0");
+  return json({
+    token_name:                "AKR",
+    description:               "AkashicRecord behavioral data credit",
+    total_registered:          total,
+    early_user_spots_remaining: Math.max(0, EARLY_THRESHOLD - total),
+    early_user_bonus:          EARLY_BONUS,
+    new_user_bonus:            NEW_USER_BONUS,
+    earn: {
+      contribute_session:      CONTRIBUTE_REWARD,
+      doom_loop_detected_bonus: DOOM_LOOP_BONUS,
+      cross_os_bonus:          CROSS_OS_BONUS,
+    },
+    spend: {
+      predict_per_query:       PREDICT_COST,
+      sync_per_query:          SYNC_COST,
+    },
+    free_tier:                 { queries_per_day: FREE_DAILY },
+    purchase:                  { "100_akr": "$1.00", minimum: "$5.00" },
+  });
+}
 
 // ── Privacy guard ─────────────────────────────────────────────────────────────
 const BLOCKED = [
@@ -174,13 +297,38 @@ async function handleContribute(req, env) {
     now,
   ).run();
 
-  return json({ status: "ok", id, category, provider, os_origin: safeOS, embedded_dim: vector.length });
+  // Credit tokens if key provided
+  const apiKey = req.headers.get("X-AIOS-Key") || "";
+  let earned = 0;
+  if (apiKey) {
+    const account = await getAccount(env, apiKey);
+    if (account) {
+      let reward = CONTRIBUTE_REWARD;
+      // Bonus signals
+      const toolsArr = Array.isArray(topTools) ? topTools : [];
+      if (toolsArr.some(t => String(t).toLowerCase().includes("doom"))) reward += DOOM_LOOP_BONUS;
+      const validOS = new Set(["hivemind","memoryos","capabilityos","genesisos"]);
+      if (validOS.has(safeOS)) reward += CROSS_OS_BONUS;
+      account.balance           += reward;
+      account.contributed_count  = (account.contributed_count || 0) + 1;
+      await saveAccount(env, apiKey, account);
+      earned = reward;
+    }
+  }
+
+  return json({ status: "ok", id, category, provider, os_origin: safeOS, embedded_dim: vector.length,
+                earned_akr: earned || null });
 }
 
 async function handleSync(req, env) {
   let body;
   try { body = await req.json(); }
   catch { return json({ error: "invalid JSON" }, 400); }
+
+  const apiKey  = req.headers.get("X-AIOS-Key") || "";
+  const ipAddr  = req.headers.get("CF-Connecting-IP") || "";
+  const tok = await checkTokens(env, apiKey, SYNC_COST, ipAddr);
+  if (!tok.ok) return json({ error: tok.error, code: "insufficient_tokens" }, 402);
 
   const query   = String(body.query || body.context || "").slice(0, MAX_CONTENT);
   const topK    = Math.min(20, Math.max(1, Number(body.top_k) || 10));
@@ -227,6 +375,11 @@ async function handlePredict(req, env) {
   let body;
   try { body = await req.json(); }
   catch { return json({ error: "invalid JSON" }, 400); }
+
+  const apiKey  = req.headers.get("X-AIOS-Key") || "";
+  const ipAddr  = req.headers.get("CF-Connecting-IP") || "";
+  const tok = await checkTokens(env, apiKey, PREDICT_COST, ipAddr);
+  if (!tok.ok) return json({ error: tok.error, code: "insufficient_tokens" }, 402);
 
   const context    = String(body.context || "").slice(0, MAX_CONTENT);
   const candidates = Array.isArray(body.candidates) ? body.candidates.map(String) : null;
@@ -277,6 +430,9 @@ async function handlePredict(req, env) {
     n_similar:   scored.length,
     top_sim:     scored[0]?.sim.toFixed(4),
     meta: { model: EMBED_MODEL, n_searched: rows.results?.length || 0 },
+    tokens: tok.free
+      ? { free_remaining: tok.free_remaining }
+      : { akr_remaining: tok.remaining },
   });
 }
 
@@ -409,12 +565,19 @@ async function handleCheckpointsList(env) {
   });
 }
 
-async function handleGraph(env, urlObj) {
+async function handleGraph(env, urlObj, ctx) {
   const params   = urlObj.searchParams;
-  const limit    = Math.min(300, Math.max(20, parseInt(params.get("limit") || "150")));
-  const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.80")));
+  // Cap at 200 nodes — beyond this pairwise sim is O(N²) and takes >5s
+  const limit    = Math.min(200, Math.max(20, parseInt(params.get("limit") || "120")));
+  const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.75")));
   const category = params.get("category") || null;
   const stratify = params.get("stratify") !== "false"; // default true
+
+  // CDN pattern: serve from Cloudflare edge cache (10-min TTL) — avoids O(N²) per request
+  const cache    = caches.default;
+  const cacheKey = new Request(urlObj.toString());
+  const cached   = await cache.match(cacheKey);
+  if (cached) return cached;
 
   let rows;
   if (category) {
@@ -499,11 +662,18 @@ async function handleGraph(env, urlObj) {
   // Strip embeddings before returning
   const nodes = entries.map(({ vec, norm, ...rest }) => rest);
 
-  return json({
+  const result = json({
     nodes,
     links,
     meta: { total_nodes: nodes.length, total_links: links.length, min_sim: minSim, top_k: topK },
   });
+
+  // Cache at Cloudflare edge for 10 minutes — CDN pattern, avoids re-running O(N²)
+  const toCache = result.clone();
+  toCache.headers.set("Cache-Control", "s-maxage=600");
+  if (ctx) ctx.waitUntil(cache.put(cacheKey, toCache));
+
+  return result;
 }
 
 async function handleInit(env) {
@@ -518,7 +688,7 @@ async function handleInit(env) {
 // ── Main entry ────────────────────────────────────────────────────────────────
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url    = new URL(request.url);
     const method = request.method.toUpperCase();
 
@@ -549,6 +719,15 @@ export default {
     if (url.pathname === "/checkpoints" && method === "GET") {
       return handleCheckpointsList(env);
     }
+    if (url.pathname === "/register" && method === "POST") {
+      return handleRegister(request, env);
+    }
+    if (url.pathname === "/balance" && method === "GET") {
+      return handleBalance(request, env);
+    }
+    if (url.pathname === "/economy" && method === "GET") {
+      return handleEconomy(env);
+    }
     if (url.pathname === "/init" && method === "POST") {
       return handleInit(env);
     }
@@ -565,7 +744,7 @@ export default {
       return handlePredict(request, env);
     }
     if (url.pathname === "/graph" && method === "GET") {
-      return handleGraph(env, url);
+      return handleGraph(env, url, ctx);
     }
 
     // Fall through to static assets (index.html, galaxy.html, etc.)

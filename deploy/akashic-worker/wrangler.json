@@ -16,5 +16,11 @@
       "database_id": "758a9f45-30bf-4ff6-980c-b22ee617a21e"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "BALANCES",
+      "id": "6b394b6519404a4e9e0dbdb9c138623b"
+    }
+  ],
   "workers_dev": true
 }
