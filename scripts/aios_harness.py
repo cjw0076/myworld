@@ -7,9 +7,10 @@ a real TOOL_REGISTRY (Bash/Read/Edit/Write/WebSearch), and AkashicRecord
 contribution at session end.
 
 Usage:
-    python aios_harness.py "list files in current directory"
-    python aios_harness.py "fix bug in auth.py" --dry-run
-    aios harness "task"                          # via launcher
+    aios do "list files in current directory"    # zero-friction shortcut
+    aios do "fix the bug in auth.py"             # auto-selects qwen3:8b
+    aios harness "task"                          # explicit harness entry
+    python aios_harness.py "task" --dry-run      # dry run (no tool execution)
 
 Design principle: works with ANY local LLM via ReAct text parsing —
 no function-calling API required.

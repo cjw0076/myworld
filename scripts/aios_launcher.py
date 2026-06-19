@@ -352,6 +352,7 @@ def build_parser() -> argparse.ArgumentParser:
             "open",
             "stop",
             "serve",
+            "do",
         ],
     )
     parser.add_argument("args", nargs=argparse.REMAINDER)
@@ -439,6 +440,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "harness":
         cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *args.args]
+        return run_delegate(cmd, cwd=Path.cwd())
+
+    if args.cmd == "do":
+        # Zero-friction task execution: aios do "goal" → harness with smart defaults
+        # Automatically picks qwen3:8b if available, falls back to auto-route
+        harness_args = list(args.args)
+        if "--model" not in " ".join(harness_args):
+            harness_args += ["--base-url", "http://localhost:11434", "--model", "qwen3:8b"]
+        cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *harness_args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "librarian":
