@@ -2,6 +2,7 @@
 
 [![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
 [![docker](https://github.com/cjw0076/myworld/actions/workflows/docker.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/docker.yml)
+[![PyPI](https://img.shields.io/pypi/v/aios-os)](https://pypi.org/project/aios-os/)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
 **AIOS** is a local-first agent operating layer. It wraps provider agent CLIs
@@ -77,8 +78,17 @@ Use `--json` for structured output.
 ## Install
 
 ```sh
+# Option 1 — PyPI (recommended, no git clone needed):
+pip install aios-os
+aios demo
+
+# Option 2 — one-command full install (clones all repos + provisions Ollama):
 curl -fsSL https://raw.githubusercontent.com/cjw0076/myworld/main/install.sh | sh
 aios setup apply        # provision local models (qwen3:1.7b / qwen3:8b via Ollama)
+
+# Option 3 — from source (developers):
+git clone https://github.com/cjw0076/myworld && cd myworld
+pip install -e .
 ```
 
 Full instructions: [`docs/AIOS_INSTALL.md`](docs/AIOS_INSTALL.md).

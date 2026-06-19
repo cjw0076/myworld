@@ -5,16 +5,29 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aios-os"
 version = "0.1.0"
-description = "AIOS — personal AI Operating System (control plane)"
+description = "AIOS — personal AI Operating System: local-first agent head coordinating provider CLIs, local LLMs, memory, and capabilities"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [{name = "Jaewon Choi", email = "cjw070690@gmail.com"}]
 license = { text = "MIT" }
-keywords = ["ai", "agent", "llm", "local-first", "personal-ai"]
+keywords = ["ai", "agent", "llm", "local-first", "personal-ai", "aios", "autonomous-agent"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Environment :: Console",
 ]
+
+[project.urls]
+Homepage = "https://github.com/cjw0076/myworld"
+Repository = "https://github.com/cjw0076/myworld"
+"Bug Tracker" = "https://github.com/cjw0076/myworld/issues"
+Documentation = "https://github.com/cjw0076/myworld/blob/main/README.md"
 
 # No required PyPI deps — AIOS uses stdlib + optional providers.
 # Install extras below for the provider you want.
@@ -23,7 +36,6 @@ dependencies = []
 [project.optional-dependencies]
 gemini  = ["google-generativeai"]
 ollama  = []          # Ollama is a local binary — install via aios setup apply
-litellm = ["litellm"] # future: unified provider layer
 
 [project.scripts]
 aios = "aios_launcher:main"
