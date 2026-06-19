@@ -1018,7 +1018,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.organic:
-        sampler = make_provider_sampler(args.provider, adapters)
+        sampler = make_provider_sampler(args.provider, adapters, goal=args.goal)
         root_path = Path(args.root).resolve()
         outcome = run_organic_goal(args.goal, agent_id=args.agent, sampler=sampler,
                                    root=root_path)
@@ -1027,7 +1027,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.loop:
         # --loop always runs organically — RunLog + postamble wired by default
-        sampler = make_provider_sampler(args.provider, adapters)
+        sampler = make_provider_sampler(args.provider, adapters, goal=args.goal)
         root_path = Path(args.root).resolve()
         outcome = run_organic_goal(args.goal, agent_id=args.agent, sampler=sampler,
                                    root=root_path)
