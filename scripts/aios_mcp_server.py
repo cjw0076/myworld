@@ -133,6 +133,54 @@ def tool_specs() -> list[dict[str, Any]]:
                 "required": ["tool"],
             },
         },
+        {
+            "name": "aios_predict_behavior",
+            "description": (
+                "Predict the most likely next action an AI agent will take, given context and candidates. "
+                "Uses DescentNet (Sheaf Theory backbone) + AIOS AkashicRecord of prior agent behavior traces. "
+                "Returns ranked candidates with confidence scores and H¹ ambiguity signal. "
+                "Use for: competition prediction, agent simulation, behavior modeling."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "context": {"type": "string", "description": "Current agent context / situation / observation"},
+                    "candidates": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Possible next actions the agent could take",
+                    },
+                    "top_k": {"type": "integer", "default": 3, "description": "How many top predictions to return"},
+                },
+                "required": ["context", "candidates"],
+            },
+        },
+        {
+            "name": "aios_ingest_cli_session",
+            "description": (
+                "Ingest recent CLI session logs into AIOS AkashicRecord as behavioral memories. "
+                "Privacy-safe: only tool names / action types are stored, never content or arguments. "
+                "Opt-in: choose which session categories to include. "
+                "This grows the AkashicRecord so future predictions improve."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "provider": {
+                        "type": "string",
+                        "enum": ["claude", "codex", "gemini"],
+                        "description": "Which CLI provider's sessions to ingest",
+                    },
+                    "opt_in": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["docs", "data", "code", "personal"]},
+                        "description": "Categories of sessions to include (opt-in, privacy control)",
+                    },
+                    "limit": {"type": "integer", "default": 20, "description": "Max recent sessions to scan"},
+                },
+                "required": ["provider"],
+            },
+        },
     ]
 
 
@@ -272,6 +320,36 @@ def call_invoke(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
         return False, f"invoke failed: {exc}"
 
 
+def call_predict_behavior(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    context = str(args.get("context", "")).strip()
+    candidates = args.get("candidates", [])
+    top_k = int(args.get("top_k") or 3)
+    if not context or not candidates:
+        return False, "context and candidates are required"
+    ok, out = _run(
+        [sys.executable, str(root / "scripts" / "aios_agent_behavior.py"),
+         "predict", "--context", context[:400],
+         "--candidates", ",".join(str(c) for c in candidates),
+         "--top-k", str(top_k), "--json"],
+        root,
+    )
+    return ok, out
+
+
+def call_ingest_cli_session(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    provider = str(args.get("provider", "claude"))
+    opt_in = args.get("opt_in") or ["code", "docs"]
+    limit = int(args.get("limit") or 20)
+    ok, out = _run(
+        [sys.executable, str(root / "scripts" / "aios_agent_behavior.py"),
+         "ingest", "--from", provider,
+         "--opt-in", ",".join(str(c) for c in opt_in),
+         "--limit", str(limit), "--json"],
+        root,
+    )
+    return ok, out
+
+
 HANDLERS = {
     "aios_route": call_route,
     "aios_helper_run": call_helper_run,
@@ -280,6 +358,8 @@ HANDLERS = {
     "aios_observe": call_observe,
     "aios_list_tools": call_list_tools,
     "aios_invoke": call_invoke,
+    "aios_predict_behavior": call_predict_behavior,
+    "aios_ingest_cli_session": call_ingest_cli_session,
 }
 
 

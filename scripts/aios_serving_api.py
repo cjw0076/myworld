@@ -242,7 +242,7 @@ class Handler(BaseHTTPRequestHandler):
         session_id = str(body.get("session_id", "")).strip()[:64] or None
         prior_ctx = _session_context(session_id)
         provider = str(body.get("provider", "auto"))
-        max_turns = int(body.get("max_turns", 6))
+        max_turns = int(body.get("max_turns", 3))
         if not _needs_retrieval(goal):
             result = run_fast(goal, provider, prior_context=prior_ctx)
         else:
@@ -289,7 +289,7 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": err, "rejected": True}, status=400)
             return
         provider = str(body.get("provider", "auto"))
-        max_turns = int(body.get("max_turns", 6))
+        max_turns = int(body.get("max_turns", 3))
         session_id = str(body.get("session_id", "")).strip()[:64] or None
         prior_ctx = _session_context(session_id)
 

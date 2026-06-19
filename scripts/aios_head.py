@@ -294,12 +294,34 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             '(math, basic code, concepts, how-to) without searching or reading files — '
             'emit {"done":true} immediately on turn 1.\n'
         ) if turn_num == 0 else ""
+        # GenesisOS + CapabilityOS env context from preamble ref
+        _pref_data = getattr(sampler, "_preamble_ref", {}) if callable(sampler) else {}
+        _escapes = (_pref_data or {}).get("genesis_escape_vectors", [])
+        genesis_hint = (
+            f"GenesisOS challenge: before answering, consider — {_escapes[0]}\n"
+        ) if _escapes and turn_num == 0 else ""
+        # Inject environment capability context on turn 0 so model knows what's available
+        _env_clis = (_pref_data or {}).get("env_clis", [])
+        _env_models = (_pref_data or {}).get("env_ollama_models", [])
+        _env_skills = (_pref_data or {}).get("env_skills", [])
+        env_hint = ""
+        if turn_num == 0 and (_env_clis or _env_models):
+            _parts = []
+            if _env_clis:
+                _parts.append(f"CLIs: {', '.join(_env_clis)}")
+            if _env_models:
+                _parts.append(f"Local models: {', '.join(_env_models[:4])}")
+            if _env_skills:
+                _parts.append(f"Skills: {', '.join(_env_skills[:5])}...")
+            env_hint = f"Environment: {'; '.join(_parts)}\n"
         prompt = (
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
             + early_exit_hint
+            + env_hint
             + "STRATEGY: For questions about AIOS, its tools, architecture, or internal state — "
             "call memory.retrieve FIRST to recall stored knowledge before searching the web or reading files.\n"
+            + genesis_hint
             + done_hint
             + no_repeat_hint
             + "Trajectory:\n"
@@ -325,6 +347,9 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             return {"tool_calls": []}
         return {"tool_calls": [tl.ToolCall(tool_name, dict(obj.get("arguments", {})))]}
 
+    # Mutable preamble reference — updated by run_organic_goal after preamble runs.
+    # Allows sampler to read genesis_escape_vectors injected post-construction.
+    sampler._preamble_ref = {}  # type: ignore[attr-defined]
     return sampler
 
 
@@ -437,7 +462,7 @@ def _organ_preamble(goal: str, root: Path) -> dict:
 
     def _shell(cmd: list[str], cwd: Path) -> dict:
         try:
-            p = _sp.run(cmd, cwd=str(cwd), capture_output=True, text=True, timeout=60)
+            p = _sp.run(cmd, cwd=str(cwd), capture_output=True, text=True, timeout=10)
             if p.returncode != 0:
                 return {"status": "unavailable"}
             return {"status": "ok", "data": json.loads(p.stdout)}
@@ -455,16 +480,46 @@ def _organ_preamble(goal: str, root: Path) -> dict:
     t = _th.Thread(target=_run_semantic, daemon=True)
     t.start()
 
+    # CapabilityOS: load env scan (cached 1h) to inject real environment context
+    _env_scan: dict = {}
+    _env_scan_path = root / ".aios" / "capability_observations" / "env_scan.json"
+    if _env_scan_path.exists():
+        import time as _time
+        _age = _time.time() - _env_scan_path.stat().st_mtime
+        if _age < 3600:  # use cache within 1 hour
+            try:
+                _env_scan = json.loads(_env_scan_path.read_text())
+            except Exception:
+                pass
+    # If cache is stale or missing, trigger background refresh (non-blocking)
+    if not _env_scan:
+        import threading as _th2
+        _th2.Thread(
+            target=lambda: _sp.run(
+                [sys.executable, str(root / "scripts" / "aios_capability_scanner.py")],
+                capture_output=True, timeout=20
+            ), daemon=True
+        ).start()
+
     mem = _shell([sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
                   "--task", mem_task, "--json"], root / "memoryOS")
     cap = _shell([sys.executable, "-m", "capabilityos.cli", "recommend",
                   "--task", goal, "--json"], root / "CapabilityOS")
+    gen = _shell([sys.executable, "-m", "genesisos.cli", "critic", "--text", goal[:200], "--json"],
+                 root / "GenesisOS")
 
-    t.join(timeout=25)  # first run embeds ~342 objects (~25s); warm cache is <1s
+    t.join(timeout=6)  # warm cache <1s; cold embed skipped if >6s (serve without semantic)
 
     mem_data = (mem.get("data") or {}) if mem["status"] == "ok" else {}
     # context build returns `context_items` (int count) not `selected` (list)
     mem_hit_count = mem_data.get("context_items", 0) or len(mem_data.get("selected", []))
+
+    # GenesisOS: extract escape vectors (assumption challenges) for sampler context
+    gen_data = (gen.get("data") or {}) if gen["status"] == "ok" else {}
+    gen_escapes = [v.get("escape_vector", v) if isinstance(v, dict) else str(v)
+                   for v in (gen_data.get("escape_vectors") or [])][:2]
+    gen_prison = [s.get("signature", "") if isinstance(s, dict) else str(s)
+                  for s in (gen_data.get("prison_signatures") or [])][:2]
 
     # Union keyword + semantic results, deduplicate by id
     seen_ids: set[str] = set()
@@ -486,6 +541,49 @@ def _organ_preamble(goal: str, root: Path) -> dict:
             combined.append({**obj, "_source": "semantic"})
     combined.sort(key=lambda x: float(x.get("confidence", 0.5)), reverse=True)
 
+    # GenesisOS active demand: when high-confidence structural flaws are detected,
+    # auto-register a demand packet so AIOS can self-improve proactively.
+    # This is the "feel discomfort → demand fix" loop (not passive reporting).
+    if gen_data and gen_prison:  # any detected prison signature triggers a demand
+        try:
+            import datetime as _dt, hashlib as _hl
+            demand_dir = root / ".aios" / "genesis_demands"
+            demand_dir.mkdir(parents=True, exist_ok=True)
+            demand_id = "gen-" + _hl.sha256(f"{goal}{gen_prison}".encode()).hexdigest()[:10]
+            demand_path = demand_dir / f"{demand_id}.json"
+            if not demand_path.exists():  # idempotent — don't duplicate
+                demand = {
+                    "schema": "aios.genesis_demand.v1",
+                    "id": demand_id,
+                    "detected_at": _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"),
+                    "trigger_goal": goal[:200],
+                    "prison_signatures": gen_prison,
+                    "escape_vectors": gen_escapes,
+                    "confidence": gen_data.get("confidence", 0),
+                    "status": "open",
+                    "authority": "genesis_auto",
+                }
+                demand_path.write_text(json.dumps(demand, ensure_ascii=False, indent=2))
+        except Exception:  # noqa: BLE001 — demand registration is best-effort
+            pass
+
+    # Build compact env capability summary for sampler injection
+    _env_counts = _env_scan.get("counts", {})
+    _env_summary = ""
+    if _env_counts:
+        _env_summary = (
+            f"skills={_env_counts.get('skills',0)} "
+            f"models={_env_counts.get('ollama_models',0)} "
+            f"clis={_env_counts.get('clis',0)} "
+            f"mcps={_env_counts.get('mcps',0)}"
+        )
+    # Key available tools for sampler routing decisions
+    _env_clis = [c["name"] for c in _env_scan.get("capabilities", []) if c.get("type") == "cli"]
+    _env_models = [c["name"] for c in _env_scan.get("capabilities", [])
+                   if c.get("type") == "ollama_model" and "embed" not in c["name"]][:5]
+    _env_skills = [c["name"] for c in _env_scan.get("capabilities", [])
+                   if c.get("type") == "claude_skill"][:8]
+
     return {
         "memory_hits": mem_hit_count,
         "memory_accepted": mem_data.get("total_accepted", 0),
@@ -494,6 +592,14 @@ def _organ_preamble(goal: str, root: Path) -> dict:
         "hybrid_candidates": combined[:8],  # candidates only — never auto-accepted (DNA #2)
         "capability_status": cap["status"],
         "top_capability": ((cap.get("data") or {}).get("top", []) or [{}])[0].get("id") if cap["status"] == "ok" else None,
+        "genesis_status": gen["status"],
+        "genesis_escape_vectors": gen_escapes,
+        "genesis_prison_signatures": gen_prison,
+        "env_capability_summary": _env_summary,
+        "env_clis": _env_clis,
+        "env_ollama_models": _env_models,
+        "env_skills": _env_skills,
+        "observed_capabilities": _env_scan.get("total", 0),
     }
 
 
@@ -607,12 +713,12 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
                 "  • Google Gemini (free tier): set GEMINI_API_KEY\n"
                 "  • Anthropic Claude: set ANTHROPIC_API_KEY")
     if _ollama_ok:
-        # Fast path (exit=fast_path) or short conversational goals → 1.7b (0.2s/call)
-        # Code/complex goals or organic loop results → 8b (smarter, 2-5s/call)
-        _is_fast_exit = result.get("exit") == "fast_path"
+        # Synthesis is always a summarization step — the turn loop already did the
+        # heavy reasoning with qwen3:8b. Use 1.7b here for fast final-answer generation.
+        # Code goals get 8b so the answer itself can contain correct code.
         _is_code_goal = any(kw in goal.lower() for kw in (
             "코드", "구현", "함수", "알고리즘", "code", "implement", "function", "algorithm", "class"))
-        _synth_model = "qwen3:1.7b" if (_is_fast_exit and not _is_code_goal) else "qwen3:8b"
+        _synth_model = "qwen3:8b" if _is_code_goal else "qwen3:1.7b"
         adapter = adapters_mod.make_ollama_rest_adapter(model=_synth_model, timeout=60)
     elif _gemini_ok:
         # Gemini REST — free tier (1500 req/day), no billing required
@@ -643,68 +749,23 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
         traj_lines.append(line)
     traj_summary = "\n".join(traj_lines) or "  (no tool calls)"
 
-    # Retrieve actual memory content for synthesis (decisions, feedback — names+summaries only)
+    # Use preamble hybrid_candidates instead of re-running memoryos subprocess.
+    # preamble already ran memoryos context build + semantic search; reuse it here
+    # to avoid adding 0.5-3s subprocess overhead per synthesis call.
     mem_snippets: list[str] = []
-    if root is not None:
-        try:
-            import subprocess as _sp
-            # Build auxiliary English queries (boosts Korean goals + adds semantic anchors)
-            tool_names_used = [t.get("tool", "") for t in traj if t.get("tool")]
-            aux_tool_query = " ".join(dict.fromkeys(tool_names_used))
-            queries = [goal]
-            is_korean = any('가' <= c <= '힣' for c in goal)
-            # Semantic anchor: detect goal intent and add precise English keyword query
-            _gl = goal.lower()
-            _aios_self = any(kw in _gl for kw in ("뭐야", "뭔가요", "무엇", "소개", "설명", "어떻게 작동", "what is", "how does"))
-            _tool_query = any(kw in _gl for kw in ("도구", "tool", "기능", "feature", "명령", "command"))
-            _install_q = any(kw in _gl for kw in ("install", "설치", "setup", "curl", "how to"))
-            # install intent always gets a dedicated first query (before other anchors fill the budget)
-            if _install_q:
-                queries.insert(0, "AIOS install curl setup one-line command aios serve")
-            if _aios_self:
-                queries.append("AIOS 5-OS architecture myworld hivemind memoryOS organic pipeline")
-                if not _install_q:
-                    queries.append("AIOS serving UI localhost install DNA invariants")
-            elif _tool_query or aux_tool_query:
-                queries.append(f"AIOS {aux_tool_query}" if aux_tool_query else "AIOS 12 kernel tools")
-            elif is_korean and aux_tool_query:
-                queries.append(f"AIOS {aux_tool_query}")
-            seen_contents: set[str] = set()
-            for q in queries:
-                p = _sp.run(
-                    [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
-                     "--task", q, "--json"],
-                    cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20,
-                )
-                if p.returncode != 0:
-                    continue
-                data = json.loads(p.stdout)
-                for item in (data.get("decisions") or [])[:5]:
-                    content = str(item.get("content", ""))[:120].strip()
-                    if content and content not in seen_contents:
-                        seen_contents.add(content)
-                        mem_snippets.append(f"[decision] {content}")
-                        if len(mem_snippets) >= 8:
-                            break
-                for item in (data.get("constraints") or [])[:2]:
-                    content = str(item.get("content", ""))[:80].strip()
-                    if content and content not in seen_contents:
-                        seen_contents.add(content)
-                        mem_snippets.append(f"[constraint] {content}")
-                for item in (data.get("other") or [])[:3]:
-                    content = str(item.get("content", ""))[:100].strip()
-                    if content and content not in seen_contents:
-                        seen_contents.add(content)
-                        mem_snippets.append(f"[observation] {content}")
-                if len(mem_snippets) >= 8:
-                    break
-        except Exception:  # noqa: BLE001
-            pass
+    _candidates = (preamble or {}).get("hybrid_candidates") or []
+    seen_contents: set[str] = set()
+    for item in _candidates[:8]:
+        content = str(item.get("content", ""))[:120].strip()
+        if content and content not in seen_contents:
+            seen_contents.add(content)
+            origin = item.get("origin", item.get("type", "memory"))
+            mem_snippets.append(f"[{origin}] {content}")
 
     if mem_snippets:
         mem_context = "Memory context:\n" + "\n".join(f"  • {s}" for s in mem_snippets)
     else:
-        mem_context = f"Memory hits: {(preamble or {}).get('memory_hits', 0)} (names not available)."
+        mem_context = f"Memory hits: {(preamble or {}).get('memory_hits', 0)}."
 
     # Detect goal language — use Korean response if goal is Korean
     is_korean = any('가' <= c <= '힣' for c in goal)
@@ -765,6 +826,13 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     run_log.open(ts=_dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"))
 
     preamble = _organ_preamble(goal, root)
+
+    # Inject preamble context into sampler's genesis_hint if sampler supports it.
+    # Sampler may expose a _preamble_ref dict updated after construction.
+    _pref = getattr(sampler, "_preamble_ref", None)
+    if isinstance(_pref, dict):
+        _pref.update(preamble)
+
     result = run_loop_goal(goal, agent_id=agent_id, sampler=sampler, max_turns=max_turns,
                            turn_sink=run_log.sink)
     postamble = _organ_postamble(goal, result, root, run_id=run_id)
