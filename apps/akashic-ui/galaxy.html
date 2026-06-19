@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AIOS Memory Galaxy — AkashicRecord 3D</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #020510; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; color: #e0e8f0; }
+  #graph { width: 100vw; height: 100vh; }
+
+  /* ── HUD ── */
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(180deg, rgba(2,5,16,0.95) 0%, transparent 100%);
+    pointer-events: none; z-index: 10;
+  }
+  .hud-left h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .hud-left p  { font-size: 11px; color: #5a7090; margin-top: 2px; }
+  .hud-stats { display: flex; gap: 20px; }
+  .hud-stat { text-align: right; }
+  .hud-stat .val { font-size: 20px; font-weight: 700; color: #4fc3f7; font-variant-numeric: tabular-nums; }
+  .hud-stat .lbl { font-size: 10px; color: #5a7090; text-transform: uppercase; letter-spacing: 0.6px; }
+
+  /* ── Legend ── */
+  #legend {
+    position: fixed; bottom: 24px; left: 24px;
+    background: rgba(8,12,28,0.85);
+    border: 1px solid rgba(79,195,247,0.15);
+    border-radius: 12px; padding: 14px 16px;
+    backdrop-filter: blur(12px);
+    z-index: 10; pointer-events: none;
+  }
+  .legend-title { font-size: 10px; color: #5a7090; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 10px; }
+  .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 11px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Side panel ── */
+  #panel {
+    position: fixed; top: 0; right: -340px; bottom: 0;
+    width: 320px;
+    background: rgba(8,12,28,0.92);
+    border-left: 1px solid rgba(79,195,247,0.15);
+    backdrop-filter: blur(20px);
+    padding: 24px 20px;
+    transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+    z-index: 20; overflow-y: auto;
+  }
+  #panel.open { right: 0; }
+  #panel-close {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(255,255,255,0.08); border: none; border-radius: 6px;
+    color: #5a7090; font-size: 16px; width: 28px; height: 28px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  #panel-close:hover { background: rgba(255,255,255,0.14); color: #e0e8f0; }
+  .panel-label { font-size: 10px; color: #5a7090; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 4px; }
+  .panel-val { font-size: 13px; color: #e0e8f0; margin-bottom: 14px; word-break: break-all; }
+  .panel-id { font-family: monospace; font-size: 11px; color: #4fc3f7; }
+  .tool-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+  .tool-chip {
+    background: rgba(79,195,247,0.1); border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 4px; padding: 2px 8px;
+    font-size: 11px; color: #4fc3f7;
+  }
+  .conf-bar {
+    height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin-top: 6px;
+  }
+  .conf-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #4fc3f7, #1976d2); }
+  .neighbors-title { font-size: 10px; color: #5a7090; text-transform: uppercase; letter-spacing: 0.7px; margin: 16px 0 8px; }
+  .neighbor-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    padding: 7px 10px; border-radius: 7px;
+    background: rgba(255,255,255,0.04); font-size: 11px;
+    cursor: pointer; transition: background 0.12s;
+  }
+  .neighbor-row:hover { background: rgba(79,195,247,0.1); }
+  .neighbor-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .neighbor-id { font-family: monospace; color: #4fc3f7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+  .neighbor-sim { color: #5a7090; flex-shrink: 0; }
+
+  /* ── Controls ── */
+  #controls {
+    position: fixed; bottom: 24px; right: 24px;
+    display: flex; flex-direction: column; gap: 8px;
+    z-index: 10;
+  }
+  .ctrl-btn {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: rgba(8,12,28,0.85);
+    border: 1px solid rgba(79,195,247,0.2);
+    color: #4fc3f7; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .ctrl-btn:hover { background: rgba(79,195,247,0.12); border-color: rgba(79,195,247,0.4); }
+
+  /* ── Loading overlay ── */
+  #loading {
+    position: fixed; inset: 0;
+    background: #020510;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 100;
+    transition: opacity 0.5s;
+  }
+  #loading.fade { opacity: 0; pointer-events: none; }
+  .loading-logo { font-size: 36px; margin-bottom: 16px; }
+  .loading-text { font-size: 13px; color: #5a7090; margin-bottom: 20px; }
+  .loading-bar {
+    width: 200px; height: 3px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 2px; overflow: hidden;
+  }
+  .loading-fill {
+    height: 100%; border-radius: 2px;
+    background: linear-gradient(90deg, #4fc3f7, #1976d2);
+    width: 0%; transition: width 0.4s;
+  }
+  .loading-note { font-size: 10px; color: #3a5070; margin-top: 10px; }
+
+  /* ── Tooltip ── */
+  #tooltip {
+    position: fixed; background: rgba(8,12,28,0.9);
+    border: 1px solid rgba(79,195,247,0.25);
+    border-radius: 8px; padding: 8px 12px;
+    font-size: 11px; pointer-events: none;
+    z-index: 50; display: none; max-width: 220px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+  #tooltip .tt-id { font-family: monospace; color: #4fc3f7; margin-bottom: 4px; }
+  #tooltip .tt-cat { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; }
+
+  /* ── Filter bar ── */
+  #filters {
+    position: fixed; top: 64px; left: 24px;
+    display: flex; gap: 6px; flex-wrap: wrap;
+    z-index: 10; max-width: 400px;
+  }
+  .filter-btn {
+    background: rgba(8,12,28,0.8);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; color: #5a7090; cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    color: #e0e8f0; border-color: currentColor;
+    font-weight: 600;
+  }
+  .filter-btn[data-cat="all"].active { color: #4fc3f7; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="loading-logo">⊕</div>
+  <div class="loading-text" id="load-msg">Fetching behavioral patterns…</div>
+  <div class="loading-bar"><div class="loading-fill" id="load-fill"></div></div>
+  <div class="loading-note">Computing semantic similarity graph</div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-left">
+    <h1>⊕ AIOS Memory Galaxy</h1>
+    <p>AkashicRecord · Behavioral Similarity Network</p>
+  </div>
+  <div class="hud-stats">
+    <div class="hud-stat">
+      <div class="val" id="hud-nodes">—</div>
+      <div class="lbl">Nodes</div>
+    </div>
+    <div class="hud-stat">
+      <div class="val" id="hud-links">—</div>
+      <div class="lbl">Links</div>
+    </div>
+  </div>
+</div>
+
+<!-- Category filters -->
+<div id="filters">
+  <button class="filter-btn active" data-cat="all" onclick="filterCat(this)">All</button>
+</div>
+
+<!-- Legend -->
+<div id="legend">
+  <div class="legend-title">Category</div>
+  <div id="legend-rows"></div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <button class="ctrl-btn" onclick="toggleLinks()" title="Toggle links">⌁</button>
+  <button class="ctrl-btn" onclick="G.zoomToFit(600)" title="Fit view">⊞</button>
+  <a href="index.html" style="text-decoration:none">
+    <button class="ctrl-btn" title="Dashboard">⊙</button>
+  </a>
+</div>
+
+<!-- 3D canvas -->
+<div id="graph"></div>
+
+<!-- Tooltip -->
+<div id="tooltip">
+  <div class="tt-id" id="tt-id"></div>
+  <div id="tt-cat"></div>
+  <div id="tt-tools" style="margin-top:4px;color:#5a7090"></div>
+</div>
+
+<!-- Side panel -->
+<div id="panel">
+  <button id="panel-close" onclick="closePanel()">✕</button>
+  <div style="margin-top:8px">
+    <div class="panel-label">Entry ID</div>
+    <div class="panel-val panel-id" id="p-id"></div>
+
+    <div class="panel-label">Category</div>
+    <div class="panel-val" id="p-cat"></div>
+
+    <div class="panel-label">Provider</div>
+    <div class="panel-val" id="p-prov"></div>
+
+    <div class="panel-label">Confidence</div>
+    <div style="margin-bottom:14px">
+      <span id="p-conf-val" style="font-size:13px"></span>
+      <div class="conf-bar"><div class="conf-fill" id="p-conf-bar"></div></div>
+    </div>
+
+    <div class="panel-label">Top Tools</div>
+    <div class="tool-list" id="p-tools"></div>
+
+    <div class="neighbors-title" id="p-neigh-title"></div>
+    <div id="p-neighbors"></div>
+  </div>
+</div>
+
+<!-- 3d-force-graph + Three.js -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.161/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1/dist/3d-force-graph.min.js"></script>
+
+<script>
+const API = "https://aios-akashic.cjw070690.workers.dev";
+
+const COLORS = {
+  code:          "#4fc3f7",
+  docs:          "#a5d6a7",
+  data:          "#ffd54f",
+  personal:      "#ce93d8",
+  decision:      "#ff8a65",
+  observation:   "#80deea",
+  agent_behavior:"#f48fb1",
+  test:          "#90a4ae",
+  artifact:      "#b0bec5",
+  unknown:       "#546e7a",
+};
+
+function catColor(c) { return COLORS[c] || COLORS.unknown; }
+
+// ── State ──────────────────────────────────────────────────────────────────
+let G, graphData, linksVisible = true;
+let activeFilter = "all";
+
+// ── Progress helper ────────────────────────────────────────────────────────
+function progress(msg, pct) {
+  document.getElementById("load-msg").textContent  = msg;
+  document.getElementById("load-fill").style.width = pct + "%";
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────
+async function loadGraph() {
+  progress("Fetching behavioral patterns…", 10);
+  const r = await fetch(`${API}/graph?limit=150&min_sim=0.80`);
+  const d = await r.json();
+  progress("Building similarity graph…", 60);
+
+  // Build node map for fast lookup
+  const nodeMap = {};
+  d.nodes.forEach(n => { n.color = catColor(n.category); nodeMap[n.id] = n; });
+
+  // Enrich links with neighbor lists on nodes
+  d.nodes.forEach(n => { n._links = []; });
+  d.links.forEach(l => {
+    const s = nodeMap[l.source], t = nodeMap[l.target];
+    if (s) s._links.push({ id: l.target, sim: l.value });
+    if (t) t._links.push({ id: l.source, sim: l.value });
+  });
+
+  progress("Rendering…", 85);
+  graphData = d;
+  buildLegend(d.nodes);
+  buildFilters(d.nodes);
+  renderGraph(d);
+}
+
+// ── Legend ─────────────────────────────────────────────────────────────────
+function buildLegend(nodes) {
+  const counts = {};
+  nodes.forEach(n => { counts[n.category] = (counts[n.category] || 0) + 1; });
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]);
+  const el = document.getElementById("legend-rows");
+  el.innerHTML = sorted.map(([cat, n]) => `
+    <div class="legend-row">
+      <div class="legend-dot" style="background:${catColor(cat)}"></div>
+      <span style="flex:1;text-transform:capitalize">${cat}</span>
+      <span style="color:#5a7090;font-size:10px">${n}</span>
+    </div>
+  `).join("");
+}
+
+// ── Category filter buttons ─────────────────────────────────────────────────
+function buildFilters(nodes) {
+  const cats = [...new Set(nodes.map(n=>n.category))].sort();
+  const el   = document.getElementById("filters");
+  cats.forEach(cat => {
+    const b = document.createElement("button");
+    b.className  = "filter-btn";
+    b.dataset.cat = cat;
+    b.style.color = catColor(cat);
+    b.textContent = cat;
+    b.onclick = () => filterCat(b);
+    el.appendChild(b);
+  });
+}
+
+function filterCat(btn) {
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  activeFilter = btn.dataset.cat;
+  if (!G) return;
+  G.nodeVisibility(n => activeFilter === "all" || n.category === activeFilter);
+  G.linkVisibility(l => {
+    if (!linksVisible) return false;
+    if (activeFilter === "all") return true;
+    const s = typeof l.source === "object" ? l.source : graphData.nodes.find(n=>n.id===l.source);
+    const t = typeof l.target === "object" ? l.target : graphData.nodes.find(n=>n.id===l.target);
+    return s?.category === activeFilter || t?.category === activeFilter;
+  });
+}
+
+// ── Toggle links ────────────────────────────────────────────────────────────
+function toggleLinks() {
+  linksVisible = !linksVisible;
+  G && G.linkVisibility(() => linksVisible);
+}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function renderGraph(data) {
+  const tooltip = document.getElementById("tooltip");
+
+  G = ForceGraph3D({ antialias: true, alpha: true })
+    (document.getElementById("graph"))
+    .backgroundColor("#020510")
+    .graphData(data)
+    .nodeId("id")
+    .nodeLabel(n => n.id)
+    .nodeColor(n => n.color || "#4fc3f7")
+    .nodeVal(n => (n.confidence || 0.75) * 6)
+    .nodeOpacity(0.9)
+    .nodeResolution(12)
+    .linkColor(() => "rgba(79,195,247,0.22)")
+    .linkWidth(l => l.value * 1.2)
+    .linkOpacity(0.6)
+    .linkDirectionalParticles(l => l.value > 0.88 ? 2 : 0)
+    .linkDirectionalParticleWidth(1.2)
+    .linkDirectionalParticleColor(() => "#4fc3f7")
+    .onNodeHover(n => {
+      document.body.style.cursor = n ? "pointer" : "default";
+      if (n) {
+        tooltip.style.display = "block";
+        document.getElementById("tt-id").textContent = n.id;
+        document.getElementById("tt-cat").innerHTML =
+          `<span class="tt-cat" style="background:${catColor(n.category)}22;color:${catColor(n.category)}">${n.category}</span>`;
+        document.getElementById("tt-tools").textContent =
+          (n.top_tools||[]).slice(0,4).join("  ·  ");
+      } else { tooltip.style.display = "none"; }
+    })
+    .onNodeClick(n => openPanel(n))
+    .onBackgroundClick(() => closePanel())
+    .onEngineTick(() => {
+      const e = window.event;
+      if (e) { tooltip.style.left = (e.clientX + 12) + "px"; tooltip.style.top = (e.clientY - 30) + "px"; }
+    });
+
+  // Mouse follow for tooltip
+  document.getElementById("graph").addEventListener("mousemove", e => {
+    tooltip.style.left = (e.clientX + 12) + "px";
+    tooltip.style.top  = (e.clientY - 30)  + "px";
+  });
+
+  // Star field background
+  const starGeom = new THREE.BufferGeometry();
+  const positions = new Float32Array(3000);
+  for (let i = 0; i < 3000; i++) positions[i] = (Math.random() - 0.5) * 3000;
+  starGeom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const starMat  = new THREE.PointsMaterial({ color: 0xaabbcc, size: 0.6, transparent: true, opacity: 0.5 });
+  const stars    = new THREE.Points(starGeom, starMat);
+  G.scene().add(stars);
+
+  // HUD
+  document.getElementById("hud-nodes").textContent = data.nodes.length;
+  document.getElementById("hud-links").textContent = data.links.length;
+
+  // After warmup, fit view
+  setTimeout(() => G.zoomToFit(500), 3500);
+
+  // Hide loading
+  setTimeout(() => {
+    const l = document.getElementById("loading");
+    l.classList.add("fade");
+    setTimeout(() => l.remove(), 500);
+  }, 500);
+}
+
+// ── Side panel ──────────────────────────────────────────────────────────────
+function openPanel(node) {
+  document.getElementById("p-id").textContent   = node.id;
+  document.getElementById("p-cat").innerHTML    =
+    `<span style="color:${catColor(node.category)}">${node.category}</span>`;
+  document.getElementById("p-prov").textContent = node.provider || "—";
+  const conf = (node.confidence || 0.75);
+  document.getElementById("p-conf-val").textContent = (conf * 100).toFixed(0) + "%";
+  document.getElementById("p-conf-bar").style.width = (conf * 100) + "%";
+  document.getElementById("p-tools").innerHTML  =
+    (node.top_tools||[]).map(t => `<span class="tool-chip">${t}</span>`).join("");
+
+  // Neighbors
+  const links = (node._links || []).sort((a,b) => b.sim - a.sim).slice(0, 8);
+  document.getElementById("p-neigh-title").textContent =
+    `Connected Nodes (${(node._links||[]).length})`;
+  document.getElementById("p-neighbors").innerHTML = links.map(l => {
+    const nb = graphData.nodes.find(n => n.id === l.id) || {};
+    return `
+      <div class="neighbor-row" onclick="openPanel(graphData.nodes.find(n=>n.id==='${l.id}'))">
+        <div class="neighbor-dot" style="background:${catColor(nb.category)}"></div>
+        <div class="neighbor-id">${l.id}</div>
+        <div class="neighbor-sim">${(l.sim*100).toFixed(0)}%</div>
+      </div>`;
+  }).join("");
+
+  document.getElementById("panel").classList.add("open");
+  G.centerAt(...(G.graph2ScreenCoords ? [] : []), 500);
+}
+
+function closePanel() {
+  document.getElementById("panel").classList.remove("open");
+}
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+loadGraph().catch(e => {
+  document.getElementById("load-msg").textContent = "Error: " + e.message;
+  document.getElementById("load-fill").style.background = "#ef5350";
+});
+</script>
+
+</body>
+</html>

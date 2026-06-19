@@ -349,6 +349,63 @@ async function handleCheckpointsList(env) {
   });
 }
 
+async function handleGraph(env, urlObj) {
+  const params   = urlObj.searchParams;
+  const limit    = Math.min(200, Math.max(20, parseInt(params.get("limit") || "120")));
+  const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.68")));
+  const category = params.get("category") || null;
+
+  let stmt = "SELECT id, category, provider, top_tools, confidence, embedding FROM memories";
+  const binds = [];
+  if (category) { stmt += " WHERE category = ?"; binds.push(category); }
+  stmt += " ORDER BY RANDOM() LIMIT ?";
+  binds.push(limit);
+
+  const rows = await env.DB.prepare(stmt).bind(...binds).all();
+  const raw  = rows.results || [];
+
+  // Parse and precompute norms (faster pairwise cosine)
+  const entries = raw.map(r => {
+    const vec = JSON.parse(r.embedding || "[]");
+    let norm = 0;
+    for (const v of vec) norm += v * v;
+    norm = Math.sqrt(norm) || 1;
+    return {
+      id:        r.id,
+      category:  r.category  || "unknown",
+      provider:  r.provider  || "unknown",
+      top_tools: JSON.parse(r.top_tools || "[]"),
+      confidence: r.confidence || 0.75,
+      vec,
+      norm,
+    };
+  });
+
+  // Pairwise cosine — emit edge only if sim >= minSim
+  const links = [];
+  for (let i = 0; i < entries.length; i++) {
+    const a = entries[i];
+    for (let j = i + 1; j < entries.length; j++) {
+      const b = entries[j];
+      let dot = 0;
+      for (let k = 0; k < a.vec.length; k++) dot += a.vec[k] * b.vec[k];
+      const sim = dot / (a.norm * b.norm);
+      if (sim >= minSim) {
+        links.push({ source: a.id, target: b.id, value: parseFloat(sim.toFixed(4)) });
+      }
+    }
+  }
+
+  // Strip embeddings before returning
+  const nodes = entries.map(({ vec, norm, ...rest }) => rest);
+
+  return json({
+    nodes,
+    links,
+    meta: { total_nodes: nodes.length, total_links: links.length, min_sim: minSim },
+  });
+}
+
 async function handleInit(env) {
   // Create tables — safe to call multiple times
   const stmts = SCHEMA.trim().split(";").filter(s => s.trim());
@@ -403,6 +460,9 @@ export default {
     }
     if (url.pathname === "/sync" && method === "POST") {
       return handleSync(request, env);
+    }
+    if (url.pathname === "/graph" && method === "GET") {
+      return handleGraph(env, url);
     }
 
     return json({ error: "not found", endpoints: [
