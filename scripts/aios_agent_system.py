@@ -522,10 +522,42 @@ def main(argv: list[str] | None = None) -> int:
         p.print_help()
         return 1
 
-    # Execute mode: delegate to harness for real multi-turn tool execution
+    # Execute mode: RECALL + PREDICT first, then pass predicted tools to harness
     if args.execute:
+        # Step 1: AkashicRecord — recall similar patterns + predict tools
+        predicted_tools: list[str] = []
+        if args.verbose:
+            print("[execute] querying AkashicRecord for tool predictions...", file=sys.stderr)
+        try:
+            predicted_tools = predict(args.goal, api_key, args.verbose)
+        except Exception as e:
+            if args.verbose:
+                print(f"[execute] predict failed: {e}", file=sys.stderr)
+
+        # Step 2: Map predicted tool names to TOOL_REGISTRY names
+        _HARNESS_TOOLS = {"Bash", "Read", "Edit", "Write", "WebSearch"}
+        _PREDICT_MAP   = {
+            "bash": "Bash", "bash:": "Bash",
+            "edit": "Edit", "read": "Read", "write": "Write",
+            "websearch": "WebSearch", "webfetch": "WebSearch",
+        }
+        resolved: list[str] = []
+        for t in predicted_tools:
+            tl = t.lower().split(":")[0]
+            mapped = _PREDICT_MAP.get(tl)
+            if mapped:
+                resolved.append(mapped)
+            elif t in _HARNESS_TOOLS:
+                resolved.append(t)
+        # Always include Bash as fallback; deduplicate preserving order
+        resolved = list(dict.fromkeys(resolved)) or ["Bash", "Read"]
+        if args.verbose:
+            print(f"[execute] predicted → resolved tools: {predicted_tools} → {resolved}",
+                  file=sys.stderr)
+
+        # Step 3: Delegate to harness with informed tool set
         harness_path = Path(__file__).parent / "aios_harness.py"
-        harness_argv = [args.goal]
+        harness_argv = [args.goal, "--tools", ",".join(resolved)]
         if base_url:
             harness_argv += ["--base-url", base_url]
         if model:
