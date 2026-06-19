@@ -128,8 +128,9 @@ def _parse_claude_session(path: Path) -> list[str]:
                         name = str(block.get("name", ""))[:40]
                         if name:
                             tools.append(name)
-            elif ev_type in ("queue-operation", "last-prompt"):
-                tools.append(ev_type)
+            # "queue-operation" and "last-prompt" are internal Claude Code
+            # event types, NOT tool names — skip them to avoid polluting
+            # tool-sequence data (was causing garbage in top_tools predictions)
     except Exception:
         pass
     return tools

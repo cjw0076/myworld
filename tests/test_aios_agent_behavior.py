@@ -1,9 +1,11 @@
 """Tests for aios_agent_behavior.py — Phase D: doom-loop filter, loop_type,
-transition probability, and predict_behavior hybrid scoring."""
+transition probability, predict_behavior hybrid scoring, and JSONL parsing."""
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -231,6 +233,93 @@ class FrequencyScoreTest(unittest.TestCase):
         # (Can't assert exact ratio without knowing exact impl, but Bash shouldn't dominate)
         # The key: Edit (from normal) should still be competitive
         self.assertGreater(scores_with_doom["Edit"], 0)
+
+
+class ParseClaudeSessionTest(unittest.TestCase):
+    """_parse_claude_session must extract real tool names only.
+
+    Regression: 'queue-operation' and 'last-prompt' are internal Claude Code
+    event types — they must NOT appear in the tool sequence.
+    """
+
+    def setUp(self):
+        self.m = _load("aios_agent_behavior")
+        self._td = tempfile.TemporaryDirectory()
+
+    def tearDown(self):
+        self._td.cleanup()
+
+    def _write_jsonl(self, events: list[dict]) -> Path:
+        p = Path(self._td.name) / "session.jsonl"
+        p.write_text("\n".join(json.dumps(e) for e in events))
+        return p
+
+    def _tool_event(self, name: str) -> dict:
+        return {
+            "type": "assistant",
+            "message": {
+                "content": [{"type": "tool_use", "name": name}]
+            }
+        }
+
+    def test_real_tools_extracted(self):
+        path = self._write_jsonl([
+            self._tool_event("Bash"),
+            self._tool_event("Read"),
+            self._tool_event("Edit"),
+        ])
+        tools = self.m._parse_claude_session(path)
+        self.assertEqual(tools, ["Bash", "Read", "Edit"])
+
+    def test_queue_operation_excluded(self):
+        """queue-operation is an internal event type, NOT a tool."""
+        path = self._write_jsonl([
+            self._tool_event("Bash"),
+            {"type": "queue-operation", "data": "something"},
+            self._tool_event("Edit"),
+        ])
+        tools = self.m._parse_claude_session(path)
+        self.assertNotIn("queue-operation", tools)
+        self.assertEqual(tools, ["Bash", "Edit"])
+
+    def test_last_prompt_excluded(self):
+        """last-prompt is an internal event type, NOT a tool."""
+        path = self._write_jsonl([
+            {"type": "last-prompt", "content": "the goal"},
+            self._tool_event("Read"),
+            self._tool_event("Write"),
+        ])
+        tools = self.m._parse_claude_session(path)
+        self.assertNotIn("last-prompt", tools)
+        self.assertEqual(tools, ["Read", "Write"])
+
+    def test_mixed_internal_events_filtered(self):
+        """Both garbage event types filtered from a realistic session."""
+        path = self._write_jsonl([
+            {"type": "last-prompt", "content": "fix bug"},
+            self._tool_event("Read"),
+            {"type": "queue-operation", "data": "x"},
+            self._tool_event("Edit"),
+            {"type": "queue-operation", "data": "y"},
+            self._tool_event("Bash"),
+        ])
+        tools = self.m._parse_claude_session(path)
+        self.assertEqual(tools, ["Read", "Edit", "Bash"])
+        self.assertNotIn("queue-operation", tools)
+        self.assertNotIn("last-prompt", tools)
+
+    def test_empty_session(self):
+        path = self._write_jsonl([])
+        tools = self.m._parse_claude_session(path)
+        self.assertEqual(tools, [])
+
+    def test_no_tool_use_events(self):
+        path = self._write_jsonl([
+            {"type": "user", "message": {"content": "hello"}},
+            {"type": "last-prompt", "content": "fix bug"},
+        ])
+        tools = self.m._parse_claude_session(path)
+        self.assertEqual(tools, [])
 
 
 if __name__ == "__main__":
