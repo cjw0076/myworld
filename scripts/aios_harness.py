@@ -215,74 +215,129 @@ _TOOL_LIST = "\n".join(
     for name, spec in TOOL_REGISTRY.items()
 )
 
-_REACT_SYSTEM = f"""You are a helpful AI agent with access to these tools:
+_REACT_SYSTEM = """You are a task-executing AI agent. You MUST use tools to complete tasks.
 
-{_TOOL_LIST}
+Available tools:
+{tools}
 
-To use a tool, respond with:
+RULES — follow exactly:
+1. Each response must have EITHER an Action OR a Final Answer, never both.
+2. Use Action when you need a tool. Use Final Answer only when the task is DONE.
+3. Format:
+
+Thought: <one sentence reasoning>
 Action: <ToolName>
-Action Input: <JSON args>
+Action Input: {{"key": "value"}}
 
-When the task is complete, respond with:
-Final Answer: <your answer>
+OR when done:
 
-Think step by step. Use one action per response."""
+Thought: task is complete
+Final Answer: <result>
 
-_ACTION_RE    = re.compile(r"Action:\s*(\w+)", re.IGNORECASE)
-_ARG_RE       = re.compile(r"Action Input:\s*(\{.*?\})", re.DOTALL | re.IGNORECASE)
-_FINAL_RE     = re.compile(r"Final Answer:", re.IGNORECASE)
+EXAMPLE:
+User: list files in /tmp
+Thought: I need to run ls to list the files.
+Action: Bash
+Action Input: {{"cmd": "ls /tmp"}}
+
+Now complete the task."""
+
+_ACTION_RE = re.compile(r"\bAction:\s*([A-Za-z][A-Za-z0-9_]*)", re.MULTILINE)
+_ARG_RE    = re.compile(r"Action Input:\s*```(?:json)?\s*(\{.*?\})\s*```|Action Input:\s*(\{.*?\})",
+                        re.DOTALL | re.IGNORECASE)
+_FINAL_RE  = re.compile(r"Final Answer:", re.IGNORECASE)
+_JSON_BLOCK = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
 
-def _parse_react(text: str):
-    """Parse ReAct-format LLM output → list of (tool_name, args_dict) or None (done)."""
+def _parse_react(text: str) -> list[tuple[str, dict]] | None:
+    """Parse ReAct output. Returns [(tool, args)] or None (done/text-only)."""
     if _FINAL_RE.search(text):
         return None
+
     m_action = _ACTION_RE.search(text)
     if not m_action:
-        return None
-    tool = m_action.group(1)
-    m_args = _ARG_RE.search(text)
-    args: dict = {}
-    if m_args:
+        # Fallback: detect JSON tool_calls block from function-calling models
+        # {"name": "Bash", "arguments": {"cmd": "ls"}}
         try:
-            args = json.loads(m_args.group(1))
+            jb = _JSON_BLOCK.search(text)
+            if jb:
+                obj = json.loads(jb.group(1))
+                if "name" in obj and obj["name"] in TOOL_REGISTRY:
+                    return [(obj["name"], obj.get("arguments", obj.get("parameters", {})))]
+        except Exception:
+            pass
+        return None
+
+    tool = m_action.group(1)
+    if tool not in TOOL_REGISTRY:
+        # Model hallucinated a tool name — treat as done
+        return None
+
+    # Extract JSON args (handle both raw and markdown-fenced)
+    args: dict = {}
+    m_args = _ARG_RE.search(text)
+    if m_args:
+        raw = m_args.group(1) or m_args.group(2) or ""
+        try:
+            args = json.loads(raw)
         except json.JSONDecodeError:
-            args = {"raw": m_args.group(1)}
+            # Last resort: key=value extraction
+            for pair in re.findall(r'"(\w+)"\s*:\s*"([^"]*)"', raw):
+                args[pair[0]] = pair[1]
     return [(tool, args)]
 
 
-def make_llm_sampler(base_url: str | None = None, model: str | None = None,
-                     api_key: str = "none") -> Callable:
-    """Return a sampler function that calls local LLM and parses ReAct output."""
+def make_llm_sampler(goal: str, base_url: str | None = None,
+                     model: str | None = None, api_key: str = "none") -> Callable:
+    """Return a sampler function that calls local LLM and parses ReAct output.
+
+    `goal` is passed in so the first-turn prompt includes the actual task
+    (aios_turn_loop stores only kind='goal' in history — no content).
+    """
     _agent = _load("aios_agent_system")
+    tool_desc = "\n".join(f"  {n}: {s['description']}" for n, s in TOOL_REGISTRY.items())
+    system_prompt = _REACT_SYSTEM.format(tools=tool_desc)
+    first_turn = True
 
     def sampler(history: list[dict]) -> dict:
-        # Build prompt from history
-        parts = [_REACT_SYSTEM, "\n"]
+        nonlocal first_turn
+
+        # Build conversation text
+        parts = [system_prompt, ""]
+        is_first = first_turn
+        first_turn = False
+
         for h in history:
             role = h.get("role", "")
             if role == "user":
-                parts.append(f"User: {h.get('content', h.get('kind', ''))}")
+                # turn_loop stores no content; inject real goal on first turn
+                task_text = goal if is_first else h.get("content", "")
+                parts.append(f"User: {task_text}")
             elif role == "assistant":
-                parts.append(f"Assistant: (used tools: {h.get('tools', [])})")
+                used = h.get("tools", [])
+                parts.append(f"Assistant: (turn {h.get('turn','?')}, called: {used})")
             elif role == "tool":
-                parts.append(f"Observation ({h.get('tool','?')}): {h.get('status','?')}"
-                             + (f" → {h.get('result',{})}" if h.get("result") else ""))
+                result = h.get("result", {})
+                out_snippet = str(result.get("output", result.get("status", "?")))[:300]
+                parts.append(f"Observation ({h.get('tool','?')}): {out_snippet}")
+
         parts.append("Assistant:")
         prompt = "\n".join(parts)
 
         # Call LLM
         text = ""
         if _agent:
-            if base_url:
-                try:
-                    text, _ = _agent._openai_compat(base_url, model or "local-model", prompt, api_key=api_key)
-                except Exception:
+            try:
+                if base_url:
+                    text, _ = _agent._openai_compat(
+                        base_url, model or "local-model", prompt, api_key=api_key
+                    )
+                else:
                     text, _ = _agent._run_ollama(prompt)
-            else:
-                text, _ = _agent._run_ollama(prompt)
+            except Exception as e:
+                text = f"Final Answer: LLM error — {e}"
 
-        # Parse ReAct
+        # Parse
         parsed = _parse_react(text)
         if parsed is None:
             return {"tool_calls": []}
@@ -377,6 +432,7 @@ def main(argv: list[str] | None = None) -> int:
     ts, rs, sid, log_path = tl.make_event_log_sink()
     reg    = build_registry(allowed, dry_run=args.dry_run)
     sampler = make_llm_sampler(
+        goal=args.task,
         base_url=args.base_url or os.environ.get("OPENAI_COMPAT_URL"),
         model=args.model,
     )
