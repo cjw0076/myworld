@@ -351,17 +351,38 @@ async function handleCheckpointsList(env) {
 
 async function handleGraph(env, urlObj) {
   const params   = urlObj.searchParams;
-  const limit    = Math.min(200, Math.max(20, parseInt(params.get("limit") || "120")));
-  const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.68")));
+  const limit    = Math.min(300, Math.max(20, parseInt(params.get("limit") || "150")));
+  const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.80")));
   const category = params.get("category") || null;
+  const stratify = params.get("stratify") !== "false"; // default true
 
-  let stmt = "SELECT id, category, provider, top_tools, confidence, embedding FROM memories";
-  const binds = [];
-  if (category) { stmt += " WHERE category = ?"; binds.push(category); }
-  stmt += " ORDER BY RANDOM() LIMIT ?";
-  binds.push(limit);
+  let rows;
+  if (category) {
+    // Single category — random sample
+    rows = await env.DB.prepare(
+      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? ORDER BY RANDOM() LIMIT ?"
+    ).bind(category, limit).all();
+  } else if (stratify) {
+    // Stratified: equal per category so no single category dominates the galaxy
+    const cats = await env.DB.prepare(
+      "SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC"
+    ).all();
+    const catList = (cats.results || []).map(r => r.category).filter(Boolean);
+    const perCat  = Math.max(10, Math.floor(limit / Math.max(1, catList.length)));
+    const allRows = [];
+    for (const cat of catList) {
+      const r = await env.DB.prepare(
+        "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? ORDER BY RANDOM() LIMIT ?"
+      ).bind(cat, perCat).all();
+      allRows.push(...(r.results || []));
+    }
+    rows = { results: allRows };
+  } else {
+    rows = await env.DB.prepare(
+      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories ORDER BY RANDOM() LIMIT ?"
+    ).bind(limit).all();
+  }
 
-  const rows = await env.DB.prepare(stmt).bind(...binds).all();
   const raw  = rows.results || [];
 
   // Parse and precompute norms (faster pairwise cosine)
