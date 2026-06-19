@@ -140,12 +140,16 @@ async function handleContribute(req, env) {
 
   const content   = String(body.content || "").slice(0, MAX_CONTENT);
   const id        = String(body.id || "").slice(0, 40);
-  const category  = String(body.category || "unknown").slice(0, 20);
-  const provider  = String(body.provider || "unknown").slice(0, 20);
-  const dataset   = String(body.dataset  || "").slice(0, 40);
+  const category  = String(body.category  || "unknown").slice(0, 20);
+  const provider  = String(body.provider  || "unknown").slice(0, 20);
+  const dataset   = String(body.dataset   || "").slice(0, 40);
+  const osOrigin  = String(body.os_origin || "myworld").slice(0, 20);
   const toolFreq  = body.tool_freq || {};
   const topTools  = (body.top_tools || []).slice(0, 10);
   const confidence= Math.min(1, Math.max(0, Number(body.confidence) || 0.75));
+
+  const VALID_OS  = new Set(["myworld","hivemind","memoryos","capabilityos","genesisos"]);
+  const safeOS    = VALID_OS.has(osOrigin) ? osOrigin : "myworld";
 
   if (!content || !id) return json({ error: "content and id required" }, 400);
   if (hasSensitiveData(content)) return json({ error: "sensitive data detected — rejected" }, 422);
@@ -159,10 +163,10 @@ async function handleContribute(req, env) {
   const now    = new Date().toISOString();
 
   await env.DB.prepare(`
-    INSERT INTO memories (id, category, provider, dataset, top_tools, tool_freq, embedding, confidence, contributed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO memories (id, category, provider, dataset, os_origin, top_tools, tool_freq, embedding, confidence, contributed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).bind(
-    id, category, provider, dataset,
+    id, category, provider, dataset, safeOS,
     JSON.stringify(topTools),
     JSON.stringify(toolFreq),
     JSON.stringify(vector),
@@ -170,7 +174,7 @@ async function handleContribute(req, env) {
     now,
   ).run();
 
-  return json({ status: "ok", id, category, provider, embedded_dim: vector.length });
+  return json({ status: "ok", id, category, provider, os_origin: safeOS, embedded_dim: vector.length });
 }
 
 async function handleSync(req, env) {
@@ -180,18 +184,19 @@ async function handleSync(req, env) {
 
   const query   = String(body.query || body.context || "").slice(0, MAX_CONTENT);
   const topK    = Math.min(20, Math.max(1, Number(body.top_k) || 10));
-  const category= body.category || null;
+  const category= body.category  || null;
+  const osFilter= body.os_origin || null;
 
   if (!query) return json({ error: "query required" }, 400);
 
   const qVec = await embed(env.AI, query);
 
-  // Load all memories (D1 doesn't have native vector search yet — do it in JS)
-  // For large scale: migrate to Vectorize (Cloudflare's vector DB)
-  let stmt = "SELECT id, category, provider, top_tools, tool_freq, embedding, confidence FROM memories";
-  const binds = [];
-  if (category) { stmt += " WHERE category = ?"; binds.push(category); }
-  stmt += " LIMIT 2000";
+  // Load memories (D1 doesn't have native vector search yet — do it in JS)
+  const conds = [], binds = [];
+  if (category) { conds.push("category = ?");  binds.push(category); }
+  if (osFilter) { conds.push("os_origin = ?"); binds.push(osFilter); }
+  const where = conds.length ? " WHERE " + conds.join(" AND ") : "";
+  let stmt = `SELECT id, category, provider, os_origin, top_tools, tool_freq, embedding, confidence FROM memories${where} LIMIT 2000`;
 
   const rows = await env.DB.prepare(stmt).bind(...binds).all();
 
@@ -286,24 +291,22 @@ async function handleEmbed(req, env) {
 }
 
 async function handleStatus(env) {
-  const total = await env.DB.prepare("SELECT COUNT(*) as n FROM memories").first();
-  const byCat = await env.DB.prepare(
-    "SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC LIMIT 10"
-  ).all();
-  const byProv = await env.DB.prepare(
-    "SELECT provider, COUNT(*) as n FROM memories GROUP BY provider ORDER BY n DESC LIMIT 10"
-  ).all();
-  const latest = await env.DB.prepare(
-    "SELECT contributed_at FROM memories ORDER BY contributed_at DESC LIMIT 1"
-  ).first();
+  const [total, byCat, byProv, byOS, latest] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) as n FROM memories").first(),
+    env.DB.prepare("SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC LIMIT 10").all(),
+    env.DB.prepare("SELECT provider, COUNT(*) as n FROM memories GROUP BY provider ORDER BY n DESC LIMIT 10").all(),
+    env.DB.prepare("SELECT COALESCE(os_origin,'myworld') as os, COUNT(*) as n FROM memories GROUP BY os_origin ORDER BY n DESC").all(),
+    env.DB.prepare("SELECT contributed_at FROM memories ORDER BY contributed_at DESC LIMIT 1").first(),
+  ]);
 
   return json({
     total: total?.n || 0,
     by_category: byCat.results || [],
     by_provider: byProv.results || [],
+    by_os: byOS.results || [],
     latest_contribution: latest?.contributed_at || null,
     embed_model: EMBED_MODEL,
-    schema: "aios.akashic_record.v1",
+    schema: "aios.akashic_record.v2",
   });
 }
 
