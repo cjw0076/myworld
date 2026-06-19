@@ -155,6 +155,40 @@
     font-weight: 600;
   }
   .filter-btn[data-cat="all"].active { color: #4fc3f7; }
+
+  /* ── Predict panel ── */
+  #predict-panel {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    width: 420px; background: rgba(8,12,28,0.92);
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 14px; padding: 14px 16px;
+    backdrop-filter: blur(16px); z-index: 10;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  #predict-panel .pp-label {
+    font-size: 10px; color: #5a7090; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px;
+  }
+  #predict-input {
+    width: 100%; background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(79,195,247,0.15); border-radius: 8px;
+    color: #e0e8f0; font-size: 12px; padding: 7px 10px;
+    outline: none; font-family: inherit; resize: none; height: 48px;
+    transition: border-color 0.15s;
+  }
+  #predict-input:focus { border-color: rgba(79,195,247,0.4); }
+  #predict-results { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; min-height: 24px; }
+  .pred-chip {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(79,195,247,0.08); border: 1px solid rgba(79,195,247,0.25);
+    border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #4fc3f7;
+    animation: fadeIn 0.2s;
+  }
+  .pred-chip .pred-bar {
+    height: 3px; background: #4fc3f7; border-radius: 2px;
+    opacity: 0.6; min-width: 4px;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
+  #predict-status { font-size: 10px; color: #3a5070; margin-top: 6px; height: 14px; }
 </style>
 </head>
 <body>
@@ -207,6 +241,14 @@
 
 <!-- 3D canvas -->
 <div id="graph"></div>
+
+<!-- Predict panel -->
+<div id="predict-panel">
+  <div class="pp-label">⬡ Behavioral Prediction — describe what's happening</div>
+  <textarea id="predict-input" placeholder="e.g. running bash command, getting an error, need to fix a file…"></textarea>
+  <div id="predict-results"></div>
+  <div id="predict-status"></div>
+</div>
 
 <!-- Tooltip -->
 <div id="tooltip">
@@ -552,10 +594,85 @@ function closePanel() {
   document.getElementById("panel").classList.remove("open");
 }
 
+// ── Behavioral Prediction ──────────────────────────────────────────────────
+let _predictDebounce = null;
+let _predictHighlights = []; // { cat, idx, originalColor }
+
+function clearPredictHighlights() {
+  _predictHighlights.forEach(({ cat, idx, originalColor }) => {
+    const grp = _instGroups?.[cat];
+    if (!grp) return;
+    grp.mesh.setColorAt(idx, originalColor);
+    if (grp.mesh.instanceColor) grp.mesh.instanceColor.needsUpdate = true;
+  });
+  _predictHighlights = [];
+}
+
+function applyPredictHighlights(predictions) {
+  if (!_instGroups || !graphData) return;
+  clearPredictHighlights();
+
+  predictions.forEach(({ tool, score }) => {
+    // Find all nodes whose top_tools contain this tool
+    graphData.nodes.forEach(n => {
+      if (!(n.top_tools || []).some(t => t.toLowerCase() === tool.toLowerCase())) return;
+      const grp = _instGroups[n.category];
+      if (!grp) return;
+      const idx = grp.nodeIdxMap[n.id];
+      if (idx === undefined) return;
+
+      const orig = new THREE.Color();
+      grp.mesh.getColorAt?.(idx, orig) || orig.set(catColor(n.category));
+
+      // Glow: blend toward white proportional to score
+      const glow = new THREE.Color(catColor(n.category)).lerp(new THREE.Color("#ffffff"), score * 0.8);
+      grp.mesh.setColorAt(idx, glow);
+      if (grp.mesh.instanceColor) grp.mesh.instanceColor.needsUpdate = true;
+
+      _predictHighlights.push({ cat: n.category, idx, originalColor: new THREE.Color(catColor(n.category)) });
+    });
+  });
+}
+
+async function runPredict(context) {
+  const status = document.getElementById("predict-status");
+  const results = document.getElementById("predict-results");
+  if (!context.trim()) { results.innerHTML = ""; clearPredictHighlights(); status.textContent = ""; return; }
+
+  status.textContent = "predicting…";
+  try {
+    const res = await fetch(`${API}/predict`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ context, top_k: 5, n_sim: 40 }),
+    });
+    const d = await res.json();
+    const preds = d.predictions || [];
+
+    results.innerHTML = preds.map(p => `
+      <div class="pred-chip">
+        ${p.tool}
+        <div class="pred-bar" style="width:${Math.round(p.score*80+4)}px"></div>
+        <span style="color:#5a7090;font-size:10px">${(p.score*100).toFixed(0)}%</span>
+      </div>
+    `).join("");
+
+    applyPredictHighlights(preds);
+    status.textContent = `searched ${d.n_similar} similar memories · top sim ${(d.top_sim*100||0).toFixed(0)}%`;
+  } catch (e) {
+    status.textContent = "error: " + e.message;
+  }
+}
+
 // ── Boot ────────────────────────────────────────────────────────────────────
 loadGraph().catch(e => {
   document.getElementById("load-msg").textContent = "Error: " + e.message;
   document.getElementById("load-fill").style.background = "#ef5350";
+});
+
+document.getElementById("predict-input").addEventListener("input", e => {
+  clearTimeout(_predictDebounce);
+  _predictDebounce = setTimeout(() => runPredict(e.target.value), 600);
 });
 </script>
 

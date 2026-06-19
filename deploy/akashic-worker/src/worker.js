@@ -218,6 +218,63 @@ async function handleSync(req, env) {
   });
 }
 
+async function handlePredict(req, env) {
+  let body;
+  try { body = await req.json(); }
+  catch { return json({ error: "invalid JSON" }, 400); }
+
+  const context    = String(body.context || "").slice(0, MAX_CONTENT);
+  const candidates = Array.isArray(body.candidates) ? body.candidates.map(String) : null;
+  const topK       = Math.min(10, Math.max(1, Number(body.top_k)    || 3));
+  const nSim       = Math.min(100, Math.max(5, Number(body.n_sim)   || 30));
+
+  if (!context) return json({ error: "context required" }, 400);
+
+  const qVec = await embed(env.AI, context);
+
+  // Sample memories (random sample for performance; Vectorize would replace this)
+  const rows = await env.DB.prepare(
+    "SELECT id, category, top_tools, tool_freq, confidence, embedding FROM memories ORDER BY RANDOM() LIMIT 300"
+  ).all();
+
+  // Score by similarity, keep top-nSim
+  const scored = (rows.results || [])
+    .map(r => ({ ...r, sim: cosine(qVec, JSON.parse(r.embedding || "[]")) }))
+    .sort((a, b) => b.sim - a.sim)
+    .slice(0, nSim);
+
+  // Aggregate tool frequencies weighted by similarity
+  const toolScores = {};
+  scored.forEach(mem => {
+    const w  = mem.sim;
+    const tt = JSON.parse(mem.top_tools || "[]");
+    const tf = JSON.parse(mem.tool_freq  || "{}");
+    // top_tools: position-decayed weight
+    tt.forEach((t, i) => { toolScores[t] = (toolScores[t] || 0) + w * Math.max(0.1, 1 - i * 0.12); });
+    // tool_freq: count-scaled weight
+    Object.entries(tf).forEach(([t, cnt]) => {
+      toolScores[t] = (toolScores[t] || 0) + w * (Math.min(cnt, 20) / 20) * 0.5;
+    });
+  });
+
+  // Normalize
+  const total = Object.values(toolScores).reduce((s, v) => s + v, 0) || 1;
+  let preds = Object.entries(toolScores)
+    .map(([tool, score]) => ({ tool, score: parseFloat((score / total).toFixed(4)) }))
+    .sort((a, b) => b.score - a.score);
+
+  if (candidates && candidates.length > 0) {
+    preds = preds.filter(p => candidates.some(c => c.toLowerCase() === p.tool.toLowerCase()));
+  }
+
+  return json({
+    predictions: preds.slice(0, topK),
+    n_similar:   scored.length,
+    top_sim:     scored[0]?.sim.toFixed(4),
+    meta: { model: EMBED_MODEL, n_searched: rows.results?.length || 0 },
+  });
+}
+
 async function handleEmbed(req, env) {
   let body;
   try { body = await req.json(); }
@@ -500,6 +557,9 @@ export default {
     }
     if (url.pathname === "/sync" && method === "POST") {
       return handleSync(request, env);
+    }
+    if (url.pathname === "/predict" && method === "POST") {
+      return handlePredict(request, env);
     }
     if (url.pathname === "/graph" && method === "GET") {
       return handleGraph(env, url);
