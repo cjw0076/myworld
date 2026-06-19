@@ -277,6 +277,33 @@ async function handleContribute(req, env) {
   if (!content || !id) return json({ error: "content and id required" }, 400);
   if (hasSensitiveData(content)) return json({ error: "sensitive data detected — rejected" }, 422);
 
+  // ── Autonomous quality gate — no human operator needed ────────────────────
+  // Reject ReAct/chain-of-thought pseudo-tools that contaminate predictions.
+  // This runs on every contribution; the system self-enforces without manual cleanup.
+  const REAL_TOOL_RE = /^(Bash|Read|Edit|Write|Agent|WebSearch|WebFetch|Task|Skill|bash:|python|grep|find|ls|git|npm|curl|pip|make|docker|kubectl|sql:|fs\.|web\.|memory\.|cap\.|note\.|aios_)/i;
+  const PSEUDO_TOOL_MARKERS = ["Thought:", "Think:", "Action Input:", "Observation:", "Final Answer:", "Final:", "click[", "type[", "scroll[", "goto[", "search[", "go_back"];
+  const toolsArr = Array.isArray(topTools) ? topTools : [];
+  const pseudoCount = toolsArr.filter(t => PSEUDO_TOOL_MARKERS.some(m => String(t).startsWith(m))).length;
+  const realCount   = toolsArr.filter(t => REAL_TOOL_RE.test(String(t))).length;
+  if (toolsArr.length > 0 && pseudoCount > 0 && pseudoCount >= realCount) {
+    // AKR stake slash: if key provided, deduct 2 AKR penalty for bad contribution
+    const badKey = req.headers.get("X-AIOS-Key") || "";
+    if (badKey) {
+      const acct = await getAccount(env, badKey);
+      if (acct && acct.balance >= 2) {
+        acct.balance -= 2;
+        await saveAccount(env, badKey, acct);
+      }
+    }
+    return json({
+      error:       "quality_rejected: pseudo-tool names detected",
+      pseudo_tools: toolsArr.filter(t => PSEUDO_TOOL_MARKERS.some(m => String(t).startsWith(m))).slice(0, 5),
+      penalty_akr: badKey ? 2 : 0,
+      hint:        "top_tools must contain real tool names (Bash, Edit, Read, etc.), not ReAct reasoning traces",
+    }, 422);
+  }
+  // ── End quality gate ───────────────────────────────────────────────────────
+
   // Dedup
   const existing = await env.DB.prepare("SELECT id FROM memories WHERE id = ?").bind(id).first();
   if (existing) return json({ status: "duplicate", id });
