@@ -5,6 +5,32 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-19 KST — codex@myworld — ASC-0278 OpenAI agent surface absorption proposed
+
+- repo: myworld
+- role: source-backed planning / contract drafting
+- goal: bind current OpenAI agent-service surfaces to AIOS OS ownership before
+  AIOS depends on provider-managed state, deprecated visual workflow products,
+  or raw traces as memory.
+- changed: added
+  `docs/research/AIOS_OPENAI_AGENT_SURFACE_DELTA_2026-06-19.md`,
+  `docs/contracts/ASC-0278-openai-agent-surface-absorption.md`, and updated
+  `docs/AGENT_WORKLOG.md`.
+- evidence: official OpenAI docs checked for Agents SDK, Agent Builder,
+  ChatKit, running agents, results/state, Sandbox Agents, MCP/connectors,
+  observability, evals, background mode, and conversation state; AIOS route,
+  GenesisOS challenge, local helper, and read-only explorer were invoked.
+- decision: AIOS should absorb stable primitives into Hivemind, MemoryOS,
+  CapabilityOS, GenesisOS, and MyWorld contracts. Agent Builder is a transition
+  surface, not canonical AIOS state.
+- risk: provider state can split authority from MemoryOS; raw traces or MCP
+  payloads can leak private data; background mode has retention/ZDR semantics;
+  Agent Builder and the legacy Evals platform have shutdown timelines; child
+  repo implementation must not start from MyWorld under this proposal.
+- next: accept ASC-0278 for Claude hardening; Claude should return an
+  `aios.os_absorption_split.v1` packet and owner-specific follow-on contracts.
+- status: proposed
+
 ## 2026-06-16 KST — codex@dacon — ASC-0277 CLI log asset pool ledger proposed
 
 - repo: myworld

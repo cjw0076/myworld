@@ -4,6 +4,30 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-19 15:30 KST — codex@myworld — ASC-0278 OpenAI agent surface absorption proposed
+
+- status: proposed
+- scope: `docs/research/AIOS_OPENAI_AGENT_SURFACE_DELTA_2026-06-19.md`,
+  `docs/contracts/ASC-0278-openai-agent-surface-absorption.md`,
+  `docs/AIOS_AGENT_LEDGER.md`
+- work: checked current official OpenAI agent-service docs and mapped the
+  provider surfaces into AIOS OS ownership: Responses/Conversations,
+  Agents SDK sessions and RunState, Sandbox Agents, ChatKit, MCP/connectors,
+  traces/evals, background mode, and Agent Builder deprecation.
+- evidence: official source links are in the research note; AIOS route returned
+  `cap_aios_repo_goal_loop`, `cap_myworld_operator_control_plane`, and
+  `cap_aios_child_watcher`; GenesisOS critique forced explicit assumptions,
+  plain-language rewrite, and 1h/1w/1y horizons; local helper proposed the same
+  Claude/child-repo hardening split.
+- decision: treat OpenAI managed-agent surfaces as vendor primitives to absorb,
+  not as AIOS's canonical architecture. Claude should harden the OS split
+  before any child repo implementation.
+- risk: Agent Builder and the legacy Evals platform have shutdown timelines;
+  provider-managed state can create split-brain memory; raw traces/MCP
+  payloads/sandbox files can contain private data.
+- next: accept ASC-0278 for Claude architecture hardening, then split any real
+  gaps into owner-specific child contracts.
+
 ## 2026-06-14 03:00 KST — claude@myworld — ASC-0270/0271 hardening finalized
 
 - status: completed (pending operator acceptance of ASC-0271)
