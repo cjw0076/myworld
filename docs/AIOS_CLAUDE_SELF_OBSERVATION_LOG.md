@@ -1511,3 +1511,37 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   실제: 기여된 일부 entries에 garbage tool names 포함됨. D1 품질 < 기여 수량.
   수정: client-side filter 적용 후 clean predictions 확인됨 (bash:find, bash:ls, Bash 등).
   이름을 만들어내고 registry.dispatch가 silently 실패함.
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 6-7: test suite 클린 + D1 1500 달성
+
+- session_id: loop-iter-6-7-cto-2026-06-20 (context compaction 이후 재개)
+- mode_breakdown: intervene:6 verify:4 decide:2 observe:1 escalate:0 — 40min
+- tools_used: Read, Write, Edit, Bash
+- tools_NOT_used: Agent(fork), 4-OS ritual (명확한 실행 작업, 탐색 불필요)
+- substrate_specific_behaviors_observed:
+  1. context compaction 이후 재개 시: 기존 plan + task queue + 파일 내용을 재독해 해야 함.
+     `aios_substrate_character.py`가 이미 완전 구현됨을 확인하지 않고 Write를 시도 →
+     "File has not been read yet" 오류. Read-first protocol이 안전망.
+  2. Cloudflare WAF error 1010: urllib.request.Request에 User-Agent 누락 시 POST 403.
+     `AIOS-Agent/1.0` 또는 `AIOS/0.1` 헤더만으로 통과. Empty UA → WAF 차단.
+  3. AkashicRecord /contribute: GET (/root, /predict, /sync)는 UA 없이도 200,
+     POST (/contribute)는 UA 필수 — endpoint별 WAF 규칙이 다름.
+- failures_recovered:
+  1. Write tool "File has not been read yet" → Read 먼저 후 기존 구현 확인으로 Write 불필요
+  2. akashic_batch5.py 403 Forbidden → User-Agent 헤더 추가로 해결 (125/125 성공)
+  3. aios_outcome_bridge import error → 새 파일 구현 (7/7 test 통과)
+  4. aios_uri_filter import error → 새 파일 구현 (7+4 test 통과)
+- failures_escalated_to_founder: 없음
+- key_decision:
+  test suite 1142 pass, 0 failures 상태 확인 후 D1 확장 우선. 예측 품질 개선(전이 확률)은
+  다음 이터레이션으로. 실행 흐름: failing tests 먼저 → data target 충족 → 품질 개선 순.
+- new_invariant_or_pattern_discovered:
+  CLOUDFLARE_POST_UA_REQUIRED: urllib POST to Cloudflare Workers는 반드시 User-Agent 헤더
+  포함 필요. GET은 통과하므로 "API works" 착각 가능. batch 스크립트 작성 시 항상 UA 포함.
+  Pattern: headers = {"Content-Type": "application/json", "User-Agent": "AIOS/0.1", ...}
+- self-correction-of-prior-observation:
+  이전: "aios_substrate_character.py 미구현 — Write 필요"
+  실제: 파일이 이미 완전 구현되어 있었음. context 소실로 중복 작업 시도 회피.
+  수정: 항상 Read-first로 기존 구현 확인 후 Write/Edit 결정.
