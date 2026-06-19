@@ -344,6 +344,87 @@ def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
                        turn_sink=turn_sink)
 
 
+def _cosine(a: list[float], b: list[float]) -> float:
+    import math as _math
+    dot = sum(x * y for x, y in zip(a, b))
+    na = _math.sqrt(sum(x * x for x in a))
+    nb = _math.sqrt(sum(x * x for x in b))
+    return dot / (na * nb) if na and nb else 0.0
+
+
+def _semantic_retrieve(goal: str, root: Path, *, top_n: int = 8) -> list[dict]:
+    """Return top_n memory objects by cosine similarity to goal embedding.
+
+    Reads objects.jsonl directly (no memoryOS internals touched).
+    Embeds lazily: cache miss → Ollama call → write cache entry.
+    Graceful degradation: any failure returns []. Results are candidates only (DNA #2).
+    """
+    import urllib.request as _req, urllib.error as _uerr
+    _OLLAMA = "http://localhost:11434/api/embed"
+    _MODEL = "nomic-embed-text:latest"
+    _CACHE = root / ".aios" / "memory_embed_cache.json"
+    _STORE = root / "memoryOS" / "memory" / "objects.jsonl"
+
+    def _embed(text: str) -> list[float] | None:
+        body = json.dumps({"model": _MODEL, "input": text}).encode()
+        try:
+            rq = _req.Request(_OLLAMA, data=body, headers={"Content-Type": "application/json"})
+            with _req.urlopen(rq, timeout=10) as r:
+                return json.loads(r.read())["embeddings"][0]
+        except Exception:  # noqa: BLE001
+            return None
+
+    q_vec = _embed(goal)
+    if q_vec is None:
+        return []
+
+    cache: dict = {}
+    if _CACHE.exists():
+        try:
+            cache = json.loads(_CACHE.read_text(encoding="utf-8"))
+        except Exception:  # noqa: BLE001
+            cache = {}
+
+    objects: dict[str, dict] = {}
+    try:
+        for line in _STORE.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            obj = json.loads(line)
+            if obj.get("id") and obj.get("content"):
+                objects[obj["id"]] = obj
+    except Exception:  # noqa: BLE001
+        return []
+
+    cache_dirty = False
+    for oid, obj in objects.items():
+        chash = hashlib.sha256(obj["content"].encode()).hexdigest()[:16]
+        entry = cache.get(oid)
+        if entry and entry.get("content_hash") == chash:
+            continue
+        vec = _embed(obj["content"])
+        if vec is None:
+            return []
+        cache[oid] = {"embedding": vec, "content_hash": chash}
+        cache_dirty = True
+
+    if cache_dirty:
+        try:
+            _CACHE.parent.mkdir(parents=True, exist_ok=True)
+            _CACHE.write_text(json.dumps(cache, separators=(",", ":")), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
+
+    scored: list[tuple[float, dict]] = [
+        (_cosine(q_vec, cache[oid]["embedding"]), obj)
+        for oid, obj in objects.items()
+        if oid in cache
+    ]
+    scored.sort(key=lambda t: t[0], reverse=True)
+    return [obj for _, obj in scored[:top_n]]
+
+
 def _organ_preamble(goal: str, root: Path) -> dict:
     """Mandatory 5-OS preamble: memory context + capability route + genesis challenge.
 
@@ -352,6 +433,7 @@ def _organ_preamble(goal: str, root: Path) -> dict:
     Degrades honestly — a failing organ returns status=unavailable, never fabricates.
     """
     import subprocess as _sp
+    import threading as _th
 
     def _shell(cmd: list[str], cwd: Path) -> dict:
         try:
@@ -365,17 +447,51 @@ def _organ_preamble(goal: str, root: Path) -> dict:
     # Normalize Korean queries: memoryOS text search is keyword-based, so strip
     # grammatical particles that prevent "AIOS가" from matching "AIOS" in memory text.
     mem_task = _korean_keywords(goal) if any('가' <= c <= '힣' for c in goal) else goal
+
+    # Run semantic search in parallel with keyword search subprocess
+    sem_results: list[dict] = []
+    def _run_semantic() -> None:
+        sem_results.extend(_semantic_retrieve(goal, root, top_n=8))
+    t = _th.Thread(target=_run_semantic, daemon=True)
+    t.start()
+
     mem = _shell([sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
                   "--task", mem_task, "--json"], root / "memoryOS")
     cap = _shell([sys.executable, "-m", "capabilityos.cli", "recommend",
                   "--task", goal, "--json"], root / "CapabilityOS")
+
+    t.join(timeout=25)  # first run embeds ~342 objects (~25s); warm cache is <1s
+
     mem_data = (mem.get("data") or {}) if mem["status"] == "ok" else {}
     # context build returns `context_items` (int count) not `selected` (list)
     mem_hit_count = mem_data.get("context_items", 0) or len(mem_data.get("selected", []))
+
+    # Union keyword + semantic results, deduplicate by id
+    seen_ids: set[str] = set()
+    combined: list[dict] = []
+    kw_items = (
+        (mem_data.get("decisions") or []) +
+        (mem_data.get("constraints") or []) +
+        (mem_data.get("other") or [])
+    )
+    for item in kw_items:
+        oid = item.get("id", "")
+        if oid and oid not in seen_ids:
+            seen_ids.add(oid)
+            combined.append({**item, "_source": "keyword"})
+    for obj in sem_results:
+        oid = obj.get("id", "")
+        if oid and oid not in seen_ids:
+            seen_ids.add(oid)
+            combined.append({**obj, "_source": "semantic"})
+    combined.sort(key=lambda x: float(x.get("confidence", 0.5)), reverse=True)
+
     return {
         "memory_hits": mem_hit_count,
         "memory_accepted": mem_data.get("total_accepted", 0),
         "memory_status": mem["status"],
+        "semantic_hits": len(sem_results),
+        "hybrid_candidates": combined[:8],  # candidates only — never auto-accepted (DNA #2)
         "capability_status": cap["status"],
         "top_capability": ((cap.get("data") or {}).get("top", []) or [{}])[0].get("id") if cap["status"] == "ok" else None,
     }
