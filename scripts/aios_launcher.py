@@ -170,6 +170,8 @@ def self_model_command(root: Path, argv: list[str]) -> list[str]:
 
 
 def demo_command(root: Path, argv: list[str]) -> list[str]:
+    if argv and argv[0] == "agent":
+        return [sys.executable, (root / "scripts" / "aios_agent_demo.py").as_posix(), *argv[1:]]
     return [sys.executable, (root / "scripts" / "aios_demo.py").as_posix(), *argv]
 
 
