@@ -1,167 +1,183 @@
-# AIOS — myworld control plane
+# AIOS
 
 [![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
 [![docker](https://github.com/cjw0076/myworld/actions/workflows/docker.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/docker.yml)
 [![PyPI](https://img.shields.io/pypi/v/aios-os)](https://pypi.org/project/aios-os/)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
-**AIOS** is a local-first agent operating layer. It wraps provider agent CLIs
-(Claude Code, Codex CLI, local LLMs) in symbiosis — giving their one-shot
-execution continuity, memory, governance, and recovery — and is spreading from
-single-model toward a society of specialized local models.
+**An AI agent that learns from every run — and from every other agent's runs.**
 
-`myworld` is the **control plane**: contracts, dispatch, the deterministic
-kernel, and the always-on autopoietic round controller. It coordinates four
-sibling OS repos:
+Most AI agents are stateless. Each session starts from zero. AIOS keeps a behavioral memory ledger across sessions, across models, and across users — so the agent gets measurably smarter over time.
 
-- **hivemind** — execution layer (a contracted, verifiable, replayable run harness)
-- **memoryOS** — memory substrate (an append-only, provenance-stamped, retrievable graph)
-- **CapabilityOS** — capability map (recommendation-only routing)
-- **GenesisOS** — divergence layer (re-framing reasoning across fixed axes)
+---
 
-## See it in 30 seconds (no API key, no GPU, no network)
+## The problem
 
-**Easiest — no install needed:** click the badge above to open in GitHub Codespaces (browser IDE, free tier available). Then run `aios demo` in the terminal.
+You run Claude Code or Codex to fix a bug. It works. Tomorrow you run it again on a similar problem. It makes the same mistakes, takes the same wrong turns. **Nothing carried over.**
 
-Or locally (3-line quickstart):
+Multiply this by a team. Or by every developer running AI agents today. Billions of execution minutes, zero learning transfer.
+
+---
+
+## What AIOS does
+
+**1. Remembers what worked** — Every agent session is distilled into a behavioral signature: what tools were used, in what order, for what kind of task. Stored in a global ledger with a Merkle-verified audit trail.
+
+**2. Predicts what comes next** — Given your current context ("just ran a failing test, need to fix the import"), AIOS finds similar past sessions and tells you which tool to reach for next — before you waste tokens on wrong turns.
+
+**3. Transfers knowledge across providers** — A Codex session that found an efficient debugging pattern makes the Claude agent smarter. A local LLM run that hit a doom loop prevents the next agent from repeating it.
+
+---
+
+## Quickstart
 
 ```sh
+# No GPU, no API key needed for the first demo:
 git clone https://github.com/cjw0076/myworld && cd myworld
 pip install -e .
 aios demo
 ```
 
-After `pip install -e .` the `aios` command is registered globally — no need for `python bin/aios` or activating a virtualenv each time.
+Output:
 
-It shows the one idea AIOS is built around: the AI only *proposes*, then plain
-deterministic code checks the part that has to be exact — and **rejects** the
-answer if the check fails. The demo runs the same checker on a good study plan
-(passes) and on a plan with a realistic AI slip — a session scheduled past its
-deadline — and watches the code catch it. Every result leaves a provenance file.
+```
+  Checker says: PASS ✓  (3 courses scheduled, no deadline violated)
+  Checker says: CAUGHT ✗ — the AI scheduled work after the deadline
+```
 
-## Live AI pipeline demo (requires a provider)
+The demo shows the core idea: AI proposes, deterministic code verifies, wrong answers are rejected. Every run leaves a provenance record.
 
-Once you have Ollama running (`aios setup apply`) or an API key set, run the
-full organic pipeline in one command:
+---
+
+## AkashicRecord — live behavioral ledger
+
+The global memory layer is live and public. No sign-up required.
+
+```
+https://aios-akashic.cjw070690.workers.dev/
+```
+
+**Dashboard** — real-time entry counts by category, provider, OS origin, Merkle root.
+
+**Memory Galaxy** — 3D force-directed graph of behavioral similarity. Nodes are agent sessions, edges are semantic similarity. Categories glow when you type a context.
+
+```
+https://aios-akashic.cjw070690.workers.dev/galaxy
+```
+
+**Prediction API** — open endpoint, no auth:
 
 ```sh
-aios demo --chat
+curl -X POST https://aios-akashic.cjw070690.workers.dev/predict \
+  -H "Content-Type: application/json" \
+  -d '{"context": "running tests, got import error, need to fix the module", "top_k": 3}'
 ```
 
-Example output:
-
-```
-  ┌─────────────────────────────────────────────────────────────┐
-  │  AIOS demo --chat  — live organic pipeline run               │
-  └─────────────────────────────────────────────────────────────┘
-
-  Goal:     What is AIOS and how does the organic pipeline work?
-  Provider: ollama_rest (local Ollama — no cost)
-  Memory:   215 hit(s) recalled from memoryOS
-  Turns:    4   exit=max_turns
-
-  Answer:
-
-    AIOS is a system that enables end-users to control and view how AI
-    agents operate, ensuring transparency in their tasks. The organic
-    pipeline involves capturing directives, managing task distribution,
-    and allowing agents to perform their roles effectively while
-    maintaining control and visibility for the user.
-
-  Provenance: organic pipeline (preamble → loop → synthesis), no hardcoded output.
-  Next: `aios serve` → http://localhost:8741/ for the full interactive UI.
+```json
+{
+  "predictions": [
+    { "tool": "Bash",  "score": 0.54 },
+    { "tool": "Edit",  "score": 0.31 },
+    { "tool": "Read",  "score": 0.15 }
+  ],
+  "n_similar": 30
+}
 ```
 
-Use `--goal "your question"` to ask anything.
-Use `--json` for structured output.
-
-## Install
+**Merkle verification** — every entry is content-addressed and provable:
 
 ```sh
-# Option 1 — PyPI (recommended, no git clone needed):
-pip install aios-os
-aios demo
+curl https://aios-akashic.cjw070690.workers.dev/root
+curl https://aios-akashic.cjw070690.workers.dev/proof/<entry-id>
+```
 
-# Option 2 — one-command full install (clones all repos + provisions Ollama):
+---
+
+## Full install — with live providers
+
+```sh
+# One command: clones repos + installs + wires into your agent CLIs
 curl -fsSL https://raw.githubusercontent.com/cjw0076/myworld/main/install.sh | sh
-aios setup apply        # provision local models (qwen3:1.7b / qwen3:8b via Ollama)
 
-# Option 3 — from source (developers):
-git clone https://github.com/cjw0076/myworld && cd myworld
-pip install -e .
-```
+# Provision a local model (no API cost):
+aios setup apply        # pulls qwen3:1.7b via Ollama
 
-Full instructions: [`docs/AIOS_INSTALL.md`](docs/AIOS_INSTALL.md).
-
-## Provider options — choose what fits your environment
-
-AIOS auto-selects the best available provider in this order:
-
-| Provider | Requires | Cost | Latency |
-|----------|----------|------|---------|
-| Ollama (local) | GPU + `aios setup apply` | Free | ~0.2–7s |
-| Gemini REST | `GEMINI_API_KEY` | Free tier (1500 req/day) | ~1–3s |
-| Anthropic REST | `ANTHROPIC_API_KEY` | Pay-per-token | ~1–3s |
-
-```sh
-# Check which providers are active right now:
-curl http://localhost:8741/status
-
-# Use Gemini (no GPU needed):
-export GEMINI_API_KEY=your_key_here
-aios serve
-
-# Use Anthropic Claude (no GPU needed):
-export ANTHROPIC_API_KEY=your_key_here
-aios serve
-```
-
-In GitHub Codespaces: add your API key as a **Codespaces Secret** (`Settings → Codespaces → Secrets`) and it will be available as an environment variable when the container starts.
-
-## Chat UI — talk to your AIOS
-
-After install, start the web interface:
-
-```sh
+# Start the chat UI:
 aios serve              # → http://localhost:8741/
-aios serve --tunnel     # → https://xxxx.trycloudflare.com  (shareable public URL)
 ```
 
-The UI is a conversation thread backed by the organic pipeline: each message
-runs through memory retrieval → tool loop (up to 6 turns) → local LLM
-synthesis → Korean / English answer. Session history persists in the browser;
-conversation context carries across messages in the same tab.
+### Provider options
 
-## Docker quickstart
+AIOS auto-selects the best available provider:
 
-No install needed — pull and run with your Gemini free-tier key:
+| Provider | Setup | Cost |
+|----------|-------|------|
+| Ollama (local) | `aios setup apply` | Free |
+| Gemini REST | `GEMINI_API_KEY=...` | Free tier (1500 req/day) |
+| Anthropic Claude | `ANTHROPIC_API_KEY=...` | Pay-per-token |
+
+In GitHub Codespaces: add your key under **Settings → Codespaces → Secrets**.
+
+---
+
+## Contribute your agent sessions
+
+Every session you run makes the global ledger smarter for everyone:
 
 ```sh
-docker run --rm -e GEMINI_API_KEY=your_key_here -p 8741:8741 \
-  ghcr.io/cjw0076/myworld:latest \
-  aios serve --host 0.0.0.0
+# Opt-in: send your local behavioral patterns (tool names only, no content)
+aios behavior contribute --opt-in code,docs
 ```
 
-Then open http://localhost:8741/ in your browser.
+**Privacy guarantee:** only structural metadata is stored — tool names, sequence, category. No prompts, no outputs, no file contents. Verified by the Worker's privacy gate before any entry reaches D1.
 
-The default image command works offline with no key:
+---
+
+## Architecture (for developers)
+
+```
+Your agent CLI (Claude Code / Codex / local LLM)
+        ↓
+   aios_head.py  ←── memory retrieval, capability routing, doom-loop guard
+        ↓
+   aios_turn_loop.py  ←── event log, session record, tool dispatch
+        ↓
+   AkashicRecord (Cloudflare Worker + D1)  ←── global behavioral ledger
+        ↓
+   /predict  /graph  /proof  /checkpoints  ←── open API
+```
+
+Five OS modules, each owning a distinct authority layer:
+
+| Module | Role |
+|--------|------|
+| **myworld** | Contracts, dispatch, operator kernel |
+| **hivemind** | Execution harness, verification, run receipts |
+| **memoryOS** | Append-only memory graph, provenance, retrieval |
+| **CapabilityOS** | Tool/API routing recommendations |
+| **GenesisOS** | Assumption mutation, cross-domain reasoning |
+
+---
+
+## Docker
 
 ```sh
-docker run --rm ghcr.io/cjw0076/myworld:latest
+docker run --rm -e GEMINI_API_KEY=your_key -p 8741:8741 \
+  ghcr.io/cjw0076/myworld:latest aios serve --host 0.0.0.0
 ```
 
-> **Note:** `--host 0.0.0.0` is required when running inside Docker — without it the server binds to the container's loopback only and `-p 8741:8741` has nothing to forward to.
+---
 
-## Orientation
+## Current state
 
-- `docs/AIOS_NORTHSTAR.md` — the system's final shape
-- `docs/AIOS_DNA.md` — the invariants AIOS will not violate
-- `docs/contracts/` — the contract ledger (every change is a contract)
-- `docs/AIOS_AGENT_LEDGER.md` — the append-only cross-repo decision log
-- `CLAUDE.md` / `AGENTS.md` — operator entry points
+The ledger has **~1,400 behavioral entries** from real agent sessions. Prediction accuracy improves with scale — the network effect becomes visible above 10,000 entries. This is early, but the infrastructure is production-grade (Cloudflare Workers + D1, Merkle-verified, globally distributed).
 
-## Design in one line
+If you run AI agents regularly, contributing your session patterns (opt-in, tool names only) is the fastest way to make the predictions useful.
 
-The deterministic kernel keeps the invariants; the autopoietic loop (dream →
-consolidate → verify → self-evolve) keeps AIOS learning; provider CLIs and
-local models do the reasoning. AIOS is the operating layer, not the model.
+---
+
+## Learn more
+
+- [`docs/AIOS_MINIMUM_KERNEL_AUDIT.md`](docs/AIOS_MINIMUM_KERNEL_AUDIT.md) — what the kernel actually does
+- [`docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md`](docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md) — ledger design and roadmap
+- [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) — operator entry points
