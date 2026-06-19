@@ -334,6 +334,7 @@ def build_parser() -> argparse.ArgumentParser:
             "complete",
             "ingest-conversations",
             "behavior",
+            "agent",
             "librarian",
             "setup",
             "capability-feedback",
@@ -427,6 +428,10 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "behavior":
         cmd = [sys.executable, (root / "scripts" / "aios_agent_behavior.py").as_posix(), *args.args]
+        return run_delegate(cmd, cwd=Path.cwd())
+
+    if args.cmd == "agent":
+        cmd = [sys.executable, (root / "scripts" / "aios_agent_system.py").as_posix(), *args.args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "librarian":
