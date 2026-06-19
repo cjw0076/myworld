@@ -429,7 +429,7 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
             project="aios_execution",
             raw_refs=[f"run:{run_id}" if run_id else f"goal_hash:{ref_hash}"],
             confidence=0.6,
-            status="draft",
+            status="speculative",
         )
         store = GraphStore(mem_path)
         written, skipped = store.append_memory_objects([mo])
@@ -575,6 +575,11 @@ def _organ_synthesis(goal: str, result: dict, preamble: dict | None = None,
                     if content and content not in seen_contents:
                         seen_contents.add(content)
                         mem_snippets.append(f"[constraint] {content}")
+                for item in (data.get("other") or [])[:3]:
+                    content = str(item.get("content", ""))[:100].strip()
+                    if content and content not in seen_contents:
+                        seen_contents.add(content)
+                        mem_snippets.append(f"[observation] {content}")
                 if len(mem_snippets) >= 8:
                     break
         except Exception:  # noqa: BLE001
