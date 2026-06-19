@@ -41,3 +41,14 @@ weights/
 *.pth
 *.ckpt
 *.safetensors
+
+# External tool clones / research imports (not AIOS code)
+gemini/
+gemini-cli/
+
+# Session artifacts and import research documents
+artifacts/
+docs/imports/
+
+# Scratch files
+[0-9].md

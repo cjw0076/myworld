@@ -1,9 +1,14 @@
 #!/bin/sh
 # AIOS devcontainer setup — runs once after the container is created.
-# Installs Ollama and provisions the qwen3 models needed for `aios serve`.
+# Installs AIOS CLI, then Ollama + models if no API key is available.
 # If GEMINI_API_KEY or ANTHROPIC_API_KEY is set (via Codespaces Secrets),
 # the heavy model pull is skipped — AIOS will use the cloud provider instead.
 set -eu
+
+echo "[aios devcontainer] installing AIOS CLI..."
+pip install -e . --quiet
+echo "[aios devcontainer] aios command registered. Run: aios demo"
+echo ""
 
 echo "[aios devcontainer] checking providers..."
 
