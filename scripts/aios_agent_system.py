@@ -104,6 +104,8 @@ _VALID_CLI = {
     "sort", "head", "tail", "wc", "diff", "tar", "zip", "unzip", "chmod",
     "env", "export", "cd", "pwd", "which", "test",
 }
+# Only these colon prefixes are meaningful in AIOS context
+_VALID_PREFIXES = {"bash", "note", "web", "memory", "cap", "aios", "read", "edit", "write"}
 
 
 def _valid_tool_name(name: str) -> bool:
@@ -112,23 +114,21 @@ def _valid_tool_name(name: str) -> bool:
     # Exact AIOS tool names
     if name in _KNOWN_TOOLS:
         return True
-    # agentbank / aios_ prefix format: "bash:cmd", "note:slug", "aios_xxx"
+    # agentbank / aios_ prefix format: "bash:cmd", "note:slug", etc.
     if ":" in name:
         prefix, suffix = name.split(":", 1)
-        if not re.match(r'^[a-z_]{2,12}$', prefix):
-            return False
+        if prefix not in _VALID_PREFIXES:
+            return False  # reject sql:*, go:*, take:*, unknown:*
         if not re.match(r'^[a-z0-9_/-]{1,20}$', suffix):
             return False
-        # Suffix must be a known CLI or short slug
+        # Bash suffix must be a known CLI command
         if prefix == "bash" and suffix not in _VALID_CLI:
             return False
         return True
     # aios_ prefixed internal tools
     if name.startswith("aios_") and re.match(r'^aios_[a-z0-9_]{2,30}$', name):
         return True
-    # Reject model names (contain colons already handled above, but e.g. "qwen3")
-    if re.match(r'^[a-z]+\d+', name) and len(name) > 10:
-        return False
+    # Reject model names and short unknowns
     return False
 
 

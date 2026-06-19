@@ -103,7 +103,8 @@ class TestValidToolName(unittest.TestCase):
             self.assertTrue(self._valid(name), f"{name} should be valid")
 
     def test_garbage_invalid(self):
-        for name in ["bash:stbed", "bash:rkspace", "qwen3-coder:30b"]:
+        for name in ["bash:stbed", "bash:rkspace", "qwen3-coder:30b",
+                     "sql:show", "sql:select", "go", "take", "submit"]:
             self.assertFalse(self._valid(name), f"{name} should be invalid")
 
     def test_aios_prefix_valid(self):
