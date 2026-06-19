@@ -402,8 +402,10 @@ async function handleGraph(env, urlObj) {
     };
   });
 
-  // Pairwise cosine — emit edge only if sim >= minSim
-  const links = [];
+  // Pairwise cosine — collect all valid pairs, then prune to top-K per node
+  const topK   = Math.min(20, Math.max(2, parseInt(params.get("top_k") || "10")));
+  const adjList = Array.from({ length: entries.length }, () => []);
+
   for (let i = 0; i < entries.length; i++) {
     const a = entries[i];
     for (let j = i + 1; j < entries.length; j++) {
@@ -412,10 +414,27 @@ async function handleGraph(env, urlObj) {
       for (let k = 0; k < a.vec.length; k++) dot += a.vec[k] * b.vec[k];
       const sim = dot / (a.norm * b.norm);
       if (sim >= minSim) {
-        links.push({ source: a.id, target: b.id, value: parseFloat(sim.toFixed(4)) });
+        adjList[i].push({ other: j, sim });
+        adjList[j].push({ other: i, sim });
       }
     }
   }
+
+  // Keep top-K strongest neighbors per node, deduplicate symmetric edges
+  const edgeSet = new Set();
+  const links   = [];
+  adjList.forEach((neighbors, i) => {
+    neighbors
+      .sort((a, b) => b.sim - a.sim)
+      .slice(0, topK)
+      .forEach(({ other, sim }) => {
+        const key = Math.min(i, other) + '_' + Math.max(i, other);
+        if (!edgeSet.has(key)) {
+          edgeSet.add(key);
+          links.push({ source: entries[i].id, target: entries[other].id, value: parseFloat(sim.toFixed(4)) });
+        }
+      });
+  });
 
   // Strip embeddings before returning
   const nodes = entries.map(({ vec, norm, ...rest }) => rest);
@@ -423,7 +442,7 @@ async function handleGraph(env, urlObj) {
   return json({
     nodes,
     links,
-    meta: { total_nodes: nodes.length, total_links: links.length, min_sim: minSim },
+    meta: { total_nodes: nodes.length, total_links: links.length, min_sim: minSim, top_k: topK },
   });
 }
 

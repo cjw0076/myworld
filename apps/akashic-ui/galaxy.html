@@ -200,7 +200,7 @@
 <div id="controls">
   <button class="ctrl-btn" onclick="toggleLinks()" title="Toggle links">⌁</button>
   <button class="ctrl-btn" onclick="G.zoomToFit(600)" title="Fit view">⊞</button>
-  <a href="index.html" style="text-decoration:none">
+  <a href="/" style="text-decoration:none">
     <button class="ctrl-btn" title="Dashboard">⊙</button>
   </a>
 </div>
@@ -263,14 +263,17 @@ const COLORS = {
   artifact:      "#b0bec5",
   unknown:       "#546e7a",
 };
-
 function catColor(c) { return COLORS[c] || COLORS.unknown; }
+const nodeRadius = n => Math.max(2, (n.confidence || 0.75) * 4);
 
 // ── State ──────────────────────────────────────────────────────────────────
-let G, graphData, linksVisible = true;
-let activeFilter = "all";
+let G, graphData, linksVisible = true, activeFilter = "all", _camDist = 500;
+// InstancedMesh layer
+let _instGroups = null;   // { cat: { mesh, nodes, nodeIdxMap } }
+let _hovered    = null;   // { cat, idx }
+const _dummy    = new THREE.Object3D();
 
-// ── Progress helper ────────────────────────────────────────────────────────
+// ── Progress ───────────────────────────────────────────────────────────────
 function progress(msg, pct) {
   document.getElementById("load-msg").textContent  = msg;
   document.getElementById("load-fill").style.width = pct + "%";
@@ -279,23 +282,19 @@ function progress(msg, pct) {
 // ── Load data ──────────────────────────────────────────────────────────────
 async function loadGraph() {
   progress("Fetching behavioral patterns…", 10);
-  const r = await fetch(`${API}/graph?limit=150&min_sim=0.80`);
+  const r = await fetch(`${API}/graph?limit=150&min_sim=0.80&top_k=10`);
   const d = await r.json();
-  progress("Building similarity graph…", 60);
+  progress("Building similarity graph…", 50);
 
-  // Build node map for fast lookup
   const nodeMap = {};
-  d.nodes.forEach(n => { n.color = catColor(n.category); nodeMap[n.id] = n; });
-
-  // Enrich links with neighbor lists on nodes
-  d.nodes.forEach(n => { n._links = []; });
+  d.nodes.forEach(n => { n.color = catColor(n.category); nodeMap[n.id] = n; n._links = []; });
   d.links.forEach(l => {
     const s = nodeMap[l.source], t = nodeMap[l.target];
     if (s) s._links.push({ id: l.target, sim: l.value });
     if (t) t._links.push({ id: l.source, sim: l.value });
   });
 
-  progress("Rendering…", 85);
+  progress("Initializing GPU renderer…", 70);
   graphData = d;
   buildLegend(d.nodes);
   buildFilters(d.nodes);
@@ -337,6 +336,7 @@ function filterCat(btn) {
   btn.classList.add("active");
   activeFilter = btn.dataset.cat;
   if (!G) return;
+  // pick sphere visibility (raycasting)
   G.nodeVisibility(n => activeFilter === "all" || n.category === activeFilter);
   G.linkVisibility(l => {
     if (!linksVisible) return false;
@@ -345,12 +345,82 @@ function filterCat(btn) {
     const t = typeof l.target === "object" ? l.target : graphData.nodes.find(n=>n.id===l.target);
     return s?.category === activeFilter || t?.category === activeFilter;
   });
+  // InstancedMesh visibility (visual)
+  syncInstMeshes();
 }
 
 // ── Toggle links ────────────────────────────────────────────────────────────
 function toggleLinks() {
   linksVisible = !linksVisible;
   G && G.linkVisibility(() => linksVisible);
+}
+
+// ── InstancedMesh layer ────────────────────────────────────────────────────
+// One InstancedMesh per category = K draw calls instead of N
+function buildInstMeshes(nodes, scene) {
+  const groups = {};
+  nodes.forEach(n => { (groups[n.category] = groups[n.category] || []).push(n); });
+
+  const geo = new THREE.SphereGeometry(1, 8, 6); // unit sphere, scaled per instance
+  _instGroups = {};
+
+  Object.entries(groups).forEach(([cat, catNodes]) => {
+    const mat  = new THREE.MeshLambertMaterial({ color: catColor(cat) });
+    const mesh = new THREE.InstancedMesh(geo, mat, catNodes.length);
+    mesh.frustumCulled = false;
+    mesh.name = `inst_${cat}`;
+
+    // Init instanceColor buffer (required before per-instance color writes)
+    const base = new THREE.Color(catColor(cat));
+    catNodes.forEach((_, i) => mesh.setColorAt(i, base));
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+
+    scene.add(mesh);
+    _instGroups[cat] = {
+      mesh,
+      nodes: catNodes,
+      nodeIdxMap: Object.fromEntries(catNodes.map((n, i) => [n.id, i])),
+    };
+  });
+}
+
+// Sync InstancedMesh positions with force simulation each tick
+function syncInstMeshes() {
+  if (!_instGroups || !graphData) return;
+  Object.entries(_instGroups).forEach(([cat, { mesh, nodes }]) => {
+    nodes.forEach((n, i) => {
+      const hidden = activeFilter !== "all" && n.category !== activeFilter;
+      if (hidden || n.x === undefined) {
+        _dummy.position.set(0, 0, -99999); _dummy.scale.setScalar(0.001);
+      } else {
+        _dummy.position.set(n.x || 0, n.y || 0, n.z || 0);
+        _dummy.scale.setScalar(nodeRadius(n));
+      }
+      _dummy.updateMatrix();
+      mesh.setMatrixAt(i, _dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+}
+
+// Brighten hovered instance via instanceColor (no separate mesh needed)
+function highlightInstance(node) {
+  if (_hovered) {
+    const grp = _instGroups?.[_hovered.cat];
+    if (grp) {
+      grp.mesh.setColorAt(_hovered.idx, new THREE.Color(catColor(_hovered.cat)));
+      grp.mesh.instanceColor.needsUpdate = true;
+    }
+    _hovered = null;
+  }
+  if (!node) return;
+  const grp = _instGroups?.[node.category];
+  if (!grp) return;
+  const idx = grp.nodeIdxMap[node.id];
+  if (idx === undefined) return;
+  grp.mesh.setColorAt(idx, new THREE.Color(catColor(node.category)).multiplyScalar(2.2));
+  grp.mesh.instanceColor.needsUpdate = true;
+  _hovered = { cat: node.category, idx };
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
@@ -362,34 +432,47 @@ function renderGraph(data) {
     .backgroundColor("#020510")
     .graphData(data)
     .nodeId("id")
-    .nodeLabel(n => n.id)
-    .nodeColor(n => n.color || "#4fc3f7")
-    .nodeVal(n => (n.confidence || 0.75) * 6)
-    .nodeOpacity(0.9)
-    .nodeResolution(12)
-    .linkColor(() => "rgba(79,195,247,0.22)")
+    .nodeLabel("")
+    // Invisible pick spheres — geometry for raycasting, no visual output
+    // (colorWrite:false = game-style "ghost collider" pattern)
+    .nodeThreeObject(n => new THREE.Mesh(
+      new THREE.SphereGeometry(nodeRadius(n), 4, 3),
+      new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false })
+    ))
+    .nodeThreeObjectExtend(false)
+    // Links
+    .linkColor(l => `rgba(79,195,247,${(l.value * 0.28).toFixed(2)})`)
     .linkWidth(l => l.value * 1.2)
-    .linkOpacity(0.6)
-    .linkDirectionalParticles(l => l.value > 0.88 ? 2 : 0)
-    .linkDirectionalParticleWidth(1.2)
+    .linkOpacity(0.55)
+    .linkDirectionalParticles(l => l.value > 0.9 ? 1 : 0)
+    .linkDirectionalParticleWidth(1.0)
     .linkDirectionalParticleColor(() => "#4fc3f7")
+    // Force sim: faster convergence + auto-stop
+    .d3AlphaDecay(0.04)        // default 0.0228 → ~2× faster settling
+    .d3VelocityDecay(0.3)      // more damping, less oscillation
+    .d3AlphaMin(0.005)         // stop earlier (default 0.001)
+    .warmupTicks(60)           // pre-simulate 60 ticks before first paint
+    .cooldownTicks(150)        // cap live ticks then stop
+    .onEngineStop(() => {
+      G.linkDirectionalParticles(0); // kill particles after convergence → free GPU
+      G.cooldownTicks(0);
+    })
+    // Interactions
     .onNodeHover(n => {
       document.body.style.cursor = n ? "pointer" : "default";
+      highlightInstance(n);
       if (n) {
         tooltip.style.display = "block";
         document.getElementById("tt-id").textContent = n.id;
         document.getElementById("tt-cat").innerHTML =
           `<span class="tt-cat" style="background:${catColor(n.category)}22;color:${catColor(n.category)}">${n.category}</span>`;
-        document.getElementById("tt-tools").textContent =
-          (n.top_tools||[]).slice(0,4).join("  ·  ");
-      } else { tooltip.style.display = "none"; }
+        document.getElementById("tt-tools").textContent = (n.top_tools||[]).slice(0,4).join("  ·  ");
+      } else {
+        tooltip.style.display = "none";
+      }
     })
     .onNodeClick(n => openPanel(n))
-    .onBackgroundClick(() => closePanel())
-    .onEngineTick(() => {
-      const e = window.event;
-      if (e) { tooltip.style.left = (e.clientX + 12) + "px"; tooltip.style.top = (e.clientY - 30) + "px"; }
-    });
+    .onBackgroundClick(() => closePanel());
 
   // Mouse follow for tooltip
   document.getElementById("graph").addEventListener("mousemove", e => {
@@ -397,28 +480,42 @@ function renderGraph(data) {
     tooltip.style.top  = (e.clientY - 30)  + "px";
   });
 
-  // Star field background
-  const starGeom = new THREE.BufferGeometry();
-  const positions = new Float32Array(3000);
-  for (let i = 0; i < 3000; i++) positions[i] = (Math.random() - 0.5) * 3000;
-  starGeom.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  const starMat  = new THREE.PointsMaterial({ color: 0xaabbcc, size: 0.6, transparent: true, opacity: 0.5 });
-  const stars    = new THREE.Points(starGeom, starMat);
-  G.scene().add(stars);
+  // InstancedMesh layer (visual rendering)
+  buildInstMeshes(data.nodes, G.scene());
+
+  // Sync InstancedMesh each physics tick
+  G.onEngineTick(syncInstMeshes);
+
+  // Camera-distance link culling — hide weak links when zoomed out
+  G.controls().addEventListener("change", () => {
+    _camDist = G.camera().position.length();
+    G.linkVisibility(l => {
+      if (!linksVisible) return false;
+      if (_camDist > 700 && l.value < 0.88) return false;
+      if (activeFilter === "all") return true;
+      const s = typeof l.source === "object" ? l.source : graphData.nodes.find(n => n.id === l.source);
+      const t = typeof l.target === "object" ? l.target : graphData.nodes.find(n => n.id === l.target);
+      return s?.category === activeFilter || t?.category === activeFilter;
+    });
+  });
+
+  // Star field — single Points draw call
+  const pos = new Float32Array(3000);
+  for (let i = 0; i < 3000; i++) pos[i] = (Math.random() - 0.5) * 3000;
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  G.scene().add(new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xaabbcc, size: 0.6, transparent: true, opacity: 0.5 })));
 
   // HUD
   document.getElementById("hud-nodes").textContent = data.nodes.length;
   document.getElementById("hud-links").textContent = data.links.length;
 
-  // After warmup, fit view
-  setTimeout(() => G.zoomToFit(500), 3500);
-
-  // Hide loading
+  setTimeout(() => G.zoomToFit(500), 2000); // fit after warmup settles
   setTimeout(() => {
     const l = document.getElementById("loading");
     l.classList.add("fade");
     setTimeout(() => l.remove(), 500);
-  }, 500);
+  }, 400);
 }
 
 // ── Side panel ──────────────────────────────────────────────────────────────
