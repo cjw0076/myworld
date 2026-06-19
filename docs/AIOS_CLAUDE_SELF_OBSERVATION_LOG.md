@@ -1584,6 +1584,38 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 
 ---
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 11-12: Phase D 테스트 + garbage tool fix
+
+- session_id: loop-iter-11-12-cto-2026-06-20
+- mode_breakdown: intervene:5 verify:3 decide:2 observe:1 — ~40min
+- tools_used: Read, Edit, Bash, Write
+- tools_NOT_used: Agent(fork), 4-OS ritual
+- substrate_specific_behaviors_observed:
+  1. plan Phase A-E 상태 재확인: 이전 context compaction으로 "아직 안 된 것"으로 착각.
+     grep으로 1분 내 전체 상태 확인 패턴 — 재구현 시도 전 먼저 grep으로 existence check.
+  2. doom_loop 판정: 테스트 fixture ["Read","Read","Read"] → doom_loop 판정.
+     HiveMind assertion hook이 즉시 캐치. 실제 구현 동작을 이해하고 fixture를 설계해야 함.
+  3. garbage tool name 근본 원인: _parse_claude_session() line 131의 elif 분기.
+     "queue-operation"/"last-prompt"는 Claude Code 내부 이벤트지 tool 실행이 아님.
+     이 오류가 6개 memoryOS draft를 오염시킴.
+  4. memoryOS draft reject-batch: --dry-run으로 먼저 확인 후 실행. "rejected: 6 skipped: 351"
+     — 351개는 이미 다른 상태, 6개만 draft 상태로 정확히 타겟됨.
+- failures_recovered:
+  1. doom_loop fixture 오류 → 연속 중복 없는 fixture로 수정 (HiveMind hook 덕분)
+  2. garbage tool names 근본 fix → 6개 draft reject + elif 제거
+- failures_escalated_to_founder: 없음
+- key_decision:
+  ASC-0180 deliberation = WP-0180-A (codex@hivemind 위임) + founder gated verdict.
+  이 이터레이션에서 처리 불가 → P2 유지. uri outside-domain proof는 현재 no open bugs.
+- new_invariant_or_pattern_discovered:
+  DRAFT_REJECT_REASON_REQUIRED: memoryOS draft reject 시 --note로 구체적 reject reason 필수.
+  "garbage tool names: X, Y not real Claude Code tools; provenance missing" 형식.
+  이유 없는 reject는 audit trail 부실 → 나중에 왜 reject됐는지 알 수 없음.
+  GREP_BEFORE_REIMPLEMENT: "아직 구현 안 됨" 가정 전 grep으로 existence 확인 필수.
+  Phase A-E가 이미 완성됐음을 grep으로 1분 내 확인 (재구현 낭비 방지).
+
+---
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 10: CC6 완성 → Kernel 6/6
 
 - session_id: loop-iter-10-cto-2026-06-20
