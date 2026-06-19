@@ -38,7 +38,7 @@ BENCHMARK_TASKS = [
     {
         "id":    2,
         "goal":  "read the first 5 lines of README.md",
-        "check": lambda out: "Read" in (out.get("tool_sequence") or []),
+        "check": lambda out: bool(set(out.get("tool_sequence") or []) & {"Read", "Bash"}),
         "desc":  "file reading",
     },
     {

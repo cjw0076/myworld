@@ -122,8 +122,8 @@ def _exec_edit(args: dict) -> tuple[str, str]:
 
 
 def _exec_write(args: dict) -> tuple[str, str]:
-    path    = args.get("path", "")
-    content = args.get("content", "")
+    path    = args.get("path", "") or args.get("file_path", "")
+    content = args.get("content", "") or args.get("text", "")
     if not path:
         return "error", "no path provided"
     try:
