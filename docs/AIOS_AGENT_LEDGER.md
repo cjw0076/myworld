@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-19 KST — codex@myworld — ASC-0279 world-service objective audit
+
+- repo: myworld
+- role: implementation / read-only completion audit
+- goal: prevent green release gates from being mistaken for proof that the
+  entire active AIOS world-service objective is complete.
+- changed: added `scripts/aios_world_service_audit.py`,
+  `tests/test_aios_world_service_audit.py`,
+  `docs/contracts/ASC-0279-world-service-objective-audit.md`, and updated
+  `docs/AGENT_WORKLOG.md`.
+- evidence: focused unittest, py_compile, JSON smoke, diff check, AIOS route,
+  MemoryOS retrieve, GenesisOS challenge, and local helper.
+- decision: the audit uses `proven`, `partial`, `weak`, and `missing` so
+  proposed contracts such as ASC-0277/ASC-0278 cannot count as completed proof.
+  It reinforces ASC-0270/ASC-0271: Codex owns dream/product expansion and
+  objective measurement; Claude owns hardening result packets and child-repo
+  implementation.
+- risk: conservative evidence rows may need revision when child repos add
+  stronger primitives; external hosted-scale proof still needs operator
+  authority before any live deployment.
+- next: run `python3 scripts/aios_world_service_audit.py --json` before any
+  future goal-completion claim; prioritize ASC-0277, ASC-0278, CapabilityOS
+  SkillOS migration, and hosted-scale proof gaps.
+- status: closed
+
 ## 2026-06-19 KST — codex@myworld — ASC-0278 OpenAI agent surface absorption proposed
 
 - repo: myworld

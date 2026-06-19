@@ -4,6 +4,28 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-19 15:45 KST — codex@myworld — ASC-0279 world-service objective audit
+
+- status: closed
+- scope: `scripts/aios_world_service_audit.py`,
+  `tests/test_aios_world_service_audit.py`,
+  `docs/contracts/ASC-0279-world-service-objective-audit.md`,
+  `docs/AIOS_AGENT_LEDGER.md`
+- work: added a read-only objective-level audit that consumes the existing
+  design, release, and world-readiness gates, then maps the active AIOS
+  world-service goal to concrete evidence rows marked as `proven`, `partial`,
+  `weak`, or `missing`.
+- evidence: focused unittest, py_compile, JSON smoke, diff check, AIOS route,
+  MemoryOS retrieve, GenesisOS challenge, and local helper.
+- decision: green release-readiness gates are necessary but not sufficient for
+  full goal completion. Weak/proposed contracts such as ASC-0277 and ASC-0278
+  must not be treated as proof, and ASC-0270/ASC-0271 keep Codex's growth lane
+  separate from Claude's hardening lane.
+- risk: the audit is intentionally conservative and will need updates as
+  owner-specific child contracts close.
+- next: use the audit to choose between ASC-0277, ASC-0278, CapabilityOS
+  SkillOS migration, and a future hosted-scale proof contract.
+
 ## 2026-06-19 15:30 KST — codex@myworld — ASC-0278 OpenAI agent surface absorption proposed
 
 - status: proposed
