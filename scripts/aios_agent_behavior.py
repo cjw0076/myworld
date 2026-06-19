@@ -155,6 +155,24 @@ def _parse_codex_session(path: Path) -> list[str]:
     return tools
 
 
+# ── Contamination filter — ReAct/chain-of-thought pseudo-tools ───────────────
+
+_CONTAMINATION_PATTERNS = [
+    "Thought:", "Think:", "Reasoning:", "Action Input:", "Observation:",
+    "Final Answer:", "Final:", "click[", "type[", "scroll[", "goto[",
+    "search[", "go_back", "tab_focus", "close_tab",   # web agent patterns
+]
+
+def _is_contaminated_tool(tool: str) -> bool:
+    """True if this is a ReAct/web-agent pseudo-tool, not a real AIOS tool."""
+    t = tool.strip()
+    return any(t.startswith(p) or t == p.rstrip(":") for p in _CONTAMINATION_PATTERNS)
+
+def _clean_tools(tools: list[str]) -> list[str]:
+    """Remove ReAct-style pseudo-tools from a tool list."""
+    return [t for t in tools if not _is_contaminated_tool(t)]
+
+
 # ── Doom-loop detection + loop-type classification ───────────────────────────
 
 def _has_doom_loop(tools: list[str], threshold: int = 3) -> bool:
@@ -242,6 +260,11 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
     doom_skipped = 0
     for sf in session_files:
         tools = parse(sf)
+        if not tools:
+            continue
+
+        # Contamination filter — remove ReAct/web-agent pseudo-tools
+        tools = _clean_tools(tools)
         if not tools:
             continue
 
