@@ -19,6 +19,17 @@ On 2026-06-07 KST, the operator ran `codex login` successfully in the same
 workspace. AIOS should continue to probe per invocation because this changes
 local auth state without making credentials safe to store or replay.
 
+On 2026-06-19 KST, a local Codex CLI thread with a large active goal could not
+be revived through direct `codex resume <thread_id>`, while `codex fork
+<thread_id>` successfully created a usable continuation thread. Local evidence
+showed the original thread still had a rollout JSONL and `threads` row, but its
+goal row was `usage_limited` and it had many subagent spawn edges, including
+open child edges. The forked rollout recorded `forked_from_id` and preserved the
+transcript/goal context without copying the original `thread_goals` row. AIOS
+should classify this as `codex_resume_blocked_goal_state` rather than missing
+history: first try explicit `codex resume <thread_id>`, then fall back to
+`codex fork <thread_id>`, then soft-recover from local receipts if both fail.
+
 Earlier, on 2026-05-13 KST, the external `codex` binary required a local PIN
 when called from a TTY. Without that interactive PIN path, non-interactive
 provider calls failed before Codex could even print help:
