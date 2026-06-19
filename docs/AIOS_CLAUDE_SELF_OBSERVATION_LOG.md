@@ -1584,6 +1584,29 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 
 ---
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 10: CC6 완성 → Kernel 6/6
+
+- session_id: loop-iter-10-cto-2026-06-20
+- mode_breakdown: intervene:3 verify:2 decide:1 — ~20min
+- tools_used: Read, Edit, Bash
+- tools_NOT_used: Agent(fork), 4-OS ritual
+- substrate_specific_behaviors_observed:
+  1. context compaction 이후 재개 시 uncommitted CC6 edit이 이미 aios_head.py에 반영.
+     plan summary의 "current work" 섹션이 정확한 재진입 지점 → summary 먼저 확인 패턴 확인.
+  2. test file 중간 삽입 Edit은 unique old_string 필요. 주변 맥락 충분히 포함 필수.
+  3. _load_task_file() 단위 테스트 분리 → integration overhead 없이 CC6 contract 검증.
+- failures_recovered:
+  Edit tool "old_string not unique" 회피 → 고유 앵커 문자열 포함 후 성공.
+- failures_escalated_to_founder: 없음
+- key_decision:
+  CC6 = JSON task file input (--from-file) + --max-turns. 6/6 CC 완성.
+  kernel audit 업데이트. 전체 1156 tests pass.
+- new_invariant_or_pattern_discovered:
+  CC_COMPLETION_GATE: 각 CC는 구현 + 단위 테스트 + kernel audit 문서 3가지 모두 완성해야
+  "완성" 표시. 커밋 전 3-point 체크리스트.
+
+---
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 6-7: test suite 클린 + D1 1500 달성
 
 - session_id: loop-iter-6-7-cto-2026-06-20 (context compaction 이후 재개)

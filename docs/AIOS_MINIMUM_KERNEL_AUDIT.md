@@ -137,11 +137,14 @@ Current footprint (verified 2026-05-20):
    - Results land as tool observations → model acts on them in next turn automatically
    - No separate wiring needed: the turn loop history IS the web→action channel
 
-6. **External task input format**
-   - `aios "<자연어>"` 외 정형 input (yaml/json) 도 받을 수 있게. 그러나 시작은 *자연어* 1줄.
+6. **External task input format** — ✅ BUILT 2026-06-20
+   - `aios_head.py --from-file TASK_JSON`: JSON 파일로 goal + provider + options 전달
+   - `aios_head.py --max-turns N`: agent turn 상한 제어 (automation pipeline 통합 용이)
+   - `_load_task_file()`: goal 필수 검증 + bad JSON 명확한 exit
+   - CC6FormalInputTest 6 tests green; 전체 24 head tests 0 failures
 
-→ 이 6개가 *진짜 head*. 현재 **5/6 완성** (2026-06-20: #4 local LLM, #5 web→action 추가 확인).
-#6 정형 input은 자연어 이미 동작 — 사실상 부분 완료. 1150 kernel tests green.
+→ 이 6개가 *진짜 head*. 현재 **6/6 완성** (2026-06-20: CC6 정형 입력 확인).
+✅ AIOS Minimum Kernel: 6/6 CC complete. production-grade head 달성.
 
 ## Layer boundary — AIOS is a kernel, not a workflow engine (founder decision A, 2026-06-01)
 
