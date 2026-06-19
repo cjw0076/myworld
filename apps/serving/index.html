@@ -543,10 +543,13 @@
           try { data = JSON.parse(dataLine.slice(6)); } catch { continue; }
 
           if (event === 'preamble') {
-            const n = data.memory_hits || 0;
-            updateThinkingLabel(_lang === 'ko'
-              ? `메모리 ${n}개 로드 · 루프 시작…`
-              : `${n} memories loaded · starting loop…`);
+            const mem = data.memory_hits || 0;
+            const sem = data.semantic_hits || 0;
+            const cap = data.top_capability || null;
+            const parts = _lang === 'ko'
+              ? [`MemoryOS: ${mem}개`, sem ? `시맨틱 ${sem}개` : null, cap ? `라우트: ${cap}` : null]
+              : [`MemoryOS: ${mem} hits`, sem ? `semantic: ${sem}` : null, cap ? `route: ${cap}` : null];
+            updateThinkingLabel('⬡ ' + parts.filter(Boolean).join(' · ') + ' · 실행 중…');
           } else if (event === 'turn') {
             updateThinkingLabel(_lang === 'ko'
               ? `T${data.turn}: ${data.tool||'?'} 실행 중…`

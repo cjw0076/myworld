@@ -32,13 +32,19 @@ _GOAL_INJECTION_PATTERNS = (
 
 
 _RATE_WINDOW = 60        # sliding window seconds
-_RATE_MAX_REQUESTS = 10  # max requests per IP per window
+_RATE_MAX_REQUESTS = 10  # max requests per IP per window (public)
+_RATE_MAX_LOCAL = 200    # localhost gets a much higher cap
 _rate_lock = threading.Lock()
 _rate_buckets: defaultdict[str, deque] = defaultdict(deque)
 
+_LOCAL_IPS = {"127.0.0.1", "::1", "localhost"}
+
 
 def _check_rate_limit(ip: str) -> bool:
-    """Return True if request is allowed, False if rate limit exceeded."""
+    """Return True if request is allowed, False if rate limit exceeded.
+    Localhost callers get a 200 req/min cap — no friction for local AIOS power."""
+    if ip in _LOCAL_IPS:
+        return True  # localhost: unlimited (operator-grade access)
     now = time.monotonic()
     with _rate_lock:
         bucket = _rate_buckets[ip]
@@ -107,23 +113,10 @@ def _import_head():
     return mod
 
 
-_RETRIEVAL_KEYWORDS = {
-    # Korean
-    "검색", "찾아", "찾아줘", "조회", "알려줘", "뉴스", "날씨", "주가", "가격",
-    "오늘", "지금", "현재", "최근", "실시간", "목록", "리스트", "파일",
-    # English
-    "search", "find", "look up", "today", "now", "current", "weather",
-    "price", "news", "latest", "list", "file", "read file",
-}
-
-
 def _needs_retrieval(goal: str) -> bool:
-    """True if the goal likely needs web search or file access; False for pure knowledge queries."""
-    lower = goal.lower()
-    # URL or file path present
-    if any(p in lower for p in ("http://", "https://", "www.", "/home/", "~/", ".py", ".txt", ".json")):
-        return True
-    return any(kw in lower for kw in _RETRIEVAL_KEYWORDS)
+    """Always run the full organic pipeline (MemoryOS recall + 5-OS preamble + turn loop).
+    Fast-path is disabled — every query deserves AIOS power, not a bare LLM call."""
+    return True
 
 
 def run_fast(goal: str, provider: str, prior_context: str = "") -> dict:
@@ -320,14 +313,7 @@ class Handler(BaseHTTPRequestHandler):
 
         head = _import_head()
 
-        # Fast path: knowledge/conversational queries skip the tool loop entirely
-        if not _needs_retrieval(goal):
-            result = run_fast(goal, provider, prior_context=prior_ctx)
-            if session_id and result.get("final_answer"):
-                _session_push(session_id, goal, result["final_answer"])
-            emit("done", result)
-            return
-
+        # Always run the full organic pipeline — MemoryOS recall + 5-OS preamble + turn loop
         # auto provider: pick qwen3:8b vs 1.7b based on goal complexity
         actual_provider = head._auto_provider(goal) if provider == "auto" else provider
         adapters = head._default_adapters(provider)
