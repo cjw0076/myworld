@@ -126,6 +126,97 @@ class AdaptersTest(unittest.TestCase):
         self.assertTrue(c.receipts[0].success)
 
 
+class OllamaRestAdapterTest(unittest.TestCase):
+    def setUp(self):
+        self.a = _load("aios_adapters")
+
+    def test_make_ollama_rest_adapter_calls_openai_compat_api(self):
+        """Adapter must POST to /v1/chat/completions and parse choices[0].message.content."""
+        import json
+        import unittest.mock as mock
+
+        response_body = json.dumps({
+            "choices": [{"message": {"content": "hello from ollama"}}],
+        }).encode()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = response_body
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+
+        with mock.patch("urllib.request.urlopen", return_value=mock_resp) as mock_open:
+            adapter = self.a.make_ollama_rest_adapter(timeout=10)
+            result = adapter("test prompt")
+            self.assertEqual(result, "hello from ollama")
+            args, _ = mock_open.call_args
+            req = args[0]
+            self.assertIn("/v1/chat/completions", req.full_url)
+
+    def test_make_ollama_rest_adapter_sends_no_think_system_message(self):
+        """Adapter must include /no_think system message to suppress CoT in qwen3."""
+        import json
+        import unittest.mock as mock
+
+        captured = {}
+        response_body = json.dumps({
+            "choices": [{"message": {"content": "ok"}}],
+        }).encode()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = response_body
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+
+        def capture_request(req, timeout=None):
+            captured["body"] = json.loads(req.data)
+            return mock_resp
+
+        with mock.patch("urllib.request.urlopen", side_effect=capture_request):
+            adapter = self.a.make_ollama_rest_adapter(timeout=10)
+            adapter("any prompt")
+            messages = captured["body"]["messages"]
+            system_msgs = [m for m in messages if m["role"] == "system"]
+            self.assertTrue(any("/no_think" in m["content"] for m in system_msgs))
+
+    def test_make_ollama_rest_adapter_legacy_url_upgrade(self):
+        """Legacy url=/api/generate callers get silently upgraded to /v1 base."""
+        import json
+        import unittest.mock as mock
+
+        response_body = json.dumps({
+            "choices": [{"message": {"content": "upgraded"}}],
+        }).encode()
+
+        mock_resp = mock.MagicMock()
+        mock_resp.read.return_value = response_body
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+
+        with mock.patch("urllib.request.urlopen", return_value=mock_resp) as mock_open:
+            # Caller passes the old /api/generate URL; adapter must upgrade to /v1/chat/completions
+            adapter = self.a.make_ollama_rest_adapter(url="http://localhost:11434/api/generate", timeout=10)
+            result = adapter("legacy test")
+            self.assertEqual(result, "upgraded")
+            args, _ = mock_open.call_args
+            req = args[0]
+            self.assertIn("/v1/chat/completions", req.full_url)
+            self.assertNotIn("api/generate", req.full_url)
+
+    def test_ollama_rest_available_returns_true_on_200(self):
+        import unittest.mock as mock
+        mock_resp = mock.MagicMock()
+        mock_resp.__enter__ = lambda s: s
+        mock_resp.__exit__ = mock.MagicMock(return_value=False)
+        with mock.patch("urllib.request.urlopen", return_value=mock_resp):
+            self.assertTrue(self.a._ollama_rest_available())
+
+    def test_ollama_rest_available_returns_false_on_connection_error(self):
+        import unittest.mock as mock
+        import urllib.error
+        with mock.patch("urllib.request.urlopen", side_effect=OSError("connection refused")):
+            self.assertFalse(self.a._ollama_rest_available())
+
+
 class GeminiRestAdapterTest(unittest.TestCase):
     def setUp(self):
         self.a = _load("aios_adapters")

@@ -81,8 +81,12 @@ SPECS: dict[str, AdapterSpec] = {
         timeout=300),
 }
 
-_OLLAMA_REST_URL = "http://localhost:11434/api/generate"
+# Ollama v1 (OpenAI-compatible) endpoint — works with all Ollama ≥0.1.24.
+# Using OpenAI-compat lets future providers (OpenAI, Together.ai, Groq) share the
+# same _http_post_json() path without adding any PyPI dependency.
+_OLLAMA_REST_BASE = "http://localhost:11434/v1"
 _OLLAMA_REST_MODEL = "qwen3:1.7b"   # fast; swappable per deployment
+_OLLAMA_HEALTH_URL = "http://localhost:11434/api/tags"
 
 _ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 _ANTHROPIC_REST_MODEL = "claude-haiku-4-5-20251001"  # fastest + cheapest frontier
@@ -91,33 +95,48 @@ _GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{mode
 _GEMINI_REST_MODEL = "gemini-2.0-flash-lite"  # free tier: 1500 req/day, 30 req/min
 
 
-def make_ollama_rest_adapter(
-    *,
-    url: str = _OLLAMA_REST_URL,
-    model: str = _OLLAMA_REST_MODEL,
-    timeout: int = 60,
-) -> "Callable[[str], str]":
-    """Build an adapter that calls the Ollama REST API directly — no binary on PATH needed.
-
-    ~0.2-1s latency (vs 25-180s for frontier CLI providers), making it ideal
-    for the SSE streaming turn-loop where each turn fires an event.
-    The model is expected to return JSON directly; think mode is disabled.
-    """
+def _http_post_json(url: str, body: dict, headers: dict, timeout: int) -> dict:
+    """Single stdlib HTTP POST + JSON parse, shared by all REST adapters."""
     import json as _json
     import urllib.request as _req
+    data = _json.dumps(body).encode()
+    req = _req.Request(url, data=data, headers={"Content-Type": "application/json", **headers})
+    with _req.urlopen(req, timeout=timeout) as resp:
+        return _json.loads(resp.read())
+
+
+def make_ollama_rest_adapter(
+    *,
+    base_url: str = _OLLAMA_REST_BASE,
+    model: str = _OLLAMA_REST_MODEL,
+    timeout: int = 60,
+    # Legacy alias kept for callers that pass url= keyword argument.
+    url: "str | None" = None,
+) -> "Callable[[str], str]":
+    """Build an adapter that calls Ollama via its OpenAI-compatible REST API.
+
+    Uses /v1/chat/completions (OpenAI format) instead of the native /api/generate
+    so any future OpenAI-compatible provider can reuse the same code path.
+    think mode is suppressed via a /no_think system message (qwen3 feature).
+    ~0.2-1s latency, stdlib-only, no PyPI dependency.
+    """
+    if url is not None:
+        # Legacy callers passed url=/api/generate — silently upgrade to v1 base.
+        base_url = url.replace("/api/generate", "").rstrip("/") + "/v1"
 
     def adapter(prompt: str) -> str:
-        body = _json.dumps({
+        chat_url = base_url.rstrip("/") + "/chat/completions"
+        body = {
             "model": model,
-            "prompt": prompt,
             "stream": False,
-            "think": False,   # disable chain-of-thought (qwen3 feature)
-        }).encode()
-        request = _req.Request(url, data=body, headers={"Content-Type": "application/json"})
+            "messages": [
+                {"role": "system", "content": "/no_think"},
+                {"role": "user", "content": prompt},
+            ],
+        }
         try:
-            with _req.urlopen(request, timeout=timeout) as resp:
-                data = _json.loads(resp.read())
-                return data.get("response", "")
+            data = _http_post_json(chat_url, body, {}, timeout)
+            return data["choices"][0]["message"]["content"]
         except Exception as exc:
             raise RuntimeError(f"ollama_rest: {exc}") from exc
 
@@ -125,11 +144,13 @@ def make_ollama_rest_adapter(
     return adapter
 
 
-def _ollama_rest_available(url: str = _OLLAMA_REST_URL) -> bool:
+def _ollama_rest_available(url: str = _OLLAMA_HEALTH_URL) -> bool:
     """Return True if the Ollama REST endpoint is reachable."""
     import urllib.request as _req
+    # Accept both legacy /api/generate URLs and the new health URL.
+    health_url = url if "/api/tags" in url else _OLLAMA_HEALTH_URL
     try:
-        _req.urlopen(_req.Request(url.replace("/api/generate", "/api/tags")), timeout=2)
+        _req.urlopen(_req.Request(health_url), timeout=2)
         return True
     except Exception:
         return False
@@ -158,24 +179,20 @@ def make_gemini_rest_adapter(
     gemini-2.0-flash-lite → 1500 req/day, 30 req/min. No billing required.
     Priority: Ollama (free local) → Gemini (free cloud) → Anthropic (paid cloud).
     """
-    import json as _json
     import os as _os
-    import urllib.request as _req
 
     def adapter(prompt: str) -> str:
         api_key = _os.environ.get("GEMINI_API_KEY") or _os.environ.get("GOOGLE_API_KEY", "")
         if not api_key:
             raise RuntimeError("gemini_rest: GEMINI_API_KEY or GOOGLE_API_KEY not set")
-        url = (_GEMINI_API_URL.format(model=model) + f"?key={api_key}")
-        body = _json.dumps({
+        url = _GEMINI_API_URL.format(model=model) + f"?key={api_key}"
+        body = {
             "contents": [{"parts": [{"text": prompt}]}],
             "generationConfig": {"maxOutputTokens": 2048},
-        }).encode()
-        request = _req.Request(url, data=body, headers={"Content-Type": "application/json"})
+        }
         try:
-            with _req.urlopen(request, timeout=timeout) as resp:
-                data = _json.loads(resp.read())
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+            data = _http_post_json(url, body, {}, timeout)
+            return data["candidates"][0]["content"]["parts"][0]["text"]
         except Exception as exc:
             raise RuntimeError(f"gemini_rest: {exc}") from exc
 
@@ -193,32 +210,24 @@ def make_anthropic_rest_adapter(
     Activates automatically when ANTHROPIC_API_KEY is set — no CLI binary needed.
     Used as a fallback when Ollama is unavailable (e.g. GitHub Codespaces free tier).
     """
-    import json as _json
     import os as _os
-    import urllib.request as _req
 
     def adapter(prompt: str) -> str:
         api_key = _os.environ.get("ANTHROPIC_API_KEY", "")
         if not api_key:
             raise RuntimeError("anthropic_rest: ANTHROPIC_API_KEY not set")
-        body = _json.dumps({
+        body = {
             "model": model,
             "max_tokens": 2048,
             "messages": [{"role": "user", "content": prompt}],
-        }).encode()
-        request = _req.Request(
-            _ANTHROPIC_API_URL,
-            data=body,
-            headers={
-                "Content-Type": "application/json",
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-            },
-        )
+        }
+        headers = {
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+        }
         try:
-            with _req.urlopen(request, timeout=timeout) as resp:
-                data = _json.loads(resp.read())
-                return data["content"][0]["text"]
+            data = _http_post_json(_ANTHROPIC_API_URL, body, headers, timeout)
+            return data["content"][0]["text"]
         except Exception as exc:
             raise RuntimeError(f"anthropic_rest: {exc}") from exc
 
