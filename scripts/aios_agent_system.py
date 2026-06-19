@@ -481,6 +481,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="Goal to execute (natural language)")
     p.add_argument("--chat", action="store_true",
                    help="Interactive chat mode")
+    p.add_argument("--execute", action="store_true",
+                   help="Execute mode: routes through aios_harness for real tool calls "
+                        "(Bash/Read/Edit/Write). Advisory mode (default) just returns text.")
     p.add_argument("--provider",
                    choices=["auto", "local", "lm-studio", "vllm", "openai",
                             "claude", "codex", "gemini"],
@@ -518,6 +521,25 @@ def main(argv: list[str] | None = None) -> int:
     if not args.goal:
         p.print_help()
         return 1
+
+    # Execute mode: delegate to harness for real multi-turn tool execution
+    if args.execute:
+        harness_path = Path(__file__).parent / "aios_harness.py"
+        harness_argv = [args.goal]
+        if base_url:
+            harness_argv += ["--base-url", base_url]
+        if model:
+            harness_argv += ["--model", model]
+        if api_key:
+            harness_argv += ["--api-key", api_key]
+        if args.verbose:
+            harness_argv += ["--verbose"]
+        if args.as_json:
+            harness_argv += ["--json"]
+        harness_spec = importlib.util.spec_from_file_location("aios_harness", harness_path)
+        harness_mod  = importlib.util.module_from_spec(harness_spec)
+        harness_spec.loader.exec_module(harness_mod)
+        return harness_mod.main(harness_argv)
 
     result = run_single(args.goal, provider=provider,
                         api_key=api_key, verbose=args.verbose,
