@@ -177,9 +177,9 @@
 
   <div class="top-bar">
     <span class="brand">AIOS</span>
-    <span class="tagline">유기적 파이프라인 · 로컬 LLM · 메모리 기반 추론</span>
+    <span class="tagline" id="tagline">organic pipeline · local LLM · memory-first reasoning</span>
     <div class="settings">
-      <span id="statusBadge" title="AIOS API 연결 상태"><span class="status-dot" id="statusDot"></span><span id="statusText">연결 중…</span></span>
+      <span id="statusBadge" title="AIOS API status"><span class="status-dot" id="statusDot"></span><span id="statusText">connecting…</span></span>
       <label>Provider:</label>
       <select id="providerSelect">
         <option value="auto" selected>auto</option>
@@ -195,38 +195,117 @@
         <option value="6" selected>6</option>
         <option value="12">12</option>
       </select>
-      <button id="newChatBtn" onclick="newChat()" title="새 대화 시작 (기록 삭제)" style="
+      <button id="langToggleBtn" onclick="toggleLang()" title="Switch language / 언어 전환" style="
         padding:4px 10px;background:transparent;border:1px solid var(--line);
         border-radius:6px;font-size:0.75rem;color:var(--muted);cursor:pointer;
         transition:border-color 0.15s,color 0.15s;
       " onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
          onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">
-        새 대화
+        한국어
+      </button>
+      <button id="newChatBtn" onclick="newChat()" title="Start new conversation" style="
+        padding:4px 10px;background:transparent;border:1px solid var(--line);
+        border-radius:6px;font-size:0.75rem;color:var(--muted);cursor:pointer;
+        transition:border-color 0.15s,color 0.15s;
+      " onmouseover="this.style.borderColor='var(--teal)';this.style.color='var(--teal)'"
+         onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--muted)'">
+        New chat
       </button>
     </div>
   </div>
 
   <div class="chat-thread" id="chatThread">
     <div class="welcome" id="welcomeMsg">
-      <h2>AIOS에게 물어보세요</h2>
-      <p>메모리, 외부 URL, 파일, 메모 저장 등을 통해<br>자연어 goal을 실행합니다.</p>
-      <div class="examples">
-        <span class="example-chip" onclick="fillGoal('AIOS가 뭔가요?')">AIOS가 뭔가요?</span>
-        <span class="example-chip" onclick="fillGoal('서울 날씨 알려줘')">서울 날씨 알려줘</span>
-        <span class="example-chip" onclick="fillGoal('파이썬으로 피보나치 수열 구현해줘')">파이썬으로 피보나치 수열 구현해줘</span>
-        <span class="example-chip" onclick="fillGoal('AIOS 설치 방법 알려줘')">AIOS 설치 방법 알려줘</span>
+      <h2 id="welcomeH2">Ask AIOS anything</h2>
+      <p id="welcomeP">Memory recall · web search · file access · tool use — all from a natural language goal.</p>
+      <div class="examples" id="exampleChips">
+        <span class="example-chip" onclick="fillGoal('What is AIOS and how does it work?')">What is AIOS?</span>
+        <span class="example-chip" onclick="fillGoal('Search the web for the latest AI news today')">Latest AI news</span>
+        <span class="example-chip" onclick="fillGoal('Write a Python function to find prime numbers')">Python: prime numbers</span>
+        <span class="example-chip" onclick="fillGoal('How do I install AIOS and get started?')">How to install AIOS</span>
       </div>
     </div>
   </div>
 
   <div class="input-bar">
-    <textarea id="goalInput" placeholder="goal을 입력하세요… (Enter = 전송, Shift+Enter = 줄바꿈)"
+    <textarea id="goalInput" placeholder="Type your goal… (Enter to send, Shift+Enter for newline)"
               rows="1" autocomplete="off"></textarea>
-    <button id="runBtn" onclick="runGoal()">실행</button>
+    <button id="runBtn" onclick="runGoal()">Run</button>
   </div>
 
   <script>
     const API_BASE = 'http://localhost:8741';
+
+    // ── i18n: English (default) / Korean toggle ───────────────────────────────
+    const I18N = {
+      en: {
+        tagline: 'organic pipeline · local LLM · memory-first reasoning',
+        statusConnecting: 'connecting…',
+        statusOk: 'connected',
+        statusErr: 'offline',
+        welcomeH2: 'Ask AIOS anything',
+        welcomeP: 'Memory recall · web search · file access · tool use — all from a natural language goal.',
+        chips: [
+          ['What is AIOS and how does it work?', 'What is AIOS?'],
+          ['Search the web for the latest AI news today', 'Latest AI news'],
+          ['Write a Python function to find prime numbers', 'Python: prime numbers'],
+          ['How do I install AIOS and get started?', 'How to install AIOS'],
+        ],
+        placeholder: 'Type your goal… (Enter to send, Shift+Enter for newline)',
+        runBtn: 'Run',
+        newChat: 'New chat',
+        langToggle: '한국어',
+        thinkingLoad: 'loading memory · starting loop…',
+      },
+      ko: {
+        tagline: '유기적 파이프라인 · 로컬 LLM · 메모리 기반 추론',
+        statusConnecting: '연결 중…',
+        statusOk: '연결됨',
+        statusErr: '오프라인',
+        welcomeH2: 'AIOS에게 물어보세요',
+        welcomeP: '메모리, 외부 URL, 파일, 메모 저장 등을 통해 자연어 goal을 실행합니다.',
+        chips: [
+          ['AIOS가 뭔가요?', 'AIOS가 뭔가요?'],
+          ['서울 날씨 알려줘', '서울 날씨 알려줘'],
+          ['파이썬으로 피보나치 수열 구현해줘', '파이썬으로 피보나치 수열'],
+          ['AIOS 설치 방법 알려줘', 'AIOS 설치 방법'],
+        ],
+        placeholder: 'goal을 입력하세요… (Enter = 전송, Shift+Enter = 줄바꿈)',
+        runBtn: '실행',
+        newChat: '새 대화',
+        langToggle: 'English',
+        thinkingLoad: '메모리 로드 · 루프 시작…',
+      },
+    };
+
+    let _lang = localStorage.getItem('aios_lang') || 'en';
+
+    function applyLang(lang) {
+      _lang = lang;
+      localStorage.setItem('aios_lang', lang);
+      const t = I18N[lang];
+      document.getElementById('tagline').textContent = t.tagline;
+      const stEl = document.getElementById('statusText');
+      if (stEl && stEl.dataset.state) {
+        stEl.textContent = t['status' + stEl.dataset.state] || stEl.textContent;
+      }
+      document.getElementById('welcomeH2').textContent = t.welcomeH2;
+      document.getElementById('welcomeP').textContent = t.welcomeP;
+      const chips = document.getElementById('exampleChips');
+      if (chips) {
+        chips.innerHTML = t.chips.map(([goal, label]) =>
+          `<span class="example-chip" onclick="fillGoal(${JSON.stringify(goal)})">${label}</span>`
+        ).join('');
+      }
+      document.getElementById('goalInput').placeholder = t.placeholder;
+      document.getElementById('runBtn').textContent = t.runBtn;
+      document.getElementById('newChatBtn').textContent = t.newChat;
+      document.getElementById('langToggleBtn').textContent = t.langToggle;
+    }
+
+    function toggleLang() {
+      applyLang(_lang === 'en' ? 'ko' : 'en');
+    }
 
     // Per-tab session ID for conversation continuity
     const SESSION_ID = (() => {
@@ -455,9 +534,14 @@
           try { data = JSON.parse(dataLine.slice(6)); } catch { continue; }
 
           if (event === 'preamble') {
-            updateThinkingLabel(`메모리 ${data.memory_hits||0}개 로드 · 루프 시작…`);
+            const n = data.memory_hits || 0;
+            updateThinkingLabel(_lang === 'ko'
+              ? `메모리 ${n}개 로드 · 루프 시작…`
+              : `${n} memories loaded · starting loop…`);
           } else if (event === 'turn') {
-            updateThinkingLabel(`T${data.turn}: ${data.tool||'?'} 실행 중…`);
+            updateThinkingLabel(_lang === 'ko'
+              ? `T${data.turn}: ${data.tool||'?'} 실행 중…`
+              : `T${data.turn}: running ${data.tool||'?'}…`);
             scrollToBottom();
           } else if (event === 'done') {
             const meta = {
@@ -526,16 +610,21 @@
         const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
         if (r.ok) {
           dot.className = 'status-dot ok';
-          txt.textContent = 'AIOS 연결됨';
+          txt.dataset.state = 'Ok';
+          txt.textContent = I18N[_lang].statusOk;
         } else {
           throw new Error('not ok');
         }
       } catch {
         dot.className = 'status-dot err';
-        txt.textContent = 'API 미연결';
+        txt.dataset.state = 'Err';
+        txt.textContent = I18N[_lang].statusErr;
       }
     }
     checkStatus();
+
+    // Apply stored language preference on load
+    applyLang(_lang);
   </script>
 </body>
 </html>
