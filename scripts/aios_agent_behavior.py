@@ -960,7 +960,7 @@ def publish_checkpoint(server: str | None = None, submitted_by: str = "aios-cli"
             local_path = AIOS_HOME / "akashic_checkpoints.jsonl"
         import datetime
         entry = {
-            "ts": datetime.datetime.utcnow().isoformat() + "Z",
+            "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "root_hash": result.get("root_hash"),
             "entry_count": result.get("entry_count"),
             "server": url,
