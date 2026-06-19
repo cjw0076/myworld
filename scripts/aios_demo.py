@@ -30,13 +30,106 @@ Usage: python scripts/aios_demo.py [--json]
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
+import sys
 from pathlib import Path
 
 import aios_capability_base as base
 from aios_deadline_copilot import verify_schedule
 
 SCHEMA_VERSION = "aios.demo.v1"
+
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+_REPO_ROOT = _SCRIPTS_DIR.parent
+
+# Example goal for --chat mode: exercises memory recall + synthesis, no network needed.
+CHAT_GOAL = "What is AIOS and how does the organic pipeline work?"
+
+
+def _import_head():
+    """Lazy-load aios_head to avoid circular imports at module level."""
+    if str(_SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(_SCRIPTS_DIR))
+    spec = importlib.util.spec_from_file_location("aios_head", _SCRIPTS_DIR / "aios_head.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def run_chat(goal: str = CHAT_GOAL, max_turns: int = 4) -> dict:
+    """Run one goal through the full organic pipeline (preamble → loop → synthesis).
+
+    Provider priority: Ollama (local) → Gemini REST (free tier) → Anthropic REST.
+    Returns a dict with keys: ok, provider_used, final_answer, memory_hits, turns, exit.
+    """
+    head = _import_head()
+    adapters_mod = head._load("aios_adapters")
+
+    if adapters_mod._ollama_rest_available():
+        provider_label = "ollama_rest (local Ollama — no cost)"
+    elif adapters_mod._gemini_rest_available():
+        provider_label = "gemini_rest (Gemini free tier)"
+    elif adapters_mod._anthropic_rest_available():
+        provider_label = "anthropic_rest (Anthropic Claude)"
+    else:
+        return {
+            "ok": False,
+            "error": (
+                "No provider available. Choose one:\n"
+                "  GEMINI_API_KEY    — free tier, 1500 req/day\n"
+                "  ANTHROPIC_API_KEY — paid\n"
+                "  or: aios setup apply  (install local Ollama models)"
+            ),
+            "exit_code": 1,
+        }
+
+    adapters = head._default_adapters("auto")
+    sampler = head.make_provider_sampler("auto", adapters, goal=goal)
+    result = head.run_organic_goal(goal, sampler=sampler, max_turns=max_turns, root=_REPO_ROOT)
+
+    preamble = result.get("organic_pipeline", {}).get("preamble", {})
+    # run_organic_goal does preamble+loop+postamble but NOT synthesis — call separately
+    final_answer = head._organ_synthesis(goal, result, preamble=preamble, root=_REPO_ROOT)
+
+    return {
+        "ok": True,
+        "provider_used": provider_label,
+        "goal": goal,
+        "final_answer": final_answer,
+        "memory_hits": preamble.get("memory_hits", 0),
+        "memory_status": preamble.get("memory_status", "unknown"),
+        "turns": result.get("turns", 0),
+        "exit": result.get("exit", "unknown"),
+    }
+
+
+def narrate_chat(chat: dict) -> str:
+    if not chat.get("ok"):
+        return f"\n  [aios demo --chat] ERROR: {chat['error']}\n"
+    lines = [
+        "",
+        "  ┌─────────────────────────────────────────────────────────────┐",
+        "  │  AIOS demo --chat  — live organic pipeline run               │",
+        "  └─────────────────────────────────────────────────────────────┘",
+        "",
+        f"  Goal:     {chat['goal']}",
+        f"  Provider: {chat['provider_used']}",
+        f"  Memory:   {chat['memory_hits']} hit(s) recalled from memoryOS",
+        f"  Turns:    {chat['turns']}   exit={chat['exit']}",
+        "",
+        "  Answer:",
+        "",
+    ]
+    for ln in (chat.get("final_answer") or "(no answer generated)").splitlines():
+        lines.append(f"    {ln}")
+    lines += [
+        "",
+        "  Provenance: organic pipeline (preamble → loop → synthesis), no hardcoded output.",
+        "  Next: `aios serve` → http://localhost:8741/ for the full interactive UI.",
+        "",
+    ]
+    return "\n".join(lines)
 
 # A fixed, deterministic scenario so the demo shows the same thing for everyone,
 # every time, with no clock or randomness involved.
@@ -154,11 +247,30 @@ def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="AIOS 30-second verifiable-output demo")
     p.add_argument("--json", action="store_true", help="emit the structured result, no narration")
     p.add_argument("--no-receipt", action="store_true", help="skip writing the provenance file")
+    p.add_argument(
+        "--chat",
+        action="store_true",
+        help="run one goal through the full organic pipeline (preamble → loop → synthesis)",
+    )
+    p.add_argument(
+        "--goal",
+        default=CHAT_GOAL,
+        help="goal for --chat mode (default: CHAT_GOAL constant)",
+    )
     return p
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    if args.chat:
+        chat = run_chat(goal=args.goal)
+        if args.json:
+            print(json.dumps(chat, ensure_ascii=False, indent=2))
+        else:
+            print(narrate_chat(chat))
+        return 0 if chat.get("ok") else 1
+
     result = run_demo()
     receipt_path: Path | None = None
     if not args.no_receipt:
