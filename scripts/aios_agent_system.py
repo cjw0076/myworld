@@ -26,6 +26,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -85,8 +86,50 @@ def recall(goal: str, api_key: str | None = None, verbose: bool = False) -> list
 
 def predict(goal: str, api_key: str | None = None, verbose: bool = False) -> list[str]:
     """Predict top-3 likely tools for this goal."""
-    res = _akashic_post("/predict", {"context": goal, "top_k": 3}, api_key, verbose)
-    return [p["tool"] for p in res.get("predictions", [])]
+    res = _akashic_post("/predict", {"context": goal, "top_k": 8}, api_key, verbose)
+    raw = [p["tool"] for p in res.get("predictions", [])]
+    # Filter out garbage tool names (model IDs, truncated strings, nonsense suffixes)
+    valid = [t for t in raw if _valid_tool_name(t)]
+    return valid[:3]
+
+
+_KNOWN_TOOLS = {
+    "Bash", "Read", "Edit", "Write", "WebSearch", "WebFetch", "Agent",
+    "Task", "Skill", "Browse", "Search",
+}
+_VALID_CLI = {
+    "ls", "find", "grep", "cat", "echo", "mkdir", "rm", "cp", "mv",
+    "git", "curl", "wget", "python", "python3", "pip", "npm", "make",
+    "docker", "kubectl", "ssh", "df", "du", "ps", "kill", "sed", "awk",
+    "sort", "head", "tail", "wc", "diff", "tar", "zip", "unzip", "chmod",
+    "env", "export", "cd", "pwd", "which", "test",
+}
+
+
+def _valid_tool_name(name: str) -> bool:
+    if not isinstance(name, str) or not name:
+        return False
+    # Exact AIOS tool names
+    if name in _KNOWN_TOOLS:
+        return True
+    # agentbank / aios_ prefix format: "bash:cmd", "note:slug", "aios_xxx"
+    if ":" in name:
+        prefix, suffix = name.split(":", 1)
+        if not re.match(r'^[a-z_]{2,12}$', prefix):
+            return False
+        if not re.match(r'^[a-z0-9_/-]{1,20}$', suffix):
+            return False
+        # Suffix must be a known CLI or short slug
+        if prefix == "bash" and suffix not in _VALID_CLI:
+            return False
+        return True
+    # aios_ prefixed internal tools
+    if name.startswith("aios_") and re.match(r'^aios_[a-z0-9_]{2,30}$', name):
+        return True
+    # Reject model names (contain colons already handled above, but e.g. "qwen3")
+    if re.match(r'^[a-z]+\d+', name) and len(name) > 10:
+        return False
+    return False
 
 
 def contribute(goal: str, tools_used: list[str], provider: str,
