@@ -1443,3 +1443,38 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   Research fork while implementing in parallel: fork cost <90k tokens, returned 3
   concrete gaps. Two closed in same loop. Right ratio: research finds target, implement
   closes it same turn. Avoid researching without implementing — the value is in closure.
+
+## 2026-06-20 03:30 KST — claude@myworld — /loop 20m CTO 모드: harness 완성 + ReAct fix
+
+- session_id: loop-iter-1-2-cto-2026-06-20
+- mode_breakdown: decide:4 intervene:3 verify:2 observe:1 escalate:0 — 40min (2 iterations)
+- tools_used: Edit, Bash, Write, Read, mcp__hf_hub_repo_search, mcp__hf_hub_details
+- tools_NOT_used: Agent(fork) — 작업이 sequential하여 fork 불필요
+- substrate_specific_behaviors_observed:
+  1. aios_turn_loop history는 names-only (DNA #7) — sampler에 goal을 closure로 전달해야 함
+  2. ReAct few-shot 없으면 qwen3가 Action: 대신 직접 답변 출력
+  3. 독립 기여한 HF trajectory data (Qwen/DeepSeek) → 품질 게이트가 자율로 38개 차단 (422)
+  4. Worker autonomous quality gate: 인간 개입 없이 pseudo-tool 탐지 후 slash 실행 확인
+- failures_recovered:
+  1. sampler goal bug → make_llm_sampler(goal=...) closure 수정으로 해결
+  2. ReAct parse 실패 (Final Answer 즉시) → few-shot 예시 + _parse_react 보강
+  3. DeepSeek 기여율 13% → quality gate가 87%를 차단 (정상 동작 확인)
+- failures_escalated_to_founder: 없음
+- key_decision: harness ReAct sampler architecture — goal closure vs. run_loop API 변경
+  → DNA #7 (content 없는 history) 존중하며 closure로 우회
+- new_invariant_or_pattern_discovered:
+  GOAL_INJECTION_PATTERN: turn_loop은 content를 history에 저장 안 함 (DNA #7).
+  sampler는 goal을 closure variable로 유지하고 첫 turn에만 inject.
+  이후 turns는 tool result (result.output snippet)만 보면 됨.
+  → AIOS absorb candidate: sampler factory pattern
+- self-correction-of-prior-observation:
+  이전: "aios_harness.py Phase C 완성 → dry-run 통과"
+  실제: dry-run만 통과, 실제 실행은 0 tool calls. 근본 버그는 goal 미전달.
+  수정 후: Read→Read (2 calls, 5.66s), Bash→Bash (2 calls, 49s) 실제 실행 확인.
+
+**pattern_for_absorption**:
+  ReAct sampler requires goal closure: turn_loop의 names-only history를 사용하는
+  sampler는 첫 turn에 실제 goal을 inject해야 함. system prompt에 한 줄 few-shot 예시
+  (Thought/Action/Action Input format)가 local LLM이 format을 따르게 하는 결정적 차이.
+  추가로: _parse_react에 hallucinated tool name guard 필수 — 없으면 모델이 없는 tool
+  이름을 만들어내고 registry.dispatch가 silently 실패함.
