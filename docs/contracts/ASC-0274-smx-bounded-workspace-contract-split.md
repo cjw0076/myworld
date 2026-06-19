@@ -1,8 +1,9 @@
 ---
 contract_id: ASC-0274
 slug: smx-bounded-workspace-contract-split
-status: accepted
+status: closed
 accepted: 2026-06-14T03:10:00+09:00
+closed: 2026-06-14T03:40:00+09:00
 goal: Split Speculative Multiverse Execution into a safe Gate A GenesisOS branch-design contract and a later Hivemind isolated-execution contract gated by serving proof.
 created: 2026-06-14T03:20:00+09:00
 human_approved: true
