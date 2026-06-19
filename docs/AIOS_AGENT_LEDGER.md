@@ -5,6 +5,31 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-16 KST — codex@dacon — ASC-0277 CLI log asset pool ledger proposed
+
+- repo: myworld
+- role: planner / contract drafting
+- goal: report a founder/product idea to the AIOS development team: make
+  MemoryOS able to turn provider/agent CLI logs into privacy-safe,
+  hash-addressed, reviewable assets that an AIOS user pool can verify without
+  raw logs.
+- changed: added
+  `docs/contracts/ASC-0277-memoryos-cli-log-asset-pool-ledger.md`.
+- evidence: local MemoryOS inspection found existing primitives
+  (`import-run`, `hive-live validate/import/graph`, `SourceArtifact`,
+  draft `MemoryObject`, retrieval/provenance traces, provider-doc
+  assetization) but no completed general-purpose `cli-log assetize` surface for
+  arbitrary provider CLI logs and pool-verifiable receipt packets.
+- decision: propose this as a MemoryOS-owned contract with Hive receipt
+  support, CapabilityOS route/risk support, and MyWorld pool-governance policy.
+- risk: raw provider logs may contain secrets, private prompts, unpublished
+  competition strategy/code, account data, or local paths. Pool sharing must be
+  hash/summary-first, draft-first, and review-gated; token/reputation semantics
+  require separate governance/legal review.
+- next: MemoryOS dev team should implement a synthetic-fixture `cli-log`
+  validate/assetize/import flow, then Hive adds provider wrapper event parity.
+- status: proposed
+
 ## 2026-06-12 23:50 KST — codex@myworld — ASC-0235 world deployment readiness gate
 
 - repo: myworld
