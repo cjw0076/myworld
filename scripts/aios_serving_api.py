@@ -135,7 +135,8 @@ def run_fast(goal: str, provider: str, prior_context: str = "") -> dict:
         return {"exit": "no_provider", "turns": 0}
     adapter = adapters[_pkey]
     result = {"exit": "fast_path", "turns": 0, "tool_calls": 0, "trajectory": [],
-              "organic_pipeline": {"preamble": {}, "postamble": {}}}
+              "organic_pipeline": {"preamble": {}, "postamble": {}},
+              "provider": _pkey}
     final_answer = head._organ_synthesis(goal, result, preamble=None,
                                          root=ROOT, prior_context=prior_context)
     if final_answer:
