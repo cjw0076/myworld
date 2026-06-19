@@ -988,9 +988,39 @@ def default_fetcher(inputs: dict[str, Any]) -> str:
         return resp.read(1_000_000).decode("utf-8", errors="replace")
 
 
+def _load_task_file(path: str) -> dict:
+    """Load a task from a JSON or YAML-style JSON file.
+
+    Accepted fields:
+      goal (str, required)
+      provider (str)
+      allow_write (list[str])
+      allow_network (bool)
+      loop (bool)
+      agent (str)
+      max_turns (int)
+
+    Pure stdlib — no yaml/toml dependency. The file must be valid JSON.
+    Example:
+      {"goal": "list all .py files in scripts/", "provider": "ollama_rest", "loop": true}
+    """
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+        data = json.loads(text)
+        if not isinstance(data, dict):
+            raise ValueError("task file must be a JSON object")
+        if "goal" not in data:
+            raise ValueError("task file must have a 'goal' field")
+        return data
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        raise SystemExit(f"aios head --from-file: {exc}") from exc
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="aios <goal> — goal-first head")
-    parser.add_argument("goal", help="natural-language goal")
+    parser.add_argument("goal", nargs="?", default=None, help="natural-language goal")
+    parser.add_argument("--from-file", metavar="TASK_JSON",
+                        help="read goal and run options from a JSON file (CC6 formal input)")
     parser.add_argument("--root", default=".", help="workspace root (default: cwd)")
     parser.add_argument("--provider", default="claude",
                         help="planner provider (claude/codex/gemini/ollama_local)")
@@ -1009,7 +1039,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--organic", action="store_true",
                         help="run the full 5-OS organic pipeline: memory→capability→loop→dream_agora→akashic")
     parser.add_argument("--agent", default="codex@myworld", help="agent identity for the gate")
+    parser.add_argument("--max-turns", type=int, default=12, help="max agent turns (default: 12)")
     args = parser.parse_args(argv)
+
+    # CC6: load goal + options from JSON file if --from-file is given
+    if args.from_file:
+        task = _load_task_file(args.from_file)
+        args.goal = task["goal"]
+        if "provider" in task:
+            args.provider = task["provider"]
+        if "allow_write" in task:
+            args.allow_write = list(task["allow_write"])
+        if task.get("allow_network"):
+            args.allow_network = True
+        if task.get("loop"):
+            args.loop = True
+        if task.get("organic"):
+            args.organic = True
+        if "agent" in task:
+            args.agent = task["agent"]
+        if "max_turns" in task:
+            args.max_turns = int(task["max_turns"])
+    elif args.goal is None:
+        parser.error("goal is required (positional argument or --from-file TASK_JSON)")
 
     adapters = _default_adapters(args.provider)
     if args.provider not in adapters:
@@ -1021,7 +1073,7 @@ def main(argv: list[str] | None = None) -> int:
         sampler = make_provider_sampler(args.provider, adapters, goal=args.goal)
         root_path = Path(args.root).resolve()
         outcome = run_organic_goal(args.goal, agent_id=args.agent, sampler=sampler,
-                                   root=root_path)
+                                   root=root_path, max_turns=args.max_turns)
         print(json.dumps(outcome, ensure_ascii=False, indent=2))
         return 0 if outcome.get("exit") in ("model_finished", "needs_approval") else 1
 
@@ -1030,7 +1082,7 @@ def main(argv: list[str] | None = None) -> int:
         sampler = make_provider_sampler(args.provider, adapters, goal=args.goal)
         root_path = Path(args.root).resolve()
         outcome = run_organic_goal(args.goal, agent_id=args.agent, sampler=sampler,
-                                   root=root_path)
+                                   root=root_path, max_turns=args.max_turns)
         print(json.dumps(outcome, ensure_ascii=False, indent=2))
         return 0 if outcome.get("exit") in ("model_finished", "needs_approval") else 1
 
