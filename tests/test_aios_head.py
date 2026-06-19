@@ -163,5 +163,50 @@ class HeadTest(unittest.TestCase):
             self.assertNotIn(mem, pr.raw_body_hash)
 
 
+class GoalFilesystemDetectionTest(unittest.TestCase):
+    """Test that _goal_needs_filesystem() correctly identifies filesystem goals."""
+
+    def setUp(self):
+        self.head = _load("aios_head")
+
+    def test_list_files_is_filesystem(self):
+        self.assertTrue(self.head._goal_needs_filesystem("list all python files in scripts/"))
+
+    def test_file_extension_is_filesystem(self):
+        self.assertTrue(self.head._goal_needs_filesystem("read the .py files"))
+
+    def test_korean_read_is_filesystem(self):
+        self.assertTrue(self.head._goal_needs_filesystem("파일 읽어줘"))
+
+    def test_directory_path_is_filesystem(self):
+        self.assertTrue(self.head._goal_needs_filesystem("find everything in docs/"))
+
+    def test_pure_math_is_not_filesystem(self):
+        self.assertFalse(self.head._goal_needs_filesystem("what is 2 + 2"))
+
+    def test_concept_explanation_is_not_filesystem(self):
+        self.assertFalse(self.head._goal_needs_filesystem("explain what a REST API is"))
+
+    def test_early_exit_suppressed_for_fs_goal(self):
+        """Filesystem goals must NOT get the early-exit hint on turn 0."""
+        import re as _re
+        # Simulate the early_exit_hint computation
+        goal = "list all python files in scripts/"
+        fs_goal = self.head._goal_needs_filesystem(goal)
+        early_exit_hint = (
+            '' if fs_goal else 'emit done'
+        )
+        self.assertEqual(early_exit_hint, '')
+
+    def test_early_exit_present_for_knowledge_goal(self):
+        """Knowledge goals CAN get the early-exit hint."""
+        goal = "explain what a monad is"
+        fs_goal = self.head._goal_needs_filesystem(goal)
+        early_exit_hint = (
+            '' if fs_goal else 'emit done'
+        )
+        self.assertNotEqual(early_exit_hint, '')
+
+
 if __name__ == "__main__":
     unittest.main()

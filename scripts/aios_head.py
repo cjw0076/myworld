@@ -233,6 +233,27 @@ def compile_goal(
     return c, errors
 
 
+# --- sampler helpers ----------------------------------------------------------
+
+_FS_KEYWORDS = frozenset([
+    "list", "find", "read", "write", "create", "delete", "copy", "move",
+    "file", "files", "directory", "folder", "path", "파일", "디렉토리",
+    "폴더", "읽어", "써줘", "만들어", "삭제", "이동", "복사",
+    "ls", "find ", "cat ", "mkdir", "rm ", "cp ", "mv ",
+    "scripts/", "docs/", "tests/", ".py", ".md", ".json",
+])
+
+
+def _goal_needs_filesystem(goal: str) -> bool:
+    """Return True when the goal requires actual filesystem inspection.
+
+    Used to suppress the 'early exit on turn 0' hint for goals that must
+    call a tool (fs.list, fs.read, etc.) instead of answering from knowledge.
+    """
+    g = goal.lower()
+    return any(kw in g for kw in _FS_KEYWORDS)
+
+
 # --- CLI ----------------------------------------------------------------------
 
 def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str]],
@@ -289,10 +310,14 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
         if used_in_recent:
             no_repeat_hint = (f"Already called: {', '.join(used_in_recent[:4])}. "
                               "Pick a DIFFERENT tool next.\n")
+        # Suppress early-exit for filesystem/state goals: they must call a tool first.
+        _fs_goal = _goal_needs_filesystem(goal)
         early_exit_hint = (
-            'If this goal can be answered directly from general knowledge '
-            '(math, basic code, concepts, how-to) without searching or reading files — '
-            'emit {"done":true} immediately on turn 1.\n'
+            '' if _fs_goal else
+            'If this goal is PURELY a general-knowledge question '
+            '(math, concept explanations, how-to definitions) with NO need to '
+            'inspect files, directories, or real-time system state — '
+            'emit {"done":true} immediately.\n'
         ) if turn_num == 0 else ""
         # GenesisOS + CapabilityOS env context from preamble ref
         _pref_data = getattr(sampler, "_preamble_ref", {}) if callable(sampler) else {}
