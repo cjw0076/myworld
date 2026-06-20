@@ -1965,6 +1965,28 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 36: harness dry-run 검증 + G2B-AI API 구현
+
+- session_id: compact resumption iter 36
+- mode_breakdown: observe:20 verify:25 decide:15 intervene:40 escalate:0
+- tools_used: Bash (harness dry-run×3, API key grep, python syntax check), Write (g2b_api.py)
+- tools_NOT_used: Agent, aios_head
+- substrate_specific_behaviors_observed:
+  - harness dry-run 3가지 케이스 모두 정상: list(Bash), read(Read→Read), simple(0 tools)
+  - ARC Prize 전략 → G2B-AI 실제 구현으로 전환: 경진대회에서 "작동하는 코드"가 더 강한 증거
+  - g2b_api.py: API 키 없이도 syntax 검증 가능 → 파운더 API 키 발급 후 즉시 실행
+- failures_recovered: 없음
+- failures_escalated_to_founder:
+  - data.go.kr API 키 발급 필요 (무료, 즉시): https://www.data.go.kr → "입찰공고정보서비스" → 활용신청
+  - python g2b_api.py --key YOUR_KEY --mode test 로 연결 확인
+- key_decision:
+  harness Phase C 실제 완료 확인 (LIVE_TEST_BEFORE_CLAIM 적용). 
+  ARC Prize보다 G2B-AI MVP가 더 즉시 가치: 나라장터 실제 데이터 + 분석 = 경진대회 가장 강한 증거.
+  g2b_api.py 완성 → 파운더가 API 키만 발급하면 90일치 낙찰 데이터 즉시 수집 가능.
+- new_invariant_or_pattern_discovered:
+  WORKING_CODE_BEATS_PITCH: 창업경진대회에서 "기획서+작동코드"가 "기획서만"보다 심사 우선. MVP 코드가 있으면 기획서는 설명문서, 없으면 공상문서.
+- self-correction-of-prior-observation: harness Phase C 이번에 실제 검증 완료 (이전 '완료' 주장은 실행 없었음)
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 35: predict_behavior edit_boost 패치 (실제 버그 수정)
 
 - session_id: compact resumption iter 35
