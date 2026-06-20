@@ -1809,3 +1809,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   PRIZEHUNTER_DEDUP_PATTERN: ROI 크롤러가 동일 대회를 복수 D- 기준으로 중복 추가.
   정기 dedup (unique by contest_name, keep min D-) 필요. prizehunter 스크립트에 통합할 것.
 - self-correction-of-prior-observation: none
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 19: VR/YPC 기획서 + candidates dedup 수정
+
+- session_id: compact resumption iter 19
+- mode_breakdown: observe:10 verify:10 decide:15 intervene:60 escalate:0:20
+- tools_used: Bash (aios_head x2 병렬, prize_roi.py dedup fix, candidates_contests.tsv dedup), Edit (prize_roi.py), Read
+- tools_NOT_used: WebFetch, Agent
+- substrate_specific_behaviors_observed:
+  - 전주MBC VR 공간 창작 기획서 433줄 자동 생성 ("혼돌이 — 전주의 기억을 걷는 VR 공간")
+  - NEXON YPC 기획서 병렬 생성 (aios_head 백그라운드, 결과 대기 중)
+  - candidates_contests.tsv 근본 원인 발견: 143줄 중 41개 unique, 7회 중복 (크롤러 버그)
+  - candidates_contests.tsv dedup 처리 (143→41행), prize_roi.py에 방어 로직 추가
+  - cherry는 경쟁대회 데이터(campaigns/, candidates_*.tsv, ROI_REPORT.md)를 모두 gitignored — 의도적 개인정보 보호
+- failures_recovered:
+  - prize_roi.py 출력 중복 원인이 scored.sort() 전 dedup 부재 → dedup 방어 로직 삽입으로 해결
+- failures_escalated_to_founder: none
+- key_decision:
+  candidates_contests.tsv 중복이 cherry 크롤러 버그에서 기인. dedup을 두 레이어(소스 tsv + prize_roi.py 방어)에 모두 적용. 이제 크롤러가 중복 추가해도 ROI 리포트는 항상 clean.
+- new_invariant_or_pattern_discovered:
+  DUAL_LAYER_DEDUP_PATTERN: 크롤러 출력(tsv) + 처리 스크립트(roi.py) 양쪽에 dedup을 각각 적용.
+  한쪽만 고치면 반대쪽 버그 재발 시 문제 재현. 두 레이어 모두 방어해야 안전.
+- self-correction-of-prior-observation: none
