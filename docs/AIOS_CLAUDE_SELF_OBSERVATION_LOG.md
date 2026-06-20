@@ -1724,3 +1724,33 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation:
   이전 iter 13에서 "Phase E1 pending"으로 기록했으나 실제로는 worker.js에 완성 구현 + 라이브 배포됨.
   계획 추적보다 코드 상태가 사실이다.
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 16: aios_head 기획안 자동생성 PROOF
+
+- session_id: compact resumption iter 16
+- mode_breakdown: observe:5 verify:15 decide:20 intervene:60 escalate:0:20
+- tools_used: Bash (aios_head --plan-only, aios_head fs.write), WebFetch (BTP/ACC/culture.go.kr), Read (/tmp/acc_concept_draft.md), Write (export_pdf.py, acc concept_package)
+- tools_NOT_used: Agent, memoryOS query (불필요)
+- substrate_specific_behaviors_observed:
+  - aios_head "..기획안 작성.." --allow-write /tmp → 208줄 기획서 자동 생성 성공
+  - AIOS 5 OS (HiveMind/MemoryOS/GenesisOS/CapabilityOS/MyWorld) 전체 활용하는 아키텍처를 aios_head가 스스로 설계
+  - 계룡장학재단 건축 아이디어 (D-16): 건축 전공 필수 조건 발견 → skip 의사결정
+  - BTP eval.btp.or.kr 직접 접근 실패 → 파운더 전화 문의 가이드 (051-974-9000)
+  - 문화이 접수 확인: culture.go.kr/digicon, 마감 6/26 18:00, contest@kcisa.kr
+- failures_recovered:
+  - wevity 직접 URL 접근 → PHP 오류 → 메인 페이지 우회 검색으로 공모전 목록 확인
+- failures_escalated_to_founder:
+  - 부산 공식 신청서 양식: BTP 전화(051-974-9000) 또는 이메일(eunae@btp.or.kr) 확인 필요 (D-5)
+  - 서울 디자인 AI 영상 공모전 (D-11): 영상 제작 여부 파운더 결정 필요
+- key_decision:
+  aios_head fs.write 도구로 외부 가치(공모전 기획서) 직접 생성 가능함을 검증.
+  "aios do <goal>" = 기획 자동화 파이프라인으로 활용 가능. ROI_REPORT 대회들을
+  aios_head에 순차 투입하면 반자동 기획서 공장이 된다.
+- new_invariant_or_pattern_discovered:
+  AIOS_HEAD_WRITE_PROOF_PATTERN: aios_head + --allow-write + 자연어 목표 →
+  fs.write 도구로 외부 문서(기획서/보고서/분석) 자동 생성. 인간 개입 없이 AIOS가
+  outside-domain 가치물(공모전 기획서)을 만들 수 있음. 이것이 "organism" 비전의
+  concrete 증명 #2 (첫 번째: Deadline Copilot 2026-06-05).
+- self-correction-of-prior-observation:
+  "aios_head는 planning만 한다" → 틀렸음. fs.write 도구로 실제 파일 작성까지 완성.
+  --allow-write 플래그로 허가 범위 내에서 자율 실행 가능.
