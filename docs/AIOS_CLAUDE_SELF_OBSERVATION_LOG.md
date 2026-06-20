@@ -1941,3 +1941,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   LOCAL_MEMORY_FALLBACK: memoryOS 패키지 없을 때 .aios/local_memory.jsonl 직접 append.
   review.json → content 추출 → lm_{sha1} ID dedup → 500자 cap → 추가.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 25: AIC 신규 공모전 발굴 + star_radar 재스캔
+
+- session_id: compact resumption iter 25
+- mode_breakdown: observe:10 verify:5 decide:10 intervene:20 escalate:0
+- tools_used: Bash (aios_agent_behavior status, star_radar dry-run, aic tsv 분석), Agent×2 (AIC 기획서 포크)
+- tools_NOT_used: WebFetch, Edit
+- substrate_specific_behaviors_observed:
+  - star_radar 재스캔: new_candidates=0 (이미 흡수된 5개만), 생태계 흡수 포화 신호
+  - AIC tsv에서 미발굴 고ROI 공모전 2개 발견: AI창작(3,600만원) + 국방AI아이디어(3,050만원)
+  - agent behavior: local 1037개, global status unknown (Cloudflare D1 연결 미확인)
+  - SECI P3 백로그: hivemind 별도 repo 없음 → 진행 불가, 보류 적합
+- failures_recovered:
+  - star_radar "new candidates empty" → 쿼리 확장(memory/orchestration) + since 확장 → 동일
+  - 해결: star_radar 포화 상태 인식, AIC tsv 직접 분석으로 전환
+- failures_escalated_to_founder: 없음
+- key_decision:
+  star_radar 포화 → AIC/Dacon 로컬 TSV 직접 분석이 더 효율적.
+  국방 AI 아이디어: 민감 정보 없이 아이디어만 → 작성 적합 판정.
+- new_invariant_or_pattern_discovered:
+  STAR_RADAR_SATURATION: 같은 쿼리 반복 → seen 증가로 new=0. 탈출: 쿼리 교체 또는 TSV 직접 분석.
+  AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
+- self-correction-of-prior-observation: none
