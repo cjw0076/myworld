@@ -1965,6 +1965,29 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 34: Bias챌린지 baseline 코드 + memoryOS 상태 확인
+
+- session_id: compact resumption iter 34
+- mode_breakdown: observe:20 verify:15 decide:15 intervene:50 escalate:0
+- tools_used: Bash (mkdir, python3 memoryOS 상태확인×3), Write×2 (baseline.py, README.md)
+- tools_NOT_used: Agent, aios_head
+- substrate_specific_behaviors_observed:
+  - Dacon 챌린지는 데이터 없이 코드를 작성해야 함 → 자동 감지(auto-detect) 로직으로 해결
+  - local_memory.jsonl 40개 모두 'unknown' status → status 필드 없는 레거시 포맷
+  - .aios/inbox/memoryOS 비어있음 → WORK-20260612-004 이미 처리됨 (메모리 stale 확인)
+  - RTX 5090 × 2 특화 설정: batch_size=32, FP16=True → 45분이면 RoBERTa fine-tune 완료
+- failures_recovered: 없음
+- failures_escalated_to_founder:
+  - Bias 챌린지: D-8, 코드 준비 완료. 파운더 Dacon 참가 신청 + GO 신호 여전히 대기
+- key_decision:
+  데이터 구조 모르는 상태에서 코드 먼저 작성 → 자동 감지 패턴으로 해결.
+  WORK-20260612-004 memoryOS inbox 비어있음 → 완료된 것으로 판단, 스택에서 제거.
+  백로그 P2 잔여: WORK-20260612-005 hivemind ASC-0180 deliberation만 남음.
+- new_invariant_or_pattern_discovered:
+  AUTO_DETECT_BEFORE_DATA: 데이터 없이 챌린지 코드 작성 시 → 레이블/텍스트 컬럼 자동 감지 로직 필수. 하드코딩하면 실제 데이터에서 즉시 실패.
+  STALE_BACKLOG_VERIFY: 오래된 백로그는 실제 상태 확인 없이 "아직 미완"으로 가정 말 것. inbox 확인 → 이미 처리됨.
+- self-correction-of-prior-observation: WORK-20260612-004 memoryOS 12개 → 실제 inbox 비어있음 → 완료 판정
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 33: 범정부 공공데이터 창업경진대회 (5,700만원)
 
 - session_id: compact resumption iter 33
