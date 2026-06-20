@@ -112,5 +112,25 @@ class TestValidToolName(unittest.TestCase):
         self.assertTrue(self._valid("aios_harness"))
 
 
+class TestMakeLlmSamplerProvider(unittest.TestCase):
+    """Verify make_llm_sampler correctly resolves provider dispatch."""
+
+    def test_sampler_created_without_error_ollama(self):
+        sampler = h.make_llm_sampler("test task", provider="ollama")
+        self.assertTrue(callable(sampler))
+
+    def test_sampler_created_without_error_claude(self):
+        sampler = h.make_llm_sampler("test task", provider="claude")
+        self.assertTrue(callable(sampler))
+
+    def test_sampler_created_with_base_url(self):
+        sampler = h.make_llm_sampler("test", base_url="http://localhost:11434")
+        self.assertTrue(callable(sampler))
+
+    def test_sampler_created_default_no_args(self):
+        sampler = h.make_llm_sampler("test task")
+        self.assertTrue(callable(sampler))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -295,16 +295,41 @@ def _parse_react(text: str) -> list[tuple[str, dict]] | None:
 
 
 def make_llm_sampler(goal: str, base_url: str | None = None,
-                     model: str | None = None, api_key: str = "none") -> Callable:
+                     model: str | None = None, api_key: str = "none",
+                     provider: str | None = None) -> Callable:
     """Return a sampler function that calls local LLM and parses ReAct output.
 
     `goal` is passed in so the first-turn prompt includes the actual task
     (aios_turn_loop stores only kind='goal' in history — no content).
+
+    provider: 'ollama' (default), 'claude', 'codex', 'gemini', or any key
+    understood by aios_agent_system. When Ollama is unavailable, pass
+    provider='claude' to fall through to the Claude CLI headless path.
     """
     _agent = _load("aios_agent_system")
     tool_desc = "\n".join(f"  {n}: {s['description']}" for n, s in TOOL_REGISTRY.items())
     system_prompt = _REACT_SYSTEM.format(tools=tool_desc)
     first_turn = True
+
+    # Resolve the dispatch function once at sampler-construction time
+    _dispatch = None
+    if _agent:
+        _runners = getattr(_agent, "_RUNNERS", None)
+        if _runners is None:
+            # Build minimal runners map from known functions
+            _runners = {
+                "ollama":  getattr(_agent, "_run_ollama", None),
+                "claude":  getattr(_agent, "_run_claude", None),
+                "codex":   getattr(_agent, "_run_codex",  None),
+                "gemini":  getattr(_agent, "_run_gemini", None),
+            }
+        if provider and provider in _runners and _runners[provider]:
+            _dispatch = _runners[provider]
+        elif base_url:
+            _dispatch = lambda p: _agent._openai_compat(
+                base_url, model or "local-model", p, api_key=api_key)
+        else:
+            _dispatch = getattr(_agent, "_run_ollama", None)
 
     def sampler(history: list[dict]) -> dict:
         nonlocal first_turn
@@ -331,16 +356,11 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
         parts.append("Assistant:")
         prompt = "\n".join(parts)
 
-        # Call LLM
+        # Call LLM via resolved dispatch
         text = ""
-        if _agent:
+        if _dispatch:
             try:
-                if base_url:
-                    text, _ = _agent._openai_compat(
-                        base_url, model or "local-model", prompt, api_key=api_key
-                    )
-                else:
-                    text, _ = _agent._run_ollama(prompt)
+                text, _ = _dispatch(prompt)
             except Exception as e:
                 text = f"Final Answer: LLM error — {e}"
 
@@ -426,6 +446,9 @@ def main(argv: list[str] | None = None) -> int:
                    help="OpenAI-compatible endpoint (default: Ollama)")
     p.add_argument("--model", default=None)
     p.add_argument("--max-turns", type=int, default=12)
+    p.add_argument("--provider", default=None,
+                   choices=["ollama", "claude", "codex", "gemini"],
+                   help="LLM provider (default: ollama). Use 'claude' when Ollama is unavailable.")
     p.add_argument("--api-key", default=None,
                    help="AKR key for contribution (or AIOS_API_KEY)")
     p.add_argument("--verbose", "-v", action="store_true")
@@ -442,6 +465,7 @@ def main(argv: list[str] | None = None) -> int:
         goal=args.task,
         base_url=args.base_url or os.environ.get("OPENAI_COMPAT_URL"),
         model=args.model,
+        provider=args.provider,
     )
     gate = lambda name, arguments: default_gate(name, arguments, dry_run=args.dry_run)
 
