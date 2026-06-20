@@ -1894,3 +1894,50 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIOS_HEAD_EMPTY_CONTENT_BUG: aios_head planner가 fs.write content를 "(작성 완료)" 같은
   플레이스홀더로 쓰는 경우 있음. 방지책: 목표에 "반드시 실제 내용", "최소 N줄", 섹션명시.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 22: placeholder guard 수정 + 한수원 기획서 직접 작성
+
+- session_id: compact resumption iter 22 (context 재압축 후 재개)
+- mode_breakdown: observe:5 verify:15 decide:10 intervene:30 escalate:0
+- tools_used: Edit (contract_runner guard 수정), Bash (pytest 1184개), Write (기획서), Read
+- tools_NOT_used: Agent, WebFetch, aios_head (버그 회피하여 직접 작성)
+- substrate_specific_behaviors_observed:
+  - context 재압축 후에도 prior BUG 위치·수정법 인식하여 즉시 실행 — 압축 연속성 작동
+  - `.txt` 파일 80자 guard → test_checkpoint_halts_run 실패; `.md`+플레이스홀더 패턴으로 좁힘
+  - aios_head local LLM placeholder bug 우회: Write 도구로 직접 기획서 작성
+  - 1184 테스트 전부 통과
+- failures_recovered:
+  - `_syscall_fs_write` guard: _DOC_EXTS에 .txt 포함 → test x.txt="y" 차단됨
+    fix: `.md`만 체크 + regex 패턴(작성 완료/done/complete) + 20자 미만 차단
+  - KEPCO empty content: Write 도구 직접 실행으로 즉결 해결
+- failures_escalated_to_founder: 없음
+- key_decision: LLM placeholder 2회 반복 실패 → Write 직접 실행. 재시도 낭비 없앰.
+- new_invariant_or_pattern_discovered:
+  PLACEHOLDER_GUARD_MD_ONLY: guard는 `.md` 전용. .txt/.rst/.html 제외(테스트 합법 단문).
+  FALLBACK_TO_DIRECT_WRITE: LLM tool 2회 실패 시 Claude Write가 더 빠름.
+- self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 23: 캠페인 3개 병렬 완성 + memory 배치 추가
+
+- session_id: compact resumption iter 23
+- mode_breakdown: observe:5 verify:10 decide:5 intervene:25 escalate:0
+- tools_used: Agent×3 (병렬 포크), Bash (memory 배치 추가, export_pdf×3), Read
+- tools_NOT_used: WebFetch, aios_head
+- substrate_specific_behaviors_observed:
+  - 포크 3개 병렬 실행 → 3개 동시 완료 (김대중104줄/한수원186줄/성평등257줄)
+  - 병렬 task-notification 3개가 Bash 실행 중 도착 — 인터럽트 없이 순서대로 처리됨
+  - local memory 배치 추가: 13개 review.json → local_memory.jsonl 추가 (total 37개)
+  - memoryOS 패키지 부재 → local_memory.jsonl 직접 append로 fallback 처리
+- failures_recovered:
+  - memoryOS 패키지 없음 → aios_local_memory.py의 write() 패턴 재현하여 Python 직접 처리
+- failures_escalated_to_founder: 없음
+- key_decision:
+  모든 우선순위 캠페인 완성 (17개). 파운더 긴급 액션: D-5 부산(6/25), D-6 문화(6/26).
+  WORK-20260612-004 memoryOS draft → local fallback으로 처리 (memoryOS 없음).
+- new_invariant_or_pattern_discovered:
+  PARALLEL_FORK_COMPLETE_PATTERN: 독립 기획서 N개 = N개 포크 병렬 발행. 
+  소요시간 ~93초(가장 느린 것 기준) vs 순차 ~3분. 효율 3×.
+  
+  LOCAL_MEMORY_FALLBACK: memoryOS 패키지 없을 때 .aios/local_memory.jsonl 직접 append.
+  review.json → content 추출 → lm_{sha1} ID dedup → 500자 cap → 추가.
+- self-correction-of-prior-observation: none
