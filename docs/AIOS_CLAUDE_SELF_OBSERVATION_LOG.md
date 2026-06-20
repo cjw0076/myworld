@@ -2210,3 +2210,24 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   PYTHON313_COMPAT_DTYPE: dtype == object 단독 체크 금지. 복합 체크 필수.
   MOCK_DATA_GATE: 데이터 없는 챌린지 코드는 mock 데이터로 파이프라인 관통 테스트 후 제출.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 39: 신규 기획서 2편 (보안AI + 에너지AI)
+
+- session_id: loop-cto-iter39
+- mode_breakdown: decide:90 observe:10 :20min
+- tools_used: Write x2 (kisa-security-ai, kepco-energy-ai concept_package.md)
+- tools_NOT_used: Agent, WebSearch (도메인 지식으로 직접 작성)
+- substrate_specific_behaviors_observed:
+  DOMAIN_PIVOT_FOR_COVERAGE: 28편 이후 포화 위험 → 보안+에너지 분야로 피벗. 
+  기존 패턴(공공서비스+교육) 반복 아닌 새 도메인 진입 → 심사 다양성 확보.
+  INCIDENT_AS_ANCHOR: 실제 사고(2023-08-03 수도권, KT 디도스) 수치가 기획서 설득력 핵심.
+  숫자 없는 기획서는 "어떻게"만 있고 "왜"가 없음.
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decision:
+  보안 AI: 로컬 LLM + MITRE ATT&CK = "설명 가능한 보안" 차별화.
+  에너지 AI: ConvLSTM + 예비력 비용 절감 2,100억원 = 심사위원 기억 숫자.
+- new_invariant_or_pattern_discovered:
+  DOMAIN_COVERAGE_STRATEGY: 공모전 참여 전략 = 단일 분야 깊이보다 다분야 폭.
+  보안/에너지/환경/사회/교육 각 1편씩 커버하면 기회 분산 + 수상 확률 합산 증가.
+- self-correction-of-prior-observation: none
