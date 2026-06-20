@@ -1965,6 +1965,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 31: 기상기후 AI 해커톤 기획서 (D-20)
+
+- session_id: compact resumption iter 31
+- mode_breakdown: observe:20 verify:5 decide:15 intervene:60 escalate:0
+- tools_used: Bash (TSV grep×2, mkdir, export), Write (climate concept_package), Edit (self-obs)
+- tools_NOT_used: Agent, aios_head (직접 Write가 더 빠름)
+- substrate_specific_behaviors_observed:
+  - NEXT_COMPETITION_POOL.tsv에서 D-20 기상해커톤 발굴 (이전 iter에서 놓친 항목)
+  - TSV parallel grep으로 candidates + NEXT_POOL 동시 검색 → 커버리지 확장
+  - 기후AI 해커톤 = build 유형 → 기획서보다 구현 가능성 증명이 핵심 → 오송 재현 시나리오 선택
+- failures_recovered: 없음
+- failures_escalated_to_founder: 없음 (ImagineHack 2026-06-20 마감은 오늘 → 확인 불가)
+- key_decision:
+  D-20 기상해커톤이 가장 긴급한 미작성 항목. 1,000만원이지만 오송 침수 재현(1시간 40분 선감지)이
+  강력한 실증 증거 → 수상 가능성 높음. 공공 API 제로 비용 구조가 차별점.
+- new_invariant_or_pattern_discovered:
+  INCIDENT_REENACTMENT_PROOF: 실제 재난 사건을 AI 감지 시뮬레이션으로 재현하면 심사위원에게 가장 강력한 증거. 이론보다 실제 사례 재현이 설득력 10배.
+  TSV_PARALLEL_SCAN: candidates_aic.tsv와 NEXT_COMPETITION_POOL.tsv 동시 grep → 항목 누락 방지.
+- self-correction-of-prior-observation: D-9 Bias 챌린지 파운더 에스컬레이션 대기 중 (GO 아직 없음)
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 30: 에듀톤 기획서 + Bias 챌린지 에스컬레이션
 
 - session_id: compact resumption iter 30
