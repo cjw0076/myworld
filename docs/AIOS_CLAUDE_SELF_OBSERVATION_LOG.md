@@ -1754,3 +1754,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation:
   "aios_head는 planning만 한다" → 틀렸음. fs.write 도구로 실제 파일 작성까지 완성.
   --allow-write 플래그로 허가 범위 내에서 자율 실행 가능.
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 17: Plan 전 Phase 완성 검증 + --loop 유기 파이프라인 작동
+
+- session_id: compact resumption iter 17 (세션 재시작 후)
+- mode_breakdown: observe:15 verify:20 decide:20 intervene:45 escalate:0:20
+- tools_used: Bash (aios_agent_behavior.py status/predict/checkpoint, aios_harness.py --dry-run, aios_head --loop, export_pdf.py, git), Read (ROI_REPORT.md, plan file)
+- tools_NOT_used: Agent (불필요), WebFetch
+- substrate_specific_behaviors_observed:
+  - Plan 전 Phase (A1/A2/B/C/D1-3/E1/E2) 이미 완성됨 확인 — PLAN_VS_CODE_GAP_PATTERN 재확인
+  - aios_harness.py --dry-run: 21초, turns=2, tools=1(Bash), 로컬 LLM 응답 확인
+  - aios_head --loop 유기 파이프라인 성공: GenesisOS prison 감지 (assumption-silent, time-frozen), escape_vectors 2개 반환
+  - CHAI AI 광고 공모전 기획서 333줄, 임업통계 경진대회 기획서 355줄 — 병렬 aios_head 자동 생성
+  - ROI_REPORT.md 분석: 미착수 고ROI 타겟 2개 발굴 (CHAI D-41 ROI 781K, 임업 D-42 ROI 500K)
+  - HTML 4개 export: acc/hikr/busan/culture — /tmp/*.html 제출 준비 완료
+- failures_recovered:
+  - --loop 모드에서 로컬 LLM이 tools=0으로 응답 (직접 답변 시도) — 예상된 행동, 태스크가 너무 trivial해서 dream_agora "skipped:trivial" 정상 처리
+  - campaigns/ 폴더가 cherry .gitignore에서 제외됨 발견 — 의도적 설정, 커밋 스킵 (파일은 /tmp/*.html로 활용)
+- failures_escalated_to_founder: none
+- key_decision:
+  PLAN 전 Phase 완성 검증 후 신규 ROI 타겟 발굴로 방향 전환. aios_head 병렬 호출로
+  20분 루프에서 기획서 2개(688줄) 자동 생성. "기획서 공장" 패턴이 안정화됨.
+- new_invariant_or_pattern_discovered:
+  AIOS_HEAD_PARALLEL_DRAFT_PATTERN: aios_head 2개 병렬 백그라운드 실행 → 총 688줄
+  기획서를 20분 루프 내에서 생성. 각 목표를 명확히 명세하면 ROI_REPORT 대회들을
+  순차 투입 가능. 이것이 "경쟁대회 기획 공장" 파이프라인의 검증된 형태.
+- self-correction-of-prior-observation: none
