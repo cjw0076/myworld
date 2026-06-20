@@ -1696,3 +1696,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   완전 구현 없이도 "작동하는 데모"로 제출 가능. ReAct demo가 유효 증거.
 - self-correction-of-prior-observation: none
   수정: 항상 Read-first로 기존 구현 확인 후 Write/Edit 결정.
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 14-15: Plan 완성 검증 + 문화이 기획서
+
+- session_id: compact resumption iter 14-15
+- mode_breakdown: observe:15 verify:30 decide:20 intervene:35 escalate:0:40
+- tools_used: Read (worker.js 코드 독해), Write (×3 — concept_package, demo, email), Bash (demo 실행 검증, curl checkpoints), Edit (self-obs log)
+- tools_NOT_used: Agent, memoryOS query, Cloudflare MCP (불필요 — 코드 독해로 충분)
+- substrate_specific_behaviors_observed:
+  - Plan "Phase E1 pending" 표시 → worker.js Read → 이미 구현됨 확인. 계획서 상태 ≠ 구현 상태.
+  - `/checkpoints` GET 라이브 응답 6개 체크포인트 확인 (1508 entries)
+  - predict_behavior Edit→Bash 전이 trans=0.200 (uniform: 5개 candidates로 균등 분배, 전이 데이터 부족 신호)
+  - 문화이(文化AI) concept_package 작성: 9섹션, 문화체육관광부 공개 API 6개 데이터소스 정의
+  - demo_culture_ai.py: ReAct 3-step, 6개 카테고리, 실행 검증 완료
+- failures_recovered:
+  - Plan Phase E1을 "pending"으로 오인 → worker.js 독해 후 already-done 확인. 불필요한 재구현 방지.
+- failures_escalated_to_founder:
+  - 부산 대회 D-5 (6/25): eunae@btp.or.kr 이메일 제출 → founder action
+  - 문화이 D-6 (6/26): www.culture.go.kr/digicon 온라인 접수 → founder action
+- key_decision:
+  Plan Phase D/E 모두 이미 구현 완료 확인. 다음 외부 가치 타겟 = 새 대회 발굴 또는
+  aios_head 실 배포. "계획서의 pending = 구현 미완"이 아님을 검증 루틴으로 확인.
+- new_invariant_or_pattern_discovered:
+  PLAN_VS_CODE_GAP_PATTERN: 계획서에 pending으로 표시된 항목도 코드베이스에서
+  이미 구현되어 있는 경우가 많다. Read(코드 파일) → curl/테스트 로 verify BEFORE
+  재구현. "planned" ≠ "missing". 독해 비용 < 재구현 비용.
+- self-correction-of-prior-observation:
+  이전 iter 13에서 "Phase E1 pending"으로 기록했으나 실제로는 worker.js에 완성 구현 + 라이브 배포됨.
+  계획 추적보다 코드 상태가 사실이다.
