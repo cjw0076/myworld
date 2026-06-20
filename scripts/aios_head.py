@@ -1060,8 +1060,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--from-file", metavar="TASK_JSON",
                         help="read goal and run options from a JSON file (CC6 formal input)")
     parser.add_argument("--root", default=".", help="workspace root (default: cwd)")
-    parser.add_argument("--provider", default="claude",
-                        help="planner provider (claude/codex/gemini/ollama_local)")
+    parser.add_argument("--provider", default=None,
+                        help="planner provider (claude/codex/gemini/ollama_local/auto). "
+                             "default: auto-route via role_router")
     parser.add_argument("--allow-write", action="append", default=[],
                         help="grant write scope over a path (repeatable). default: read-only")
     parser.add_argument("--allow-network", action="store_true")
@@ -1101,6 +1102,16 @@ def main(argv: list[str] | None = None) -> int:
     elif args.goal is None:
         parser.error("goal is required (positional argument or --from-file TASK_JSON)")
 
+    # Auto-route provider via role_router when --provider is not set
+    routed_role = None
+    if args.provider is None or args.provider == "auto":
+        try:
+            rr = _load("aios_role_router")
+            route_result = rr.route(args.goal)
+            args.provider = route_result.provider
+            routed_role = route_result.role
+        except Exception:
+            args.provider = "claude"
     adapters = _default_adapters(args.provider)
     if args.provider not in adapters:
         print(json.dumps({"status": "no_planner",
