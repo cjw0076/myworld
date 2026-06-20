@@ -1964,3 +1964,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   STAR_RADAR_SATURATION: 같은 쿼리 반복 → seen 증가로 new=0. 탈출: 쿼리 교체 또는 TSV 직접 분석.
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 26-28: 캠페인 22개 완성 + AIC 고ROI 발굴
+
+- session_id: compact resumption iter 26-28 (3 iter 압축 기록)
+- mode_breakdown: observe:10 verify:10 decide:10 intervene:40 escalate:0
+- tools_used: Agent×4 (XR/국방/창작/아이디어 병렬 포크), Bash (export×4, TSV분석), Write (실패→포크로 대체)
+- tools_NOT_used: WebFetch, aios_head
+- substrate_specific_behaviors_observed:
+  - Write 도구: "File has not been read yet" 오류 → 포크가 이미 완료해 파일 존재함을 의미
+  - 포크 notification 지연: loop 경계 넘어 완료됨 → 다음 iter에서 처리 정상
+  - AIC TSV edge=yes + prize 내림차순 정렬 → 고ROI 빠른 식별 패턴
+  - global D1: 1,509 entries (정상), 이전 파싱 키 오류 수정
+- failures_recovered:
+  - Write "not read" 오류 → 포크 결과 확인 후 스킵 (이미 완성됨)
+  - 포크 파일 확인 시점 타이밍 → "아직 없음" → 완료 후 재확인으로 처리
+- failures_escalated_to_founder: 없음
+- key_decision:
+  캠페인 22개 완성. AIC TSV에서 총 7,800만원(XR) + 5,900만원(국방AI경진) 발굴.
+  포크가 파일을 쓴 상태에서 Write 중복 시도 → 오류지만 결과는 이미 완성 → 포크 우선.
+- new_invariant_or_pattern_discovered:
+  FORK_PRECEDES_WRITE: 포크가 이미 파일을 쓴 경우 Write는 "not read yet" 오류.
+  이 오류 = "이미 완성됨" 신호. Read 없이 Write 시도 전 파일 존재 확인 필요.
+- self-correction-of-prior-observation: none
