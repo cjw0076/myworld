@@ -1782,3 +1782,30 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   기획서를 20분 루프 내에서 생성. 각 목표를 명확히 명세하면 ROI_REPORT 대회들을
   순차 투입 가능. 이것이 "경쟁대회 기획 공장" 파이프라인의 검증된 형태.
 - self-correction-of-prior-observation: none
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 18: D-18 기획서 2개 + ROI_REPORT dedup
+
+- session_id: compact resumption iter 18
+- mode_breakdown: observe:10 verify:10 decide:15 intervene:60 escalate:0:20
+- tools_used: Bash (aios_head x2 병렬, export_pdf.py x4, ROI_REPORT dedup 스크립트), Read
+- tools_NOT_used: WebFetch, Agent
+- substrate_specific_behaviors_observed:
+  - AI 관세행정 캐릭터 공모전 기획서 407줄 자동 생성 (customs-ai-character)
+  - 무통베개 빠나나 AI 광고 챌린지 기획서 346줄 자동 생성 (banana-ai-ad-challenge)
+  - 두 aios_head 병렬 실행 → 두 기획서 동시 완성 (총 753줄, ~2분)
+  - ROI_REPORT.md 중복 버그 발견: 26개 유니크 대회가 74행으로 표기 (크롤러 D- 기준 중복)
+  - Python dedup 스크립트로 74 → 26행 정리 (대회당 가장 빠른 마감일 유지)
+  - HTML export 4개 추가: customs/banana/chai/forestry
+- failures_recovered:
+  - ROI_REPORT 중복으로 같은 대회가 x7 반복됨 → dedup 처리로 해결
+- failures_escalated_to_founder: none
+- key_decision:
+  D-18 두 공모전(관세청 캐릭터, 빠나나 광고) 기획서 병렬 생성 완료.
+  캠페인 총 8개 (acc/busan/chai/culture/forestry/hikr/customs/banana).
+  ROI_REPORT.md dedup으로 prizehunter 출력 신뢰성 개선.
+- new_invariant_or_pattern_discovered:
+  PRIZEHUNTER_DEDUP_PATTERN: ROI 크롤러가 동일 대회를 복수 D- 기준으로 중복 추가.
+  정기 dedup (unique by contest_name, keep min D-) 필요. prizehunter 스크립트에 통합할 것.
+- self-correction-of-prior-observation: none
