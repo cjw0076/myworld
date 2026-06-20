@@ -1,5 +1,10 @@
 # AIOS Definition
 
+See `docs/AIOS_CANONICAL_SHAPE.md` for the authoritative disambiguation of
+AIOS as kernel, control plane, organs, service surfaces, and public
+infrastructure. This file defines the operating loop; the canonical-shape doc
+defines which completion words are allowed.
+
 AIOS is not a chat wrapper, a folder of scripts, or a collection of agents. It
 is a contract-bound operating loop that turns a user goal into planned work,
 retrieved memory, selected capabilities, verified execution, and durable
@@ -10,6 +15,21 @@ learning.
 AIOS is the local-first control system where `myworld` coordinates Hive Mind,
 MemoryOS, and CapabilityOS to complete user goals while preserving evidence,
 ownership, verification, and memory.
+
+Use scoped completion claims only:
+
+```text
+kernel-complete
+self-maintaining-complete
+world-service-objective-ready
+service-ready
+world-deployable
+public-infra-live
+public-product-ready
+```
+
+Unqualified "AIOS complete" and "production-ready" are invalid unless the
+speaker immediately names the scope and evidence.
 
 ## Necessary Conditions
 
@@ -95,4 +115,3 @@ Therefore:
 - `myworld` owns contracts, dispatch, global ledger, and readiness.
 - child repos own implementation.
 - operator checkpoints are part of the system, not a failure.
-

@@ -5,6 +5,30 @@ cross-repo decisions, OS-boundary changes, and final-AIOS design records.
 
 For repo-local implementation details, also update that repo's own worklog.
 
+## 2026-06-21 KST — codex@myworld — AIOS canonical shape disambiguation
+
+- repo: myworld
+- role: control-plane semantics / completion vocabulary
+- goal: remove ambiguity around whether AIOS is a kernel, product, service,
+  control plane, public Akashic infra, or finished operating system.
+- changed: added `docs/AIOS_CANONICAL_SHAPE.md`; updated
+  `docs/AIOS_DEFINITION.md`, `README.md`, and `docs/AGENT_WORKLOG.md`.
+- evidence: `python3 scripts/aios_world_service_audit.py --json` reports
+  `completion_claim_supported=true`, `counts={proven:14, partial:0, weak:0,
+  missing:0}`; focused readiness tests passed 25/25; GenesisOS critique
+  required tables, assumptions/negations, and time horizons.
+- decision: AIOS claims must be scoped. Allowed status words include
+  `kernel-complete`, `self-maintaining-complete`,
+  `world-service-objective-ready`, `service-ready`, `world-deployable`,
+  `public-infra-live`, and `public-product-ready`. Unqualified
+  `AIOS complete` and `production-ready` are invalid.
+- risk: this resolves vocabulary, not every product risk. Public Akashic and
+  Cloudflare Pages evidence prove public infrastructure; public-product
+  readiness still needs real-user validation and recovery/support proof.
+- next: use `docs/AIOS_CANONICAL_SHAPE.md` as the vocabulary gate for README,
+  deploy docs, release notes, contracts, and external claims.
+- status: completed
+
 ## 2026-06-19 KST — codex@myworld — ASC-0279 world-service objective audit
 
 - repo: myworld

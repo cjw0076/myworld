@@ -4,6 +4,26 @@ schema_version: aios.agent_worklog.v1
 
 # AIOS Agent Worklog
 
+## 2026-06-21 07:05 KST — codex@myworld — AIOS canonical shape disambiguation
+
+- status: completed
+- scope: `docs/AIOS_CANONICAL_SHAPE.md`, `docs/AIOS_DEFINITION.md`,
+  `README.md`, `docs/AIOS_AGENT_LEDGER.md`
+- work: added a vocabulary gate that splits AIOS into five layers: kernel/head,
+  control plane, organs, service surfaces, and public infrastructure.
+- evidence: ASC-0279 objective audit reports `completion_claim_supported=true`
+  with 14/14 requirements proven; serving release and world readiness tests
+  passed in the focused gate.
+- decision: unqualified `AIOS complete` and `production-ready` are invalid.
+  Future claims must use scoped labels such as `kernel-complete`,
+  `world-service-objective-ready`, `public-infra-live`, and
+  `public-product-ready`.
+- risk: public-product readiness is still not proven by infrastructure gates
+  alone; it needs real-user validation, install/recovery support, and UX trust
+  evidence.
+- next: align deploy docs, release notes, and product copy with this vocabulary
+  before external launch claims.
+
 ## 2026-06-19 15:45 KST — codex@myworld — ASC-0279 world-service objective audit
 
 - status: closed

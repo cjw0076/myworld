@@ -2349,3 +2349,35 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   DOMAIN_KNOWLEDGE_AS_CODE: 재배 매뉴얼/MITRE/의료 가이드라인을 코드 상수로 내재.
   외부 API 없이 즉시 동작. 경쟁자 코드와 차별화 = "전문 지식 내재화 여부".
 - self-correction-of-prior-observation: none
+
+---
+
+- timestamp: 2026-06-21T00:30:00+09:00
+- session_id: loop-cto-ecosystem-absorption
+- mode_breakdown: observe:20 decide:50 intervene:30 :60min
+- tools_used: Bash (curl/pip/python), Write (roadmap), Edit (harness), Read (OMX skills)
+- tools_NOT_used: Agent (fork still running), WebSearch (curl 직접)
+- substrate_specific_behaviors_observed:
+  OUROBOROS_RUNTIME_FLAG: `python -m ouroboros auto --runtime codex` — LiteLLM 없이
+    Claude/Codex/Gemini/Hermes 선택 가능. DNA invariant 충돌 없음.
+  OMX_SKILL_AS_DIRECTORY: ~/.codex/skills/ralph/ (디렉토리 + SKILL.md) — .md 파일 아님.
+    직접 cat ~/.codex/skills/ralph.md 실패 → ls 먼저 필요.
+  TOOL_REGISTRY_EXTENSION_PATTERN: aios_harness TOOL_REGISTRY에 새 tool 추가 =
+    description + permission + timeout_s + risk_fn + executor 5필드. 테스트 가능 단위.
+- failures_recovered:
+  ouroboros qa → claude_agent_sdk 미설치 오류. mode='auto' + --runtime codex로 우회.
+  ouroboros _exec_ouroboros 인수 오류 → --help 확인 후 수정 (--yes 없음, --runtime 있음).
+- failures_escalated_to_founder: none
+- key_decision:
+  "우리는 비전만" 원칙 → 4분류 (즉시/단기/위임/제외). Ouroboros+OmxSkill 즉시 흡수.
+  parallel-code는 GUI 도구로 위임 (AIOS CLI head와 레이어 다름).
+  LiteLLM 기반 시스템 전부 제외 (supply chain incident 2026-03-24).
+- new_invariant_or_pattern_discovered:
+  ECOSYSTEM_ABSORPTION_NOT_REWRITE: 잘 만들어진 harness/runtime을 AIOS가 직접 구현하지
+    않고 TOOL_REGISTRY에 등록하여 call하는 방식. 흡수 = wrapper not clone.
+    Ouroboros(spec-first) + OmxSkill(ralph/team) = AIOS 비전 계층 위에 올라가는 실행 도구.
+  FORK_PEEK_COST: fork agent 결과 파일을 mid-flight read하면 91KB tool noise가 context에 유입.
+    결과가 필요하면 기다리고, 아니면 직접 조사해서 병렬 진행.
+- self-correction-of-prior-observation:
+  이전에 "AIOS가 모든 것을 설계해야 한다"는 암묵적 가정 → "비전만 직접, 나머지 흡수"로 전환.
+  창업자 방향 전환 ("처음부터 설계보다 뜯어서 빌트인") 이후 첫 concrete 실행.

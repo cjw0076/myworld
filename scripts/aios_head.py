@@ -164,6 +164,7 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
     def planner(goal: str, context: dict[str, Any]) -> str:
         adapter = adapters[provider]
         recalled = context.get("recalled_memory") or []
+        cap_route = context.get("capability_route") or {}
         memory_block = ""
         if recalled:
             joined = "\n".join(f"- {m}" for m in recalled[:5])
@@ -171,12 +172,19 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
                 "\nRelevant prior runs (recalled memory — use to plan better):\n"
                 f"{joined}\n"
             )
+        capability_block = ""
+        if cap_route:
+            capability_block = (
+                "\nCapabilityOS recommendation (recommendation-only; do not bind tools):\n"
+                f"{json.dumps(cap_route, ensure_ascii=False)[:1200]}\n"
+            )
         prompt = (
             f"You are the AIOS planner. Goal: {goal}\n"
             f"Workspace root: {context['workspace_root']}\n"
             f"Writable paths: {context['write_paths'] or '(none — read-only)'}\n"
             f"Network allowed: {context['network']}\n"
             f"{memory_block}\n"
+            f"{capability_block}"
             f"{PLANNER_SCHEMA_HINT}"
         )
         return adapter(prompt)
@@ -232,11 +240,15 @@ def compile_goal(
                        allow_write=allow_write, allow_network=allow_network)
     recalled = retriever(goal) if retriever else []
     c.memory_inputs = list(recalled)
+    cap_bridge = _load("aios_capabilityos_bridge")
+    capability_route = cap_bridge.recommend(goal, Path(workspace_root).resolve())
+    c.capability_route = dict(capability_route)
     context = {
         "workspace_root": c.workspace_root,
         "write_paths": c.filesystem_scope.write_paths,
         "network": c.authority_scope.network,
         "recalled_memory": recalled,
+        "capability_route": capability_route,
     }
     _MAX_PLAN_RETRIES = 2
     last_exc: Exception | None = None

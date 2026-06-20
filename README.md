@@ -170,7 +170,9 @@ docker run --rm -e GEMINI_API_KEY=your_key -p 8741:8741 \
 
 ## Current state
 
-The ledger has **~1,400 behavioral entries** from real agent sessions. Prediction accuracy improves with scale — the network effect becomes visible above 10,000 entries. This is early, but the infrastructure is production-grade (Cloudflare Workers + D1, Merkle-verified, globally distributed).
+The ledger has **~1,400 behavioral entries** from real agent sessions. Prediction accuracy improves with scale — the network effect becomes visible above 10,000 entries. This is early, but the Akashic infrastructure is production-grade (Cloudflare Workers + D1, Merkle-verified, globally distributed).
+
+Precise status: AIOS is kernel-complete, self-maintaining locally, world-service-objective-ready, and has live public infrastructure. Public-product readiness still needs real-user validation. See [`docs/AIOS_CANONICAL_SHAPE.md`](docs/AIOS_CANONICAL_SHAPE.md) for the required vocabulary.
 
 If you run AI agents regularly, contributing your session patterns (opt-in, tool names only) is the fastest way to make the predictions useful.
 
@@ -179,5 +181,6 @@ If you run AI agents regularly, contributing your session patterns (opt-in, tool
 ## Learn more
 
 - [`docs/AIOS_MINIMUM_KERNEL_AUDIT.md`](docs/AIOS_MINIMUM_KERNEL_AUDIT.md) — what the kernel actually does
+- [`docs/AIOS_CANONICAL_SHAPE.md`](docs/AIOS_CANONICAL_SHAPE.md) — what "AIOS", "complete", "production", and "service" mean
 - [`docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md`](docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md) — ledger design and roadmap
 - [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md) — operator entry points
