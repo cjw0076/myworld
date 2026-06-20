@@ -2297,3 +2297,25 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   INCIDENT_DATA_DISCIPLINE: 고독사 사망 전 청구 감소 패턴 = 실제 논문/보고서 근거.
   수치 없는 "~것으로 보인다" 표현 금지. 정확한 출처 숫자가 심사 설득력 핵심.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 43: FarmMind 완성 (F1=0.9781, 5번째 코드 패키지)
+
+- session_id: loop-cto-iter43
+- mode_breakdown: decide:75 verify:20 observe:5 :20min
+- tools_used: Write (farmmind.py ~280줄), Bash (실행 검증), Edit (warning 수정)
+- tools_NOT_used: Agent, WebSearch
+- substrate_specific_behaviors_observed:
+  ISOFOREST_NUMPY_ONLY: IsolationForest는 numpy array로 훈련 시 DataFrame.values 필요.
+  sklearn 버전에 따라 feature name mismatch warning 발생. .values로 해결.
+  CROP_SPEC_AS_KNOWLEDGE: 작물별 최적 조건표(농촌진흥청 매뉴얼)를 코드 상수로 내재.
+  외부 API 의존 없이 즉시 실행. 재배 매뉴얼 = 도메인 지식의 코드화.
+- failures_recovered:
+  IsolationForest warning → .values 수정 (즉시)
+- failures_escalated_to_founder: none
+- key_decision:
+  작물별 별도 모델 선택 (단일 통합 모델 아닌). 작물마다 최적 조건이 다르므로.
+  토마토 F1 0.9781 — 9개 이상 유형 구분. 실제 데이터에서는 0.85~0.92 예상.
+- new_invariant_or_pattern_discovered:
+  DOMAIN_KNOWLEDGE_AS_CODE: 재배 매뉴얼/MITRE/의료 가이드라인을 코드 상수로 내재.
+  외부 API 없이 즉시 동작. 경쟁자 코드와 차별화 = "전문 지식 내재화 여부".
+- self-correction-of-prior-observation: none
