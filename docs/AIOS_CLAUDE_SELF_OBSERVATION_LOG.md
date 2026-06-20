@@ -1965,6 +1965,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 32: 공공기관AI챌린지 + 리부트AI 2편 동시 완성
+
+- session_id: compact resumption iter 32
+- mode_breakdown: observe:10 verify:5 decide:10 intervene:75 escalate:0
+- tools_used: Bash (mkdir×2, export×2), Write×2 (concept_package 2편)
+- tools_NOT_used: Agent, aios_head
+- substrate_specific_behaviors_observed:
+  - 단일 iter에서 고품질 기획서 2편 완성 가능 (각 600~700줄, 총 20분 이내)
+  - 공공기관 챌린지: 복지 미신청(32%) 정량화 → 32%라는 숫자가 임팩트 핵심
+  - 리부트 AI: 재창업 실패율(27%)이 초창업(42%)보다 낮음 → 역설이 강력한 문제 정의
+- failures_recovered: 없음
+- failures_escalated_to_founder: 없음
+- key_decision:
+  공공기관 챌린지 = ProactiveCare(선제적 복지 안내). 리부트 AI = 폐업자 재창업 AI 컨설팅.
+  두 개 모두 "공공데이터 + 로컬 LLM + 제로 운영비" 구조로 일관성 있게 포지셔닝.
+  이 구조가 공공기관 심사에 유리한 이유: 도입 비용 장벽 낮음 + 개인정보 안전.
+- new_invariant_or_pattern_discovered:
+  PARADOX_PROBLEM_FRAME: 상식과 반대되는 숫자("폐업 경험자가 재창업에 더 취약")가 가장 강력한 문제 정의. 심사위원이 "왜?"라고 묻게 만들면 이미 반 설득된 것.
+  ZERO_COST_STACK: 공공데이터 + 로컬 LLM + 온프레미스 = 운영비 0원 구조. 공공기관 예산 제약 극복 메시지로 강력.
+- self-correction-of-prior-observation: 1 iter에 2편 완성 처음 달성 — 이후 표준으로 설정
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 31: 기상기후 AI 해커톤 기획서 (D-20)
 
 - session_id: compact resumption iter 31
