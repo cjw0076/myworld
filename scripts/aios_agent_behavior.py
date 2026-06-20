@@ -640,6 +640,13 @@ def predict_behavior(context: str, candidates: list[str],
     if use_transition:
         trans_scores = _transition_scores(prev_tool, candidates, top_mems)
 
+    # Context-keyword bonus: boost edit/write tools when context implies mutation.
+    _EDIT_KEYWORDS = {"fix", "edit", "change", "modify", "update", "correct",
+                      "patch", "rewrite", "replace", "bug", "error"}
+    _ctx_lower = context.lower()
+    _edit_boost = 0.15 if any(kw in _ctx_lower for kw in _EDIT_KEYWORDS) else 0.0
+    _EDIT_TOOLS = {"edit", "write"}
+
     # Hybrid weights:
     #   with prev_tool:    40% freq + 30% descent + 30% transition
     #   without prev_tool: 60% freq + 40% descent
@@ -653,6 +660,8 @@ def predict_behavior(context: str, candidates: list[str],
         else:
             ts = 0.0
             score = 0.6 * fs + 0.4 * ds
+        if cand.lower() in _EDIT_TOOLS:
+            score += _edit_boost
 
         support = [
             m["content"][:60]
