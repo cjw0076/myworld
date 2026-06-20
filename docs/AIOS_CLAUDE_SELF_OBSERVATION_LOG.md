@@ -1965,6 +1965,27 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 33: 범정부 공공데이터 창업경진대회 (5,700만원)
+
+- session_id: compact resumption iter 33
+- mode_breakdown: observe:10 verify:5 decide:15 intervene:70 escalate:0
+- tools_used: Bash (mkdir, export), Write (motie concept_package), Edit (self-obs)
+- tools_NOT_used: Agent, aios_head
+- substrate_specific_behaviors_observed:
+  - 범정부 창업경진대회는 "실제 창업 계획" 요구 → BM(ARR 예측) + 팀 구성 + 마일스톤 필수
+  - 나라장터 420만건 공개 낙찰 데이터 = 학습 데이터 무료 확보 가능 (경쟁 우위)
+  - AIOS 기존 인프라(RTX 5090, LLM, FastAPI)를 "이미 작동하는 것" 증거로 사용 → 신뢰도 ↑
+- failures_recovered: 없음
+- failures_escalated_to_founder: 없음
+- key_decision:
+  공공 조달 180조 시장 + 중소기업 정보 비대칭이 핵심 문제. 나라장터 공개 API = 무료 데이터.
+  SaaS ARR 21억원 시나리오 = 창업경진대회에 필요한 "사업성" 증명.
+  청소년 AI 창의경진대회(D-60 접수 4/13~6/14)는 이미 마감 → 스킵.
+- new_invariant_or_pattern_discovered:
+  STARTUP_CONTEST_TEMPLATE: 창업경진대회 = BM + 팀 + 마일스톤 + 공공데이터 활용 증거 4개 필수. 기획서만으로 부족 — 사업성(ARR/MRR 시뮬레이션) 포함해야 차별화.
+  EXISTING_INFRA_AS_PROOF: AIOS 인프라(RTX 5090, LLM, API)를 "이미 있는 것"으로 명시하면 실현 가능성 신뢰도 급상승. "3주 MVP 완성 가능"이 설득 핵심.
+- self-correction-of-prior-observation: 청소년 AI 창의경진대회 eligibility/마감 확인 필요 — 6/14 마감이면 스킵 확정
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 32: 공공기관AI챌린지 + 리부트AI 2편 동시 완성
 
 - session_id: compact resumption iter 32
