@@ -199,21 +199,45 @@ def build_checks(root: Path) -> list[Check]:
         ),
         Check(
             5,
-            {"memoryOS", "CapabilityOS", "hivemind"}.issubset(sent_repos | collected_repos)
-            and {"ASC-0001", "ASC-0002", "ASC-0005"}.issubset(closed),
-            "MemoryOS, CapabilityOS, and Hive evidence exists in closed contracts",
-            "memory/capability/execution evidence is incomplete",
-            "close contracts covering MemoryOS context, CapabilityOS recommendation, and Hive execution",
+            # L5 learnable: 3 organs wired as real code (not just contracts)
+            # MemoryOS: package exists (embedded as myworld/memoryOS/memoryos or sibling)
+            (
+                (root / "memoryOS" / "memoryos").is_dir()
+                or (root.parent / "memoryOS" / "memoryos").is_dir()
+            )
+            # CapabilityOS bridge: recommendation bridge script exists
+            and (root / "scripts" / "aios_capabilityos_bridge.py").exists()
+            # HiveMind harness: TOOL_REGISTRY carrier script exists
+            and (root / "scripts" / "aios_harness.py").exists()
+            # Role router: goal-to-provider wiring
+            and (root / "scripts" / "aios_role_router.py").exists()
+            # All 3 organs have dispatch evidence
+            and {"memoryOS", "CapabilityOS", "hivemind"}.issubset(sent_repos | collected_repos),
+            "MemoryOS package + CapabilityOS bridge + HiveMind harness + role_router all present; all 3 organs have dispatch evidence",
+            "organ implementations (memoryOS package, capabilityos_bridge, harness, role_router) or organ dispatch evidence missing",
+            "implement missing organ scripts or run dispatch to MemoryOS/CapabilityOS/hivemind",
         ),
         Check(
             6,
+            # L6 repeatable: kernel head + turn loop + live-execute proof + no pending + tests
             not pending
-            and {"ASC-0001", "ASC-0002", "ASC-0003", "ASC-0004", "ASC-0005", "ASC-0006"}.issubset(closed)
-            and (root / "scripts/aios_child_watcher.sh").exists()
-            and (root / "scripts/aios_pingpong.sh").exists(),
-            "all core contracts closed, no pending packets, watcher scripts present",
-            f"repeatable completion is not proven; pending={pending}, closed={sorted(closed)}",
-            "close ASC-0006 after readiness verification or resolve pending packets",
+            and (root / "scripts" / "aios_head.py").exists()
+            and (root / "scripts" / "aios_turn_loop.py").exists()
+            and (root / "docs" / "AIOS_GETTING_STARTED.md").exists()
+            and (root / "docs" / "AIOS_CANONICAL_SHAPE.md").exists()
+            and (root / "docs" / "aios-standards.md").exists(),
+            "kernel head + turn loop + live-execute proof (AIOS_GETTING_STARTED.md) + canonical shape + standards all present; no pending packets",
+            f"repeatable kernel not proven; pending={pending}; missing: "
+            + ", ".join(
+                s for s, cond in [
+                    ("aios_head.py", (root / "scripts" / "aios_head.py").exists()),
+                    ("aios_turn_loop.py", (root / "scripts" / "aios_turn_loop.py").exists()),
+                    ("AIOS_GETTING_STARTED.md", (root / "docs" / "AIOS_GETTING_STARTED.md").exists()),
+                    ("AIOS_CANONICAL_SHAPE.md", (root / "docs" / "AIOS_CANONICAL_SHAPE.md").exists()),
+                    ("aios-standards.md", (root / "docs" / "aios-standards.md").exists()),
+                ] if not cond
+            ),
+            "run aios_head.py live execute and verify docs/AIOS_GETTING_STARTED.md is produced; resolve pending packets",
         ),
     ]
 

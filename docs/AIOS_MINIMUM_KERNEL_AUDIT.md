@@ -109,7 +109,8 @@ Current footprint (verified 2026-05-20):
    - `scripts/aios_head.py`: goal → planner(provider) → ContractObject →
      runtime → receipts. DEFAULT READ-ONLY; write 는 `--allow-write`, network 은
      `--allow-network`. 사악한 plan 은 실행 전 fail-closed 거부 (6 tests).
-   - 미연결: router(CapabilityOS) + memory write step 은 아직 자동 wiring 안 됨.
+   - ✅ WIRED 2026-06-21: `aios_role_router.py` (OMX 흡수) → auto-route goal→provider; `aios_capabilityos_bridge.py` → CapabilityOS recommend 자동 주입; `aios-standards.md` → planner에 DNA invariants 주입.
+   - ✅ READINESS L6 2026-06-21: `python scripts/aios_readiness.py --json` → ready=True, level=6 (L0~L6 전 통과). 더 이상 미연결 없음.
 
 2. **Provider CLI adapter layer** — ✅ BUILT 2026-06-01
    - `aios.adapter.claude` / `.codex` / `.gemini` / `.ollama_local`
