@@ -164,6 +164,68 @@ def _exec_websearch(args: dict) -> tuple[str, str]:
         return "error", str(e)
 
 
+def _exec_ouroboros(args: dict) -> tuple[str, str]:
+    """Ouroboros spec-first pipeline (absorbed from Q00/ouroboros 0.42.5).
+
+    mode='auto'      — full pipeline (interview→seed→run). runtime='codex'|'claude'
+    mode='interview' — interactive Socratic refinement (non-blocking, returns questions)
+    mode='qa'        — quality gate verdict for an artifact path or text
+    """
+    goal    = args.get("goal", args.get("task", args.get("artifact", "")))
+    mode    = args.get("mode", "auto")   # auto | interview | qa
+    runtime = args.get("runtime", "codex")  # codex by default (LiteLLM-free)
+    if not goal:
+        return "error", "no goal provided"
+    if mode not in ("auto", "interview", "qa"):
+        return "error", f"unknown mode {mode!r} — use auto/interview/qa"
+    try:
+        cmd = [sys.executable, "-m", "ouroboros", mode]
+        if mode == "auto":
+            cmd += ["--runtime", runtime, goal]
+        elif mode == "qa":
+            artifact_type = args.get("artifact_type", "document")
+            quality_bar   = args.get("quality_bar", "")
+            cmd += [goal, "--artifact-type", artifact_type]
+            if quality_bar:
+                cmd += ["--quality-bar", quality_bar]
+        else:
+            cmd += [goal]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120, cwd=str(ROOT))
+        out = (r.stdout + r.stderr).strip()
+        status = "ok" if r.returncode == 0 else "error"
+        return status, out[:4000]
+    except subprocess.TimeoutExpired:
+        return "error", "ouroboros timeout (120s)"
+    except Exception as e:
+        return "error", str(e)
+
+
+def _exec_omx_skill(args: dict) -> tuple[str, str]:
+    """Invoke an OMX skill via the omx CLI (absorbed from oh-my-codex)."""
+    skill = args.get("skill", "")
+    task  = args.get("task", args.get("goal", ""))
+    if not skill:
+        return "error", "no skill provided (e.g. ralph, team, autoresearch)"
+    if not task:
+        return "error", "no task provided"
+    try:
+        omx_bin = subprocess.run(
+            ["which", "omx"], capture_output=True, text=True
+        ).stdout.strip() or "omx"
+        r = subprocess.run(
+            [omx_bin, skill, task],
+            capture_output=True, text=True, timeout=300, cwd=str(ROOT),
+        )
+        out = (r.stdout + r.stderr).strip()
+        return ("ok" if r.returncode == 0 else "error"), out[:4000]
+    except subprocess.TimeoutExpired:
+        return "error", f"omx {skill} timeout (300s)"
+    except FileNotFoundError:
+        return "error", "omx not found — install via: npm install -g oh-my-codex"
+    except Exception as e:
+        return "error", str(e)
+
+
 import shlex
 import urllib.parse
 
@@ -217,6 +279,26 @@ TOOL_REGISTRY: dict[str, dict] = {
         "timeout_s":  20,
         "risk_fn":    lambda _: "LOW",
         "executor":   _exec_websearch,
+    },
+    "Ouroboros": {
+        "description": (
+            "Spec-first pipeline (Ouroboros 0.42.5 absorbed). "
+            "Args: {goal: str, mode?: 'auto'|'interview'|'qa'}"
+        ),
+        "permission": "network",
+        "timeout_s":  120,
+        "risk_fn":    lambda _: "LOW",
+        "executor":   _exec_ouroboros,
+    },
+    "OmxSkill": {
+        "description": (
+            "Run an OMX skill (oh-my-codex). "
+            "Args: {skill: str, task: str}  skill ∈ {ralph, team, autoresearch, deep-interview, ...}"
+        ),
+        "permission": "workspace",
+        "timeout_s":  300,
+        "risk_fn":    lambda _: "MED",
+        "executor":   _exec_omx_skill,
     },
 }
 

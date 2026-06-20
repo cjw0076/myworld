@@ -140,5 +140,43 @@ class TestMakeLlmSamplerProvider(unittest.TestCase):
         self.assertTrue(callable(sampler))
 
 
+class TestEcosystemAbsorption(unittest.TestCase):
+    """Verify absorbed ecosystem tools (Ouroboros, OmxSkill) are registered."""
+
+    def test_ouroboros_in_tool_registry(self):
+        self.assertIn("Ouroboros", h.TOOL_REGISTRY)
+
+    def test_omxskill_in_tool_registry(self):
+        self.assertIn("OmxSkill", h.TOOL_REGISTRY)
+
+    def test_ouroboros_missing_goal_returns_error(self):
+        status, msg = h._exec_ouroboros({})
+        self.assertEqual(status, "error")
+        self.assertIn("goal", msg)
+
+    def test_ouroboros_bad_mode_returns_error(self):
+        status, msg = h._exec_ouroboros({"goal": "test", "mode": "unknown"})
+        self.assertEqual(status, "error")
+        self.assertIn("mode", msg)
+
+    def test_omxskill_missing_skill_returns_error(self):
+        status, msg = h._exec_omx_skill({"task": "do something"})
+        self.assertEqual(status, "error")
+        self.assertIn("skill", msg)
+
+    def test_omxskill_missing_task_returns_error(self):
+        status, msg = h._exec_omx_skill({"skill": "ralph"})
+        self.assertEqual(status, "error")
+        self.assertIn("task", msg)
+
+    def test_ouroboros_risk_is_low(self):
+        spec = h.TOOL_REGISTRY["Ouroboros"]
+        self.assertEqual(spec["risk_fn"]({}), "LOW")
+
+    def test_omxskill_risk_is_med(self):
+        spec = h.TOOL_REGISTRY["OmxSkill"]
+        self.assertEqual(spec["risk_fn"]({}), "MED")
+
+
 if __name__ == "__main__":
     unittest.main()
