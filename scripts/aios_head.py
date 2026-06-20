@@ -62,7 +62,10 @@ PLANNER_SCHEMA_HINT = (
     '{"id": "s1", "description": "...", "tool": "<one of '
     + "|".join(ALLOWED_TOOLS) +
     '>", "inputs": {...}, "requires_checkpoint": false}. '
-    "fs.read/list inputs: {path}. fs.write inputs: {path, content}. "
+    "fs.read/list inputs: {path}. "
+    "fs.write inputs: {path, content} — IMPORTANT: content must be the FULL actual document body "
+    "(never a placeholder like '작성 완료', 'done', 'TBD', '(완료)', or any short summary). "
+    "If the content would be long, include it ALL in the content field — do not truncate or summarize. "
     "fs.move inputs: {src, dst}. web inputs: {query} or {url}. "
     "Use absolute paths inside the workspace only. No prose, no markdown fences."
 )
