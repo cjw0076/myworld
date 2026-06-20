@@ -1,7 +1,10 @@
 ---
 contract_id: ASC-0234
 slug: world-deployable-aios-readiness-spine
-status: proposed
+status: accepted
+accepted: 2026-06-20T00:00:00+09:00
+accepted_by: claude@myworld
+acceptance_note: serving_release_gate 9/9 and world_readiness_gate 8/8 both report ready as of 2026-06-20 audit. Spine is enacted; provenance chain now closed.
 goal: Define the readiness spine for moving AIOS from local self-maintaining control plane to world-deployable infrastructure without collapsing MyWorld, Hive, MemoryOS, CapabilityOS, and GenesisOS ownership.
 created: 2026-06-12T23:35:00+09:00
 origin: founder directive — do not solve only from one model; trace Claude progress; use external knowledge, Claude/Codex/Gemini/local LLM signals, and decide whether AIOS must touch OS/process substrate, plugin surfaces, or broad knowledge.

@@ -71,6 +71,34 @@ def _memoryos_root(root: Path) -> Path | None:
 
 # --- writeback ----------------------------------------------------------------
 
+# Paths that indicate external-product value (outside AIOS internal governance)
+_EXTERNAL_PATH_SIGNALS = (
+    "/cherry/", "/competitions/", "/uri/", "/dipeen/", "/prizehunter/",
+    "/fire/", "/dacon/", "/ablation/",
+)
+_EXTERNAL_GOAL_KEYWORDS = (
+    "공모전", "기획안", "경연", "competition", "contest", "proposal",
+    "제출", "캠페인", "외부", "user", "product", "서비스",
+)
+
+
+def _classify_origin_confidence(goal: str, artifacts: list[str]) -> tuple[str, float]:
+    """Infer origin + confidence from contract goal and produced artifacts.
+
+    Rules (in priority order):
+      1. Artifacts touch external product paths → external_product_value, 0.85
+      2. Goal contains external/product keywords → external_product_value, 0.78
+      3. Default → aios_contract_runner, 0.60
+    """
+    all_paths = " ".join(artifacts).lower()
+    if any(sig in all_paths for sig in _EXTERNAL_PATH_SIGNALS):
+        return "external_product_value", 0.85
+    goal_lower = goal.lower()
+    if any(kw in goal_lower for kw in _EXTERNAL_GOAL_KEYWORDS):
+        return "external_product_value", 0.78
+    return "aios_contract_runner", 0.60
+
+
 def build_review_packet(contract: Any, root: Path) -> tuple[dict[str, Any], Path]:
     """Build a draft-first review-request packet from a closed contract.
 
@@ -95,6 +123,7 @@ def build_review_packet(contract: Any, root: Path) -> tuple[dict[str, Any], Path
     src = _outbox(root) / f"{contract.contract_id}.closeout.json"
     src.write_text(contract.to_json(), encoding="utf-8")
 
+    origin, confidence = _classify_origin_confidence(contract.goal, artifacts)
     packet = {
         "schema_version": REVIEW_SCHEMA,
         "request_id": _stable("mdrev", contract.contract_id),
@@ -104,8 +133,8 @@ def build_review_packet(contract: Any, root: Path) -> tuple[dict[str, Any], Path
         "source_artifact": str(src.resolve()),  # absolute -> resolver accepts
         "draft": {
             "type": "decision",
-            "origin": "aios_contract_runner",
-            "confidence": 0.6,
+            "origin": origin,
+            "confidence": confidence,
             "content": content,
             "project": "AIOS",
             "raw_refs": artifacts[:12],

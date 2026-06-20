@@ -2298,6 +2298,36 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   수치 없는 "~것으로 보인다" 표현 금지. 정확한 출처 숫자가 심사 설득력 핵심.
 - self-correction-of-prior-observation: none
 
+## 2026-06-21 KST — claude@myworld — /loop CTO 세션: GenesisOS direction 기능 + audit 14/14 해소
+
+- session_id: loop-cto-genesis-direction + audit-proof-close
+- mode_breakdown: decide:40 intervene:35 verify:20 observe:5 :~90min
+- tools_used: Write, Edit, Read, Bash, Agent(fork), python tests
+- tools_NOT_used: WebSearch, local-llm-agent (GenesisOS 구현에 불필요했음)
+- substrate_specific_behaviors_observed:
+  CIRCULAR_IMPORT_INLINE_PATTERN: cli.py↔director.py 순환 import 해결법 = 필요 함수를
+  director.py에 직접 인라인. Python에서 sibling 모듈 간 순환의 표준 탈출 패턴.
+  DIRECTION_BEFORE_EXECUTION: GenesisOS direction hook이 loop_detected / doom_loop 때
+  자동 발화하는 구조가 "방향성 자체도 GenesisOS 책임"이라는 파운더 지시의 정확한 구현.
+  DISCOMFORT_SIGNAL_ROUTING: repeated_user_reprompt→inversion, tool_friction→alien_domain
+  등 5가지 신호→브랜치 매핑이 AIOS 고유 로직. 다른 에이전트 OS에 없는 차별점.
+- failures_recovered:
+  circular import (director→cli→director) → inline primitives 패턴으로 해소
+  loop_detected exit 감지 누락 → needs_direction() 첫 줄에 exit_code 체크 추가
+  CF Pages "project not found" → project create 후 deploy 순서 수정
+- failures_escalated_to_founder: none
+- key_decision:
+  aios_agent_behavior.py는 AIOS 핵심이 아닌 별개 과제 (파운더 명시). AIOS 범위 =
+  provider head + 5 OS coordination + user services.
+  방향성 판단 = GenesisOS 책임 (파운더 명시). director.py 구현이 그 첫 구체화.
+- new_invariant_or_pattern_discovered:
+  DIRECTION_HOOK_PATTERN: 루프 종료 outcome에 genesis_direction 삽입 = AIOS turn_loop
+  의 doom-loop 탈출 메커니즘. outcome["genesis_direction"].authority = "advisory_only"
+  — 실행 권한 없이 방향만 제시. DNA #1(recommendation-only) 충족.
+  AUDIT_PROOF_DISTINCTION: Akashic infra URL ≠ end-user serving URL. 두 surface가
+  다른 CF 도메인에 따로 배포돼야 audit proof로 인정됨 (ASC-0279 요건).
+- self-correction-of-prior-observation: none
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 43: FarmMind 완성 (F1=0.9781, 5번째 코드 패키지)
 
 - session_id: loop-cto-iter43

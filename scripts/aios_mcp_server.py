@@ -100,6 +100,18 @@ def tool_specs() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "aios_direct",
+            "description": "GenesisOS direction: given a situation (what's stuck/unclear/drifting), returns a recommended branch type, first concrete move, what to avoid, and 1h/1w/1y time horizons. Use when you don't know what to do next — not to critique, but to choose direction.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "situation": {"type": "string", "description": "current situation — what's stuck, unclear, or drifting"},
+                    "context": {"type": "string", "description": "optional: prior decisions or constraints"},
+                },
+                "required": ["situation"],
+            },
+        },
+        {
             "name": "aios_observe",
             "description": "Report an observation back to AIOS (a capability gap, failure mode, workflow pattern, or decision). This is how an agent feeds AIOS's memory and dream cycle.",
             "inputSchema": {
@@ -258,6 +270,37 @@ def call_challenge(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
         return True, out
 
 
+def call_direct(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    situation = str(args.get("situation", "")).strip()
+    if not situation:
+        return False, "situation is required"
+    context = str(args.get("context", "")).strip() or None
+    ctx_args = ["--context", context] if context else []
+    ok, out = _run(
+        [sys.executable, "-m", "genesisos.cli", "direct",
+         "--situation", situation, *ctx_args, "--json"],
+        root / "GenesisOS",
+    )
+    if not ok:
+        return False, out
+    try:
+        d = json.loads(out)
+        diag = d.get("diagnosis", {})
+        rec = d.get("recommendation", {})
+        lines = [
+            f"signal: {diag.get('discomfort_signal')}",
+            f"branch: {rec.get('branch_type')} — {rec.get('premise')}",
+            f"first_move: {d.get('first_move')}",
+            f"avoid: {d.get('avoid')}",
+        ]
+        horizons = d.get("time_horizons", {})
+        for h, v in horizons.items():
+            lines.append(f"{h}: {v}")
+        return True, "GenesisOS direction (advisory only):\n" + "\n".join(lines)
+    except ValueError:
+        return True, out
+
+
 def call_observe(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
     summary = str(args.get("summary", "")).strip()
     if not summary:
@@ -355,6 +398,7 @@ HANDLERS = {
     "aios_helper_run": call_helper_run,
     "aios_retrieve": call_retrieve,
     "aios_challenge": call_challenge,
+    "aios_direct": call_direct,
     "aios_observe": call_observe,
     "aios_list_tools": call_list_tools,
     "aios_invoke": call_invoke,

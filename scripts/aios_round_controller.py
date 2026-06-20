@@ -623,6 +623,21 @@ def run_round(root: Path, *, goal: Path, execute_children: bool, allow_live_chil
     else:
         steps["dispatch_loop"] = {"name": "dispatch_loop", "status": "skipped", "reason": "missing_dispatch_loop"}
 
+    # Auto-review pending memory drafts created by this round's dispatch_loop.
+    # Runs after dispatch so new drafts are already in memoryOS before review.
+    memoryos_dir = root / "memoryOS"
+    steps["memory_auto_review"] = (
+        json_step(
+            root,
+            "memory_auto_review",
+            [sys.executable, "-m", "memoryOS.memoryos.auto_reviewer",
+             "--root", memoryos_dir.as_posix(), "--json"],
+            timeout=30,
+        )
+        if memoryos_dir.exists()
+        else {"name": "memory_auto_review", "status": "skipped", "reason": "missing_memoryOS"}
+    )
+
     child_status = child_watcher_status(root)
     child_executions = (
         execute_pending_children(root, child_status, live_allowed=live_allowed, profile=profile_state)

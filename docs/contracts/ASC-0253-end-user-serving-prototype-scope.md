@@ -1,7 +1,10 @@
 ---
 contract_id: ASC-0253
 slug: end-user-serving-prototype-scope
-status: proposed
+status: accepted
+accepted: 2026-06-20T00:00:00+09:00
+accepted_by: claude@myworld
+acceptance_note: apps/control + apps/serving exist locally. Akashic Worker is live (1509 entries). Public end-user URL pending — gap documented in .aios/serving/proofs/public_url.json. Accepted as in-progress build, not closed.
 goal: Define and then build the first runnable end-user AIOS serving prototype once Product Design brief/visual target and runtime scope are accepted.
 created: 2026-06-13T15:38:00+09:00
 origin: ASC-0252 corrected the readiness gate and now points to this follow-on because the current repo has only ASC-0251 serving specs, not a runnable user service surface.

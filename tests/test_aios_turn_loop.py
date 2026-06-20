@@ -99,6 +99,38 @@ class TurnLoopTests(unittest.TestCase):
         ]), self.reg, gate=lambda n, a: L.ALLOW)
         self.assertNotIn("AKIA_SECRET", json.dumps(r["trajectory"]))   # args never logged
 
+    # -- GenesisOS direction hook tests --
+
+    def test_needs_direction_on_loop_detected(self) -> None:
+        outcome = {"exit": "loop_detected", "loop_type": "quick"}
+        self.assertTrue(L.needs_direction(outcome))
+
+    def test_needs_direction_on_doom_loop_type(self) -> None:
+        outcome = {"exit": "max_turns", "loop_type": "doom_loop"}
+        self.assertTrue(L.needs_direction(outcome))
+
+    def test_needs_direction_false_on_react_code(self) -> None:
+        outcome = {"exit": "max_turns", "loop_type": "react_code"}
+        self.assertFalse(L.needs_direction(outcome))
+
+    def test_needs_direction_false_on_model_finished(self) -> None:
+        outcome = {"exit": "model_finished", "loop_type": "react_general"}
+        self.assertFalse(L.needs_direction(outcome))
+
+    def test_loop_detected_injects_genesis_direction(self) -> None:
+        """When doom-loop triggers, genesis_direction must appear in outcome."""
+        r = L.run_loop("find bugs", scripted([
+            {"tool_calls": [L.ToolCall("Bash", {"cmd": "ls"}, call_id="c1")]},
+            {"tool_calls": [L.ToolCall("Bash", {"cmd": "ls"}, call_id="c2")]},
+            {"tool_calls": [L.ToolCall("Bash", {"cmd": "ls"}, call_id="c3")]},
+        ]), self.reg, gate=lambda n, a: L.ALLOW)
+        self.assertEqual(r["exit"], "loop_detected")
+        gd = r.get("genesis_direction")
+        self.assertIsNotNone(gd, "genesis_direction must be injected on loop_detected")
+        self.assertIn("branch", gd)
+        self.assertIn("first_move", gd)
+        self.assertEqual(gd.get("authority"), "advisory_only")
+
 
 if __name__ == "__main__":
     unittest.main()

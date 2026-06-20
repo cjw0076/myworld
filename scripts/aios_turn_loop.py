@@ -224,6 +224,19 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                "tool_sequence": all_tools[:200],
                "kernel_routed": all(t.get("decision") in (ALLOW, ASK, DENY) for t in trajectory),
                **outcome}
+
+    # GenesisOS direction hook — fires when the loop signals direction loss
+    if needs_direction(outcome):
+        direction = request_direction(goal, outcome)
+        if direction:
+            outcome["genesis_direction"] = {
+                "signal": direction.get("diagnosis", {}).get("discomfort_signal"),
+                "branch": direction.get("recommendation", {}).get("branch_type"),
+                "first_move": direction.get("first_move"),
+                "avoid": direction.get("avoid"),
+                "authority": "advisory_only",
+            }
+
     if record_sink:
         record_sink(outcome)
     return outcome
@@ -287,6 +300,56 @@ def make_event_log_sink(session_id: str | None = None, aios_home: str | None = N
         _fh.close()
 
     return turn_sink, record_sink, sid, log_path
+
+
+# ── GenesisOS direction hook ─────────────────────────────────────────────────
+
+def needs_direction(outcome: dict) -> bool:
+    """True when the loop outcome signals that direction has been lost.
+
+    Triggers when the loop hit max_turns without a code-productive pattern,
+    fell into a doom/repetitive loop, or ended needing approval on a non-obvious tool.
+    """
+    exit_code = outcome.get("exit", "")
+    loop_type = outcome.get("loop_type", "")
+    if exit_code == "loop_detected":          # circuit-breaker fired → direction always needed
+        return True
+    if loop_type in ("doom_loop", "repetitive"):
+        return True
+    if exit_code == "max_turns" and loop_type not in ("react_code", "quick"):
+        return True
+    return False
+
+
+def request_direction(goal: str, outcome: dict,
+                      genesis_root: "Path | None" = None) -> "dict | None":
+    """Call GenesisOS director with the outcome situation.
+
+    Returns a direction packet (advisory_only) or None on failure.
+    Does NOT execute anything — advisory surface only.
+    """
+    import subprocess
+    root = (genesis_root or Path(__file__).resolve().parents[1] / "GenesisOS").resolve()
+    if not (root / "genesisos").is_dir():
+        return None
+    situation = (
+        f"Agent loop ended: exit={outcome.get('exit')}, "
+        f"loop_type={outcome.get('loop_type')}, "
+        f"tool_calls={outcome.get('tool_calls', 0)}. "
+        f"Goal was: {goal[:200]}"
+    )
+    try:
+        result = subprocess.run(
+            [__import__("sys").executable, "-m", "genesisos.cli",
+             "direct", "--situation", situation, "--json"],
+            cwd=str(root),
+            capture_output=True, text=True, timeout=20,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return json.loads(result.stdout)
+    except (subprocess.TimeoutExpired, ValueError, OSError):
+        pass
+    return None
 
 
 if __name__ == "__main__":
