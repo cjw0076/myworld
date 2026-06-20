@@ -2252,3 +2252,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   TWO_PASS_DETECTION: anomaly(1단계) + classification(2단계) = 제로데이 + 알려진 위협 모두 커버.
   단일 분류기는 제로데이에 취약. IsolationForest가 먼저 필터링해야 완전한 방어.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 41: GridMind 완성 (수요 MAPE 1.89%)
+
+- session_id: loop-cto-iter41
+- mode_breakdown: decide:80 verify:15 observe:5 :20min
+- tools_used: Write (gridmind.py ~290줄), Bash (실행 검증)
+- tools_NOT_used: Agent, WebSearch
+- substrate_specific_behaviors_observed:
+  TIMESERIES_SPLIT_FOR_ENERGY: 에너지 예측은 StratifiedKFold 아닌 TimeSeriesSplit 필수.
+  미래 데이터 누출(leakage) 방지. 시계열 문제에서 랜덤 split = 데이터 오염.
+  ASCII_CHART_FOR_DEMO: 막대 그래프 ASCII 출력 → 터미널 데모에서 즉각적 시각화.
+  flask 없이도 데이터 경향성을 보여줄 수 있음.
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decision:
+  ConvLSTM(복잡) 아닌 LightGBM(단순) 선택. 대회 제출용은 해석 가능성이 중요.
+  MAPE 1.89%는 목표 3% 달성 — 단순 모델로도 충분함 증명.
+- new_invariant_or_pattern_discovered:
+  SIMPLE_MODEL_BEATS_COMPLEX: LightGBM이 ConvLSTM보다 MAPE 낮을 수 있음.
+  복잡한 아키텍처 = 대회 제출 리스크. 단순하고 해석 가능한 모델이 심사에서 유리.
+  MULTI_TARGET_SAME_FEATURES: 수요/태양광/풍력 각각 별도 모델 = 독립 최적화.
+  단일 멀티아웃풋 모델보다 오차 낮음.
+- self-correction-of-prior-observation: none
