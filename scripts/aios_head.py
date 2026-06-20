@@ -948,6 +948,10 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     run_log.open(ts=_dt.datetime.now(_dt.timezone.utc).isoformat(timespec="seconds"))
 
     preamble = _organ_preamble(goal, root)
+    cap_bridge = _load("aios_capabilityos_bridge")
+    preamble["capability_recommendation"] = cap_bridge.recommend(goal, root)
+    preamble["capability_status"] = "ok"
+    preamble["top_capability"] = preamble["capability_recommendation"].get("provider_hint")
 
     # Inject preamble context into sampler's genesis_hint if sampler supports it.
     # Sampler may expose a _preamble_ref dict updated after construction.

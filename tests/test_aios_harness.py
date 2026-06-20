@@ -177,6 +177,43 @@ class TestEcosystemAbsorption(unittest.TestCase):
         spec = h.TOOL_REGISTRY["OmxSkill"]
         self.assertEqual(spec["risk_fn"]({}), "MED")
 
+    # ── Substrate tools (Aider / SWEAgent) ────────────────────────────────────
+    def test_aider_in_registry(self):
+        self.assertIn("Aider", h.TOOL_REGISTRY)
+        self.assertEqual(h.TOOL_REGISTRY["Aider"]["permission"], "workspace")
+        self.assertEqual(h.TOOL_REGISTRY["Aider"]["risk_fn"]({}), "MED")
+
+    def test_sweagent_in_registry(self):
+        self.assertIn("SWEAgent", h.TOOL_REGISTRY)
+        self.assertEqual(h.TOOL_REGISTRY["SWEAgent"]["risk_fn"]({}), "HIGH")
+
+    def test_aider_not_installed_returns_not_available(self):
+        import shutil
+        if shutil.which("aider"):
+            self.skipTest("aider is installed")
+        status, msg = h._exec_aider({"message": "fix the bug"})
+        self.assertEqual(status, "not_available")
+        self.assertIn("aider", msg.lower())
+
+    def test_sweagent_not_installed_returns_not_available(self):
+        import importlib.util
+        if importlib.util.find_spec("sweagent") is not None:
+            self.skipTest("sweagent installed")
+        status, msg = h._exec_sweagent({"problem": "fix bug"})
+        self.assertEqual(status, "not_available")
+
+    def test_aider_missing_message_returns_error(self):
+        import shutil, unittest.mock as mock
+        if shutil.which("aider"):
+            self.skipTest("real aider installed")
+        with mock.patch("shutil.which", return_value="/usr/bin/aider"):
+            status, msg = h._exec_aider({})
+        self.assertEqual(status, "error")
+
+    def test_substrate_count(self):
+        substrate = [k for k in h.TOOL_REGISTRY if k in ("Aider", "SWEAgent")]
+        self.assertEqual(len(substrate), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -227,7 +227,66 @@ def _exec_omx_skill(args: dict) -> tuple[str, str]:
 
 
 import shlex
+import shutil
 import urllib.parse
+
+
+def _exec_aider(args: dict) -> tuple[str, str]:
+    """Aider AI pair-programming substrate (Aider-AI/aider).
+
+    Delegates git-integrated code editing to aider CLI when present.
+    Args: {message: str, files?: list[str], yes?: bool}
+    Returns not_available if CLI not installed — install with: pip install aider-chat
+    """
+    if not shutil.which("aider"):
+        return "not_available", "aider not installed; run: pip install aider-chat"
+    message = args.get("message", args.get("goal", args.get("task", "")))
+    if not message:
+        return "error", "no message provided"
+    files = args.get("files", [])
+    cmd = ["aider", "--message", message, "--yes-always", "--no-check-update"]
+    if files:
+        cmd += list(files)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=300, cwd=str(ROOT))
+        out = (r.stdout + r.stderr).strip()
+        return ("ok" if r.returncode == 0 else "error"), out[:4000]
+    except subprocess.TimeoutExpired:
+        return "error", "aider timeout (300s)"
+    except Exception as e:
+        return "error", str(e)
+
+
+def _exec_sweagent(args: dict) -> tuple[str, str]:
+    """SWE-agent issue-fixing substrate (SWE-agent/SWE-agent).
+
+    Autonomous bug-fix agent. Requires SWE-agent installed and a GitHub issue URL or
+    problem statement. CLI: python -m sweagent run ...
+    Args: {problem: str, repo?: str}
+    Returns not_available if sweagent not importable.
+    """
+    try:
+        import importlib.util
+        if importlib.util.find_spec("sweagent") is None:
+            return "not_available", "sweagent not installed; see github.com/SWE-agent/SWE-agent"
+    except Exception:
+        return "not_available", "sweagent not installed"
+    problem = args.get("problem", args.get("task", args.get("goal", "")))
+    if not problem:
+        return "error", "no problem statement provided"
+    repo = args.get("repo", "")
+    cmd = [sys.executable, "-m", "sweagent", "run", "--problem-statement", problem]
+    if repo:
+        cmd += ["--repo", repo]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600, cwd=str(ROOT))
+        out = (r.stdout + r.stderr).strip()
+        return ("ok" if r.returncode == 0 else "error"), out[:4000]
+    except subprocess.TimeoutExpired:
+        return "error", "sweagent timeout (600s)"
+    except Exception as e:
+        return "error", str(e)
+
 
 # ── Workspace path guard (Patch 2/3: Codex security review) ──────────────────
 
@@ -299,6 +358,29 @@ TOOL_REGISTRY: dict[str, dict] = {
         "timeout_s":  300,
         "risk_fn":    lambda _: "MED",
         "executor":   _exec_omx_skill,
+    },
+    # ── Substrate tools (hivemind delegation layer) ───────────────────────────
+    "Aider": {
+        "description": (
+            "AI pair-programmer with git integration (Aider-AI/aider). "
+            "Args: {message: str, files?: list[str]}. "
+            "Returns not_available if aider CLI not installed."
+        ),
+        "permission": "workspace",
+        "timeout_s":  300,
+        "risk_fn":    lambda _: "MED",
+        "executor":   _exec_aider,
+    },
+    "SWEAgent": {
+        "description": (
+            "Autonomous issue-fixing agent (SWE-agent/SWE-agent). "
+            "Args: {problem: str, repo?: str}. "
+            "Returns not_available if sweagent not installed."
+        ),
+        "permission": "workspace",
+        "timeout_s":  600,
+        "risk_fn":    lambda _: "HIGH",
+        "executor":   _exec_sweagent,
     },
 }
 
