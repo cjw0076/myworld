@@ -1965,6 +1965,30 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 30: 에듀톤 기획서 + Bias 챌린지 에스컬레이션
+
+- session_id: compact resumption iter 30
+- mode_breakdown: observe:15 verify:10 decide:20 intervene:45 escalate:10
+- tools_used: Write (eduthon concept_package + escalation log), Bash (TSV grep×3, export), Read (ESCALATION_LOG)
+- tools_NOT_used: Agent, aios_head
+- substrate_specific_behaviors_observed:
+  - Dacon TSV 분석: edge=yes NLP 챌린지 = 기획서 아닌 모델 제출 → 유형 구분이 ROI 계산에 핵심
+  - 에듀톤(에듀+해커톤): 접수·예선→부트캠프→결선 3단계. 기획서+데모 모두 필요
+  - ESCALATION_LOG.md 선재 존재 → tail 오류 후 Read로 확인 → empty(1줄) 파악 → Edit로 추가
+- failures_recovered:
+  - tail 명령 output 비어있음 → Read 도구로 전환 후 empty 확인
+  - /dev/null redirect syntax 혼용 → 단순 Read/Edit 패턴으로 대체
+- failures_escalated_to_founder:
+  - 성균관대 Bias 챌린지 (D-9, ML 모델 제출): GO/NO-GO 결정 + Dacon 계정 참가 신청 필요
+- key_decision:
+  에듀톤 = 기획서 + 데모. AIOS-EDU 컨셉(오프라인 로컬 LLM 교육 엔진)으로 포지셔닝.
+  농어촌 AI 교육 격차(9.2배) 정량화가 강력한 문제 정의 근거.
+  Bias 챌린지는 파운더 결정 없이 코드 작성 시작 어려움 → 에스컬레이션.
+- new_invariant_or_pattern_discovered:
+  COMPETITION_TYPE_BIFURCATION: 공모전=기획서 제출 vs 챌린지=모델 제출. TSV domain/metric 필드로 구분. 챌린지는 파운더 액션(로컬 실행·Dacon 제출) 없이는 진행 불가.
+  SOCIAL_GAP_QUANTIFY: "9.2배 격차"처럼 불평등을 배율로 표현하면 심사위원 임팩트 강함.
+- self-correction-of-prior-observation: none
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 29: AIC AI 활용 사례 기획서 (메타 증거)
 
 - session_id: compact resumption iter 29
