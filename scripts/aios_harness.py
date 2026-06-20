@@ -568,6 +568,18 @@ def main(argv: list[str] | None = None) -> int:
     api_key = args.api_key or os.environ.get("AIOS_API_KEY") or _load_saved_key()
     allowed = [t.strip() for t in args.tools.split(",")] if args.tools else None
 
+    # Auto-route provider via role_router when --provider not specified
+    resolved_provider = args.provider
+    routed_role = None
+    if resolved_provider is None:
+        try:
+            rr = _load("aios_role_router")
+            route_result = rr.route(args.task)
+            resolved_provider = route_result.provider
+            routed_role = route_result.role
+        except Exception:
+            pass  # fall back to sampler default
+
     tl     = _load("aios_turn_loop")
     ts, rs, sid, log_path = tl.make_event_log_sink()
     reg    = build_registry(allowed, dry_run=args.dry_run)
@@ -575,13 +587,15 @@ def main(argv: list[str] | None = None) -> int:
         goal=args.task,
         base_url=args.base_url or os.environ.get("OPENAI_COMPAT_URL"),
         model=args.model,
-        provider=args.provider,
+        provider=resolved_provider,
     )
     gate = lambda name, arguments: default_gate(name, arguments, dry_run=args.dry_run)
 
     if args.verbose:
         print(f"[harness] task={args.task[:80]!r}  dry_run={args.dry_run}  log={log_path}")
         print(f"[harness] tools={list(TOOL_REGISTRY.keys()) if not allowed else allowed}")
+        if routed_role:
+            print(f"[harness] role_router → role={routed_role}  provider={resolved_provider}")
 
     t0 = time.time()
     outcome = tl.run_loop(
