@@ -204,14 +204,26 @@ def call_route(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
         return False, "task is required"
     ok, out = _run([sys.executable, "-m", "capabilityos.cli", "recommend", "--task", task, "--json"],
                     root / "CapabilityOS")
-    if not ok:
-        return False, out
-    try:
-        recs = json.loads(out).get("recommendations", [])[:5]
-        lines = [f"{r.get('id')} (score {r.get('score', 0):.1f}) — {r.get('name')}" for r in recs]
-        return True, "AIOS route — top capabilities:\n" + ("\n".join(lines) or "(no match)")
-    except ValueError:
-        return True, out
+    if ok:
+        try:
+            recs = json.loads(out).get("recommendations", [])[:5]
+            lines = [f"{r.get('id')} (score {r.get('score', 0):.1f}) — {r.get('name')}" for r in recs]
+            return True, "AIOS route (CapabilityOS) — top capabilities:\n" + ("\n".join(lines) or "(no match)")
+        except ValueError:
+            return True, out
+    # Fallback: role_router keyword heuristic when CapabilityOS is unavailable
+    rr_ok, rr_out = _run([sys.executable, (root / "scripts" / "aios_role_router.py").as_posix(), task], root)
+    if rr_ok:
+        try:
+            r = json.loads(rr_out)
+            return True, (
+                f"AIOS route (role_router fallback) — role: {r['role']} "
+                f"provider: {r['provider']} confidence: {r['confidence']}\n"
+                f"reason: {r['reason']}"
+            )
+        except (ValueError, KeyError):
+            return True, rr_out
+    return False, out
 
 
 def call_helper_run(root: Path, args: dict[str, Any]) -> tuple[bool, str]:

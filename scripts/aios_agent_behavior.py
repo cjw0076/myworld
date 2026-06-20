@@ -627,9 +627,9 @@ def predict_behavior(context: str, candidates: list[str],
     # Merge: local top-6 + global top-4 (global always enriches even if local is thin)
     top_mems = top_mems + global_patterns[:4]
 
-    # Score 1: frequency in retrieved memories (doom_loop sessions weighted low)
+    # Score 1: frequency in retrieved memories — exclude doom_loop (contaminated sessions)
     clean_mems = [m for m in top_mems if m.get("loop_type") != "doom_loop"]
-    freq_scores = _frequency_scores(candidates, top_mems)
+    freq_scores = _frequency_scores(candidates, clean_mems)
 
     # Score 2: DescentNet global section alignment
     descent_s, obstruction = _descent_scores(context, candidates, top_mems)
