@@ -159,6 +159,17 @@ def steps_from_plan(plan: list[dict[str, Any]]) -> list[Any]:
 Planner = Callable[[str, dict[str, Any]], str]
 
 
+def _load_standards(workspace_root: str) -> str:
+    """Load docs/aios-standards.md if present (agent-os inject-standards pattern)."""
+    path = Path(workspace_root) / "docs" / "aios-standards.md"
+    try:
+        text = path.read_text(encoding="utf-8")
+        # Truncate to avoid bloating context — first 2000 chars covers all rules
+        return text[:2000]
+    except OSError:
+        return ""
+
+
 def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str]]) -> Planner:
     """Real planner: ask a provider to emit a JSON step list."""
     def planner(goal: str, context: dict[str, Any]) -> str:
@@ -178,6 +189,8 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
                 "\nCapabilityOS recommendation (recommendation-only; do not bind tools):\n"
                 f"{json.dumps(cap_route, ensure_ascii=False)[:1200]}\n"
             )
+        standards = _load_standards(context.get("workspace_root", "."))
+        standards_block = f"\nAIOS Operating Standards:\n{standards}\n" if standards else ""
         prompt = (
             f"You are the AIOS planner. Goal: {goal}\n"
             f"Workspace root: {context['workspace_root']}\n"
@@ -185,6 +198,7 @@ def make_provider_planner(provider: str, adapters: dict[str, Callable[[str], str
             f"Network allowed: {context['network']}\n"
             f"{memory_block}\n"
             f"{capability_block}"
+            f"{standards_block}"
             f"{PLANNER_SCHEMA_HINT}"
         )
         return adapter(prompt)
