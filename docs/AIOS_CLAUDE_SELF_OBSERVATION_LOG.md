@@ -1965,6 +1965,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 35: predict_behavior edit_boost 패치 (실제 버그 수정)
+
+- session_id: compact resumption iter 35
+- mode_breakdown: observe:25 verify:30 decide:20 intervene:25 escalate:0
+- tools_used: Bash (predict×3, pytest, git), Read (behavior.py L639), Edit (edit_boost 패치)
+- tools_NOT_used: Agent, aios_head, Write
+- substrate_specific_behaviors_observed:
+  - predict_behavior 실제 실행 → "fix bug" 컨텍스트에서 Bash>Edit (잘못된 예측) 발견
+  - 원인: agentbank 1,032개 데이터가 Bash 편향 → freq_score 압도적 → transition 역전 불가
+  - 패치: context 키워드(fix/bug/edit/change) 감지 시 Edit/Write에 +0.15 보너스
+  - 결과: Edit(0.75) > Bash(0.65) 역전 성공 / "list files"는 Bash 0.92 유지
+  - 28개 테스트 전부 통과 (회귀 없음)
+- failures_recovered:
+  - 예측 버그 발견 → 즉시 패치 → 28 passed (회귀 없음)
+- failures_escalated_to_founder:
+  - ASC-0180 Hive Debate 미완료 → 비전 레벨 결정이므로 파운더 최종 승인 필요
+- key_decision:
+  plan Phase D는 형식적으로 완료됐지만 실제 예측 품질에 버그가 있었음.
+  "구현 완료"와 "올바르게 작동" 사이의 갭 = 실제 테스트 없이는 발견 불가.
+  edit_boost 패치: 15% 보너스가 freq 편향을 실용적으로 상쇄.
+- new_invariant_or_pattern_discovered:
+  FREQ_BIAS_FROM_DATA_SOURCE: agentbank(범용 에이전트) 데이터가 많으면 Bash 편향 필연적. 특정 태스크 컨텍스트는 키워드 보너스로 보정 필요. 데이터 출처가 예측 편향의 근본 원인.
+  LIVE_TEST_BEFORE_CLAIM: "Phase D 완료"를 텍스트만으로 검증하면 버그 못 잡음. predict 실제 실행 + 결과 검증이 진짜 완료 기준.
+- self-correction-of-prior-observation: "Phase D 완료"(이전 압축 요약) → 실제 실행 시 edit_boost 미구현 발견. 완료가 아니었음.
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 34: Bias챌린지 baseline 코드 + memoryOS 상태 확인
 
 - session_id: compact resumption iter 34
