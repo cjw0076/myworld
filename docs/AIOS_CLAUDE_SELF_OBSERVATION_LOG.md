@@ -1833,3 +1833,33 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   DUAL_LAYER_DEDUP_PATTERN: 크롤러 출력(tsv) + 처리 스크립트(roi.py) 양쪽에 dedup을 각각 적용.
   한쪽만 고치면 반대쪽 버그 재발 시 문제 재현. 두 레이어 모두 방어해야 안전.
 - self-correction-of-prior-observation: none
+
+---
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 20: memoryOS draft 처리 + D-11 기획서
+
+- session_id: compact resumption iter 20
+- mode_breakdown: observe:10 verify:15 decide:20 intervene:55 escalate:0:20
+- tools_used: Bash (memoryOS drafts list/reject/approve-batch, aios_head x2 병렬), Read
+- tools_NOT_used: WebFetch, Agent
+- substrate_specific_behaviors_observed:
+  - memoryOS drafts list: 10개 draft 발견 — aios_head 기획서 closeout records
+  - 테스트 태스크 2개 reject (test.md hello world, list files in scripts/)
+  - 기획서 closeout 8개 approve-batch → tx_e1f14d4e68b6758a (approved:8, skipped:191)
+  - 서울 디자인 AI 영상 (D-11, 781K ROI) + 협성독서왕 독후감 (D-42, 7.5M ROI) 병렬 생성 중
+  - 협성독서왕 전략: AI 직접 생성 금지 원칙 준수 + AI를 리서치 도구로만 활용 전략 기획
+- failures_recovered:
+  - approve-batch --status draft 플래그 없음 → --project AIOS로 대체
+  - reject --reason 대신 --note 사용 (CLI 스펙 확인 필요)
+- failures_escalated_to_founder: none
+- key_decision:
+  memoryOS에 쌓인 10개 draft를 오퍼레이터 검토 후 처리 (2 reject + 8 approve).
+  이게 "WORK-20260612-004 memoryOS inbox 처리" 백로그를 닫는 작업.
+  ROI 7.5M/h의 협성독서왕 독후감 — AI 금지 원칙을 준수하면서도 기획 전략 수립 가능.
+- new_invariant_or_pattern_discovered:
+  MEMORYOS_BATCH_REVIEW_PATTERN: aios_head가 기획서를 생성할 때마다 closeout review.json이
+  memory_out/에 쌓임. 오퍼레이터가 주기적으로 (1) list → (2) trivial reject → (3) approve-batch로
+  memoryOS를 clean 상태 유지. 이게 "memory hygiene" 루틴.
+- self-correction-of-prior-observation:
+  "WORK-20260612-004 memoryOS inbox 12개"가 실제로는 review.json 파일 기반이었음.
+  memory_out/*.review.json = AIOS 오퍼레이션 메모리 아카이브. 이것이 백로그였음.
