@@ -2275,3 +2275,25 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   MULTI_TARGET_SAME_FEATURES: 수요/태양광/풍력 각각 별도 모델 = 독립 최적화.
   단일 멀티아웃풋 모델보다 오차 낮음.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 42: 스마트팜+의료 AI 기획서 (32편 달성)
+
+- session_id: loop-cto-iter42
+- mode_breakdown: decide:90 observe:10 :20min
+- tools_used: Write x2 (rda-smartfarm-ai, mohw-health-ai concept_package.md)
+- tools_NOT_used: Agent, WebSearch
+- substrate_specific_behaviors_observed:
+  PRIVACY_FIRST_IN_WELFARE: 의료/복지 AI는 프라이버시 설계가 심사 필수조건.
+  "AI가 개인을 결정한다" 프레임 금지 → "AI는 집계, 전문가가 결정" 프레임 필수.
+  COST_OF_INACTION: 복지 미신청으로 인한 비용(입원 예방 340만원)을 명시.
+  "AI 도입 비용"만 언급하는 기획서 vs "미도입 손실"을 함께 제시하는 기획서 차이.
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decision:
+  의료 AI는 개인정보 보호 프레임이 핵심. "비식별 집계" + "담당자 최종 결정"이
+  보건복지부 심사에서 통과하는 두 개의 열쇠.
+- new_invariant_or_pattern_discovered:
+  WELFARE_AI_FRAMING: 복지 AI = AI가 자동화 아닌 "발굴 지원". 담당자 역할 강조 필수.
+  INCIDENT_DATA_DISCIPLINE: 고독사 사망 전 청구 감소 패턴 = 실제 논문/보고서 근거.
+  수치 없는 "~것으로 보인다" 표현 금지. 정확한 출처 숫자가 심사 설득력 핵심.
+- self-correction-of-prior-observation: none
