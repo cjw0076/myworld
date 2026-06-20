@@ -95,13 +95,27 @@ def build_skeleton(
     return c
 
 
+def _repair_json(candidate: str) -> str:
+    """Best-effort repair of common LLM JSON mistakes."""
+    # 1. trailing commas: ,} or ,]
+    candidate = re.sub(r",\s*([}\]])", r"\1", candidate)
+    # 2. unescaped newlines inside string values (replace \n with space approx)
+    #    Only outside of escaped sequences — heuristic: non-backslash-preceded newline
+    candidate = re.sub(r'(?<!\\)\n', " ", candidate)
+    # 3. unescaped tab
+    candidate = re.sub(r'(?<!\\)\t', " ", candidate)
+    return candidate
+
+
 def _extract_json_array(text: str) -> list[Any]:
     """Robustly pull the first JSON array out of an LLM response.
 
     Handles markdown fences and NDJSON-ish noise (qwen3 lesson): scan for the
     first '[' ... matching ']' and json.loads it.
+    On parse failure, attempts lightweight JSON repair before giving up.
     """
     text = re.sub(r"```(?:json)?", "", text)
+    text = re.sub(r"```", "", text)  # strip any remaining fences
     start = text.find("[")
     if start == -1:
         raise ValueError("planner returned no JSON array")
@@ -113,7 +127,15 @@ def _extract_json_array(text: str) -> list[Any]:
         elif ch == "]":
             depth -= 1
             if depth == 0:
-                return json.loads(text[start:i + 1])
+                candidate = text[start:i + 1]
+                try:
+                    return json.loads(candidate)
+                except json.JSONDecodeError:
+                    repaired = _repair_json(candidate)
+                    try:
+                        return json.loads(repaired)
+                    except json.JSONDecodeError as exc2:
+                        raise ValueError(f"planner JSON malformed after repair: {exc2}") from exc2
     raise ValueError("planner JSON array not closed")
 
 
@@ -213,23 +235,36 @@ def compile_goal(
         "network": c.authority_scope.network,
         "recalled_memory": recalled,
     }
-    raw = planner(goal, context)
-    try:
-        plan = _extract_json_array(raw)
-        c.steps = steps_from_plan(plan)
-        c.planner_receipt = _planner_receipt(
-            co_mod, contract_id=c.contract_id, planner_label=planner_label,
-            context=context, memory_count=len(recalled), raw=raw,
-            parse_status="ok", step_count=len(c.steps),
-        )
-        errors = c.validate()
-    except (ValueError, KeyError, TypeError) as exc:
-        c.planner_receipt = _planner_receipt(
-            co_mod, contract_id=c.contract_id, planner_label=planner_label,
-            context=context, memory_count=len(recalled), raw=raw,
-            parse_status="failed", step_count=0, error=str(exc),
-        )
-        errors = [f"planner parse failed: {exc}"]
+    _MAX_PLAN_RETRIES = 2
+    last_exc: Exception | None = None
+    raw = ""
+    for _attempt in range(_MAX_PLAN_RETRIES):
+        raw = planner(goal, context)
+        try:
+            plan = _extract_json_array(raw)
+            c.steps = steps_from_plan(plan)
+            c.planner_receipt = _planner_receipt(
+                co_mod, contract_id=c.contract_id, planner_label=planner_label,
+                context=context, memory_count=len(recalled), raw=raw,
+                parse_status="ok", step_count=len(c.steps),
+            )
+            errors = c.validate()
+            return c, errors
+        except (ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            last_exc = exc
+            # inject hint on retry
+            context = dict(context, _retry_hint=(
+                "Previous attempt produced invalid JSON. "
+                "Return ONLY a valid JSON array, no prose, no markdown fences."
+            ))
+
+    # all retries exhausted
+    c.planner_receipt = _planner_receipt(
+        co_mod, contract_id=c.contract_id, planner_label=planner_label,
+        context=context, memory_count=len(recalled), raw=raw,
+        parse_status="failed", step_count=0, error=str(last_exc),
+    )
+    errors = [f"planner parse failed: {last_exc}"]
     return c, errors
 
 
