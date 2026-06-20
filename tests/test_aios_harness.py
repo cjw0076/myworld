@@ -63,28 +63,36 @@ class TestParseReact(unittest.TestCase):
 
 class TestExecWrite(unittest.TestCase):
     def test_write_creates_file(self):
-        import tempfile, os
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as f:
-            tmp = f.name
-        os.unlink(tmp)
-        status, msg = h._exec_write({"path": tmp, "content": "hello"})
+        import os
+        # Use a workspace-relative path (harness ROOT = workspace root)
+        tmp = h.ROOT / ".aios" / "runtime" / "_test_write_tmp.txt"
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        if tmp.exists():
+            tmp.unlink()
+        status, msg = h._exec_write({"path": str(tmp), "content": "hello"})
         self.assertEqual(status, "ok")
-        self.assertEqual(Path(tmp).read_text(), "hello")
-        os.unlink(tmp)
+        self.assertEqual(tmp.read_text(), "hello")
+        tmp.unlink()
 
     def test_write_accepts_file_path_alias(self):
-        import tempfile, os
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as f:
-            tmp = f.name
-        os.unlink(tmp)
-        status, msg = h._exec_write({"file_path": tmp, "content": "world"})
+        import os
+        tmp = h.ROOT / ".aios" / "runtime" / "_test_write_alias_tmp.txt"
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        if tmp.exists():
+            tmp.unlink()
+        status, msg = h._exec_write({"file_path": str(tmp), "content": "world"})
         self.assertEqual(status, "ok")
-        self.assertEqual(Path(tmp).read_text(), "world")
-        os.unlink(tmp)
+        self.assertEqual(tmp.read_text(), "world")
+        tmp.unlink()
 
     def test_write_empty_path_returns_error(self):
         status, _ = h._exec_write({"content": "x"})
         self.assertEqual(status, "error")
+
+    def test_write_outside_workspace_blocked(self):
+        status, msg = h._exec_write({"path": "/tmp/escape_test.txt", "content": "bad"})
+        self.assertEqual(status, "error")
+        self.assertIn("outside workspace", msg)
 
 
 class TestValidToolName(unittest.TestCase):

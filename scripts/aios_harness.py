@@ -80,15 +80,19 @@ def _exec_bash(args: dict) -> tuple[str, str]:
     cmd = args.get("cmd", args.get("command", ""))
     if not cmd:
         return "error", "no cmd provided"
+    if _SHELL_META.search(cmd):
+        return "error", "unsafe shell syntax blocked (metacharacter or privileged shell)"
     try:
+        cwd = str(_safe_path(args.get("cwd", "."))) if args.get("cwd") else str(ROOT)
         r = subprocess.run(
-            cmd, shell=True, capture_output=True, text=True, timeout=30,
-            cwd=args.get("cwd", str(Path.cwd())),
+            shlex.split(cmd), capture_output=True, text=True, timeout=30, cwd=cwd,
         )
         out = (r.stdout + r.stderr).strip()
         return ("ok" if r.returncode == 0 else "error"), out[:4000]
     except subprocess.TimeoutExpired:
         return "error", "timeout (30s)"
+    except ValueError as e:
+        return "error", str(e)
     except Exception as e:
         return "error", str(e)
 
@@ -98,9 +102,11 @@ def _exec_read(args: dict) -> tuple[str, str]:
     if not path:
         return "error", "no path provided"
     try:
-        text = Path(path).expanduser().read_text(encoding="utf-8", errors="replace")
+        text = _safe_path(path).read_text(encoding="utf-8", errors="replace")
         lines = text.splitlines()
         return "ok", "\n".join(lines[:200]) + (f"\n[…{len(lines)-200} more lines]" if len(lines) > 200 else "")
+    except ValueError as e:
+        return "error", str(e)
     except Exception as e:
         return "error", str(e)
 
@@ -112,12 +118,14 @@ def _exec_edit(args: dict) -> tuple[str, str]:
     if not (path and old):
         return "error", "need path + old + new"
     try:
-        p = Path(path).expanduser()
+        p = _safe_path(path)
         text = p.read_text(encoding="utf-8")
         if old not in text:
             return "error", f"old_string not found in {path}"
         p.write_text(text.replace(old, new, 1), encoding="utf-8")
         return "ok", f"replaced 1 occurrence in {path}"
+    except ValueError as e:
+        return "error", str(e)
     except Exception as e:
         return "error", str(e)
 
@@ -128,10 +136,12 @@ def _exec_write(args: dict) -> tuple[str, str]:
     if not path:
         return "error", "no path provided"
     try:
-        p = Path(path).expanduser()
+        p = _safe_path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(content, encoding="utf-8")
         return "ok", f"wrote {len(content)} chars to {path}"
+    except ValueError as e:
+        return "error", str(e)
     except Exception as e:
         return "error", str(e)
 
@@ -154,7 +164,23 @@ def _exec_websearch(args: dict) -> tuple[str, str]:
         return "error", str(e)
 
 
+import shlex
 import urllib.parse
+
+# ── Workspace path guard (Patch 2/3: Codex security review) ──────────────────
+
+def _safe_path(raw: str) -> Path:
+    """Resolve path and reject anything outside the workspace root."""
+    p = Path(raw or ".").expanduser()
+    p = (ROOT / p).resolve() if not p.is_absolute() else p.resolve()
+    if p != ROOT and ROOT not in p.parents:
+        raise ValueError(f"path outside workspace: {raw!r}")
+    return p
+
+
+# ── Shell metacharacter block (Patch 1/3: Codex security review) ─────────────
+
+_SHELL_META = re.compile(r"[;&|`$<>]|\b(sh|bash|zsh|fish|sudo)\b")
 
 TOOL_REGISTRY: dict[str, dict] = {
     "Bash": {
@@ -356,13 +382,15 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
         parts.append("Assistant:")
         prompt = "\n".join(parts)
 
-        # Call LLM via resolved dispatch
-        text = ""
-        if _dispatch:
-            try:
-                text, _ = _dispatch(prompt)
-            except Exception as e:
-                text = f"Final Answer: LLM error — {e}"
+        # Call LLM via resolved dispatch (Patch 3/3: fail hard on LLM error)
+        if not _dispatch:
+            raise RuntimeError("no LLM dispatch configured; pass --provider or --base-url")
+        try:
+            text, _ = _dispatch(prompt)
+        except Exception as e:
+            raise RuntimeError(f"LLM dispatch failed: {e}") from e
+        if not text.strip():
+            raise RuntimeError("LLM dispatch returned empty output")
 
         # Parse
         parsed = _parse_react(text)
