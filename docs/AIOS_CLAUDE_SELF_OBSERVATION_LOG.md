@@ -2187,3 +2187,26 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   즉시 전환. 대회 준비에서 "데이터 없으면 시작 못 한다" 병목 제거 패턴.
   COMPETITION_PACKAGE = api_client + ml_model + concept_package. 3종 세트가 최소 제출 단위.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 38: dtype 버그 발견·수정 + end-to-end 검증
+
+- session_id: loop-cto-iter38
+- mode_breakdown: verify:60 intervene:30 observe:10 :20min
+- tools_used: Bash (실행 검증), Edit (버그 수정), Read (코드 확인)
+- tools_NOT_used: Agent (단순 버그 수정)
+- substrate_specific_behaviors_observed:
+  PYTHON313_DTYPE_TRAP: pandas 2.x + Python 3.13에서 문자열 컬럼 dtype이 'str'로 표시.
+  기존 `dtype == object` 체크가 False 반환 → text_col=None 무결성 버그.
+  수정: dtype.kind == 'O' OR str(dtype) in ('object','string','str') 복합 체크.
+  이 함정은 Python 3.12→3.13 마이그레이션 시 모든 dtype 체크 코드에 영향.
+- failures_recovered:
+  Bias baseline text_col=None → train_tfidf_lgbm KeyError: None → 즉시 수정
+  mock 데이터로 재실행 → 성공 (F1: 0.27, submission.csv 50행 생성)
+- failures_escalated_to_founder: none
+- key_decision:
+  실제 데이터 없어도 mock으로 end-to-end 검증 — LIVE_TEST_BEFORE_CLAIM 원칙 적용.
+  랜덤 레이블 F1 0.27은 의미 없음. 실제 Bias 데이터에서 0.72~0.78 예상.
+- new_invariant_or_pattern_discovered:
+  PYTHON313_COMPAT_DTYPE: dtype == object 단독 체크 금지. 복합 체크 필수.
+  MOCK_DATA_GATE: 데이터 없는 챌린지 코드는 mock 데이터로 파이프라인 관통 테스트 후 제출.
+- self-correction-of-prior-observation: none
