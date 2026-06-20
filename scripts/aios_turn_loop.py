@@ -86,6 +86,32 @@ def default_gate(name: str, arguments: dict) -> str:
     return DENY
 
 
+_WRITE_TOOLS = frozenset({"Write", "Edit", "aios_observe", "aios_ingest_cli_session"})
+_READ_TOOLS = frozenset({"Read", "aios_retrieve", "aios_route"})
+
+
+def _completion_audit(trajectory: list[dict]) -> dict:
+    """Ralph-style prompt-to-artifact audit: did the loop actually produce evidence?
+
+    Absorbed from oh-my-codex ralph.js completion_audit pattern.
+    model_finished is structural — this checks whether real artifacts were produced.
+    """
+    writes = [e for e in trajectory if e.get("tool") in _WRITE_TOOLS and e.get("status") == "ok"]
+    reads = [e for e in trajectory if e.get("tool") in _READ_TOOLS and e.get("status") == "ok"]
+    tool_calls = len(trajectory)
+    passed = len(writes) > 0 or (tool_calls > 0 and len(reads) > 0)
+    return {
+        "passed": passed,
+        "evidence_writes": len(writes),
+        "evidence_reads": len(reads),
+        "checklist_note": (
+            "artifacts_produced" if writes
+            else ("read_only_run" if reads
+                  else "no_tool_evidence")
+        ),
+    }
+
+
 def _classify_run_tools(tools: list[str]) -> str:
     """Classify agent loop type from observed tool sequence (mirrors aios_agent_behavior)."""
     if not tools:
@@ -158,7 +184,9 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
             history.append({"role": "assistant", "turn": turn, "tools": [c.name for c in calls]})
 
             if not calls:                                   # model finished — structural terminal
-                outcome = {"exit": "model_finished", "turns": turn, "trajectory": trajectory}
+                audit = _completion_audit(trajectory)
+                outcome = {"exit": "model_finished", "turns": turn, "trajectory": trajectory,
+                           "completion_audit": audit}
                 break
 
             stop = None

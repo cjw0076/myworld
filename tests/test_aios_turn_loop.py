@@ -117,6 +117,37 @@ class TurnLoopTests(unittest.TestCase):
         outcome = {"exit": "model_finished", "loop_type": "react_general"}
         self.assertFalse(L.needs_direction(outcome))
 
+    # -- completion_audit tests (absorbed from OMX ralph.js) --
+
+    def test_completion_audit_passes_when_write_tool_ok(self) -> None:
+        """ralph pattern: model_finished + Write ok → audit.passed=True."""
+        self.reg.register("Write", lambda a: "written")
+        r = L.run_loop("write a file", scripted([
+            {"tool_calls": [L.ToolCall("Write", {"path": "x"}, call_id="c1")]},
+            {"tool_calls": []},
+        ]), self.reg, gate=lambda n, a: L.ALLOW)
+        self.assertEqual(r["exit"], "model_finished")
+        audit = r.get("completion_audit", {})
+        self.assertTrue(audit.get("passed"))
+        self.assertEqual(audit["evidence_writes"], 1)
+        self.assertEqual(audit["checklist_note"], "artifacts_produced")
+
+    def test_completion_audit_fails_when_no_tools_used(self) -> None:
+        r = L.run_loop("nothing", scripted([{"tool_calls": []}]), self.reg)
+        audit = r.get("completion_audit", {})
+        self.assertFalse(audit.get("passed"))
+        self.assertEqual(audit["checklist_note"], "no_tool_evidence")
+
+    def test_completion_audit_only_on_model_finished(self) -> None:
+        """max_turns exit should not have completion_audit."""
+        n = {"i": 0}
+        def s(h):
+            n["i"] += 1
+            return {"tool_calls": [L.ToolCall("aios_read", {"p": str(n["i"])}, call_id=f"c{n['i']}")]}
+        r = L.run_loop("x", s, self.reg, max_turns=2)
+        self.assertEqual(r["exit"], "max_turns")
+        self.assertNotIn("completion_audit", r)
+
     def test_loop_detected_injects_genesis_direction(self) -> None:
         """When doom-loop triggers, genesis_direction must appear in outcome."""
         r = L.run_loop("find bugs", scripted([
