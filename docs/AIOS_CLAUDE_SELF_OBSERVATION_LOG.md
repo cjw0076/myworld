@@ -2231,3 +2231,24 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   DOMAIN_COVERAGE_STRATEGY: 공모전 참여 전략 = 단일 분야 깊이보다 다분야 폭.
   보안/에너지/환경/사회/교육 각 1편씩 커버하면 기회 분산 + 수상 확률 합산 증가.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 40: CyberSentinel 완성 (F1=0.9999)
+
+- session_id: loop-cto-iter40
+- mode_breakdown: decide:80 verify:15 observe:5 :20min
+- tools_used: Write (cyber_sentinel.py ~350줄), Bash (실행 검증)
+- tools_NOT_used: Agent (단독 작성), WebSearch
+- substrate_specific_behaviors_observed:
+  SYNTH_DATA_PERFECT_SCORE: 피처를 클래스별로 설계하면 합성 데이터 F1=1.0.
+  실제 데이터에서는 0.90~0.95 예상. 합성 F1은 "코드 정상 작동" 증거일 뿐.
+  HTTP_SERVER_PATTERN: http.server 표준 라이브러리로 zero-dep API 서버. 데모용 충분.
+  flask 없이도 POST /detect 구현. 대회 제출 환경에서 dep 최소화.
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decision:
+  IsolationForest(1단계) + LightGBM 분류기(2단계) 2-pass 아키텍처.
+  1단계가 제로데이를 잡고, 2단계가 알려진 위협을 분류. 두 레이어 조합이 핵심 차별화.
+- new_invariant_or_pattern_discovered:
+  TWO_PASS_DETECTION: anomaly(1단계) + classification(2단계) = 제로데이 + 알려진 위협 모두 커버.
+  단일 분류기는 제로데이에 취약. IsolationForest가 먼저 필터링해야 완전한 방어.
+- self-correction-of-prior-observation: none
