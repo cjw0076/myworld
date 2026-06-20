@@ -205,6 +205,10 @@ def route(task: str, fallback_role: str = "executor") -> RouteResult:
         if _SECURITY_DOMAIN.search(text):
             return _result("code-reviewer", "high", "primary intent is security-focused review")
         return _result("quality-reviewer", "high", "primary intent is review/verification")
+    if _SECURITY_DOMAIN.search(text) and re.search(
+        r"\b(?:audit|check|find|scan|review|취약점|찾아|점검)\b", text, re.I
+    ):
+        return _result("code-reviewer", "high", "primary intent is security-focused review")
     if _is_dependency_evaluation(text):
         return _result("dependency-expert", "high", "primary intent is external dependency/package evaluation")
     if _is_research_task(text):
