@@ -126,6 +126,18 @@ def _record_backup_manifest(contract: Any, entry: dict[str, Any]) -> None:
 def _syscall_fs_write(contract: Any, step: Any, seq: int) -> tuple[bool, list[str], str, str | None]:
     path = _resolve_path(step.inputs.get("path", ""))
     content = step.inputs.get("content", "")
+    # Guard: reject placeholder-only content for Markdown docs (LLM often writes "(작성 완료)" etc.)
+    import re as _re
+    if path.suffix == ".md" and len(content.strip()) < 80:
+        _placeholder_pat = _re.compile(
+            r"^\s*\(?작성\s*완료\)?\.?\s*$|^\s*완료\s*$|^\s*done\.?\s*$|^\s*\(?\s*complete[d]?\s*\)?\.?\s*$",
+            _re.IGNORECASE,
+        )
+        if _placeholder_pat.match(content.strip()) or len(content.strip()) < 20:
+            return False, [], (
+                f"fs.write rejected: .md content is a placeholder ({len(content.strip())} chars). "
+                f"Planner must write the actual document body."
+            ), None
     old = path.read_text(encoding="utf-8", errors="replace") if path.exists() else None
     backup_ref = None
     if old is not None:
