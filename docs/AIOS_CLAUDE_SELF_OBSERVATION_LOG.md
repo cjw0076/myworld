@@ -2166,3 +2166,24 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   FORK_PRECEDES_WRITE: 포크가 이미 파일을 쓴 경우 Write는 "not read yet" 오류.
   이 오류 = "이미 완성됨" 신호. Read 없이 Write 시도 전 파일 존재 확인 필요.
 - self-correction-of-prior-observation: none
+
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 37: G2B-AI 수주 예측 모델 완성 (ML baseline)
+
+- session_id: loop-cto-iter37
+- mode_breakdown: decide:90 intervene:5 observe:5 :20min
+- tools_used: Write (g2b_model.py 345줄)
+- tools_NOT_used: Agent, Bash (순수 코드 작성, 외부 호출 불필요)
+- substrate_specific_behaviors_observed:
+  DATA_AGNOSTIC_BASELINE: API 키 없어도 합성 데이터(10K건)로 즉시 훈련 가능 설계.
+  실제 데이터 수집 후 --mode train으로 동일 코드 전환. 개발-운영 갭 최소화.
+  FALLBACK_CHAIN: lightgbm → GradientBoosting 자동 fallback. 환경 의존성 0.
+  EXPLAINABILITY_FIRST: SHAP 없으면 feature_importances_ fallback. 심사위원 설득용.
+- failures_recovered: none
+- failures_escalated_to_founder: none
+- key_decision:
+  LightGBM 5-fold CV + OOF AUC 선택 (leakage 방지). 단일 train/test split 대신.
+- new_invariant_or_pattern_discovered:
+  SYNTH_FIRST_REAL_LATER: API 키 발급 전 합성 데이터로 코드 완성 → 파운더 데이터 수집 후
+  즉시 전환. 대회 준비에서 "데이터 없으면 시작 못 한다" 병목 제거 패턴.
+  COMPETITION_PACKAGE = api_client + ml_model + concept_package. 3종 세트가 최소 제출 단위.
+- self-correction-of-prior-observation: none
