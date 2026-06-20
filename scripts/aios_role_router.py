@@ -88,6 +88,31 @@ _RESEARCH_TASK = re.compile(
     r"|(?:조사|비교|외부|연구|동향|패턴)",
     re.I,
 )
+# wshobson/agents domain patterns
+_ML_DOMAIN = re.compile(
+    r"\b(?:dataset|embedding|fine.?tun|gradient|hyperparameter|inference|loss"
+    r"|machine.?learning|model|neural|pytorch|tensorflow|train(?:ing)?|weights?)\b"
+    r"|(?:학습|모델|훈련|데이터셋)",
+    re.I,
+)
+_INFRA_DOMAIN = re.compile(
+    r"\b(?:ci/?cd|cloudformation|container|deploy|docker|helm|iac|infrastructure"
+    r"|k8s|kubernetes|pipeline|provision|terraform|workflow)\b"
+    r"|(?:배포|인프라|컨테이너)",
+    re.I,
+)
+_INCIDENT_DOMAIN = re.compile(
+    r"\b(?:alert|downtime|incident|on.?call|outage|pager|postmortem|runbook"
+    r"|sev\d|triage)\b"
+    r"|(?:장애|인시던트|알림|다운타임)",
+    re.I,
+)
+_ARCH_DOMAIN = re.compile(
+    r"\b(?:adr|architecture|blueprint|design.?doc|high.?level|rfc|scalab|system.?design"
+    r"|tradeoff)\b"
+    r"|(?:설계|아키텍처|트레이드오프)",
+    re.I,
+)
 
 # ── AIOS role → provider mapping ──────────────────────────────────────────
 
@@ -103,6 +128,14 @@ _ROLE_TO_PROVIDER = {
     "dependency-expert": "claude",
     "explore": "codex",           # local codebase search
     "executor": "codex",          # default implementation worker
+    # wshobson/agents catalog absorption (192 domain agents → AIOS role types)
+    "ml-engineer": "codex",       # ML model code, training scripts, pipelines
+    "data-analyst": "claude",     # data interpretation, EDA, reports
+    "infrastructure": "codex",    # IaC, Docker, CI/CD, cloud config
+    "incident-responder": "codex",# on-call triage, log analysis, root cause
+    "architect": "claude",        # system design, ADRs, tradeoff analysis
+    "business-analyst": "claude", # requirements, PRDs, market analysis
+    "security-engineer": "codex", # exploit analysis, hardening, CVE triage
 }
 
 # AIOS Claude Code agent-type names (subagent_type in Agent tool)
@@ -118,6 +151,14 @@ _ROLE_TO_AGENT_TYPE = {
     "dependency-expert": "analyst",
     "explore": "Explore",
     "executor": "executor",
+    # wshobson/agents catalog
+    "ml-engineer": "executor",
+    "data-analyst": "analyst",
+    "infrastructure": "executor",
+    "incident-responder": "debugger",
+    "architect": "architect",
+    "business-analyst": "analyst",
+    "security-engineer": "code-reviewer",
 }
 
 
@@ -215,6 +256,15 @@ def route(task: str, fallback_role: str = "executor") -> RouteResult:
         return _result("researcher", "high", "primary intent is external documentation/reference research")
     if intent == "docs":
         return _result("writer", "high", "primary intent is documentation deliverable")
+    # wshobson/agents domain routing (before generic design — more specific)
+    if _ARCH_DOMAIN.search(text):
+        return _result("architect", "high", "primary intent is architecture/system design")
+    if _INFRA_DOMAIN.search(text):
+        return _result("infrastructure", "high", "primary intent is infrastructure/DevOps work")
+    if _INCIDENT_DOMAIN.search(text):
+        return _result("incident-responder", "high", "primary intent is incident triage/response")
+    if _ML_DOMAIN.search(text):
+        return _result("ml-engineer", "high", "primary intent is ML/model work")
     if intent == "design":
         return _result("designer", "high", "primary intent is UI/design implementation")
     if intent == "cleanup":

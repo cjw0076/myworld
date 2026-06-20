@@ -73,6 +73,23 @@ class RouteTests(unittest.TestCase):
         r = self._route("테스트 커버리지 추가")
         self.assertEqual(r.role, "test-engineer")
 
+    # -- wshobson/agents domain roles --
+    def test_infra_routes_to_infrastructure(self):
+        r = self._route("deploy kubernetes cluster with terraform")
+        self.assertEqual(r.role, "infrastructure")
+
+    def test_ml_routes_to_ml_engineer(self):
+        r = self._route("train pytorch model on classification dataset")
+        self.assertEqual(r.role, "ml-engineer")
+
+    def test_incident_routes_to_incident_responder(self):
+        r = self._route("incident: prod API 503 errors spiking")
+        self.assertEqual(r.role, "incident-responder")
+
+    def test_arch_routes_to_architect(self):
+        r = self._route("system architecture design for AIOS kernel ADR")
+        self.assertEqual(r.role, "architect")
+
     # -- default implementation fallback --
     def test_implement_returns_executor(self):
         r = self._route("Implement the new feature X")
