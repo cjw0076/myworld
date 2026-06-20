@@ -1965,6 +1965,29 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   AIC_TSV_MINING: candidates_aic.tsv edge=yes 필터 + prize 정렬 → 빠른 고ROI 발굴.
 - self-correction-of-prior-observation: none
 
+## 2026-06-20 KST — claude@myworld — /loop 20m iter 29: AIC AI 활용 사례 기획서 (메타 증거)
+
+- session_id: compact resumption iter 29
+- mode_breakdown: observe:10 verify:5 decide:15 intervene:70 escalate:0
+- tools_used: Write (concept_package.md), Bash (export_pdf.py 경로 디버깅×2)
+- tools_NOT_used: Agent (단일 기획서 = 병렬 불필요), aios_head
+- substrate_specific_behaviors_observed:
+  - export_pdf.py 인터페이스: `<path> 직접 전달` ≠ `--campaign <name>`. CLI arg 형식 실수 → tail usage로 수정
+  - scripts/ vs tools/ 경로: cherry 레포는 `tools/` 하위, myworld 스크립트는 `scripts/`. 경로 혼동 패턴
+  - HiveMind hook: "missing file/dir" 감지 → 즉시 플래그 (정상 작동)
+- failures_recovered:
+  - export_pdf.py 경로 오류 (scripts/ → tools/) → find로 탐색 후 수정
+  - CLI arg 형식 오류 (`<path>` → `--campaign <name>`) → usage 읽고 수정
+- failures_escalated_to_founder: 없음
+- key_decision:
+  AIC AI 활용 사례 기획서 = AIOS 자체를 사례로 제출하는 메타 전략.
+  "이 기획서 자체가 AIOS가 생성한 22번째 기획서" — 가장 강력한 증거 포지셔닝.
+  D-140이므로 여유 있지만 캠페인 스택에 선점.
+- new_invariant_or_pattern_discovered:
+  META_EVIDENCE_POSITIONING: 시스템 자체를 사례로 제출하는 기획서는 논증과 증거가 일체화됨. 심사위원이 반박하려면 지금 읽는 문서 자체를 부정해야 함 → 강력한 설득 구조.
+  TOOL_DIR_MISMATCH: `scripts/` vs `tools/` 레포별 경로 차이 — 항상 find 선검색.
+- self-correction-of-prior-observation: none
+
 ## 2026-06-20 KST — claude@myworld — /loop 20m iter 26-28: 캠페인 22개 완성 + AIC 고ROI 발굴
 
 - session_id: compact resumption iter 26-28 (3 iter 압축 기록)
