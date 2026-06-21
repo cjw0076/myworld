@@ -170,6 +170,9 @@ def dispatch_state(events: list[dict[str, Any]], dispatch_id: str) -> dict[str, 
         elif event.get("event") in {"stopped", "held", "escalated"}:
             state["terminal"] = True
             state["terminal_status"] = event.get("event")
+        elif event.get("event") == "released":
+            state["terminal"] = False
+            state["terminal_status"] = ""
     return state
 
 

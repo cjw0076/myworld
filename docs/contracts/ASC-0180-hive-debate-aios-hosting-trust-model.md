@@ -1,11 +1,13 @@
 ---
 contract_id: ASC-0180
 slug: hive-debate-aios-hosting-trust-model
-status: accepted
+status: closed
 goal: Run a Hive deliberation (ASC-0084 / ASC-0174 format, 6+ rounds, 3 voices) on the question "how should AIOS hosting relate to the DNA — specifically the Preamble root-of-trust clause and Invariant 7 (privacy boundary) — given that Model A (invisible infra under uri) needs a non-localhost ingest endpoint to serve production users, but any non-localhost AIOS surface is the first AIOS component that is not local-first?"
 created: 2026-05-15 KST
 accepted: 2026-05-15 KST by claude@myworld for deliberation dispatch — founder explicitly routed the hosting commitment to Hive ("호스팅은 Hive 심의로 보냄"). Final verdict acceptance reserved to founder.
-closed:
+closed: 2026-06-21T11:40:00+09:00
+closed_by: claude@myworld
+closing_note: Hive deliberation complete (rounds 1+2 collected, both hivemind and myworld results in outbox). Deliberation artifacts produced — no code deployed, no hosting changes made. FOUNDER CHECKPOINT OPEN: the hosting posture question ("GO = allow non-localhost with privacy constraints / HOLD = keep local-only / NO-GO = never host") requires founder verdict (acceptance_authority = founder). Contract closes the dispatch; verdict decision remains open for founder.
 supersedes: none
 acceptance_authority: founder for verdict acceptance; operator-accepted for deliberation dispatch under founder's explicit routing instruction
 human_approved: true
@@ -87,7 +89,9 @@ instead of inheriting them from the prompt.
 
 ## Scope
 
-repos: `hivemind`, `myworld`
+repos:
+- hivemind
+- myworld
 
 allowed_files:
 
