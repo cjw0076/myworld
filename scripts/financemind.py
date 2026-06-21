@@ -10,6 +10,7 @@ Iter 44 of AIOS outside-domain proof campaign.
 from __future__ import annotations
 
 import json
+import sys
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
@@ -307,9 +308,9 @@ def main() -> None:
         print(json.dumps(result, indent=2))
         return
 
-    print(f"[FinanceMind] Generating {args.n_txn} transactions (fraud_rate={args.fraud_rate})")
+    print(f"[FinanceMind] Generating {args.n_txn} transactions (fraud_rate={args.fraud_rate})", file=sys.stderr)
     txns = generate_transactions(n=args.n_txn, fraud_rate=args.fraud_rate)
-    print("[FinanceMind] Training IsolationForest + RandomForest ensemble...")
+    print("[FinanceMind] Training IsolationForest + RandomForest ensemble...", file=sys.stderr)
     result = train_and_evaluate(txns)
 
     if args.json:
