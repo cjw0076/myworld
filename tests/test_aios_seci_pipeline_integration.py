@@ -6,6 +6,7 @@ Three test classes:
   3. TestRunCycleCycleComplete  — run_cycle with all phases mocked returns cycle_complete=True
 """
 import sys
+import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -55,8 +56,11 @@ class TestPhaseEDoomLoopFilter:
     def test_doom_loop_patterns_never_reach_write_draft(self):
         mock_write_draft = MagicMock(return_value={"status": "ok", "id": "draft-xyz"})
 
-        with patch.object(seci, "_load_memoryos", return_value=mock_write_draft):
-            draft_ids = seci.phase_e(self._mixed_memories(), dry_run=False)
+        with tempfile.TemporaryDirectory() as td:
+            isolated = Path(td) / ".seci_submitted.json"
+            with patch.object(seci, "_load_memoryos", return_value=mock_write_draft):
+                draft_ids = seci.phase_e(self._mixed_memories(), dry_run=False,
+                                         _submitted_path=isolated)
 
         # Only 2 clean patterns should have been forwarded
         assert mock_write_draft.call_count == 2, (
@@ -84,8 +88,10 @@ class TestPhaseEDoomLoopFilter:
             for i in range(4)
         ]
 
-        with patch.object(seci, "_load_memoryos", return_value=mock_write_draft):
-            draft_ids = seci.phase_e(doom_only, dry_run=False)
+        with tempfile.TemporaryDirectory() as td:
+            isolated = Path(td) / ".seci_submitted.json"
+            with patch.object(seci, "_load_memoryos", return_value=mock_write_draft):
+                draft_ids = seci.phase_e(doom_only, dry_run=False, _submitted_path=isolated)
 
         assert draft_ids == [], (
             f"Expected empty draft list for doom_loop-only input, got {draft_ids}"
