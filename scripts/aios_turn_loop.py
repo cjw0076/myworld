@@ -90,25 +90,39 @@ _WRITE_TOOLS = frozenset({"Write", "Edit", "aios_observe", "aios_ingest_cli_sess
 _READ_TOOLS = frozenset({"Read", "aios_retrieve", "aios_route"})
 
 
-def _completion_audit(trajectory: list[dict]) -> dict:
+def _completion_audit(trajectory: list[dict],
+                       contract_receipts: list[dict] | None = None) -> dict:
     """Ralph-style prompt-to-artifact audit: did the loop actually produce evidence?
 
     Absorbed from oh-my-codex ralph.js completion_audit pattern.
     model_finished is structural — this checks whether real artifacts were produced.
+
+    contract_receipts: optional receipts from the pre-loop contract runner pass
+    (aios_head.py compile_goal path). If receipts show write success, passes audit.
     """
     writes = [e for e in trajectory if e.get("tool") in _WRITE_TOOLS and e.get("status") == "ok"]
     reads = [e for e in trajectory if e.get("tool") in _READ_TOOLS and e.get("status") == "ok"]
     tool_calls = len(trajectory)
-    passed = len(writes) > 0 or (tool_calls > 0 and len(reads) > 0)
+
+    # Count contract runner receipts as write evidence
+    runner_writes = [r for r in (contract_receipts or []) if r.get("ok") or r.get("status") == "passed"]
+    passed = (
+        len(writes) > 0
+        or (tool_calls > 0 and len(reads) > 0)
+        or len(runner_writes) > 0
+    )
+    note = (
+        "artifacts_produced" if writes
+        else ("contract_runner_artifacts" if runner_writes
+              else ("read_only_run" if reads
+                    else "no_tool_evidence"))
+    )
     return {
         "passed": passed,
         "evidence_writes": len(writes),
         "evidence_reads": len(reads),
-        "checklist_note": (
-            "artifacts_produced" if writes
-            else ("read_only_run" if reads
-                  else "no_tool_evidence")
-        ),
+        "contract_runner_writes": len(runner_writes),
+        "checklist_note": note,
     }
 
 
@@ -151,7 +165,8 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
              record_sink: Callable[[dict], None] | None = None,
              turn_sink: Callable[[dict], None] | None = None,
              run_log: Path | None = None,
-             session_id: str | None = None) -> dict:
+             session_id: str | None = None,
+             contract_receipts: list[dict] | None = None) -> dict:
     """Run the agent loop. Returns a structured outcome with a named exit.
 
     turn_sink (optional) receives per-turn `turn_context` + each `trajectory` entry as
@@ -184,7 +199,7 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
             history.append({"role": "assistant", "turn": turn, "tools": [c.name for c in calls]})
 
             if not calls:                                   # model finished — structural terminal
-                audit = _completion_audit(trajectory)
+                audit = _completion_audit(trajectory, contract_receipts=contract_receipts)
                 outcome = {"exit": "model_finished", "turns": turn, "trajectory": trajectory,
                            "completion_audit": audit}
                 break

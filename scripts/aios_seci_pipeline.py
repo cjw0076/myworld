@@ -27,12 +27,7 @@ sys.path.insert(0, str(MEMORYOS_ROOT))
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _load_behavior():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        "aios_agent_behavior", ROOT / "scripts" / "aios_agent_behavior.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    import aios_agent_behavior as mod
     return mod
 
 
@@ -72,7 +67,7 @@ def _pattern_to_draft(pattern: dict) -> dict[str, Any]:
     tools = list((pattern.get("tool_freq") or {}).keys())[:5]
     loop_type = pattern.get("loop_type", "unknown")
     category = pattern.get("category", "unknown")
-    content_lines = pattern.get("content", "")[:200]
+    content_lines = pattern.get("content", "")[:500].replace("\n", " ")
 
     content = (
         f"Agent behavior pattern: category={category} loop_type={loop_type}\n"
@@ -90,37 +85,62 @@ def _pattern_to_draft(pattern: dict) -> dict[str, Any]:
     }
 
 
+def _pattern_score(m: dict) -> float:
+    """Composite pattern quality: frequency-dominant + diversity + confidence."""
+    freq = m.get("tool_freq") or {}
+    diversity = len(set(freq.keys()))
+    frequency = sum(freq.values())
+    confidence = m.get("confidence", 0.5)
+    return diversity * 0.3 + frequency * 0.5 + confidence * 0.2
+
+
 def phase_e(memories: list[dict], *, dry_run: bool = False,
             max_drafts: int = 5) -> list[str]:
     """Externalize top behavior patterns → MemoryOS drafts.
 
     Returns list of created draft IDs (or dry-run placeholders).
+    Dedup guard: skips patterns whose source_run_id was already submitted.
     """
     write_draft = _load_memoryos()
     if write_draft is None:
         print("  [E] MemoryOS unavailable — skipping externalization", file=sys.stderr)
         return []
 
-    # Select top patterns: clean (not doom_loop), highest tool diversity
-    clean = [m for m in memories if m.get("loop_type") != "doom_loop"]
-    top = sorted(
-        clean,
-        key=lambda m: len(set((m.get("tool_freq") or {}).keys())),
-        reverse=True,
-    )[:max_drafts]
+    # Dedup guard: load previously submitted pattern IDs
+    _submitted_path = MEMORYOS_ROOT / ".seci_submitted.json"
+    submitted: set[str] = set()
+    if _submitted_path.exists():
+        try:
+            submitted = set(json.loads(_submitted_path.read_text()).get("ids", []))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Select top patterns: clean (not doom_loop), composite quality score
+    clean = [m for m in memories if m.get("loop_type") != "doom_loop"
+             and m.get("id") not in submitted]
+    top = sorted(clean, key=_pattern_score, reverse=True)[:max_drafts]
 
     draft_ids: list[str] = []
     for pat in top:
         payload = _pattern_to_draft(pat)
+        pat_id = pat.get("id", "")
         if dry_run:
-            draft_ids.append(f"dry:{pat.get('id', '?')[:12]}")
+            draft_ids.append(f"dry:{pat_id[:12]}")
             print(f"  [E dry] would draft: {payload['content'][:80]}", file=sys.stderr)
             continue
         result = write_draft(MEMORYOS_ROOT, **payload)
         if result.get("status") == "ok":
             draft_ids.append(result.get("id", "?"))
+            submitted.add(pat_id)
         else:
             print(f"  [E] draft failed: {result.get('error', result)}", file=sys.stderr)
+
+    # Persist dedup manifest
+    if not dry_run and draft_ids:
+        try:
+            _submitted_path.write_text(json.dumps({"ids": sorted(submitted)}))
+        except OSError:
+            pass
 
     return draft_ids
 
@@ -135,6 +155,12 @@ def phase_c(*, dry_run: bool = False) -> dict[str, Any]:
         return {"accepted": [], "rejected": [], "queued": []}
 
     result = auto_review(MEMORYOS_ROOT, dry_run=dry_run)
+    if isinstance(result, dict):
+        return {
+            "accepted": result.get("accepted", []),
+            "rejected": result.get("rejected", []),
+            "queued": result.get("queued", []),
+        }
     return {
         "accepted": getattr(result, "accepted", []),
         "rejected": getattr(result, "rejected", []),
@@ -180,12 +206,18 @@ def run_cycle(provider: str = "claude", dry_run: bool = False,
         file=sys.stderr,
     )
 
-    # I
+    # I — derive context + candidates from cycle output for real feedback loop
     print("[SECI] I — Internalization: verifying predict_behavior...", file=sys.stderr)
-    prediction = phase_i(
-        context=verify_context,
-        candidates=["Edit", "Read", "Write", "Bash", "WebSearch"],
-    )
+    # Candidates: tools actually observed in S phase
+    observed_tools: set[str] = set()
+    for m in memories:
+        observed_tools.update((m.get("tool_freq") or {}).keys())
+    i_candidates = list(observed_tools)[:8] or ["Edit", "Read", "Write", "Bash", "WebSearch"]
+    # Context: from accepted memory content if available, else default
+    i_context = verify_context
+    if review["accepted"]:
+        i_context = f"acting on newly promoted memory — {review['accepted'][0]}"
+    prediction = phase_i(context=i_context, candidates=i_candidates)
     ranked = prediction.get("ranked") or [{}]
     top = ranked[0]
     print(f"  [I] top prediction: {top.get('action')} score={top.get('score')}", file=sys.stderr)
