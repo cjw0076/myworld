@@ -2445,3 +2445,48 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation:
   이전: "early_exit_hint 제거로 write goal 해결 가능" → 수정: 제거 부족, 적극적 강제 필요.
   _FS_KEYWORDS로 suppression은 필요조건이지 충분조건 아님.
+
+## 2026-06-21 (3차 루프, 컨텍스트 재개) KST — claude@myworld — dispatch_state released-event bug + contract unblocking
+
+- session_id: loop-iter-2026-06-21-compact-resume
+- mode_breakdown: observe:3 verify:4 decide:3 intervene:5 escalate:1 (20min)
+- tools_used: Read, Edit, Bash (pytest, python -c, aios_loop once, aios_round_controller once), git commit
+- tools_NOT_used: no 4-OS ritual (context budget tight; standing state verified via code read)
+- substrate_specific_behaviors_observed:
+  DISPATCH_STATE_TERMINAL_BUG: released event never handled in dispatch_state().
+    Once held, terminal stayed True forever even after operator ran `aios_dispatch.py release`.
+    Fix: add elif event=="released": state["terminal"]=False. Classic append-log
+    event sourcing trap — state must handle all transition events, not just forward ones.
+  REPOS_BULLET_LIST_FORMAT: extract_bullet_list() requires standalone "repos:" line +
+    "- item" bullets. Prose format "repos: `a`, `b`" falls to infer_inline_repos()
+    which produces garbage tokens. Fixed ASC-0180 contract.
+  CONTRACT_CLOSE_WITHOUT_VERDICT: Hive deliberation contract (ASC-0180) can be CLOSED
+    as dispatch-complete while leaving the DECISION itself open for founder. Two layers:
+    operator controls dispatch lifecycle; founder controls verdict acceptance.
+    Closing the contract unblocks the round_controller without silently deciding the verdict.
+- failures_recovered:
+  ASC-0180 stuck at policy_held_checkpoint even after collect+release → traced to
+  dispatch_state() released-event gap → fixed aios_loop.py → verified terminal:False.
+  ASC-0180 checkpoint_missing_repos after terminal fix → prose repos format → bullet-list fix.
+  All 40 tests pass after both fixes (no regressions).
+- failures_escalated_to_founder:
+  ASC-0180 hosting verdict (GO/HOLD/NO-GO for non-localhost AIOS surface) still open.
+  Contract closing_note documents the open checkpoint.
+- key_decision:
+  Close ASC-0180 as dispatch-done; leave founder hosting checkpoint open in closing_note.
+  This is "close the pipe, not the question" pattern — avoids keeping dispatch table dirty
+  just because a policy decision is pending.
+- new_invariant_or_pattern_discovered:
+  CLOSE_PIPE_NOT_QUESTION: When an operator dispatch is complete but the downstream
+    DECISION requires higher authority (founder/board), close the dispatch contract as
+    "deliberation done" with an explicit founder checkpoint in closing_note. Don't hold
+    the dispatch table open waiting for a verdict. The decision trail lives in the contract;
+    the pipe is unblocked.
+  EVENT_SOURCING_MUST_HANDLE_ALL_TRANSITIONS: In append-log event systems, every forward
+    state transition must have a corresponding reverse/reset event handler. Missing
+    "released" handler here caused terminal state to become sticky. Pattern: any event
+    that transitions state TO terminal must have a paired event that transitions AWAY from it.
+- self-correction-of-prior-observation:
+  Prior plan treated ASC-0180 as "needs founder before any close" → corrected:
+  dispatch lifecycle (close) and verdict lifecycle (founder) are separate; can and should close
+  dispatch once both results are collected.
