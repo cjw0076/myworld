@@ -972,6 +972,35 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     preamble["capability_status"] = "ok"
     preamble["top_capability"] = preamble["capability_recommendation"].get("provider_hint")
 
+    # Domain tool shortcut: if CapabilityOS routes to a cap_tool_* card, execute
+    # via domain.run without burning sampler turns. cap_bridge returns "recommended_tools"
+    # (list of IDs); also check preamble["top_capability"] for CLI-sourced routing.
+    # Falls through to sampler loop on any failure or non-domain routing.
+    tools_mod = _load("aios_tools")
+    _cap_rec = preamble.get("capability_recommendation", {})
+    _recommended = _cap_rec.get("recommended_tools") or []
+    _top_cap_id = (
+        next((t for t in _recommended if str(t).startswith("cap_tool_")), None)
+        or (preamble.get("top_capability") or "")
+    )
+    if str(_top_cap_id).startswith("cap_tool_"):
+        _domain_result = tools_mod._h_domain_run({"task": goal})
+        if _domain_result.get("status") == "ok":
+            _result = {
+                "exit": "model_finished",
+                "turns": 1,
+                "tool_calls": 1,
+                "trajectory": [{"turn": 1, "tool": "domain.run",
+                                "status": "ok", "result": _domain_result}],
+                "final_answer": json.dumps(
+                    _domain_result.get("result", _domain_result), ensure_ascii=False),
+            }
+            _postamble = _organ_postamble(goal, _result, root, run_id=run_id)
+            return {**_result, "run_id": run_id,
+                    "organic_pipeline": {"preamble": preamble, "postamble": _postamble,
+                                         "domain_shortcut": True,
+                                         "routed_to": _top_cap_id}}
+
     # Inject preamble context into sampler's genesis_hint if sampler supports it.
     # Sampler may expose a _preamble_ref dict updated after construction.
     _pref = getattr(sampler, "_preamble_ref", None)

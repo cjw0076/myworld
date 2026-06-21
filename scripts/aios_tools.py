@@ -47,6 +47,7 @@ TOOL_SPEC: dict[str, tuple[str, str, str]] = {
     "note.write":        ("write", "propose_contract", 'Save a note. Args: {"title":"<title>","content":"<text up to 2000 chars>"}'),
     "stakes.record":     ("write", "propose_contract", 'Record a proposal. Args: {"claim":"<proposal>","confidence":0.8}'),
     "fs.write":          ("write", "commit_to_child_repo", 'Write a file (requires authority). Args: {"path":"...","content":"..."}'),
+    "domain.run":        ("advisory", "", 'Run a domain AI tool (fraud, attrition, energy, farm, etc.). Args: {"task":"<natural language task>"}'),
 }
 
 
@@ -478,12 +479,47 @@ def _h_fs_write(a: dict) -> dict:
     return {"status": "ok", "path": rel, "bytes": len(content.encode("utf-8"))}
 
 
+def _h_domain_run(a: dict) -> dict:
+    """Route a natural-language task to a domain tool (FinanceMind, HRMind, etc.) via
+    aios_tool_executor. Returns structured JSON output from the domain model.
+    Advisory class: runs local scripts with no workspace writes.
+    Args: {"task": "<natural language task description>"}
+    """
+    task = str(a.get("task", "")).strip()
+    if not task:
+        return {"status": "empty_task", "note": "Provide a task description."}
+    try:
+        import importlib.util as _ilu
+        spec = _ilu.spec_from_file_location(
+            "aios_tool_executor", ROOT / "scripts" / "aios_tool_executor.py")
+        executor = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(executor)
+        result = executor.run(task=task)
+        routed = result.get("routed_to", "")
+        cap_result = result.get("result", {})
+        exec_status = cap_result.get("_executor", {}).get("status", "")
+        if result.get("status") == "no_executable_match":
+            return {"status": "no_match", "top_recommendations": result.get("top_recommendations", []),
+                    "note": result.get("note", "")}
+        if exec_status == "ok":
+            summary = {k: v for k, v in cap_result.items() if not k.startswith("_")}
+            return {"status": "ok", "routed_to": routed,
+                    "route_score": result.get("route_score"),
+                    "capability": result.get("capability"),
+                    "result": summary}
+        return {"status": cap_result.get("status", "error"), "routed_to": routed,
+                "detail": cap_result}
+    except Exception as exc:  # noqa: BLE001
+        return {"status": "unavailable", "reason": str(exc)[:120]}
+
+
 HANDLERS = {
     "memory.retrieve": _h_retrieve, "capability.route": _h_route,
     "genesis.challenge": _h_challenge, "self.audit": _h_self_audit,
     "interior.read": _h_interior, "stakes.record": _h_stakes,
     "fs.list": _h_fs_list, "fs.read": _h_fs_read, "fs.write": _h_fs_write,
     "web.search": _h_web_search, "web.fetch": _h_web_fetch, "note.write": _h_note_write,
+    "domain.run": _h_domain_run,
 }
 
 
