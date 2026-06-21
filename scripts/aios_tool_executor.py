@@ -52,12 +52,16 @@ def _gridmind_args(task: str) -> list[str]:
 def _farmmind_args(task: str) -> list[str]:
     return [sys.executable, str(SCRIPTS / "farmmind.py"), "--json"]
 
+def _hrmind_args(task: str) -> list[str]:
+    return [sys.executable, str(SCRIPTS / "hrmind.py"), "--json"]
+
 TOOL_REGISTRY: dict[str, Any] = {
     "cap_tool_financemind":   _financemind_args,
     "cap_tool_logisticsmind": _logisticsmind_args,
     "cap_tool_cybersentinel": _cybersentinel_args,
     "cap_tool_gridmind":      _gridmind_args,
     "cap_tool_farmmind":      _farmmind_args,
+    "cap_tool_hrmind":        _hrmind_args,
 }
 
 
