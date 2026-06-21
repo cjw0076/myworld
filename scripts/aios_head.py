@@ -305,6 +305,14 @@ _FS_KEYWORDS = frozenset([
     "폴더", "읽어", "써줘", "만들어", "삭제", "이동", "복사",
     "ls", "find ", "cat ", "mkdir", "rm ", "cp ", "mv ",
     "scripts/", "docs/", "tests/", ".py", ".md", ".json",
+    # write/doc tasks — goal says produce a file/doc, must call a write tool
+    "document", "문서", "문서화", "작성", "써", "기록", "저장", "정리",
+    "analyze and", "분석하고", "요약하고", "정리하고", "출력해", "출력하",
+])
+
+_WRITE_GOAL_KEYWORDS = frozenset([
+    "document", "write", "create", "문서화", "작성", "써", "저장", "정리",
+    "analyze and", "분석하고", "정리하고",
 ])
 
 
@@ -376,6 +384,7 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
                               "Pick a DIFFERENT tool next.\n")
         # Suppress early-exit for filesystem/state goals: they must call a tool first.
         _fs_goal = _goal_needs_filesystem(goal)
+        _write_goal = any(kw in goal.lower() for kw in _WRITE_GOAL_KEYWORDS)
         early_exit_hint = (
             '' if _fs_goal else
             'If this goal is PURELY a general-knowledge question '
@@ -383,6 +392,15 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             'inspect files, directories, or real-time system state — '
             'emit {"done":true} immediately.\n'
         ) if turn_num == 0 else ""
+        # Force tool call for write/document goals: model must not emit done:true
+        # without first calling a write/memory tool.
+        write_force_hint = ""
+        if _write_goal and turn_num == 0:
+            write_force_hint = (
+                "MANDATORY: this goal requires producing a written artifact. "
+                "You MUST call memory.write or a write-capable tool BEFORE emitting done:true. "
+                "Do NOT emit done:true on turn 0 for a write/document/analyze-and goal.\n"
+            )
         # GenesisOS + CapabilityOS env context from preamble ref
         _pref_data = getattr(sampler, "_preamble_ref", {}) if callable(sampler) else {}
         _escapes = (_pref_data or {}).get("genesis_escape_vectors", [])
@@ -407,6 +425,7 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             goal_line
             + "You are the AIOS agent turn-loop. Available tools:\n" + active_catalog + "\n"
             + early_exit_hint
+            + write_force_hint
             + env_hint
             + "STRATEGY: For questions about AIOS, its tools, architecture, or internal state — "
             "call memory.retrieve FIRST to recall stored knowledge before searching the web or reading files.\n"
