@@ -426,10 +426,56 @@ def _h_note_write(a: dict) -> dict:
     return {"status": "ok", "path": f".aios/notes/{fname}", "bytes": len(content)}
 
 
+_ALWAYS_DENY_PREFIXES = ("_from_desktop/", "dain/", "minyoung/", ".aios/secrets/",
+                         "_from_desktop\\", "dain\\", "minyoung\\")
+
+
 def _h_fs_write(a: dict) -> dict:
-    # the gate decides IF this runs; the handler records intent (real write wiring is
-    # the contract_runner's backed-up syscall — kept behind the gate here)
-    return {"status": "ok", "would_write": str(a.get("path", ""))[:80]}
+    """Write a file inside the workspace. Gate-enforced: only runs when authority allows.
+
+    Privacy invariant (DNA #7): paths starting with _from_desktop/, dain/, minyoung/,
+    or .aios/secrets/ are always denied regardless of gate decision.
+    Append-only audit (DNA #3): previous content backed up to <path>.bak.<n> before overwrite.
+    """
+    raw_path = str(a.get("path", "")).strip()
+    if not raw_path:
+        return {"status": "empty_path"}
+
+    # Privacy hard stop — even if gate says allow
+    for prefix in _ALWAYS_DENY_PREFIXES:
+        if raw_path.startswith(prefix) or ("/" + prefix) in raw_path:
+            return {"status": "denied", "reason": "privacy_boundary"}
+
+    content = str(a.get("content", ""))
+    if not content.strip():
+        return {"status": "empty_content"}
+
+    p = (ROOT / raw_path).resolve()
+    # Scope check: must be inside workspace root
+    try:
+        p.relative_to(ROOT)
+    except ValueError:
+        return {"status": "denied_scope", "reason": "outside workspace root"}
+
+    # Secondary privacy check on resolved path
+    rel = str(p.relative_to(ROOT))
+    for prefix in _ALWAYS_DENY_PREFIXES:
+        if rel.startswith(prefix):
+            return {"status": "denied", "reason": "privacy_boundary"}
+
+    # Backup existing file (append-only audit — DNA #3)
+    if p.exists():
+        n = 0
+        while (bak := p.with_suffix(f".bak.{n}")).exists():
+            n += 1
+        try:
+            bak.write_text(p.read_text(encoding="utf-8", errors="replace"), encoding="utf-8")
+        except OSError:
+            pass  # backup is best-effort
+
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(content, encoding="utf-8")
+    return {"status": "ok", "path": rel, "bytes": len(content.encode("utf-8"))}
 
 
 HANDLERS = {

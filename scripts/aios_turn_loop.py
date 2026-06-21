@@ -86,7 +86,8 @@ def default_gate(name: str, arguments: dict) -> str:
     return DENY
 
 
-_WRITE_TOOLS = frozenset({"Write", "Edit", "aios_observe", "aios_ingest_cli_session"})
+_WRITE_TOOLS = frozenset({"Write", "Edit", "aios_observe", "aios_ingest_cli_session",
+                          "fs.write", "note.write", "stakes.record"})
 _READ_TOOLS = frozenset({"Read", "aios_retrieve", "aios_route"})
 
 
