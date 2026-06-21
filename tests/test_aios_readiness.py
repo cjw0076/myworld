@@ -10,45 +10,61 @@ SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "aios_readiness.py"
 
 
 def write_l6_fixture(root: Path) -> None:
+    # L0: definition
     (root / "docs" / "contracts").mkdir(parents=True)
     (root / "docs" / "AIOS_DEFINITION.md").write_text("# AIOS Definition\n", encoding="utf-8")
-    (root / "scripts").mkdir()
-    (root / "scripts" / "aios_child_watcher.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
-    (root / "scripts" / "aios_pingpong.sh").write_text("#!/usr/bin/env bash\n", encoding="utf-8")
-    for idx in range(1, 7):
-        contract = root / "docs" / "contracts" / f"ASC-{idx:04d}-fixture.md"
-        contract.write_text(
-            f"---\ncontract_id: ASC-{idx:04d}\nstatus: closed\n---\n",
-            encoding="utf-8",
-        )
+
+    # L1: at least one contract
+    (root / "docs" / "contracts" / "ASC-0099-fixture.md").write_text(
+        "---\ncontract_id: ASC-0099\nstatus: closed\n---\n", encoding="utf-8"
+    )
+
+    # L2/L3: dispatch events for all 3 organs
     state = root / ".aios" / "state"
     state.mkdir(parents=True)
     events = [
         {"event": "sent", "dispatch_id": "a", "repo": "hivemind"},
         {"event": "sent", "dispatch_id": "b", "repo": "memoryOS"},
         {"event": "sent", "dispatch_id": "c", "repo": "CapabilityOS"},
-        {"event": "collected", "dispatch_id": "a", "repo": "hivemind", "result": ".aios/outbox/hivemind/a.json"},
+        {"event": "collected", "dispatch_id": "a", "repo": "hivemind",
+         "result": ".aios/outbox/hivemind/a.json"},
     ]
     (state / "dispatches.jsonl").write_text(
-        "\n".join(json.dumps(row) for row in events) + "\n",
-        encoding="utf-8",
+        "\n".join(json.dumps(row) for row in events) + "\n", encoding="utf-8"
     )
+
+    # L4: passing result packet
     outbox = root / ".aios" / "outbox" / "hivemind"
     outbox.mkdir(parents=True)
     (outbox / "a.json").write_text(
-        json.dumps(
-            {
-                "schema_version": "aios.dispatch.result.v1",
-                "target_repo": "hivemind",
-                "dispatch_id": "a",
-                "contract_id": "ASC-0001",
-                "status": "passed",
-                "evidence": [],
-                "stop_conditions_triggered": [],
-            }
-        ),
+        json.dumps({
+            "schema_version": "aios.dispatch.result.v1",
+            "target_repo": "hivemind",
+            "dispatch_id": "a",
+            "contract_id": "ASC-0099",
+            "status": "passed",
+            "evidence": [],
+            "stop_conditions_triggered": [],
+        }),
         encoding="utf-8",
     )
+
+    # L5: organ implementation artifacts
+    scripts = root / "scripts"
+    scripts.mkdir(exist_ok=True)
+    (scripts / "aios_capabilityos_bridge.py").write_text("# fixture\n", encoding="utf-8")
+    (scripts / "aios_harness.py").write_text("# fixture\n", encoding="utf-8")
+    (scripts / "aios_role_router.py").write_text("# fixture\n", encoding="utf-8")
+    (root / "memoryOS" / "memoryos").mkdir(parents=True)
+    (root / "memoryOS" / "memoryos" / "__init__.py").write_text("", encoding="utf-8")
+
+    # L6: kernel head + turn loop + live-execute proof + canonical docs
+    (scripts / "aios_head.py").write_text("# fixture\n", encoding="utf-8")
+    (scripts / "aios_turn_loop.py").write_text("# fixture\n", encoding="utf-8")
+    docs = root / "docs"
+    (docs / "AIOS_GETTING_STARTED.md").write_text("# fixture\n", encoding="utf-8")
+    (docs / "AIOS_CANONICAL_SHAPE.md").write_text("# fixture\n", encoding="utf-8")
+    (docs / "aios-standards.md").write_text("# fixture\n", encoding="utf-8")
 
 
 class AiosReadinessTest(unittest.TestCase):

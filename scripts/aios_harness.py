@@ -384,10 +384,32 @@ TOOL_REGISTRY: dict[str, dict] = {
     },
 }
 
+# Alias map: planner uses fs.* naming; harness TOOL_REGISTRY uses Claude-style names.
+_TOOL_ALIAS: dict[str, str] = {
+    "fs.read":    "Read",
+    "fs.write":   "Write",
+    "fs.list":    "Bash",     # fs.list → Bash ls equivalent
+    "fs.delete":  "Bash",
+    "fs.move":    "Bash",
+    "web":        "WebSearch",
+    "web.search": "WebSearch",
+    "web.fetch":  "WebSearch",
+    "bash":       "Bash",
+    "read":       "Read",
+    "write":      "Write",
+    "edit":       "Edit",
+}
+
+
+def _resolve_tool_name(name: str) -> str:
+    """Normalize planner tool names (fs.read, web, …) to TOOL_REGISTRY keys."""
+    return _TOOL_ALIAS.get(name, name)
+
 
 # ── Gate: auth based on risk ──────────────────────────────────────────────────
 
 def default_gate(name: str, arguments: dict, dry_run: bool = False) -> str:
+    name = _resolve_tool_name(name)
     spec = TOOL_REGISTRY.get(name)
     if spec is None:
         return "deny"
@@ -465,7 +487,7 @@ def _parse_react(text: str) -> list[tuple[str, dict]] | None:
             pass
         return None
 
-    tool = m_action.group(1)
+    tool = _resolve_tool_name(m_action.group(1))
     if tool not in TOOL_REGISTRY:
         # Model hallucinated a tool name — treat as done
         return None
