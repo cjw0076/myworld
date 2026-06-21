@@ -1,8 +1,11 @@
 ---
 contract_id: ASC-0271
 slug: dream-hardening-invariant-pack
-status: accepted
+status: closed
 accepted: 2026-06-14T03:10:00+09:00
+closed: 2026-06-21T11:02:00+09:00
+closed_by: claude@myworld
+closing_note: Hardening invariant pack authored in this contract. 4 invariants defined with stop conditions and anti-pattern tables. Growth rails enacted. Goal met.
 goal: Harden the ASC-0270 dream expansion map into bounded invariants, stop conditions, owner-bound follow-on contracts, and sequencing gates so AIOS can grow aggressively without becoming unsafe, vague, provider-locked, or local-demo-only.
 created: 2026-06-14T02:35:00+09:00
 parent: ASC-0270
@@ -11,6 +14,11 @@ aux_ref: docs/contracts/ASC-0271-aios-growth-hardening-invariant-pack.md
 ---
 
 # ASC-0271 Dream Hardening Invariant Pack
+
+## Scope
+
+repos:
+- myworld
 
 ## Semantic Handshake
 

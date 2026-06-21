@@ -1,9 +1,12 @@
 ---
 contract_id: ASC-0214
 slug: aios-dogfooding-gap
-status: accepted
+status: closed
 created: 2026-05-20 KST
 accepted: 2026-05-20 KST
+closed: 2026-06-21T11:00:00+09:00
+closed_by: claude@myworld
+closing_note: SECI pipeline (scripts/aios_seci_pipeline.py) closes the dogfooding gap — phase_e externalizes agent behavior patterns from sessions to MemoryOS drafts, phase_i uses promoted memories for prediction. aios_turn_loop.completion_audit uses behavior data. Goal met via implementation.
 proposed_by: claude@myworld
 acceptance_authority: founder 재원 — 2026-05-20 sharp signal #5 verdict "AIOS가 자기 routine 출력을 안 쓰는 dogfooding gap 수정" 선택.
 origin: ASC-0211 L3 routine #3 (frontier_question) 가 3개 reference 메모 (reference_discomfort_routine_first_signal, reference_convergence_audit_routine, reference_aios_as_package_design) 가 *contract 에서 인용 안 됨* 발견. 우리가 자기 routines 의 output 을 contract action 으로 변환 안 하고 있음.
@@ -98,7 +101,8 @@ rare seeds labeled for the right season.
 
 ## Scope
 
-repos: `myworld` only.
+repos:
+- myworld
 
 ## Sibling contracts
 

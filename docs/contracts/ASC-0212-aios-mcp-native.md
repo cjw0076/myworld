@@ -60,8 +60,10 @@ closed when:
 
 ## Scope
 
-repos: `myworld` (contract + integration tests), `memoryOS` (mcp server
-검증), `CapabilityOS` (mcp server 신규), `hivemind` (optional 3rd).
+repos:
+- myworld
+- memoryOS
+- CapabilityOS
 
 ## First slice (this iter)
 

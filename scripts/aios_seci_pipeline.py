@@ -95,11 +95,12 @@ def _pattern_score(m: dict) -> float:
 
 
 def phase_e(memories: list[dict], *, dry_run: bool = False,
-            max_drafts: int = 5) -> list[str]:
+            max_drafts: int = 5, _submitted_path: "Path | None" = None) -> list[str]:
     """Externalize top behavior patterns → MemoryOS drafts.
 
     Returns list of created draft IDs (or dry-run placeholders).
     Dedup guard: skips patterns whose source_run_id was already submitted.
+    _submitted_path: override for testing (default: MEMORYOS_ROOT/.seci_submitted.json).
     """
     write_draft = _load_memoryos()
     if write_draft is None:
@@ -107,7 +108,7 @@ def phase_e(memories: list[dict], *, dry_run: bool = False,
         return []
 
     # Dedup guard: load previously submitted pattern IDs
-    _submitted_path = MEMORYOS_ROOT / ".seci_submitted.json"
+    _submitted_path = _submitted_path if _submitted_path is not None else (MEMORYOS_ROOT / ".seci_submitted.json")
     submitted: set[str] = set()
     if _submitted_path.exists():
         try:

@@ -61,11 +61,14 @@ class TestPhaseEPatternToDraft(unittest.TestCase):
         fake_write.assert_not_called()
 
     def test_phase_e_live_calls_write_draft(self):
+        import tempfile, pathlib
         fake_write = mock.Mock(return_value={"status": "ok", "id": "mem-xyz"})
-        with mock.patch("aios_seci_pipeline._load_memoryos", return_value=fake_write):
-            mems = [{"id": "p1", "loop_type": "react_code",
-                     "tool_freq": {"Edit": 2, "Read": 1, "Bash": 1}, "content": "test ctx"}]
-            ids = seci.phase_e(mems, dry_run=False)
+        with tempfile.TemporaryDirectory() as td:
+            isolated_path = pathlib.Path(td) / ".seci_submitted.json"
+            with mock.patch("aios_seci_pipeline._load_memoryos", return_value=fake_write):
+                mems = [{"id": "p1", "loop_type": "react_code",
+                         "tool_freq": {"Edit": 2, "Read": 1, "Bash": 1}, "content": "test ctx"}]
+                ids = seci.phase_e(mems, dry_run=False, _submitted_path=isolated_path)
         self.assertEqual(ids, ["mem-xyz"])
         fake_write.assert_called_once()
 

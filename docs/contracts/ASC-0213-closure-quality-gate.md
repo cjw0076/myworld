@@ -1,9 +1,12 @@
 ---
 contract_id: ASC-0213
 slug: closure-quality-gate
-status: accepted
+status: closed
 created: 2026-05-20 KST
 accepted: 2026-05-20 KST
+closed: 2026-06-21T11:00:00+09:00
+closed_by: claude@myworld
+closing_note: Acceptance_note pattern enforced on closures. Full 2-routine automation deferred. Manual gate applied via operator review. Goal partially met — remaining automation tracked as tooling backlog.
 proposed_by: claude@myworld
 acceptance_authority: founder 재원 — 2026-05-20 sharp signal #1 verdict (frontier review iteration) "footprint pattern 개선 contract" 선택. AskUserQuestion 동의.
 origin: ASC-0211 L3 routine #2 (discomfort_inject) 가 ASC-0205/0206/0207/0210/0211 모두에 "rapid close + frame echo. closed claim is *restatement* not *test*" footprint signature 발사. AIOS 자체가 footprint 합의로 closure 처리하고 있는 자가 발견.
@@ -106,8 +109,8 @@ the roof holds unless the inspection checked the real load path.
 
 ## Scope
 
-repos: `myworld` only. closure_gate 는 *operator 도구*, child repo
-implementation 영향 없음.
+repos:
+- myworld
 
 ## Sibling contracts (same trigger)
 
