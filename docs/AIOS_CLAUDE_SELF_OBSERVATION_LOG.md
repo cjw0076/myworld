@@ -2413,3 +2413,35 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation:
   이전 관찰: "readiness check로 현재 레벨 파악" → 수정: "readiness check 자체가 구식일 수 있음;
   metric과 코드 둘 다 검증". metric이 code보다 느린 것이 이번 루프의 핵심 발견.
+
+## 2026-06-21 (2차 루프) KST — claude@myworld — ReAct exit-too-early fix + completion_audit contract_receipts
+
+- session_id: loop-iter-2026-06-21-iter2
+- mode_breakdown: observe:2 verify:3 decide:2 intervene:3 escalate:0 (20min)
+- tools_used: Read, Edit, Bash (pytest, python -c, aios_head.py --loop live)
+- tools_NOT_used: none significant
+- substrate_specific_behaviors_observed:
+  REACT_WRITE_GOAL_FORCE: 문서화/작성 goal에서 모델이 early_exit_hint를 잘못 적용해
+    turn 0에서 도구 없이 {"done":true} 반환. _FS_KEYWORDS에 한국어 쓰기 동사 추가 +
+    write_force_hint로 "MUST call write tool before done:true" 강제 → 2 tool calls 확인.
+  CONTRACT_RECEIPTS_NOT_IN_REACT_TRAJECTORY: contract_runner가 --loop 전에 파일을 쓰면
+    그 write가 trajectory에 안 남아 completion_audit이 no_tool_evidence로 오판.
+    contract_receipts 파라미터로 audit에 별도 전달하는 패턴으로 해결.
+  EFFECTIVE_VS_RAW_STATUS_DIVERGENCE: memoryOS objects.jsonl에 360 draft가 있어도
+    reviews.jsonl 적용 후 effective status는 0 draft (모두 이미 처리). CLI는 effective를
+    보여주므로 raw jsonl count ≠ actionable items.
+- failures_recovered:
+  aios_head --loop 0 tool calls: _FS_KEYWORDS 미스 → 한국어 write 동사 추가.
+  completion_audit false negative: contract_receipts 파라미터 추가로 해결.
+  SECI _load_behavior importlib 불필요 overhead: 직접 import로 교체.
+- failures_escalated_to_founder: none
+- key_decision: contract_receipts를 optional param으로 추가 (run_loop signature extension).
+  Turn loop의 contract_runner path와 ReAct path가 parallel하다는 아키텍처 명시.
+- new_invariant_or_pattern_discovered:
+  WRITE_GOAL_FORCE_HINT: write/document goal에는 "MUST call write tool" 강제 힌트가
+    early_exit_hint 억제만으로는 부족. 적극적 강제가 필요.
+  AUDIT_MUST_ACCEPT_EXTERNAL_RECEIPTS: completion_audit은 ReAct trajectory뿐 아니라
+    pre-loop execution (contract_runner, planner) 결과도 evidence로 받아야 함.
+- self-correction-of-prior-observation:
+  이전: "early_exit_hint 제거로 write goal 해결 가능" → 수정: 제거 부족, 적극적 강제 필요.
+  _FS_KEYWORDS로 suppression은 필요조건이지 충분조건 아님.
