@@ -523,8 +523,13 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
     system_prompt = _REACT_SYSTEM.format(tools=tool_desc)
     first_turn = True
 
-    # Resolve the dispatch function once at sampler-construction time
-    _dispatch = None
+    # Resolve a dispatch CHAIN at construction time: routed provider first, then
+    # local ollama as a backstop. Local-first churn survival (substrate_router
+    # philosophy): if the routed CLI provider (codex/claude/gemini) is unusable in
+    # this environment it returns junk fast, which used to be silently treated as
+    # "model finished" — a 0-tool no-op masquerading as success. The ollama
+    # backstop keeps the organism actually running on the always-on local model.
+    _chain: list[tuple[str, Callable]] = []
     if _agent:
         _runners = getattr(_agent, "_RUNNERS", None)
         if _runners is None:
@@ -535,13 +540,15 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
                 "codex":   getattr(_agent, "_run_codex",  None),
                 "gemini":  getattr(_agent, "_run_gemini", None),
             }
+        _ollama_run = _runners.get("ollama") or getattr(_agent, "_run_ollama", None)
         if provider and provider in _runners and _runners[provider]:
-            _dispatch = _runners[provider]
+            _chain.append((provider, _runners[provider]))
         elif base_url:
-            _dispatch = lambda p: _agent._openai_compat(
-                base_url, model or "local-model", p, api_key=api_key)
-        else:
-            _dispatch = getattr(_agent, "_run_ollama", None)
+            _chain.append(("openai_compat", lambda p: _agent._openai_compat(
+                base_url, model or "local-model", p, api_key=api_key)))
+        # Always backstop with local ollama unless it is already the primary.
+        if _ollama_run and not any(n == "ollama" for n, _ in _chain):
+            _chain.append(("ollama", _ollama_run))
 
     def sampler(history: list[dict]) -> dict:
         nonlocal first_turn
@@ -568,23 +575,36 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
         parts.append("Assistant:")
         prompt = "\n".join(parts)
 
-        # Call LLM via resolved dispatch (Patch 3/3: fail hard on LLM error)
-        if not _dispatch:
+        # Try each substrate in the chain until one yields a usable move.
+        if not _chain:
             raise RuntimeError("no LLM dispatch configured; pass --provider or --base-url")
-        try:
-            text, _ = _dispatch(prompt)
-        except Exception as e:
-            raise RuntimeError(f"LLM dispatch failed: {e}") from e
-        if not text.strip():
-            raise RuntimeError("LLM dispatch returned empty output")
-
-        # Parse
-        parsed = _parse_react(text)
-        if parsed is None:
-            return {"tool_calls": []}
+        # Has the organism done any real work yet? On turn 0 an unparseable reply
+        # means the provider is unusable → fall back. On later turns a no-action
+        # reply is a genuine finish → don't loop substrates.
+        prior_calls = sum(len(h.get("tools", [])) for h in history if h.get("role") == "assistant")
         tl = _load("aios_turn_loop")
-        calls = [tl.ToolCall(name=n, arguments=a) for (n, a) in parsed]
-        return {"tool_calls": calls}
+        last_err = None
+        for i, (_name, _dispatch) in enumerate(_chain):
+            is_last = i == len(_chain) - 1
+            try:
+                text, _ = _dispatch(prompt)
+            except Exception as e:  # noqa: BLE001 — try the next substrate
+                last_err = f"{_name}: {e}"
+                continue
+            if not text or not text.strip():
+                last_err = f"{_name}: empty output"
+                continue
+            parsed = _parse_react(text)
+            if parsed is not None:
+                return {"tool_calls": [tl.ToolCall(name=n, arguments=a) for (n, a) in parsed]}
+            # parsed is None: a genuine finish (explicit final marker, or work already
+            # done, or last substrate) — otherwise turn-0 junk → fall back.
+            if _FINAL_RE.search(text) or prior_calls > 0 or is_last:
+                return {"tool_calls": []}
+            last_err = f"{_name}: unparseable turn-0 output → falling back"
+        # ponytail: all substrates dead on turn 0 → honest no-op; rare (local ollama
+        # almost always answers). Add a louder error exit only if this is ever hit.
+        return {"tool_calls": []}
 
     return sampler
 
