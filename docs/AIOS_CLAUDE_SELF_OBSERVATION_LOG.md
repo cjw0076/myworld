@@ -2490,3 +2490,25 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   Prior plan treated ASC-0180 as "needs founder before any close" → corrected:
   dispatch lifecycle (close) and verdict lifecycle (founder) are separate; can and should close
   dispatch once both results are collected.
+
+## 2026-06-24 KST — claude@myworld — /loop 쇼케이스화 + aios 검증 (5 iter): showcase-readiness hardening
+
+- session_id: /loop 세션, founder 디렉티브 "omc/omx/hermes처럼 선보일 완전한 프로젝트 + 견고하게 + 유기적으로"
+- mode_breakdown: observe:15 / verify:50 / decide:10 / intervene:25 / escalate:0 (분 비율 대략)
+- tools_used: Bash(검증 sweep/curl/git), Edit/Write(수정), WebSearch(peer landscape), memory writes
+- tools_NOT_used (CLI gap): 없음 특이사항 — aios 자체 커맨드로 대부분 검증 가능했음
+- substrate_specific_behaviors_observed:
+  - role_router가 code task를 provider=codex로 라우팅하나, 환경에서 codex CLI 사용불가 시 junk 반환 → parse 실패 → silent model_finished(0 tool). 즉 "라우팅은 됐는데 실행 substrate가 없을 때" 조용히 성공 위장.
+- failures_recovered:
+  - harness silent no-op: make_llm_sampler를 단일 dispatch → [routed, ollama] 체인으로. turn-0 unparseable 시 로컬 ollama 폴백 (commit 6805727).
+  - aios discover: --root required 에러 → cwd 기본값 (6dbb7ac)
+  - aios serve: 포트 사용중 raw traceback → graceful EADDRINUSE + launcher가 bind 확인 후 메시지 (6dbb7ac)
+  - CLI 40-command 블롭 → core/memory/advanced 그룹 help (c4aa81f)
+- failures_escalated_to_founder: 없음 (전부 reversible, carry-risk-decisively)
+- key_decision: fine-tune 질문 → "예, 단 harness 견고화 후·AkashicRecord ledger로·narrow QLoRA"; 순서 중요(모델층 전 harness층).
+- new_invariant_or_pattern_discovered:
+  VERIFY_BY_RUNNING_EACH_COMMAND: 코드 독해가 못 잡는 "존재하지만 안 도는" 기능은 각 커맨드를 실제 실행해야 드러난다. silent no-op은 wall_s=0.05 같은 타이밍 이상으로 귀납 식별. inductive > deductive 재확인.
+  SILENT_PROVIDER_FAILURE_AS_FAKE_SUCCESS: 라우팅된 substrate가 사용불가일 때 빈 출력→"완료"로 위장하는 클래스. 수정 원칙 = 로컬 폴백(churn survival) + turn-0에서만 폴백(후속 턴 no-action은 genuine done).
+  SHOWCASE_IS_CURATION_NOT_ADDITION: presentability는 기능 추가가 아니라 표면 정리(40→core 7) + 정직성(README claim ↔ 실제 일치) 검증.
+- self-correction-of-prior-observation:
+  연구자 프레임(novelty=가치)으로 peer 시스템을 위협으로 본 것 → founder 교정: 같아도 됨, peer 존재=수요검증, moat=ownership. [[feedback_founder_frame_not_researcher_frame]] 신규 기록.
