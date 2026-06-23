@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import webbrowser
 from pathlib import Path
 from typing import Any
@@ -94,6 +95,10 @@ def provider_loop_command(root: Path, argv: list[str]) -> tuple[list[str], Path]
 
 def discover_command(root: Path, argv: list[str]) -> list[str]:
     args = argv if argv and argv[0] in {"scan", "invoke"} else ["scan", *argv]
+    # `scan` requires a target --root; default to the current directory so bare
+    # `aios discover` works instead of erroring on a missing arg the user can't guess.
+    if args and args[0] == "scan" and "--root" not in args:
+        args = [args[0], "--root", Path.cwd().as_posix(), *args[1:]]
     return [sys.executable, (root / "scripts" / "aios_project_discovery.py").as_posix(), "--control-root", root.as_posix(), *args]
 
 
@@ -257,6 +262,14 @@ def _serve(root: Path, argv: list[str]) -> int:
         [sys.executable, str(api_script), "--host", host, "--port", str(opts.port)],
         cwd=root,
     )
+    # Give the API a moment to bind, then confirm it actually came up before
+    # claiming success — otherwise a bind failure (port in use) prints "started"
+    # and lies to the user.
+    time.sleep(1.0)
+    if api_proc.poll() is not None:
+        print(f"[aios serve] API failed to start on :{opts.port} "
+              f"(port in use? try --port). exit={api_proc.returncode}", flush=True)
+        return 1
     print(f"[aios serve] API started on http://{host}:{opts.port}/", flush=True)
 
     tunnel_proc = None

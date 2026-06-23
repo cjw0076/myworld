@@ -10,6 +10,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import errno
 import json
 import sys
 import threading
@@ -473,7 +474,15 @@ def _print_provider_status() -> None:
 
 def serve(host: str = "127.0.0.1", port: int = 8741) -> None:
     # ThreadingHTTPServer: each request gets its own thread — LLM calls don't block other requests
-    server = ThreadingHTTPServer((host, port), Handler)
+    try:
+        server = ThreadingHTTPServer((host, port), Handler)
+    except OSError as exc:
+        if exc.errno == errno.EADDRINUSE:
+            print(f"[aios-serving] port {port} already in use — AIOS may already be "
+                  f"serving at http://{host}:{port}/  (use --port to run a second instance)",
+                  flush=True)
+            raise SystemExit(0)
+        raise
     print(f"[aios-serving] http://{host}:{port}/  (Ctrl-C to stop)", flush=True)
     _print_provider_status()
     try:
