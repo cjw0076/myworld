@@ -318,63 +318,75 @@ def run_delegate(command: list[str], *, cwd: Path) -> int:
     return completed.returncode
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="AIOS global launcher")
-    parser.add_argument("--root", help="AIOS control-plane root. Defaults to nearest ancestor, AIOS_HOME, then launcher-relative root.")
-    parser.add_argument(
-        "cmd",
-        choices=[
-            "root",
-            "demo",
-            "ask",
-            "chat",
-            "status",
-            "step",
-            "run",
-            "submit-goal",
-            "sprint-loop",
-            "provider-loop",
-            "discover",
-            "init",
-            "workbench",
-            "emit-recap",
-            "helper",
-            "dream",
-            "research-fetch",
-            "mcp",
-            "sovereignty",
-            "local-operator",
-            "self-evolve",
-            "verify",
-            "complete",
-            "ingest-conversations",
-            "behavior",
-            "agent",
-            "harness",
-            "librarian",
-            "setup",
-            "capability-feedback",
-            "device-profile",
-            "self-model",
-            "dispatch-reconcile",
-            "jobs",
-            "hooks",
-            "install",
-            "uninstall",
-            "up",
-            "open",
-            "stop",
-            "serve",
-            "do",
-        ],
+# Curated command surface (hermes-style): a tight core up front, the rest grouped.
+# Every command stays functional — grouping only changes how `aios --help` reads.
+_CORE_COMMANDS = [
+    ("do",      "Run a task end-to-end: plan → tools → result"),
+    ("chat",    "Interactive AIOS session"),
+    ("serve",   "Start the local web UI + API (http://localhost:8741)"),
+    ("status",  "Runtime health and findings"),
+    ("demo",    "30-second verifiable-AI demo"),
+    ("ask",     "Single-shot question to the organism"),
+    ("setup",   "Install local models / configure providers"),
+]
+_MEMORY_COMMANDS = [
+    ("behavior",   "Behavioral memory: predict / contribute / status"),
+    ("dream",      "Consolidate memory (dream cycle)"),
+    ("self-model", "What AIOS knows about itself"),
+]
+# Operator / advanced — functional but not front-of-house for new users.
+_ADVANCED_COMMANDS = [
+    "run", "submit-goal", "sprint-loop", "provider-loop", "step", "discover",
+    "init", "workbench", "emit-recap", "helper", "research-fetch", "mcp",
+    "sovereignty", "local-operator", "self-evolve", "verify", "complete",
+    "ingest-conversations", "agent", "harness", "librarian", "capability-feedback",
+    "device-profile", "dispatch-reconcile", "jobs", "hooks", "install",
+    "uninstall", "up", "open", "stop", "root",
+]
+_ALL_COMMANDS = (
+    [n for n, _ in _CORE_COMMANDS]
+    + [n for n, _ in _MEMORY_COMMANDS]
+    + _ADVANCED_COMMANDS
+)
+
+
+def _help_epilog() -> str:
+    def _rows(rows):
+        return "\n".join(f"  {n:<14}{d}" for n, d in rows)
+    return (
+        "core commands:\n" + _rows(_CORE_COMMANDS) + "\n\n"
+        "memory & behavior:\n" + _rows(_MEMORY_COMMANDS) + "\n\n"
+        "advanced / operator:\n  " + ", ".join(_ADVANCED_COMMANDS) + "\n\n"
+        "Run 'aios <command> -h' for command-specific help."
     )
-    parser.add_argument("args", nargs=argparse.REMAINDER)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="aios",
+        usage="aios [--root ROOT] <command> [args...]",
+        description="AIOS — local-first AI operating layer that wraps provider "
+                    "agent CLIs and learns from every run.",
+        epilog=_help_epilog(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument("--root", help="AIOS control-plane root. Defaults to nearest ancestor, AIOS_HOME, then launcher-relative root.")
+    # metavar keeps argparse from dumping the full 40-item choices blob in usage;
+    # nargs='?' lets a bare `aios` print help instead of erroring.
+    parser.add_argument("cmd", nargs="?", metavar="<command>", choices=_ALL_COMMANDS,
+                        help=argparse.SUPPRESS)
+    parser.add_argument("args", nargs=argparse.REMAINDER, help=argparse.SUPPRESS)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.cmd is None:                 # bare `aios` → show the curated help, not an error
+        parser.print_help()
+        return 0
+
     root, source = resolve_root(args.root)
 
     if args.cmd == "root":
