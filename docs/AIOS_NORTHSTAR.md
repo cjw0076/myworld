@@ -44,6 +44,28 @@ When a task arrives:
 5. MemoryOS records receipts, drafts, retrieval traces, and review outcomes.
 6. CapabilityOS records capability observations so future routing improves.
 
+## Embracing Layer (2026-06-23, founder directive)
+
+AIOS does not compete with peer agent systems — it is the operating layer that
+**wraps them all as substrates**. The same way the head already wraps provider
+CLIs (`aios_adapters.py`), local models (`aios_substrate_router.py`), and domain
+tools (`domain.run`), peer systems plug in as coordinated substrates under one
+authority/memory/provenance kernel. Convergence with these systems is demand
+validation, not a threat: sameness is fine, the moat is ownership — *this user's*
+compounding organism, which no peer can scoop (1-person-1-AIOS).
+
+| Peer system | What it is | AIOS slot it plugs into |
+|---|---|---|
+| NousResearch/hermes-agent | local head coordinating provider CLIs | reference impl of `aios_head` |
+| omc / omx | Claude/Codex workflow + sub-agent delegation | workflow layer above the turn-loop |
+| Q00/ouroboros ("Agent OS") | policy-bound replayable execution contract | a routable executor substrate |
+| August-murr / razzant ouroboros | self-evolving loop | dream-cycle / round-controller (with named-exit safety the runaway lacked) |
+| agiresearch/AIOS | agent-execution kernel + SDK | a Hive execution substrate |
+
+The embracing mechanism already exists (adapters + substrate router + domain.run);
+making a specific peer system *callable* is one adapter each, added when that
+system is present locally — not built speculatively.
+
 ## Final Shape
 
 ```text
