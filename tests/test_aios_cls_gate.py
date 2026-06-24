@@ -50,6 +50,29 @@ class CorpusGateTest(unittest.TestCase):
         elig, man = self.m.select_corpus(mems, max_per_bucket=2)
         self.assertEqual(man["selected"], 2)                     # capped
 
+    def test_aggregate_imports_excluded_by_default(self):
+        agg = {"id": "ds1", "dataset": "agentbank", "tool_freq": {"Bash": 999, "Edit": 50}}
+        sess = _mem("s1", "react_code", {"Edit": 6, "Bash": 6})
+        elig, man = self.m.select_corpus([agg, sess])
+        self.assertEqual(man["selected"], 1)                 # only the session-derived run
+        self.assertEqual(elig[0]["ref"], "s1")
+        q = man["corpus_quality"]
+        self.assertEqual(q["aggregate_import"], 1)
+        self.assertEqual(q["session_derived"], 1)
+        # opt-in to include aggregates
+        elig2, _ = self.m.select_corpus([agg, sess], include_aggregates=True)
+        self.assertEqual(len(elig2), 2)
+
+    def test_training_ready_flag_is_honest(self):
+        # all unlabeled → not training-ready even if some are eligible
+        unlabeled = {"id": "u1", "tool_freq": {"Edit": 6, "Bash": 6}}   # no loop_type, session-derived
+        _, man = self.m.select_corpus([unlabeled])
+        self.assertEqual(man["selected"], 1)
+        self.assertFalse(man["training_ready"])              # all in 'unknown' bucket
+        labeled = _mem("l1", "react_code", {"Edit": 6, "Bash": 6})
+        _, man2 = self.m.select_corpus([labeled])
+        self.assertTrue(man2["training_ready"])
+
     def test_provenance_hash_is_stable_and_order_independent(self):
         a = self.m.select_corpus([_mem("x", "react_code", {"Edit": 6}),
                                   _mem("y", "exploration", {"Read": 6})])[1]["provenance"]

@@ -46,31 +46,56 @@ def _corpus_hash(eligible: list[dict]) -> str:
     return hashlib.sha256("\n".join(refs).encode()).hexdigest()[:16]
 
 
-def select_corpus(memories: list[dict], *, min_tools: int = 5,
-                  max_per_bucket: int = 200) -> tuple[list[dict], dict]:
-    """Pick training-eligible runs. Returns (eligible, manifest).
+def _is_aggregate(m: dict) -> bool:
+    """Bulk dataset imports carry a 'dataset' key and store AGGREGATE tool_freq
+    (counts merged across many runs), not a single run's trajectory. They cannot
+    carry loop_type / intervention supervision, so they are not per-run training data."""
+    return "dataset" in m
 
+
+def select_corpus(memories: list[dict], *, min_tools: int = 5,
+                  max_per_bucket: int = 200,
+                  include_aggregates: bool = False) -> tuple[list[dict], dict]:
+    """Pick training-eligible per-run records. Returns (eligible, manifest).
+
+    Training corpus = session-derived per-run trajectories only:
+    - aggregate dataset imports excluded by default (not per-run; opt in with
+      include_aggregates=True if you really want frequency priors in the mix).
     - doom-loop runs excluded (contaminated).
     - too little signal (<min_tools tool uses) excluded.
-    - diversity cap: at most max_per_bucket per loop_type, so one dominant mode
-      can't swamp the corpus.
+    - diversity cap: at most max_per_bucket per loop_type.
     - sample weight: human-intervention runs weighted up to 3x — a steered/corrected
       run carries supervision the agent didn't produce on its own (Phase B → C).
+
+    The manifest also carries corpus_quality: an honest readout of WHY the corpus
+    is or isn't training-ready (session-derived vs aggregate, labeled vs unlabeled).
     """
+    quality = {"total": len(memories), "session_derived": 0, "aggregate_import": 0,
+               "labeled_loop_type": 0, "multi_tool": 0}
     eligible: list[dict] = []
     buckets: dict[str, int] = {}
     for m in memories:
-        if m.get("loop_type") == "doom_loop":
-            continue
+        agg = _is_aggregate(m)
+        quality["aggregate_import" if agg else "session_derived"] += 1
+        lt = m.get("loop_type")
+        if lt and lt != "unknown":
+            quality["labeled_loop_type"] += 1
         freq = m.get("tool_freq") or {}
         if isinstance(freq, str):
             try:
                 freq = json.loads(freq)
             except Exception:  # noqa: BLE001
                 freq = {}
+        if sum(freq.values()) >= min_tools and len(freq) > 1:
+            quality["multi_tool"] += 1
+
+        if agg and not include_aggregates:
+            continue
+        if lt == "doom_loop":
+            continue
         if sum(freq.values()) < min_tools:
             continue
-        bucket = m.get("loop_type") or "unknown"
+        bucket = lt or "unknown"
         if buckets.get(bucket, 0) >= max_per_bucket:
             continue
         buckets[bucket] = buckets.get(bucket, 0) + 1
@@ -84,6 +109,8 @@ def select_corpus(memories: list[dict], *, min_tools: int = 5,
         "schema": "aios.cls_corpus.v1",
         "from": len(memories), "selected": len(eligible),
         "buckets": buckets, "provenance": _corpus_hash(eligible),
+        "corpus_quality": quality,
+        "training_ready": len(eligible) > 0 and buckets.get("unknown", 0) < len(eligible),
     }
     return eligible, manifest
 
