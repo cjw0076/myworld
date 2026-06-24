@@ -96,14 +96,21 @@ def contribute_run(goal: str, outcome: dict, api_key: str | None = None,
                    source: str = "aios") -> bool:
     """Contribute a run outcome to the global AkashicRecord behavioral ledger —
     'every run becomes a star'. One shared write path for every runner. Best-effort
-    and non-blocking; privacy-safe (tool NAMES + metadata only, never content/args).
+    and non-blocking; privacy-safe (tool NAMES + metadata only, never the goal/content/
+    args — the global `content` is a structural summary via aios_capture_args.safe_summary).
     Returns True if a contribution was attempted. Skips runs that used no tools."""
     tools = outcome.get("tool_sequence", [])
     if not tools:
         return False
+    try:
+        import aios_capture_args as _CAP  # noqa: PLC0415
+        safe_content = _CAP.safe_summary("code", tools, outcome.get("loop_type"))
+    except Exception:  # noqa: BLE001
+        safe_content = f"category:code tools:{','.join(str(t) for t in tools[:10])}"
     payload = {
         "id":        f"{source}-{str(outcome.get('exit', '?'))[:4]}-{int(time.time())}",
-        "content":   goal[:400],
+        # P0 privacy fix: structural summary ONLY — the raw goal never leaves the device.
+        "content":   safe_content,
         "category":  "code",
         "provider":  source,
         "os_origin": "myworld",

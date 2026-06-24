@@ -62,5 +62,68 @@ class GlobalPayloadPrivacyTest(unittest.TestCase):
         self.assertEqual(s, "category:code tools:Bash,Read pattern:react_code")
 
 
+class GlobalBoundaryPrivacyTest(unittest.TestCase):
+    """Repo-wide DNA #7 guard: monkeypatch the urllib egress boundary and drive EVERY
+    outbound-to-global entrypoint (not just aios_agent_system), asserting the raw goal
+    never appears in any request body. Closes the false-green gap from the first fix."""
+
+    LEAKS = ("sk-LIVE-9f3a", "ceo@corp.com", "/dain/private", "deploy prod")
+
+    def setUp(self):
+        if str(SCRIPTS) not in sys.path:
+            sys.path.insert(0, str(SCRIPTS))
+        self.bodies = []
+        import urllib.request as ur
+        self._orig = ur.urlopen
+
+        class _Resp:
+            def __enter__(self_): return self_
+            def __exit__(self_, *a): return False
+            def read(self_): return b'{"results":[],"predictions":[],"status":"ok"}'
+
+        def _fake(req, *a, **k):
+            try:
+                url = req.full_url if hasattr(req, "full_url") else str(req)
+                # only OFF-DEVICE (egress) calls matter for DNA #7; localhost embedders
+                # (ollama/LM Studio/vLLM) are on-device and may see raw content.
+                host = url.split("://", 1)[-1].split("/", 1)[0]
+                if not any(h in host for h in ("localhost", "127.0.0.1", "0.0.0.0")):
+                    self.bodies.append(getattr(req, "data", b"") or b"")
+            except Exception:
+                pass
+            return _Resp()
+        ur.urlopen = _fake
+        self._ur = ur
+
+    def tearDown(self):
+        self._ur.urlopen = self._orig
+
+    def _assert_clean(self, require_call=True):
+        blob = b" ".join(self.bodies).decode("utf-8", "replace")
+        if require_call:
+            self.assertTrue(self.bodies, "no off-device call captured")
+        for leak in self.LEAKS:
+            self.assertNotIn(leak, blob, f"raw-goal leak at egress boundary: {leak}")
+
+    def test_aios_memory_contribute_run_no_leak(self):
+        import aios_memory as M
+        M.contribute_run(SECRET_GOAL, {"tool_sequence": ["Bash", "Edit"], "exit": "model_finished",
+                                       "loop_type": "react_code"}, api_key="k")
+        self._assert_clean()
+
+    def test_behavior_contribute_to_global_no_leak(self):
+        import aios_agent_behavior as B
+        # a memory whose stored content is a raw goal must still not leak (rebuilt structurally)
+        mem = {"id": "x1", "content": SECRET_GOAL, "category": "code",
+               "top_tools": ["Bash", "Edit"], "tool_freq": {"Bash": 2}, "loop_type": "react_code"}
+        B.contribute_to_global(memories=[mem], api_key="k")
+        self._assert_clean()
+
+    def test_behavior_predict_global_query_no_leak(self):
+        import aios_agent_behavior as B
+        B.predict_behavior(SECRET_GOAL, ["Bash", "Edit", "Read"], use_global=True)
+        self._assert_clean()
+
+
 if __name__ == "__main__":
     unittest.main()

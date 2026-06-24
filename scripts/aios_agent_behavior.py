@@ -294,6 +294,19 @@ _CATEGORY_SIGNALS: dict[str, list[str]] = {
 }
 
 
+def _classify_context(context: str) -> str:
+    """Coarse category from free-text context — used to build a CONTENT-FREE global
+    query (the returned label is a safe enum; the raw context never leaves the device)."""
+    c = (context or "").lower()
+    if any(k in c for k in ("edit", "write", "code", "file", "bash", "implement", "fix", "build", "refactor")):
+        return "code"
+    if any(k in c for k in ("search", "read", "doc", "explain", "find", "research", "summar")):
+        return "docs"
+    if any(k in c for k in ("data", "analyze", "query", "table", "csv", "metric")):
+        return "data"
+    return "unknown"
+
+
 def _classify_session(tools: list[str], opt_in: frozenset[str]) -> str | None:
     """Classify session by tool usage profile → opt-in category."""
     counts: dict[str, int] = {}
@@ -662,10 +675,18 @@ def predict_behavior(context: str, candidates: list[str],
     t0 = time.time()
     memories = load_behavior_memories()
 
-    # Pull global patterns (non-blocking: failure → empty list)
+    # Pull global patterns (non-blocking: failure → empty list).
+    # P0 privacy: query the global corpus by a STRUCTURAL summary only — the caller's
+    # raw context (which may carry a prompt/output via the aios_predict_behavior MCP tool)
+    # must never reach the third-party embedder. Structural query keeps it content-free.
     global_patterns: list[dict] = []
     if use_global:
-        raw = sync_from_global(context[:400], top_k=6)
+        try:
+            import aios_capture_args as _CAP  # noqa: PLC0415
+            safe_q = _CAP.safe_summary(_classify_context(context))
+        except Exception:  # noqa: BLE001
+            safe_q = "category:unknown"
+        raw = sync_from_global(safe_q, top_k=6)
         for g in raw:
             tool_freq = g.get("tool_freq") or {}
             if isinstance(tool_freq, str):
@@ -1057,9 +1078,20 @@ def contribute_to_global(
                 tool_freq = json.loads(tool_freq)
             except Exception:
                 tool_freq = {}
+        # P0 privacy: do NOT trust the stored content blindly — rebuild a structural
+        # summary from safe enum/metadata fields so no raw goal can ever be exfiltrated,
+        # regardless of what 'content' holds.
+        try:
+            import aios_capture_args as _CAP  # noqa: PLC0415
+            safe_content = _CAP.safe_summary(
+                mem.get("category", "unknown"),
+                mem.get("top_tools") or list(tool_freq.keys()),
+                mem.get("loop_type"))
+        except Exception:  # noqa: BLE001
+            safe_content = f"category:{mem.get('category','unknown')}"
         payload = {
             "id":         mem["id"],
-            "content":    content[:500],
+            "content":    safe_content,
             "category":   mem.get("category", "unknown"),
             "provider":   mem.get("provider", "unknown"),
             "dataset":    mem.get("dataset", ""),

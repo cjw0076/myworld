@@ -77,6 +77,22 @@ def arg_skeleton(args: dict | None) -> dict:
     return {k: scrub_value(k, v) for k, v in args.items()}
 
 
+def safe_summary(category: str, tools=None, loop_type: str | None = None) -> str:
+    """Canonical privacy gate (DNA #7 / P0) for ANY text sent to the GLOBAL Akashic.
+    The only string that may leave the device for the shared corpus — structural
+    metadata, NEVER the raw goal/prompt/output. Every outbound global call site
+    (contribute / sync / predict, in aios_agent_system, aios_memory, aios_agent_behavior)
+    must route its `content`/`query`/`context` through THIS function. The worker embeds
+    whatever it receives via a third-party model, so raw text must never reach it; rich
+    semantic recall is the LOCAL private vault's job (no network)."""
+    parts = [f"category:{category or 'unknown'}"]
+    if tools:
+        parts.append("tools:" + ",".join(str(t) for t in list(tools)[:10]))
+    if loop_type:
+        parts.append(f"pattern:{loop_type}")
+    return " ".join(parts)
+
+
 def call_signature(tool: str, args: dict | None) -> str:
     """Non-reversible hash of the FULL raw call (tool + args). Computed transiently;
     only the hash is stored. Identical calls → identical signature; distinct calls →

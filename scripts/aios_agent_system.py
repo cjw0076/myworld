@@ -79,17 +79,19 @@ def _akashic_post(path: str, payload: dict, api_key: str | None = None,
 
 
 def _safe_summary(category: str, tools=None, loop_type: str | None = None) -> str:
-    """Privacy gate (DNA #7 / P0): the ONLY text ever sent to the GLOBAL Akashic —
-    structural metadata, NEVER the raw goal/prompt/output. The worker embeds whatever
-    `content` it receives via a third-party model, so the raw goal must never reach it.
-    The global corpus is tool-names-only by promise; rich SEMANTIC recall is the LOCAL
-    private vault's job (aios_memory over ~/.aios objects.jsonl — no network)."""
-    parts = [f"category:{category}"]
-    if tools:
-        parts.append("tools:" + ",".join(str(t) for t in list(tools)[:10]))
-    if loop_type:
-        parts.append(f"pattern:{loop_type}")
-    return " ".join(parts)
+    """Privacy gate (DNA #7 / P0) — delegates to the canonical implementation in
+    aios_capture_args so every global call site shares ONE definition. Only structural
+    metadata leaves the device for the global corpus, never the raw goal/prompt/output."""
+    try:
+        import aios_capture_args as _CAP  # noqa: PLC0415
+        return _CAP.safe_summary(category, tools, loop_type)
+    except Exception:  # noqa: BLE001
+        parts = [f"category:{category}"]
+        if tools:
+            parts.append("tools:" + ",".join(str(t) for t in list(tools)[:10]))
+        if loop_type:
+            parts.append(f"pattern:{loop_type}")
+        return " ".join(parts)
 
 
 def recall(goal: str, api_key: str | None = None, verbose: bool = False) -> list[dict]:
