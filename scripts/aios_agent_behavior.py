@@ -125,6 +125,8 @@ def _parse_claude_structured(path: Path) -> dict:
     sub_tools: list[str] = []
     sub_parents: set[str] = set()
     features: set[str] = set()
+    worker_interventions = 0   # Phase B / Q2: human steering, modeled apart from the agent
+    seen_assistant = False
     try:
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
@@ -134,8 +136,23 @@ def _parse_claude_structured(path: Path) -> dict:
             is_sub = bool(obj.get("isSidechain"))
             if is_sub and obj.get("parentUuid"):
                 sub_parents.add(str(obj["parentUuid"]))
-            if obj.get("type") != "assistant":
+            t = obj.get("type")
+            # Phase B (Q2): a real human-typed user message (NOT a tool_result) that
+            # arrives after the agent has started, on the main session, is a worker
+            # INTERVENTION — the human steering/correcting the agent. Structural signal:
+            # detected by position + message shape, never by reading content.
+            if t == "user" and not is_sub and seen_assistant:
+                msg = obj.get("message") or {}
+                content = msg.get("content")
+                is_human = isinstance(content, str) or (
+                    isinstance(content, list)
+                    and any(isinstance(b, dict) and b.get("type") != "tool_result" for b in content))
+                if is_human:
+                    worker_interventions += 1
                 continue
+            if t != "assistant":
+                continue
+            seen_assistant = True
             msg = obj.get("message") or {}
             for block in msg.get("content") or []:
                 if isinstance(block, dict) and block.get("type") == "tool_use":
@@ -153,6 +170,7 @@ def _parse_claude_structured(path: Path) -> dict:
         "subagent_tools": sub_tools,
         "subagents": len(sub_parents) or (1 if sub_tools else 0),
         "features": sorted(features),
+        "worker_interventions": worker_interventions,
     }
 
 
@@ -340,6 +358,11 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
             "subagents": structured.get("subagents", 0),
             "subagent_tools": _top_n(_freq_table(structured.get("subagent_tools", [])), 5),
             "features": structured.get("features", []),
+            # Phase B (Q2) worker model — human interventions, separate from the agent's
+            # tool policy. intervention_rate = steering per agent action = the supervision
+            # signal for Phase C (low = strong autonomous policy; high = human had to correct).
+            "worker_interventions": structured.get("worker_interventions", 0),
+            "intervention_rate": round(structured.get("worker_interventions", 0) / max(1, n_total), 3),
             "evidence_refs": [f"session:{sf.name}"],
             "relations": [],
         })

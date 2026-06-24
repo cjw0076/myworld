@@ -51,6 +51,24 @@ class SubAgentStructureTest(unittest.TestCase):
         self.assertIn("mcp__aios__aios_route", s["features"])
         self.assertEqual(flat, s["tools"])             # compat wrapper = flat list
 
+    def test_worker_interventions_separated_from_agent(self):
+        # Phase B / Q2: human steering modeled apart from the agent's tool policy.
+        rows = [
+            {"type": "user", "message": {"content": "do the task"}},                 # initial — not an intervention
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash"}]}},
+            {"type": "user", "message": {"content": "no, edit instead"}},            # intervention #1
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Edit"}]}},
+            {"type": "user", "message": {"content": [{"type": "tool_result", "content": "ok"}]}},  # tool_result — not human
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read"}]}},
+            {"type": "user", "message": {"content": "stop, wrong"}},                 # intervention #2
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "s.jsonl"
+            p.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+            s = self.m._parse_claude_structured(p)
+        self.assertEqual(s["main_tools"], ["Bash", "Edit", "Read"])
+        self.assertEqual(s["worker_interventions"], 2)   # redirect + stop; initial & tool_result excluded
+
 
 class DoomLoopDetectionTest(unittest.TestCase):
     def setUp(self):
