@@ -77,14 +77,15 @@ class DoomLoopDetectionTest(unittest.TestCase):
     def test_no_doom_loop_alternating(self):
         self.assertFalse(self.m._has_doom_loop(["Bash", "Read", "Bash", "Edit"]))
 
-    def test_doom_loop_three_consecutive(self):
-        self.assertTrue(self.m._has_doom_loop(["Bash", "Bash", "Bash"]))
+    def test_three_consecutive_not_doom(self):
+        # threshold induced to 12 — 3 consecutive (e.g. git status/diff/log) is normal
+        self.assertFalse(self.m._has_doom_loop(["Bash", "Bash", "Bash"]))
 
-    def test_doom_loop_at_end(self):
-        self.assertTrue(self.m._has_doom_loop(["Read", "Edit", "Bash", "Bash", "Bash"]))
+    def test_pathological_run_is_doom(self):
+        self.assertTrue(self.m._has_doom_loop(["Read"] + ["Bash"] * 12))
 
-    def test_doom_loop_at_start(self):
-        self.assertTrue(self.m._has_doom_loop(["Read", "Read", "Read", "Bash"]))
+    def test_below_threshold_not_doom(self):
+        self.assertFalse(self.m._has_doom_loop(["Bash"] * 11 + ["Read"]))
 
     def test_two_consecutive_not_doom(self):
         self.assertFalse(self.m._has_doom_loop(["Bash", "Bash", "Read"]))
@@ -106,7 +107,7 @@ class LoopTypeClassificationTest(unittest.TestCase):
         self.m = _load("aios_agent_behavior")
 
     def test_doom_loop_classified(self):
-        tools = ["Bash", "Bash", "Bash", "Edit"]
+        tools = ["Edit"] + ["Bash"] * 12        # pathological consecutive run
         self.assertEqual(self.m._classify_loop_type(tools), "doom_loop")
 
     def test_quick_fewer_than_5(self):

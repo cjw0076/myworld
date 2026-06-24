@@ -220,8 +220,17 @@ def _clean_tools(tools: list[str]) -> list[str]:
 
 # ── Doom-loop detection + loop-type classification ───────────────────────────
 
-def _has_doom_loop(tools: list[str], threshold: int = 3) -> bool:
-    """True if any tool repeats consecutively ≥ threshold times."""
+def _has_doom_loop(tools: list[str], threshold: int = 12) -> bool:
+    """True if any tool repeats consecutively ≥ threshold times.
+
+    We only have tool NAMES (privacy: tool명만), not args — so "Bash×8" may be 8
+    distinct git commands, not 8 retries of one. Threshold induced from real session
+    data (2026-06-24): normal sessions cluster at max-consecutive 5–10 (median 8),
+    genuinely-stuck runs spike to 15–27. 12 sits above normal batching, below
+    pathological — at threshold 3 every real coding session was a false positive
+    (0/15 survived), starving the training corpus. ponytail: name-only signal,
+    upgrade to arg-aware repeat detection if/when args are captured.
+    """
     run = 1
     for i in range(1, len(tools)):
         run = run + 1 if tools[i] == tools[i - 1] else 1
