@@ -2560,3 +2560,32 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   a weak doom signal (8 distinct Bash ≈ 8 retries); any name-based heuristic threshold
   must be induced from data, and its ceiling named (upgrade when args are captured).
 - self-correction-of-prior-observation: none
+
+## 2026-06-25 KST — claude@myworld — OMC head pipeline: review loop caught 6 privacy leaks a single pass missed
+
+- handle: founder "네가 헤드가 되어 OMC deep-interview→ralplan→ralph→review" (OMC skills not installed → ran the pipeline manually as head)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 1:4:1:4:0
+- tools_used: Bash, Edit, Write, Read, Agent(security-reviewer), SendMessage, git, AskUserQuestion, WebSearch/WebFetch
+- tools_NOT_used (CLI gap): the OMC skills themselves (oh-my-claudecode:* unregistered this session) — had to reconstruct deep-interview (AskUserQuestion) / review (security-reviewer agent) by hand. Candidate: AIOS should detect skill availability and degrade gracefully to agent-equivalents.
+- substrate_specific_behaviors_observed:
+  - SEPARATE review pass is not optional for security/privacy. My single-pass P0 fix
+    (raw-goal leak) covered 1 of 4 egress paths. The independent security-reviewer caught
+    3 more (incl. the same file's --execute branch), then on re-review caught a 5th (the
+    SINK that all callers route through), then a 6th LOW (slug-shaped secret evading a
+    char-class strip). 3 fix→review rounds. Self-approval would have shipped 5 live leaks.
+  - The decisive pattern: I kept fixing CALLERS; the bug lived at the SINK. Fix at the sink
+    → every present/future caller covered (one gate). This is the ponytail root-cause rule
+    applied to privacy egress.
+- failures_recovered:
+  - char-class strip kept "sk-LIVE-9f3a" (dash-broken secret evades entropy regex) →
+    switched to allowlist-by-shape + explicit secret-prefix reject.
+  - too-broad egress test flagged on-device ollama (127.0.0.1) → filter to OFF-device hosts
+    only (local embedding of raw content is the sovereignty design, not a leak).
+- failures_escalated_to_founder: none (all reversible client-side); worker hasSensitiveData
+  expansion deferred as deploy-gated.
+- key_decision: founder pivoted AIOS to SaaS (Lakebase canonical + async Graph Compiler);
+  sovereignty re-defined as isolation+opt-in+portability, not locality. Vision-level → founder owned it.
+- new_invariant_or_pattern_discovered: "privacy egress must be gated at the SINK, and the
+  guard must be a SHAPE allowlist + secret/path reject, never a char-class strip." A repo-wide
+  egress test (monkeypatch urlopen, off-device hosts only) is the right guard granularity.
+- self-correction-of-prior-observation: prior local-first sovereignty framing superseded.
