@@ -64,6 +64,22 @@ thinking models and keep error traces out of the active context.
 **Build order:** Pillar 1 first (cheapest, research says highest-leverage), inside
 the unified turn-loop that merges `aios_head` + `aios_harness`.
 
+### Status — all four pillars SHIPPED (2026-06-24, one session)
+
+| # | Pillar | Mechanism | Commit |
+|---|--------|-----------|--------|
+| 1 | self-conditioning defense | `decondition_history()` compresses old error traces | 7a05345 |
+| 2 | horizon-aware routing | `classify_horizon` → reasoning model for long tasks | 3e8639b |
+| 3 | plan verify+repair | stall-triggered `plan_repair` re-plan injection | 031f404 |
+| 4 | constraint re-surfacing | MemoryOS `constraint_provider` re-injects `[REMEMBER]` | c42e3b3 |
+
+**Integration verified:** all four fire together in one `run_loop` with no conflict
+(decondition + plan-repair ×3 + resurface ×3 in a single scripted run). Each has a
+permanent unit test; 57 turn-loop+harness tests pass. The four research-backed
+reliability levers now live in the shared kernel turn-loop — the spine of the one
+foundation. Remaining renewal work: merge `aios_head` into this one runner; then
+the unified head, memory, and capability spine per the sections above.
+
 ## The chronic frontier problems we structurally escape
 
 | Frontier problem | AIOS structural answer |
