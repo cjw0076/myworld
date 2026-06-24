@@ -193,6 +193,23 @@ def tool_specs() -> list[dict[str, Any]]:
                 "required": ["provider"],
             },
         },
+        {
+            "name": "aios_onboard",
+            "description": (
+                "Absorb this device's capabilities and verify what AIOS can use RIGHT NOW. "
+                "Scans local LLMs (Ollama), agent CLIs (claude/codex/gemini/grok/cursor), MCP servers "
+                "and skills; classifies which are executable (have an adapter); runs a fast e2e probe; "
+                "and returns a readiness manifest. Call this first when onboarding AIOS onto a new "
+                "machine — it tells you exactly which providers are ready to route work to."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "probe": {"type": "boolean", "default": True,
+                              "description": "run live e2e probes (Ollama reachable, each CLI invocable)"},
+                },
+            },
+        },
     ]
 
 
@@ -405,6 +422,13 @@ def call_ingest_cli_session(root: Path, args: dict[str, Any]) -> tuple[bool, str
     return ok, out
 
 
+def call_onboard(root: Path, args: dict[str, Any]) -> tuple[bool, str]:
+    cmd = [sys.executable, str(root / "scripts" / "aios_onboard.py"), "--json"]
+    if args.get("probe") is False:
+        cmd.append("--no-probe")
+    return _run(cmd, root, timeout=120)
+
+
 HANDLERS = {
     "aios_route": call_route,
     "aios_helper_run": call_helper_run,
@@ -416,6 +440,7 @@ HANDLERS = {
     "aios_invoke": call_invoke,
     "aios_predict_behavior": call_predict_behavior,
     "aios_ingest_cli_session": call_ingest_cli_session,
+    "aios_onboard": call_onboard,
 }
 
 

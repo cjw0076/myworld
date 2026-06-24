@@ -322,6 +322,7 @@ def run_delegate(command: list[str], *, cwd: Path) -> int:
 # Every command stays functional — grouping only changes how `aios --help` reads.
 _CORE_COMMANDS = [
     ("do",      "Run a task end-to-end: plan → tools → result"),
+    ("onboard", "Absorb this device's LLMs + agent CLIs and verify what's usable"),
     ("chat",    "Interactive AIOS session"),
     ("serve",   "Start the local web UI + API (http://localhost:8741)"),
     ("status",  "Runtime health and findings"),
@@ -490,6 +491,11 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "self-model":
         return run_delegate(self_model_command(root, args.args), cwd=root)
+
+    if args.cmd == "onboard":
+        return run_delegate(
+            [sys.executable, (root / "scripts" / "aios_onboard.py").as_posix(), *args.args],
+            cwd=root)
 
     if args.cmd == "dispatch-reconcile":
         return run_delegate(dispatch_reconcile_command(root, args.args), cwd=root)
