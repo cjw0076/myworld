@@ -2532,3 +2532,31 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - self-correction-of-prior-observation:
   "데모/아직 아님" 자기한정 → founder 교정 "더 크게 봐, 저질러놓고 만들고 고친다". foundation 스케일 + action-bias로 전환. [[feedback_operate_at_foundation_scale]] 신규.
 - 산출물: AIOS_RENEWAL.md (research-grounded pillars + status), 15+ 커밋, aios_routing.py/aios_memory.py 신규 spine.
+
+## 2026-06-24 (3차) KST — claude@myworld — CLS self-improving program A→E shipped + corpus blocker root-caused
+
+- handle: /loop self-paced CLS program, multi-tick continuation
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 2:3:1:4:0 (~build-heavy)
+- tools_used: Bash, Edit, Write, Read, ScheduleWakeup, git
+- tools_NOT_used (CLI gap): none material this arc
+- substrate_specific_behaviors_observed:
+  - Built full CLS pipeline as pure-python, GPU step isolated behind founder GO —
+    let every stage be tested/verified without irreversible cost (draft-first applied
+    to *build order*, not just to weights).
+  - Each tick = one phase, build+test+verify+commit; tests-pass-BEFORE-commit held
+    throughout (no repeat of the Phase A2 commit-then-fail).
+- failures_recovered:
+  - 2 test fixtures wrong-not-code (exploration unique_ratio; degenerate baseline=1.0
+    can't be beaten) — recognized the test premise was wrong, not the impl, and fixed
+    the test. The degenerate-baseline case is itself a correct draft-first behavior.
+  - doom-loop filter starved the corpus (0/20 sessions ingested). Root-caused by
+    INDUCING the threshold from real data (median max-consec=8) instead of trusting
+    the magic-number 3 — feedback_inductive_over_deductive in practice.
+- failures_escalated_to_founder: none (all reversible: pure-python + draft-first)
+- key_decision: did NOT auto-wire ambient session ingestion into the stop hook —
+  that's an ambient-behavior + privacy-gate change = founder nod (invocation-gated,
+  not ambient, per prior finding).
+- new_invariant_or_pattern_discovered: name-only tool capture makes consecutive-repeat
+  a weak doom signal (8 distinct Bash ≈ 8 retries); any name-based heuristic threshold
+  must be induced from data, and its ceiling named (upgrade when args are captured).
+- self-correction-of-prior-observation: none
