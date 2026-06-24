@@ -516,12 +516,11 @@ from aios_routing import (  # noqa: E402
 )
 
 
-# ── Renewal pillar 4: long-range constraint re-surfacing ───────────────────────
+# ── Renewal pillar 4 + Cycle 9: long-range constraint re-surfacing ─────────────
 # Catastrophic forgetting is the design-level 27.5% of long-horizon failures
-# (arXiv 2604.11978). During a long run the constraints retrieved at the start
-# fade out of the active context. This provider re-surfaces them: it queries
-# MemoryOS once for constraints relevant to the goal, caches them, and the
-# turn-loop re-injects them every few turns so they stay fresh.
+# (arXiv 2604.11978). Constraints retrieved at the start fade as the trajectory
+# grows; this provider re-surfaces them. Retrieval now goes through the one memory
+# path (aios_memory.retrieve: MemoryOS first, local keyword fallback) — cached once.
 def make_memory_constraint_provider(root: Path):
     cache: dict = {"loaded": False, "constraints": []}
 
@@ -529,17 +528,8 @@ def make_memory_constraint_provider(root: Path):
         if not cache["loaded"]:
             cache["loaded"] = True  # one query per run; best-effort, never blocks
             try:
-                p = subprocess.run(
-                    [sys.executable, "-m", "memoryos", "--root", ".", "context",
-                     "build", "--task", goal[:200], "--json"],
-                    cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20)
-                if p.returncode == 0:
-                    data = json.loads(p.stdout)
-                    items = (data.get("constraints") or []) + (data.get("decisions") or [])
-                    cache["constraints"] = [
-                        (it.get("content") or it.get("text") or "").strip()
-                        for it in items if isinstance(it, dict)
-                    ][:3]
+                import aios_memory  # noqa: PLC0415
+                cache["constraints"] = aios_memory.retrieve(goal, root, limit=3)
             except Exception:  # noqa: BLE001
                 pass
         return [c for c in cache["constraints"] if c]
