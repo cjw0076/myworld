@@ -99,5 +99,27 @@ Operating mode: **action-bias.** Commit the move, build it, fix it. Don't hedge
 the scale; don't wait for certainty. The kernel's invariants are the guardrails
 that make bold building safe.
 
+## Consolidation milestone (2026-06-24, Cycles 1–13, verified)
+
+Substantive renewal is complete and regression-free — **full suite: 1258 passed,
+4 skipped**. What condensed:
+
+- **4 reliability pillars** in the shared kernel turn-loop, applied on *both*
+  execution paths (head + harness): self-conditioning defense, horizon routing,
+  plan verify+repair, constraint re-surfacing.
+- **One capability spine** (`aios_routing`): classify_horizon, select_model_by_horizon,
+  executable_clis — one routing brain, every runner consults it.
+- **One memory spine** (`aios_memory`): retrieve, memoryos_context (single MemoryOS
+  call point), contribute_run (single ledger write — every run on every path becomes
+  a star).
+- **Shared sampler scaffolding**: decondition_history + render_directives.
+
+**On "one head" (design decision):** the two runners share the kernel, all four
+pillars, and both spines — functionally this *is* one head. Their samplers stay
+separate **on purpose**: harness speaks ReAct-text, the head speaks JSON-tool;
+both work and are tested. A forced file-level merge would be cosmetic and risk
+regressing a working path for no functional gain. "One head" = one shared kernel +
+spines (achieved), not one source file. Revisit only if the two formats converge.
+
 — living document; the deep-research report and interview will rewrite sections
 of this, and that is the point.

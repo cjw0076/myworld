@@ -33,7 +33,7 @@ from typing import Callable
 ROOT    = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 OLLAMA  = "http://127.0.0.1:11434"
-AKASHIC = os.environ.get("AIOS_AKASHIC_URL", "https://aios-akashic.cjw070690.workers.dev")
+# (AKASHIC URL moved to aios_memory with the shared contribute_run — Cycle 12/13.)
 
 # ── Lazy import helper ────────────────────────────────────────────────────────
 
