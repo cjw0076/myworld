@@ -43,13 +43,13 @@ class SubAgentStructureTest(unittest.TestCase):
             p = Path(d) / "s.jsonl"
             p.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
             s = self.m._parse_claude_structured(p)
+            flat = self.m._parse_claude_session(p)   # read inside the tempdir scope
         self.assertEqual(s["main_tools"], ["Bash", "Task", "mcp__aios__aios_route"])
         self.assertEqual(s["subagent_tools"], ["Grep", "Read"])
         self.assertEqual(s["subagents"], 1)            # one parentUuid
         self.assertIn("Task", s["features"])
         self.assertIn("mcp__aios__aios_route", s["features"])
-        # compat wrapper returns the flat list
-        self.assertEqual(self.m._parse_claude_session(p), s["tools"])
+        self.assertEqual(flat, s["tools"])             # compat wrapper = flat list
 
 
 class DoomLoopDetectionTest(unittest.TestCase):
