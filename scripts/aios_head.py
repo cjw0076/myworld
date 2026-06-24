@@ -1087,16 +1087,13 @@ def _auto_provider(goal: str) -> str:
         if adapters_mod._anthropic_rest_available():
             return "anthropic_rest"
         return "ollama_rest"   # will be handled as unavailable downstream
-    # Complexity heuristics
-    word_count = len(goal.split())
+    # Cycle 7 — one capability spine: the long/short judgment comes from the shared
+    # classify_horizon (same as the harness), mapped here to the head's rest tiers.
+    routing = _load("aios_routing")
     has_code_hint = any(kw in goal.lower() for kw in
                         ("코드", "code", "파일", "file", "script", "함수", "function",
                          "버그", "bug", "error", "읽어", "read", "fetch", "url"))
-    # Korean: space-split underestimates complexity (fewer tokens than English equivalent)
-    # Use char count as secondary signal — 25+ chars in Korean ≈ 20+ English words
-    has_korean = any('가' <= c <= '힣' for c in goal)
-    char_threshold = 15 if has_korean else 120
-    if word_count > 20 or len(goal) > char_threshold or has_code_hint:
+    if routing.classify_horizon(goal) == "long" or has_code_hint:
         return "ollama_rest_8b"
     return "ollama_rest"
 
