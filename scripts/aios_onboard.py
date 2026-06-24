@@ -179,26 +179,42 @@ def onboard(probe: bool = True, refresh: bool = True) -> dict:
 def _render(m: dict) -> str:
     a = m["absorbed"]
     try:
-        import aios_sigil  # noqa: PLC0415
-        _hdr = aios_sigil.badge("AIOS") + " onboard — device capabilities absorbed & verified"
-    except Exception:  # noqa: BLE001
-        _hdr = "✦ AIOS onboard — device capabilities absorbed & verified"
-    lines = [
-        _hdr,
-        f"  absorbed : {a['total']} "
-        f"(LLMs {a['local_llms']} · CLIs {a['agent_clis']} · MCPs {a['mcps']} · skills {a['skills']})",
-        f"  usable   : {', '.join(m['usable_providers']) or '(none)'}",
-    ]
+        import aios_cli_style as S  # noqa: PLC0415
+    except Exception:  # noqa: BLE001 — fall back to plain if style module missing
+        return _render_plain(m)
+    L = [S.header("onboard", "device capabilities absorbed & verified")]
+    L.append(S.kv("absorbed", f"{a['total']}  " + S.dim(
+        f"LLMs {a['local_llms']} · CLIs {a['agent_clis']} · MCPs {a['mcps']} · skills {a['skills']}")))
+    L.append(S.kv("usable", " · ".join(m["usable_providers"]) or "(none)", accent=S.cyan))
+    for r in m["verified_ready"]:
+        L.append(f"    {S.ok(r['provider'])}  {S.dim(r['detail'] + '  [' + r['evidence'] + ']')}")
+    if m["absorbed_not_executable"]:
+        L.append(S.kv("pending", ", ".join(m["absorbed_not_executable"]) + S.dim("  (no adapter yet)"),
+                      accent=S.muted))
+    bm = m.get("behavioral_memory", {})
+    L.append(S.kv("memory", f"{bm.get('memories_ingested', 0)} behavioral memories  "
+                  + S.dim(f"{bm.get('sessions_available', 0)} sessions to ingest")))
+    if bm.get("sessions_available", 0) > 0:
+        L.append("    " + S.dim("grow it: aios behavior ingest --opt-in code,docs"))
+    L.append(S.rule())
+    L.append("  " + S.star(f"{m['ready_count']} provider(s) ready") + S.dim(f"  ·  next: {m['next']}"))
+    return "\n".join(L)
+
+
+def _render_plain(m: dict) -> str:
+    a = m["absorbed"]
+    lines = ["✦ AIOS onboard — device capabilities absorbed & verified",
+             f"  absorbed : {a['total']} (LLMs {a['local_llms']} · CLIs {a['agent_clis']} · "
+             f"MCPs {a['mcps']} · skills {a['skills']})",
+             f"  usable   : {', '.join(m['usable_providers']) or '(none)'}"]
     for r in m["verified_ready"]:
         lines.append(f"    ✓ {r['provider']:<8} {r['detail']:<14} [{r['evidence']}]")
     if m["absorbed_not_executable"]:
-        lines.append(f"  absorbed, no adapter yet: {', '.join(m['absorbed_not_executable'])}")
+        lines.append(f"  pending  : {', '.join(m['absorbed_not_executable'])} (no adapter yet)")
     bm = m.get("behavioral_memory", {})
     lines.append(f"  memory   : {bm.get('memories_ingested', 0)} behavioral memories "
-                 f"({bm.get('sessions_available', 0)} CLI sessions available to ingest)")
-    if bm.get("sessions_available", 0) > 0:
-        lines.append("    grow it: aios behavior ingest --opt-in code,docs  (opt-in, tool-names only)")
-    lines.append(f"  → {m['ready_count']} provider(s) ready to route.  next: {m['next']}")
+                 f"({bm.get('sessions_available', 0)} sessions to ingest)")
+    lines.append(f"  → {m['ready_count']} provider(s) ready.  next: {m['next']}")
     return "\n".join(lines)
 
 
