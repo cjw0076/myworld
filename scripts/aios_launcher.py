@@ -469,11 +469,12 @@ def main(argv: list[str] | None = None) -> int:
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "do":
-        # Zero-friction task execution: aios do "goal" → harness with smart defaults
-        # Automatically picks qwen3:8b if available, falls back to auto-route
+        # Zero-friction task execution: aios do "goal" → harness with smart defaults.
+        # Model is left unpinned so the harness routes by task horizon (renewal
+        # pillar 2): long/multi-step tasks → reasoning model, short → fast model.
         harness_args = list(args.args)
-        if "--model" not in " ".join(harness_args):
-            harness_args += ["--base-url", "http://localhost:11434", "--model", "qwen3:8b"]
+        if "--base-url" not in " ".join(harness_args) and "--model" not in " ".join(harness_args):
+            harness_args += ["--base-url", "http://localhost:11434"]
         cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *harness_args]
         return run_delegate(cmd, cwd=Path.cwd())
 

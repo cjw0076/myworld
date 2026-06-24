@@ -217,3 +217,15 @@ class TestEcosystemAbsorption(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_horizon_classifier_routes_long_tasks_to_reasoning_models():
+    """Renewal pillar 2: multi-step tasks classify 'long' and pick a reasoning model."""
+    import aios_harness as h
+    assert h.classify_horizon("list files") == "short"
+    assert h.classify_horizon("refactor X and then migrate Y and rebuild Z") == "long"
+    # selection prefers a reasoning model for long, fast for short (falls back if absent)
+    long_m = h.select_model_by_horizon("refactor and migrate and debug and rebuild", "http://127.0.0.1:11434")
+    short_m = h.select_model_by_horizon("show status", "http://127.0.0.1:11434")
+    assert long_m in h._LONG_HORIZON_MODELS
+    assert short_m in h._SHORT_HORIZON_MODELS

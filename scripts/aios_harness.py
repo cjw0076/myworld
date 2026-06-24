@@ -506,6 +506,48 @@ def _parse_react(text: str) -> list[tuple[str, dict]] | None:
     return [(tool, args)]
 
 
+# ── Renewal pillar 2: horizon-aware model routing ──────────────────────────────
+# Frontier research (arXiv 2509.09677): reasoning/thinking models structurally
+# evade self-conditioning and run far longer (DeepSeek-R1 100+ steps where V3
+# fails at 4). The cheapest reliability lever is to route long-horizon work to a
+# reasoning-capable model and keep short tasks on a fast small one.
+_LONG_HORIZON_MODELS = ["qwen3:30b-a3b", "qwen3:8b", "qwen3-coder:30b"]
+_SHORT_HORIZON_MODELS = ["qwen3:8b", "qwen3:4b", "qwen3:1.7b"]
+_HORIZON_SIGNALS = (
+    "then", "after", "next", "finally", "step", "steps", "refactor", "migrate",
+    "implement", "integrate", "debug", "build", "design", "analyze and", "pipeline",
+    "그리고", "그다음", "단계", "구현", "리팩터", "마이그레이션", "분석하고", "빌드",
+)
+
+
+def classify_horizon(task: str) -> str:
+    """'long' if the task looks multi-step / planning-heavy, else 'short'."""
+    t = task.lower()
+    score = sum(1 for s in _HORIZON_SIGNALS if s in t)
+    score += t.count(" and ") + t.count("그리고")
+    return "long" if (score >= 2 or len(task) > 160) else "short"
+
+
+def _installed_models(base_url: str) -> set[str]:
+    try:
+        host = base_url.split("/v1")[0].rstrip("/")
+        with urllib.request.urlopen(f"{host}/api/tags", timeout=4) as r:
+            return {m["name"] for m in json.loads(r.read()).get("models", [])}
+    except Exception:  # noqa: BLE001
+        return set()
+
+
+def select_model_by_horizon(task: str, base_url: str) -> str:
+    """Pick a reasoning model for long-horizon tasks, a fast one for short — among
+    what's actually installed. Falls back to qwen3:8b."""
+    prefs = _LONG_HORIZON_MODELS if classify_horizon(task) == "long" else _SHORT_HORIZON_MODELS
+    installed = _installed_models(base_url)
+    for m in prefs:
+        if not installed or m in installed:
+            return m
+    return "qwen3:8b"
+
+
 def make_llm_sampler(goal: str, base_url: str | None = None,
                      model: str | None = None, api_key: str = "none",
                      provider: str | None = None) -> Callable:
@@ -711,9 +753,18 @@ def main(argv: list[str] | None = None) -> int:
     tl     = _load("aios_turn_loop")
     ts, rs, sid, log_path = tl.make_event_log_sink()
     reg    = build_registry(allowed, dry_run=args.dry_run)
+
+    # Renewal pillar 2: when no model is pinned and we're on a local endpoint,
+    # route by task horizon — long/multi-step tasks to a reasoning model.
+    _base_url = args.base_url or os.environ.get("OPENAI_COMPAT_URL")
+    _horizon = None
+    if args.model is None and _base_url:
+        _horizon = classify_horizon(args.task)
+        args.model = select_model_by_horizon(args.task, _base_url)
+
     sampler = make_llm_sampler(
         goal=args.task,
-        base_url=args.base_url or os.environ.get("OPENAI_COMPAT_URL"),
+        base_url=_base_url,
         model=args.model,
         provider=resolved_provider,
     )
@@ -722,6 +773,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.verbose:
         print(f"[harness] task={args.task[:80]!r}  dry_run={args.dry_run}  log={log_path}")
         print(f"[harness] tools={list(TOOL_REGISTRY.keys()) if not allowed else allowed}")
+        if _horizon:
+            print(f"[harness] horizon={_horizon} → model={args.model}")
         if routed_role:
             print(f"[harness] role_router → role={routed_role}  provider={resolved_provider}")
 
