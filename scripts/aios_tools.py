@@ -90,31 +90,18 @@ def _korean_norm(text: str) -> str:
 
 def _h_retrieve(a: dict) -> dict:
     task = str(a.get("task", ""))
-    # Normalize Korean grammatical particles so memoryOS keyword search hits
+    # Normalize Korean grammatical particles so keyword search hits, then recall
+    # through the one memory path (aios_memory: MemoryOS → local fallback). This
+    # removes the duplicate memoryOS subprocess + local-store logic that used to
+    # live here — Cycle 10 of the renewal.
     mem_task = _korean_norm(task) if any('가' <= c <= '힣' for c in task) else task
-    r = _sibling([sys.executable, "-m", "memoryos", "context", "build", "--task",
-                  mem_task, "--json"], ROOT / "memoryOS")
-    if r["status"] == "ok":
-        data = r.get("data") or {}
-        # decisions = curated relevant subset; context_items = total accepted count (misleading as "hits")
-        decisions = data.get("decisions", [])
-        total = data.get("context_items", 0)
-        top_decision = decisions[0].get("content", "")[:250] if decisions else ""
-        return {"status": "ok", "hits": len(decisions), "total_memories": total,
-                **({"top": top_decision} if top_decision else {})}
-    # Fallback: local keyword store when memoryOS sibling is absent
     try:
-        import importlib.util as _ilu
-        spec = _ilu.spec_from_file_location("aios_local_memory", ROOT / "scripts" / "aios_local_memory.py")
-        lm = _ilu.module_from_spec(spec)
-        spec.loader.exec_module(lm)
-        hits = lm.retrieve(ROOT, task, top_k=5)
-        total = lm.count(ROOT)
-        top = hits[0]["content"][:250] if hits else ""
-        return {"status": "ok", "hits": len(hits), "total_memories": total,
-                "source": "local_fallback", **({"top": top} if top else {})}
+        import aios_memory  # noqa: PLC0415
+        items = aios_memory.retrieve(mem_task, ROOT, limit=5)
     except Exception:  # noqa: BLE001
-        return {"status": r["status"], "hits": 0}
+        items = []
+    top = items[0][:250] if items else ""
+    return {"status": "ok", "hits": len(items), **({"top": top} if top else {})}
 
 
 def _h_route(a: dict) -> dict:
