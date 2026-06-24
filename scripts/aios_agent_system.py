@@ -78,15 +78,30 @@ def _akashic_post(path: str, payload: dict, api_key: str | None = None,
         return {}
 
 
+def _safe_summary(category: str, tools=None, loop_type: str | None = None) -> str:
+    """Privacy gate (DNA #7 / P0): the ONLY text ever sent to the GLOBAL Akashic —
+    structural metadata, NEVER the raw goal/prompt/output. The worker embeds whatever
+    `content` it receives via a third-party model, so the raw goal must never reach it.
+    The global corpus is tool-names-only by promise; rich SEMANTIC recall is the LOCAL
+    private vault's job (aios_memory over ~/.aios objects.jsonl — no network)."""
+    parts = [f"category:{category}"]
+    if tools:
+        parts.append("tools:" + ",".join(str(t) for t in list(tools)[:10]))
+    if loop_type:
+        parts.append(f"pattern:{loop_type}")
+    return " ".join(parts)
+
+
 def recall(goal: str, api_key: str | None = None, verbose: bool = False) -> list[dict]:
-    """Retrieve top-3 similar past patterns from AkashicRecord."""
-    res = _akashic_post("/sync", {"query": goal, "top_k": 3}, api_key, verbose)
+    """Retrieve top-3 similar patterns from the GLOBAL AkashicRecord using a structural
+    query only (never the raw goal). For semantic recall, use the local vault."""
+    res = _akashic_post("/sync", {"query": _safe_summary(_classify(goal)), "top_k": 3}, api_key, verbose)
     return res.get("results", [])
 
 
 def predict(goal: str, api_key: str | None = None, verbose: bool = False) -> list[str]:
-    """Predict top-3 likely tools for this goal."""
-    res = _akashic_post("/predict", {"context": goal, "top_k": 8}, api_key, verbose)
+    """Predict top-3 likely tools for this goal (structural query only — no raw goal)."""
+    res = _akashic_post("/predict", {"context": _safe_summary(_classify(goal)), "top_k": 8}, api_key, verbose)
     raw = [p["tool"] for p in res.get("predictions", [])]
     # Filter out garbage tool names (model IDs, truncated strings, nonsense suffixes)
     valid = [t for t in raw if _valid_tool_name(t)]
@@ -139,10 +154,12 @@ def contribute(goal: str, tools_used: list[str], provider: str,
     session_id = hashlib.sha256(
         f"{goal}{time.time()}".encode()
     ).hexdigest()[:16]
+    category = _classify(goal)
     payload = {
         "id":        f"agent-{session_id}",
-        "content":   goal[:MAX_CONTEXT_CHARS],
-        "category":  _classify(goal),
+        # P0 privacy fix: structural summary ONLY — the raw goal never leaves the device.
+        "content":   _safe_summary(category, tools_used),
+        "category":  category,
         "provider":  provider,
         "os_origin": "myworld",
         "top_tools": tools_used[:10],
