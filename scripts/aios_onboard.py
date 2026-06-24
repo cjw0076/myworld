@@ -70,6 +70,29 @@ def absorb(refresh: bool = True) -> dict:
 
 # ── verify (fast e2e probes) ───────────────────────────────────────────────────
 
+def _behavioral_status() -> dict:
+    """Hippocampal-capture readiness: how many behavioral memories are already
+    ingested vs how many CLI sessions are available to ingest. Privacy-safe —
+    counts only, never content. Surfacing this at onboard is Phase A of the
+    self-improving CLS plan (docs/AIOS_SELF_IMPROVING.md): make capture visible."""
+    home = Path.home()
+    ingested = 0
+    store = home / ".aios" / "memory" / "objects.jsonl"
+    try:
+        if store.exists():
+            ingested = sum(1 for _ in store.open(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        pass
+    sessions = 0
+    try:
+        proj = home / ".claude" / "projects"
+        if proj.exists():
+            sessions = sum(1 for _ in proj.rglob("*.jsonl"))
+    except Exception:  # noqa: BLE001
+        pass
+    return {"memories_ingested": ingested, "sessions_available": sessions}
+
+
 def probe_ollama() -> dict:
     try:
         with urllib.request.urlopen(f"{OLLAMA}/api/tags", timeout=4) as r:
@@ -141,6 +164,7 @@ def onboard(probe: bool = True, refresh: bool = True) -> dict:
         "verified_ready": ready,
         "absorbed_not_executable": sorted(set(not_executable)),
         "ready_count": len(ready),
+        "behavioral_memory": _behavioral_status(),
         "probed": probe,
         "next": 'aios do "<task>"  —  routes to a ready provider',
     }
@@ -164,6 +188,11 @@ def _render(m: dict) -> str:
         lines.append(f"    ✓ {r['provider']:<8} {r['detail']:<14} [{r['evidence']}]")
     if m["absorbed_not_executable"]:
         lines.append(f"  absorbed, no adapter yet: {', '.join(m['absorbed_not_executable'])}")
+    bm = m.get("behavioral_memory", {})
+    lines.append(f"  memory   : {bm.get('memories_ingested', 0)} behavioral memories "
+                 f"({bm.get('sessions_available', 0)} CLI sessions available to ingest)")
+    if bm.get("sessions_available", 0) > 0:
+        lines.append("    grow it: aios behavior ingest --opt-in code,docs  (opt-in, tool-names only)")
     lines.append(f"  → {m['ready_count']} provider(s) ready to route.  next: {m['next']}")
     return "\n".join(lines)
 
