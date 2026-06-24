@@ -33,6 +33,37 @@ Everything routes through a single coherent core:
   wrap all providers. No hard dependency on any one model.
 - **One head, two doors** — humans via the CLI/web, agents via MCP. Same core.
 
+## What the research changed (Cycle 1 deep-research, 106 agents)
+
+The frontier's #1 chronic problem is **long-horizon execution reliability** — not
+graceful decline but *non-linear collapse* past a breaking point in subtask count.
+Two mechanisms dominate, and **model scaling does not fix them**:
+
+1. **Self-conditioning** — a model errs more after seeing its own past errors in
+   context; persists in 200B+ models (arXiv 2509.09677). Injecting errors into
+   history measurably degrades later accuracy.
+2. **Process-level failures dominate (72.5%)** — planning/subplanning errors, vs
+   27.5% design-level (memory/forgetting) (arXiv 2604.11978, Dawn Song et al.,
+   3,100+ trajectories).
+
+Convergent remedy across sources: **hierarchical sub-planning + execution-time
+plan verification & repair + memory that re-surfaces long-range constraints.**
+And the cheapest lever: **reasoning models structurally evade self-conditioning**
+(DeepSeek-R1 runs 100+ steps where V3 fails at 4) — route long-horizon work to
+thinking models and keep error traces out of the active context.
+
+### The four research-backed renewal pillars (AIOS is already shaped for these)
+
+| # | Pillar | Research basis | AIOS position |
+|---|--------|----------------|---------------|
+| 1 | **Self-conditioning defense** — keep error traces out of active context; clean-context retry | self-conditioning persists at scale (2509.09677) | turn-loop already has loop-detection; make error-trace exclusion first-class — *cheapest, highest-leverage, build first* |
+| 2 | **Horizon-aware routing** — long/multi-step tasks → reasoning models | R1: 100+ steps vs V3: 4 | substrate_router + role_router already route by role; add horizon signal |
+| 3 | **Execution-time plan verification & repair** — hierarchical sub-planning | 72.5% failures are process-level (2604.11978) | HiveMind verification + kernel; make sub-planning + plan-repair first-class in the one turn-loop |
+| 4 | **Long-range constraint re-surfacing** — memory that resurfaces constraints during execution | memory field fragmented; unified provenance memory = hardest + most differentiating | MemoryOS (provenance graph, draft-first) is exactly this substrate — make it resurface, not just store |
+
+**Build order:** Pillar 1 first (cheapest, research says highest-leverage), inside
+the unified turn-loop that merges `aios_head` + `aios_harness`.
+
 ## The chronic frontier problems we structurally escape
 
 | Frontier problem | AIOS structural answer |
