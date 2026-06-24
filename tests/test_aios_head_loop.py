@@ -30,6 +30,26 @@ class HeadLoopTests(unittest.TestCase):
     def test_no_sampler_is_honest(self) -> None:
         self.assertEqual(H.run_loop_goal("x")["exit"], "no_sampler")
 
+    def test_head_sampler_applies_all_renewal_pillars(self) -> None:
+        # Runner unification (Cycle 5): the head path now shares the harness's
+        # pillars — decondition (1), plan-repair render (3), constraint render (4).
+        seen = {"p": ""}
+        sampler = H.make_provider_sampler(
+            "claude", {"claude": lambda p: (seen.__setitem__("p", p), '{"done":true}')[1]},
+            goal="g")
+        sampler([
+            {"role": "user", "kind": "goal"},
+            {"role": "tool", "tool": "x", "status": "error", "result": {"status": "error", "output": "OLDERR"}},
+            {"role": "tool", "tool": "y", "status": "error", "result": {"status": "error", "output": "RECENTERR"}},
+            {"role": "system", "kind": "plan_repair", "content": "RE-PLAN NOW"},
+            {"role": "system", "kind": "constraint", "content": "NEVER WRITE PROD"},
+        ])
+        p = seen["p"]
+        self.assertIn("RE-PLAN NOW", p)        # pillar 3 rendered
+        self.assertIn("NEVER WRITE PROD", p)   # pillar 4 rendered
+        self.assertNotIn("OLDERR", p)          # pillar 1: old error elided
+        self.assertIn("RECENTERR", p)          # pillar 1: recent error kept
+
     def test_provider_sampler_degrades_when_provider_unreachable(self) -> None:
         # a provider adapter that raises → sampler ends the loop cleanly, no fabrication
         def boom(_prompt):

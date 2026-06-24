@@ -349,7 +349,10 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
 
     def sampler(history: list[dict]) -> dict:
         tl = _load("aios_turn_loop")
-        recent = history[-12:]
+        # Renewal pillar 1: strip accumulated error traces so the model doesn't
+        # self-condition on its own past mistakes (arXiv 2509.09677). Unifies the
+        # head path with the harness path — both runners now share the defense.
+        recent = tl.decondition_history(history)[-12:]
         # Track repeated tool usage to steer the model away from loops
         tool_counts: dict[str, int] = {}
         for h in recent:
@@ -432,6 +435,12 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             + genesis_hint
             + done_hint
             + no_repeat_hint
+            # Renewal pillars 3 & 4: surface plan-repair + re-surfaced constraints
+            # explicitly (not just buried in the trajectory JSON) so the model acts on them.
+            + "".join(f"[PLAN REPAIR] {h.get('content','')}\n" for h in recent
+                      if h.get("role") == "system" and h.get("kind") == "plan_repair")
+            + "".join(f"[REMEMBER] {h.get('content','')}\n" for h in recent
+                      if h.get("role") == "system" and h.get("kind") == "constraint")
             + "Trajectory:\n"
             + json.dumps(recent, ensure_ascii=False) + "\n"
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '
@@ -463,7 +472,8 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
 
 def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
                   max_turns: int = 12,
-                  turn_sink: Callable[[dict], None] | None = None) -> dict:
+                  turn_sink: Callable[[dict], None] | None = None,
+                  constraint_provider=None) -> dict:
     """Run a goal as a real agent TURN-LOOP (the kernel spine) with AIOS organs as
     kernel tools behind an authority gate — not a single-pass batch over a pre-planned
     step list. The model is a sampler (DI for tests, provider-backed live)."""
@@ -474,7 +484,7 @@ def run_loop_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None,
                 "detail": "pass a sampler, or run --loop with an available provider"}
     return tl.run_loop(goal, sampler, tools.build_registry(),
                        gate=tools.gate_for(agent_id), max_turns=max_turns,
-                       turn_sink=turn_sink)
+                       turn_sink=turn_sink, constraint_provider=constraint_provider)
 
 
 def _cosine(a: list[float], b: list[float]) -> float:
@@ -1007,8 +1017,20 @@ def run_organic_goal(goal: str, *, agent_id: str = "codex@myworld", sampler=None
     if isinstance(_pref, dict):
         _pref.update(preamble)
 
+    # Pillar 4: re-surface long-range constraints during the loop. Reuse the
+    # preamble's already-retrieved memory (zero extra cost) — no new subprocess.
+    _pre_constraints = [
+        str(c.get("content", "")).strip()[:300]
+        for c in (preamble.get("hybrid_candidates") or [])[:3]
+        if isinstance(c, dict) and c.get("content")
+    ]
+
+    def _constraint_provider(_goal, _trajectory):
+        return _pre_constraints
+
     result = run_loop_goal(goal, agent_id=agent_id, sampler=sampler, max_turns=max_turns,
-                           turn_sink=run_log.sink)
+                           turn_sink=run_log.sink,
+                           constraint_provider=_constraint_provider if _pre_constraints else None)
     postamble = _organ_postamble(goal, result, root, run_id=run_id)
 
     return {
