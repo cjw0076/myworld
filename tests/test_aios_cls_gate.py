@@ -63,15 +63,32 @@ class CorpusGateTest(unittest.TestCase):
         elig2, _ = self.m.select_corpus([agg, sess], include_aggregates=True)
         self.assertEqual(len(elig2), 2)
 
+    def test_infers_loop_type_for_stale_records(self):
+        # session-derived record with NO loop_type (predates the field) gets labeled
+        stale = {"id": "old1", "tool_freq": {"Edit": 5, "Bash": 4, "Read": 2}}  # react_code shape
+        elig, man = self.m.select_corpus([stale])
+        self.assertEqual(elig[0]["loop_type"], "react_code")     # inferred, not 'unknown'
+        self.assertEqual(man["corpus_quality"]["labeled_loop_type"], 1)
+        self.assertTrue(man["training_ready"])
+
+    def test_infer_loop_type_shapes(self):
+        self.assertEqual(self.m._infer_loop_type({"Read": 1, "Bash": 1}), "quick")  # <5
+        self.assertEqual(self.m._infer_loop_type({"Edit": 5, "Bash": 4, "Read": 2}), "react_code")
+        # exploration needs read>0.30 AND unique_ratio>0.5
+        self.assertEqual(self.m._infer_loop_type({"Read": 3, "Grep": 2, "Glob": 1, "WebFetch": 1}), "exploration")
+
     def test_training_ready_flag_is_honest(self):
-        # all unlabeled → not training-ready even if some are eligible
-        unlabeled = {"id": "u1", "tool_freq": {"Edit": 6, "Bash": 6}}   # no loop_type, session-derived
-        _, man = self.m.select_corpus([unlabeled])
-        self.assertEqual(man["selected"], 1)
-        self.assertFalse(man["training_ready"])              # all in 'unknown' bucket
+        # empty / no-eligible corpus → not training-ready
+        _, man0 = self.m.select_corpus([])
+        self.assertFalse(man0["training_ready"])
+        # eligible session corpus (label inferred) → training-ready
         labeled = _mem("l1", "react_code", {"Edit": 6, "Bash": 6})
         _, man2 = self.m.select_corpus([labeled])
         self.assertTrue(man2["training_ready"])
+        # unknown-bucket aggregates (opted in) are not enough on their own
+        agg = {"id": "a1", "dataset": "x", "loop_type": "unknown", "tool_freq": {"Bash": 9}}
+        _, man3 = self.m.select_corpus([agg], include_aggregates=True)
+        self.assertFalse(man3["training_ready"])             # all 'unknown'
 
     def test_provenance_hash_is_stable_and_order_independent(self):
         a = self.m.select_corpus([_mem("x", "react_code", {"Edit": 6}),

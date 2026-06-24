@@ -41,6 +41,30 @@ def _dominant_tool(freq: dict) -> str | None:
     return max(freq, key=freq.get) if freq else None
 
 
+def _infer_loop_type(freq: dict) -> str:
+    """Infer loop_type from a stored tool_freq when the record predates the
+    loop_type field (mirrors aios_agent_behavior._classify_loop_type, minus
+    doom_loop which needs the tool SEQUENCE — and doom runs are already dropped
+    at ingest, so a persisted record is non-doom by construction)."""
+    total = sum(freq.values())
+    if total == 0:
+        return "unknown"
+    if total < 5:
+        return "quick"
+    distinct = len(freq)
+    unique_ratio = distinct / total
+    bash = sum(c for t, c in freq.items() if t.startswith("Bash")) / total
+    edit = sum(c for t, c in freq.items() if t.startswith("Edit")) / total
+    read = sum(c for t, c in freq.items() if t.startswith("Read")) / total
+    if edit > 0.15 and bash > 0.10:
+        return "react_code"
+    if read > 0.30 and unique_ratio > 0.5:
+        return "exploration"
+    if unique_ratio < 0.25:
+        return "repetitive"
+    return "react_general"
+
+
 def _corpus_hash(eligible: list[dict]) -> str:
     refs = sorted(c["ref"] for c in eligible)
     return hashlib.sha256("\n".join(refs).encode()).hexdigest()[:16]
@@ -77,15 +101,20 @@ def select_corpus(memories: list[dict], *, min_tools: int = 5,
     for m in memories:
         agg = _is_aggregate(m)
         quality["aggregate_import" if agg else "session_derived"] += 1
-        lt = m.get("loop_type")
-        if lt and lt != "unknown":
-            quality["labeled_loop_type"] += 1
         freq = m.get("tool_freq") or {}
         if isinstance(freq, str):
             try:
                 freq = json.loads(freq)
             except Exception:  # noqa: BLE001
                 freq = {}
+        # use the persisted loop_type; for stale records that predate the field,
+        # infer it from tool_freq (aggregates are excluded below, so this only
+        # ever labels per-run session records).
+        lt = m.get("loop_type")
+        if (not lt or lt == "unknown") and not agg:
+            lt = _infer_loop_type(freq)
+        if lt and lt != "unknown":
+            quality["labeled_loop_type"] += 1
         if sum(freq.values()) >= min_tools and len(freq) > 1:
             quality["multi_tool"] += 1
 
