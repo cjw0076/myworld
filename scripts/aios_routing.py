@@ -53,3 +53,16 @@ def select_model_by_horizon(task: str, base_url: str) -> str:
         if not installed or m in installed:
             return m
     return "qwen3:8b"
+
+
+def executable_clis() -> set[str]:
+    """CLI providers AIOS can actually EXECUTE — derived from the adapter registry
+    (aios_adapters.SPECS) so 'write an adapter → it becomes routable' holds with no
+    edit here. Part of the one capability spine: the single 'what can we route to?'
+    answer, shared by onboard and any other routing decision. Falls back to the
+    known CLI adapters if aios_adapters can't be imported."""
+    try:
+        import aios_adapters  # noqa: PLC0415
+        return {s.binary for s in aios_adapters.SPECS.values() if s.binary != "ollama"}
+    except Exception:  # noqa: BLE001
+        return {"claude", "codex", "gemini"}

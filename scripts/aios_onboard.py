@@ -38,15 +38,14 @@ SELF_OR_TOOL = {"aios", "pipx", "uvx"}            # not LLM providers
 
 
 def _executable_clis() -> set[str]:
-    """CLI binaries AIOS can actually EXECUTE — derived from the adapter registry
-    so 'write an adapter → it becomes usable' holds with no edit here. A detected
-    capability outside this set is absorbed-but-not-yet-executable (surfaced, not hidden)."""
+    """CLI binaries AIOS can actually EXECUTE. Delegates to the one capability spine
+    (aios_routing.executable_clis) so 'what can we route to?' has a single answer."""
     try:
         scripts_dir = str(ROOT / "scripts")
         if scripts_dir not in sys.path:
             sys.path.insert(0, scripts_dir)
-        import aios_adapters  # noqa: PLC0415
-        return {s.binary for s in aios_adapters.SPECS.values() if s.binary != "ollama"}
+        import aios_routing  # noqa: PLC0415
+        return aios_routing.executable_clis()
     except Exception:  # noqa: BLE001 — fall back to the known CLI adapters
         return {"claude", "codex", "gemini"}
 
