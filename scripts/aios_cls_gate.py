@@ -1,0 +1,181 @@
+#!/usr/bin/env python3
+"""aios_cls_gate — Phase C gates for the dream→weights bridge (draft-first for weights).
+
+The actual narrow QLoRA training run is GPU-heavy and near-irreversible (a weight
+artifact), so it stays behind a founder GO. What lives HERE is everything that must
+be decided BEFORE and AFTER that run — pure python, runnable now, fully testable:
+
+  1. corpus gate  — which captured runs are training-eligible?
+       non-doom-loop, enough signal, diversity-capped per mode; human-intervention
+       runs (Phase B supervision signal) weighted UP — corrected runs are worth more.
+  2. eval harness — a held-out behavior eval + a promotion rule.
+       Draft-first for weights (gate #97 of AIOS_SELF_IMPROVING): a fine-tune is a
+       DRAFT until its held-out behavior score beats the baseline by a margin.
+       Otherwise it is discarded, never deployed.
+
+Provenance (gate): a corpus manifest carries a content hash of the exact slice +
+the eval it must beat, so any weight update can cite where it came from.
+
+Schemas: aios.cls_corpus.v1 / aios.cls_eval_gate.v1
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+# ── corpus gate ─────────────────────────────────────────────────────────────────
+
+def _ref(m: dict) -> str:
+    r = m.get("id") or m.get("ref")
+    if r:
+        return str(r)
+    return hashlib.sha256(json.dumps(m, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def _dominant_tool(freq: dict) -> str | None:
+    return max(freq, key=freq.get) if freq else None
+
+
+def _corpus_hash(eligible: list[dict]) -> str:
+    refs = sorted(c["ref"] for c in eligible)
+    return hashlib.sha256("\n".join(refs).encode()).hexdigest()[:16]
+
+
+def select_corpus(memories: list[dict], *, min_tools: int = 5,
+                  max_per_bucket: int = 200) -> tuple[list[dict], dict]:
+    """Pick training-eligible runs. Returns (eligible, manifest).
+
+    - doom-loop runs excluded (contaminated).
+    - too little signal (<min_tools tool uses) excluded.
+    - diversity cap: at most max_per_bucket per loop_type, so one dominant mode
+      can't swamp the corpus.
+    - sample weight: human-intervention runs weighted up to 3x — a steered/corrected
+      run carries supervision the agent didn't produce on its own (Phase B → C).
+    """
+    eligible: list[dict] = []
+    buckets: dict[str, int] = {}
+    for m in memories:
+        if m.get("loop_type") == "doom_loop":
+            continue
+        freq = m.get("tool_freq") or {}
+        if isinstance(freq, str):
+            try:
+                freq = json.loads(freq)
+            except Exception:  # noqa: BLE001
+                freq = {}
+        if sum(freq.values()) < min_tools:
+            continue
+        bucket = m.get("loop_type") or "unknown"
+        if buckets.get(bucket, 0) >= max_per_bucket:
+            continue
+        buckets[bucket] = buckets.get(bucket, 0) + 1
+        ir = float(m.get("intervention_rate") or 0)
+        weight = 1.0 + min(2.0, ir * 4)        # corrected runs up to 3x
+        eligible.append({
+            "ref": _ref(m), "tool_freq": freq, "loop_type": bucket,
+            "category": m.get("category"), "weight": round(weight, 3),
+        })
+    manifest = {
+        "schema": "aios.cls_corpus.v1",
+        "from": len(memories), "selected": len(eligible),
+        "buckets": buckets, "provenance": _corpus_hash(eligible),
+    }
+    return eligible, manifest
+
+
+# ── eval harness (held-out behavior eval + promotion rule) ───────────────────────
+
+def split_holdout(corpus: list[dict], frac: float = 0.2) -> tuple[list[dict], list[dict]]:
+    """Deterministic train/holdout split (hash-ordered — reproducible, no RNG)."""
+    ranked = sorted(corpus, key=lambda c: hashlib.sha256(str(c["ref"]).encode()).hexdigest())
+    k = max(1, int(len(ranked) * frac)) if len(ranked) > 1 else 0
+    return ranked[k:], ranked[:k]
+
+
+def _freq_prior(train: list[dict]) -> dict[str, float]:
+    prior: dict[str, float] = {}
+    for c in train:
+        w = float(c.get("weight", 1.0))
+        for t, n in (c.get("tool_freq") or {}).items():
+            prior[t] = prior.get(t, 0.0) + n * w
+    return prior
+
+
+def eval_behavior(train: list[dict], holdout: list[dict]) -> dict:
+    """Baseline held-out behavior eval: build a weighted tool prior from TRAIN, then
+    predict each holdout run's dominant tool. acc@1 = fraction predicted right.
+
+    This is the floor a fine-tune must beat. It is honest, not impressive — a frozen
+    frequency prior; the whole point of Phase C is for a trained adapter to clear it."""
+    prior = _freq_prior(train)
+    if not holdout:
+        return {"n": 0, "acc": 0.0, "baseline": "freq_prior"}
+    pred_global = max(prior, key=prior.get) if prior else None
+    hits = sum(1 for c in holdout if _dominant_tool(c.get("tool_freq") or {}) == pred_global)
+    return {"n": len(holdout), "acc": round(hits / len(holdout), 3),
+            "baseline": "freq_prior", "predicts": pred_global}
+
+
+def gate_promote(base_acc: float, candidate_acc: float | None, *, margin: float = 0.02) -> dict:
+    """Draft-first for weights: promote a fine-tune ONLY if its held-out score beats
+    the baseline by >= margin. candidate_acc=None ⇒ no trained adapter yet (awaiting
+    the GPU run, founder-gated) ⇒ not promotable."""
+    if candidate_acc is None:
+        return {"schema": "aios.cls_eval_gate.v1", "promote": False,
+                "base": base_acc, "candidate": None, "margin": margin,
+                "status": "awaiting_training (founder GO for GPU run)"}
+    promote = candidate_acc >= base_acc + margin
+    return {"schema": "aios.cls_eval_gate.v1", "promote": promote,
+            "base": base_acc, "candidate": candidate_acc, "margin": margin,
+            "status": "promote" if promote else "stays_draft (eval not beaten)"}
+
+
+# ── CLI ──────────────────────────────────────────────────────────────────────────
+
+def _load_memories() -> list[dict]:
+    sp = str(ROOT / "scripts")
+    if sp not in sys.path:
+        sys.path.insert(0, sp)
+    import aios_agent_behavior as AB  # noqa: PLC0415
+    return AB.load_behavior_memories()
+
+
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    p = argparse.ArgumentParser(prog="aios cls-gate",
+        description="Phase C gates: training-corpus selection + held-out eval (draft-first for weights).")
+    sub = p.add_subparsers(dest="cmd")
+    c = sub.add_parser("corpus")
+    c.add_argument("--min-tools", type=int, default=5)
+    c.add_argument("--max-per-bucket", type=int, default=200)
+    e = sub.add_parser("eval")
+    e.add_argument("--frac", type=float, default=0.2)
+    e.add_argument("--candidate", type=float, default=None,
+                   help="held-out acc@1 of a trained adapter (omit = none yet)")
+    args = p.parse_args(argv)
+
+    mems = _load_memories()
+    eligible, manifest = select_corpus(
+        mems, min_tools=getattr(args, "min_tools", 5),
+        max_per_bucket=getattr(args, "max_per_bucket", 200))
+
+    if args.cmd == "eval":
+        train, holdout = split_holdout(eligible, frac=args.frac)
+        base = eval_behavior(train, holdout)
+        gate = gate_promote(base["acc"], args.candidate)
+        print(json.dumps({"corpus": manifest, "split": {"train": len(train), "holdout": len(holdout)},
+                          "baseline": base, "gate": gate}, ensure_ascii=False, indent=2))
+        return 0
+
+    # default: corpus
+    print(json.dumps({"corpus": manifest, "sample": eligible[:5]}, ensure_ascii=False, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

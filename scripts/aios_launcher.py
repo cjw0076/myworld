@@ -335,6 +335,7 @@ _MEMORY_COMMANDS = [
     ("behavior",   "Behavioral memory: predict / contribute / status"),
     ("sources",    "Attach app/data sources to the memory ledger (pluggable)"),
     ("dream",      "Consolidate memory (dream cycle)"),
+    ("cls-gate",   "Phase C: training-corpus selection + held-out eval (draft-first for weights)"),
     ("self-model", "What AIOS knows about itself"),
 ]
 # Operator / advanced — functional but not front-of-house for new users.
@@ -508,6 +509,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "sources":
         return run_delegate(
             [sys.executable, (root / "scripts" / "aios_sources.py").as_posix(), *args.args],
+            cwd=root)
+
+    if args.cmd == "cls-gate":
+        return run_delegate(
+            [sys.executable, (root / "scripts" / "aios_cls_gate.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "dispatch-reconcile":
