@@ -528,8 +528,12 @@ def make_memory_constraint_provider(root: Path):
         if not cache["loaded"]:
             cache["loaded"] = True  # one query per run; best-effort, never blocks
             try:
-                import aios_memory  # noqa: PLC0415
-                cache["constraints"] = aios_memory.retrieve(goal, root, limit=3)
+                import aios_memory   # noqa: PLC0415
+                import aios_routing  # noqa: PLC0415
+                # Runtime = sparse activation: scope recall to the task's domain
+                # partition (full-ledger sweep is reserved for sleep/train).
+                domain = aios_routing.classify_domain(goal)
+                cache["constraints"] = aios_memory.retrieve(goal, root, limit=3, domain=domain)
             except Exception:  # noqa: BLE001
                 pass
         return [c for c in cache["constraints"] if c]

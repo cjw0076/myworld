@@ -35,6 +35,30 @@ def classify_horizon(task: str) -> str:
     return "long" if (score >= 2 or len(task) > 160) else "short"
 
 
+# Domain partition keys for sparse memory activation (runtime: scope to the task's
+# domain; sleep/train: full). Keyword → domain; first match wins, else None=general.
+DOMAIN_SIGNALS = {
+    "finance":   ("fraud", "transaction", "credit", "risk score", "basel", "fico", "payment"),
+    "hr":        ("attrition", "employee", "retention", "churn", "workforce", "hiring", "headcount"),
+    "logistics": ("inventory", "demand forecast", "supply chain", "eoq", "sku", "warehouse"),
+    "farm":      ("crop", "yield", "soil", "irrigation", "harvest", "farm"),
+    "energy":    ("grid", "load forecast", "power", "electricity", "kwh", "energy"),
+    "security":  ("intrusion", "threat", "cyber", "vulnerability", "malware", "exploit"),
+    "code":      ("code", "function", "bug", "refactor", "implement", "debug", "script",
+                  "파일", "코드", "함수", "버그", "구현", "리팩터"),
+}
+
+
+def classify_domain(task: str) -> str | None:
+    """Map a task to its domain partition key, or None (general → full activation).
+    Used to keep runtime memory recall sparse (only the relevant partition)."""
+    t = task.lower()
+    for domain, kws in DOMAIN_SIGNALS.items():
+        if any(k in t for k in kws):
+            return domain
+    return None
+
+
 def _installed_models(base_url: str) -> set[str]:
     try:
         host = base_url.split("/v1")[0].rstrip("/")

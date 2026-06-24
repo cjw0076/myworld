@@ -59,13 +59,37 @@ def _from_local(task: str, root: Path, limit: int) -> list[str]:
         return []
 
 
-def retrieve(task: str, root: Path, limit: int = 3) -> list[str]:
+def _scope_to_domain(items: list[str], domain: str) -> list[str]:
+    """Keep only items relevant to `domain` (sparse runtime activation). Uses the
+    capability spine's domain keywords; the domain word itself always counts."""
+    kws = {domain}
+    try:
+        scripts_dir = str(Path(__file__).resolve().parent)
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import aios_routing  # noqa: PLC0415
+        kws |= set(aios_routing.DOMAIN_SIGNALS.get(domain, ()))
+    except Exception:  # noqa: BLE001
+        pass
+    return [c for c in items if any(k in c.lower() for k in kws)]
+
+
+def retrieve(task: str, root: Path, limit: int = 3, domain: str | None = None) -> list[str]:
     """Recall up to `limit` relevant memory items for `task`, MemoryOS first then
-    the local keyword store. Returns content strings (never raises)."""
-    items = [c for c in _from_memoryos(task, root, limit) if c]
-    if items:
-        return items
-    return [c for c in _from_local(task, root, limit) if c]
+    the local keyword store. Returns content strings (never raises).
+
+    domain: when set (runtime), activate only that partition — fetch a wider
+    candidate set, then keep the domain-relevant slice (sparse activation; falls
+    back to unscoped if the filter would empty). None = full sweep (sleep/train).
+    """
+    fetch = limit * 4 if domain else limit
+    items = [c for c in _from_memoryos(task, root, fetch) if c]
+    if not items:
+        items = [c for c in _from_local(task, root, fetch) if c]
+    if domain:
+        scoped = _scope_to_domain(items, domain)
+        items = scoped or items  # graceful: never starve the caller
+    return items[:limit]
 
 
 def contribute_run(goal: str, outcome: dict, api_key: str | None = None,
