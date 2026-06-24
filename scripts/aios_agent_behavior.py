@@ -127,6 +127,15 @@ def _parse_claude_structured(path: Path) -> dict:
     features: set[str] = set()
     worker_interventions = 0   # Phase B / Q2: human steering, modeled apart from the agent
     seen_assistant = False
+    # arg-aware capture (founder GO 2026-06-25): non-reversible per-call signatures in
+    # time order (for stuck/doom detection that tells distinct calls from retries) +
+    # a sampled, privacy-scrubbed arg skeleton (for tool-call FORMAT training signal).
+    try:
+        import aios_capture_args as _CAP  # noqa: PLC0415
+    except Exception:  # noqa: BLE001
+        _CAP = None
+    signatures: list[str] = []
+    arg_skeletons: list[dict] = []
     try:
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
@@ -162,6 +171,11 @@ def _parse_claude_structured(path: Path) -> dict:
                     (sub_tools if is_sub else main_tools).append(name)
                     if name in _FEATURE_TOOLS or name.startswith("mcp__"):
                         features.add(name)
+                    if _CAP is not None:
+                        inp = block.get("input") if isinstance(block.get("input"), dict) else {}
+                        signatures.append(_CAP.call_signature(name, inp))   # hash only, no content
+                        if len(arg_skeletons) < 12:                          # sample, capped
+                            arg_skeletons.append({"tool": name, "args": _CAP.arg_skeleton(inp)})
     except Exception:  # noqa: BLE001
         pass
     return {
@@ -171,6 +185,8 @@ def _parse_claude_structured(path: Path) -> dict:
         "subagents": len(sub_parents) or (1 if sub_tools else 0),
         "features": sorted(features),
         "worker_interventions": worker_interventions,
+        "signatures": signatures,           # time-ordered call hashes (transient: doom detection)
+        "arg_skeletons": arg_skeletons,      # sampled, privacy-scrubbed (persisted: format signal)
     }
 
 
@@ -239,9 +255,18 @@ def _has_doom_loop(tools: list[str], threshold: int = 12) -> bool:
     return False
 
 
-def _classify_loop_type(tools: list[str]) -> str:
-    """Classify session's agent loop pattern."""
-    if _has_doom_loop(tools):
+def _classify_loop_type(tools: list[str], signatures: list[str] | None = None) -> str:
+    """Classify session's agent loop pattern. doom detection is arg-aware when
+    per-call signatures are supplied (distinct calls aren't flagged as stuck);
+    falls back to the name-only heuristic otherwise — consistent with the ingest gate."""
+    is_doom = _has_doom_loop(tools)
+    if signatures:
+        try:
+            import aios_capture_args as _CAP  # noqa: PLC0415
+            is_doom = _CAP.has_stuck_repeat(signatures)
+        except Exception:  # noqa: BLE001
+            pass
+    if is_doom:
         return "doom_loop"
     if len(tools) < 5:
         return "quick"
@@ -324,8 +349,19 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
         if not tools:
             continue
 
-        # A1: doom-loop filter — skip sessions with consecutive tool repeats
-        if _has_doom_loop(tools):
+        # A1: doom-loop filter. Arg-aware when signatures are available (distinct calls
+        # have distinct signatures, so productive "Bash×12" is not flagged — only true
+        # stuck retries are); falls back to the name-only heuristic otherwise (e.g. codex).
+        sigs = structured.get("signatures") if structured else None
+        if sigs:
+            try:
+                import aios_capture_args as _CAP  # noqa: PLC0415
+                is_doom = _CAP.has_stuck_repeat(sigs)
+            except Exception:  # noqa: BLE001
+                is_doom = _has_doom_loop(tools)
+        else:
+            is_doom = _has_doom_loop(tools)
+        if is_doom:
             doom_skipped += 1
             continue
 
@@ -333,8 +369,9 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
         if category is None:
             continue
 
-        # A2: loop-type classification
-        loop_type = _classify_loop_type(tools)
+        # A2: loop-type classification (arg-aware when signatures present — consistent
+        # with the doom gate above, so an admitted session is never mislabeled doom_loop)
+        loop_type = _classify_loop_type(tools, signatures=sigs)
 
         freq = _freq_table(tools)
         top5 = _top_n(freq, 5)
@@ -367,6 +404,9 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
             "subagents": structured.get("subagents", 0),
             "subagent_tools": _top_n(_freq_table(structured.get("subagent_tools", [])), 5),
             "features": structured.get("features", []),
+            # arg-aware capture (Phase A deepening) — sampled, privacy-scrubbed arg skeletons
+            # (tool-call FORMAT signal for the QLoRA). NO bodies/secrets/paths (see scrubber).
+            "arg_skeletons": structured.get("arg_skeletons", []),
             # Phase B (Q2) worker model — human interventions, separate from the agent's
             # tool policy. intervention_rate = steering per agent action = the supervision
             # signal for Phase C (low = strong autonomous policy; high = human had to correct).
