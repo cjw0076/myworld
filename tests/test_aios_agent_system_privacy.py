@@ -132,13 +132,18 @@ class GlobalBoundaryPrivacyTest(unittest.TestCase):
         self._assert_clean()
 
     def test_contribute_to_global_dataset_freedtext_not_leaked(self):
-        # defense-in-depth: free text stuffed into dataset/tool_freq keys must not egress
+        # defense-in-depth: free text AND slug-shaped secrets / private paths (no spaces —
+        # the cases that evade a char-class strip) stuffed into dataset/tool_freq keys.
         import aios_agent_behavior as B
         mem = {"id": "x2", "content": "category:code", "category": "code",
-               "top_tools": ["Bash"], "tool_freq": {"deploy prod /dain/private": 1},
-               "dataset": "ceo@corp.com sk-LIVE-9f3a", "loop_type": "react_code"}
+               "top_tools": ["Bash"],
+               "tool_freq": {"deploy prod /dain/private": 1, "/dain/private": 2, "Bash": 3},
+               "dataset": "sk-LIVE-9f3a", "loop_type": "react_code"}
         B.contribute_to_global(memories=[mem], api_key="k")
         self._assert_clean()
+        # and the legit tool name still rides along
+        blob = b" ".join(self.bodies).decode("utf-8", "replace")
+        self.assertIn("Bash", blob)
 
 
 if __name__ == "__main__":

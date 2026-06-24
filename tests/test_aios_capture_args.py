@@ -58,6 +58,20 @@ class ScrubberPrivacyTest(unittest.TestCase):
         self.assertNotIn("private", json.dumps(sk).replace("redacted:private", ""))
 
 
+class SafeMetadataTokenTest(unittest.TestCase):
+    def setUp(self):
+        self.m = _load()
+
+    def test_clean_slug_kept(self):
+        for ok in ("agentbank", "qwen-3.6", "Bash", "mcp__aios__route", "bash:git"):
+            self.assertEqual(self.m.safe_metadata_token(ok), ok)
+
+    def test_secrets_and_paths_dropped(self):
+        for bad in ("sk-LIVE-9f3a", "ghp_abc123", "/dain/private", "AKIA1234567890ABCD",
+                    "deploy prod", "ceo@corp.com", "x" * 50):
+            self.assertEqual(self.m.safe_metadata_token(bad), "", bad)
+
+
 class CallSignatureTest(unittest.TestCase):
     def setUp(self):
         self.m = _load()

@@ -31,7 +31,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import re
 import sys
 import time
 from pathlib import Path
@@ -1085,13 +1084,16 @@ def contribute_to_global(
         except Exception:  # noqa: BLE001
             safe_content = f"category:{mem.get('category','unknown')}"
         # defense-in-depth: dataset/tool_freq carry metadata, not goals — but a malformed
-        # memory could stuff free text there. Allowlist by SHAPE (a clean slug), dropping
-        # anything else entirely — free text with spaces/@/etc. fails the pattern, so a
-        # secret or prose can never ride along (a char-class strip would keep "sk-LIVE-…").
-        _ds = str(mem.get("dataset", ""))
-        safe_dataset = _ds if re.fullmatch(r"[A-Za-z0-9_.-]{0,40}", _ds) else ""
-        safe_freq = {str(k): int(v) for k, v in tool_freq.items()
-                     if isinstance(v, (int, float)) and re.fullmatch(r"[A-Za-z0-9_:./-]{1,40}", str(k))}
+        # memory could stuff free text/secrets/paths there. safe_metadata_token allowlists
+        # a clean slug AND rejects private markers + secret shapes (incl. dash-broken
+        # `sk-LIVE-…` that a char-class strip would keep) — dropping anything else whole.
+        try:
+            import aios_capture_args as _CAP3  # noqa: PLC0415
+            safe_dataset = _CAP3.safe_metadata_token(mem.get("dataset", ""))
+            safe_freq = {k2: int(v) for k, v in tool_freq.items()
+                         if isinstance(v, (int, float)) and (k2 := _CAP3.safe_metadata_token(k))}
+        except Exception:  # noqa: BLE001
+            safe_dataset, safe_freq = "", {}
         payload = {
             "id":         mem["id"],
             "content":    safe_content,

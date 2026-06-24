@@ -77,6 +77,24 @@ def arg_skeleton(args: dict | None) -> dict:
     return {k: scrub_value(k, v) for k, v in args.items()}
 
 
+_SLUG_RE = re.compile(r"[A-Za-z0-9_.:-]{1,40}")        # no '/', no spaces
+_SECRET_PREFIX_RE = re.compile(r"^(sk-|ghp_|xox|AKIA|eyJ)")
+
+
+def safe_metadata_token(s: str) -> str:
+    """Allowlist a single metadata token (dataset name / tool_freq key) for egress.
+    Returns the token if it is a clean slug carrying no private marker or secret shape,
+    else "" — so a poisoned memory can't ride a slug-shaped secret (`sk-LIVE-…`, no
+    spaces, passes a naive char-class strip) or a private path (`/dain/private`) along.
+    A 'dash-broken' secret like sk-LIVE-9f3a evades the entropy regex, so prefix-match too."""
+    t = str(s)
+    if not t or not _SLUG_RE.fullmatch(t):
+        return ""
+    if _has_private_marker(t) or _SECRET_VALUE_RE.search(t) or _SECRET_PREFIX_RE.search(t):
+        return ""
+    return t
+
+
 def safe_summary(category: str, tools=None, loop_type: str | None = None) -> str:
     """Canonical privacy gate (DNA #7 / P0) for ANY text sent to the GLOBAL Akashic.
     The only string that may leave the device for the shared corpus — structural
