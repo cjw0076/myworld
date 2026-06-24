@@ -178,8 +178,13 @@ def onboard(probe: bool = True, refresh: bool = True) -> dict:
 
 def _render(m: dict) -> str:
     a = m["absorbed"]
+    try:
+        import aios_sigil  # noqa: PLC0415
+        _hdr = aios_sigil.badge("AIOS") + " onboard — device capabilities absorbed & verified"
+    except Exception:  # noqa: BLE001
+        _hdr = "✦ AIOS onboard — device capabilities absorbed & verified"
     lines = [
-        "AIOS onboard — device capabilities absorbed & verified",
+        _hdr,
         f"  absorbed : {a['total']} "
         f"(LLMs {a['local_llms']} · CLIs {a['agent_clis']} · MCPs {a['mcps']} · skills {a['skills']})",
         f"  usable   : {', '.join(m['usable_providers']) or '(none)'}",

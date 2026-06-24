@@ -747,12 +747,12 @@ def main(argv: list[str] | None = None) -> int:
     gate = lambda name, arguments: default_gate(name, arguments, dry_run=args.dry_run)
 
     if args.verbose:
-        print(f"[harness] task={args.task[:80]!r}  dry_run={args.dry_run}  log={log_path}")
-        print(f"[harness] tools={list(TOOL_REGISTRY.keys()) if not allowed else allowed}")
+        print(f"✦ aios task={args.task[:80]!r}  dry_run={args.dry_run}  log={log_path}")
+        print(f"✦ aios tools={list(TOOL_REGISTRY.keys()) if not allowed else allowed}")
         if _horizon:
-            print(f"[harness] horizon={_horizon} → model={args.model}")
+            print(f"✦ aios horizon={_horizon} → model={args.model}")
         if routed_role:
-            print(f"[harness] role_router → role={routed_role}  provider={resolved_provider}")
+            print(f"✦ aios role_router → role={routed_role}  provider={resolved_provider}")
 
     # Pillar 4: re-surface long-range constraints from MemoryOS during the run.
     _constraint_provider = (make_memory_constraint_provider(ROOT)

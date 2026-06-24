@@ -50,6 +50,24 @@ Firefly/Sora/Runway. Keep every asset on the palette + motif above.
 - 5 OS organs (MyWorld/HiveMind/MemoryOS/CapabilityOS/GenesisOS) under one kernel.
 - 4 research-backed reliability pillars in the turn-loop (arXiv 2509.09677 / 2604.11978).
 
+## Presence marker — "AIOS is here"
+
+So you can *see* AIOS is running, everywhere:
+
+- **Sigil:** `✦` (U+2726, four-pointed star) — *every run becomes a star*. The one
+  glyph. Also the logo seed and the showcase node motif. One symbol, all surfaces.
+- **CLI marker:** `✦ aios` — the output prefix (replaces ad-hoc `[aios]`/`[harness]`/
+  `[cap-scan]`). e.g. `✦ aios onboard — …`, `✦ aios  horizon=short → qwen3:8b`.
+- **Presence badge:** `✦ AIOS` for banners; `✦ AIOS active · every run becomes a star`
+  as the session-active signal.
+- **Single source:** `scripts/aios_sigil.py` (`SIGIL`, `mark()`, `badge()`,
+  `active_line()`) — cyan on a TTY, plain otherwise; never hard-code the glyph.
+- **Provenance:** AIOS-touched artifacts carry it (commits already use the
+  Co-Authored-By trailer; receipts/outputs can stamp `✦`).
+
+Rule: if AIOS did it, the `✦` shows. Live on: `aios --help`, `aios onboard`,
+`aios do`/harness. Rolling out to serve / scanner / all remaining `[…]` prefixes.
+
 ## Where the brand shows up
 
 README · `apps/showcase` landing · the AkashicRecord dashboard/galaxy · the
