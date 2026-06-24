@@ -202,9 +202,19 @@ def make_session_log(session_id: str | None = None) -> Path:
     return _RUNS_DIR / f"{sid}.jsonl"
 
 
+def _plan_repair_note(goal: str, turn: int) -> str:
+    """Execution-time plan-repair prompt (renewal pillar 3). Frontier research
+    (arXiv 2604.11978): 72.5% of long-horizon failures are process-level (planning/
+    subplanning). When the loop stalls, force a re-plan instead of grinding."""
+    return (f"PLAN CHECK (turn {turn}): no real progress for several turns. Stop "
+            f"repeating the same approach. Re-plan now — name the ONE sub-goal that "
+            f"is actually blocking you, and pick a DIFFERENT concrete action that "
+            f"reaches it. Goal: {goal[:160]}")
+
+
 def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
              gate: Callable[[str, dict], str] = default_gate,
-             max_turns: int = 12, loop_threshold: int = 3,
+             max_turns: int = 12, loop_threshold: int = 3, repair_threshold: int = 2,
              record_sink: Callable[[dict], None] | None = None,
              turn_sink: Callable[[dict], None] | None = None,
              run_log: Path | None = None,
@@ -225,6 +235,7 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
     history: list[dict] = [{"role": "user", "kind": "goal"}]   # names/roles only, no content
     trajectory: list[dict] = []
     last_sig, sig_count = None, 0
+    stall_count = 0   # consecutive turns with no real progress (pillar 3)
     all_tools: list[str] = []   # ordered tool sequence for loop-type + AkashicRecord
 
     def emit(rec: dict) -> None:
@@ -248,6 +259,7 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                 break
 
             stop = None
+            turn_progress = False
             for call in calls:
                 all_tools.append(call.name)
                 sig = signature(call)
@@ -274,6 +286,8 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                 else:
                     status, tool_result = registry.dispatch(call)   # result fed back next turn
                     entry["status"] = status
+                    if status not in _ERROR_STATUSES and status not in ("denied", "needs_approval"):
+                        turn_progress = True   # a real, non-error observation = progress
                     # Compact result summary — content-safe keys only (DNA #7)
                     result_summary: dict = {}
                     if isinstance(tool_result, dict):
@@ -294,6 +308,16 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
                                      **({"result": result_summary} if result_summary else {})})
                 trajectory.append(entry)
                 emit({"kind": "trajectory", **entry})
+            # Pillar 3: execution-time plan verification & repair. Track progress;
+            # when the loop stalls, inject a re-plan note so the model breaks out of
+            # a failing approach (process-level failures are 72.5% — arXiv 2604.11978).
+            if not stop:
+                stall_count = 0 if turn_progress else stall_count + 1
+                if stall_count >= repair_threshold:
+                    history.append({"role": "system", "kind": "plan_repair",
+                                    "content": _plan_repair_note(goal, turn)})
+                    emit({"kind": "plan_repair", "turn": turn, "stall": stall_count})
+                    stall_count = 0
             if stop:
                 outcome = stop
                 break

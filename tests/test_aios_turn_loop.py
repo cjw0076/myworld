@@ -43,6 +43,24 @@ class TurnLoopTests(unittest.TestCase):
         self.assertTrue(any((h.get("result") or {}).get("output") == "GOOD" for h in out))
         self.assertEqual(hist[1]["result"]["output"], "OLD-ERR-1")   # input not mutated
 
+    def test_plan_repair_injected_on_stall(self) -> None:
+        # Renewal pillar 3 (arXiv 2604.11978): when the loop makes no progress for
+        # repair_threshold turns, a plan_repair note is injected and the sampler sees it.
+        self.reg.register("flaky", lambda a: (_ for _ in ()).throw(RuntimeError("boom")))
+        repairs = []
+        seen = {"v": False}
+
+        def sampler(history):
+            if any(h.get("kind") == "plan_repair" for h in history):
+                seen["v"] = True
+            return {"tool_calls": [L.ToolCall("flaky", {}, call_id="c")]}
+
+        L.run_loop("goal", sampler, self.reg, gate=lambda n, a: L.ALLOW,
+                   max_turns=6, repair_threshold=2,
+                   turn_sink=lambda r: repairs.append(r) if r.get("kind") == "plan_repair" else None)
+        self.assertGreaterEqual(len(repairs), 1)
+        self.assertTrue(seen["v"])
+
     def test_finishes_when_model_emits_no_tool_call(self) -> None:
         r = L.run_loop("x", scripted([
             {"tool_calls": [L.ToolCall("aios_read", {"p": "1"}, call_id="c1")]},
