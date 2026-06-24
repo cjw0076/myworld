@@ -76,6 +76,8 @@ SPECS: dict[str, AdapterSpec] = {
     "claude": AdapterSpec("claude", "claude", ["{binary}", "-p"], use_stdin=True),
     "codex": AdapterSpec("codex", "codex", ["{binary}", "exec", "{prompt}"]),
     "gemini": AdapterSpec("gemini", "gemini", ["{binary}", "-p", "{prompt}"]),
+    # grok headless: -p/--single takes the prompt and prints the reply.
+    "grok": AdapterSpec("grok", "grok", ["{binary}", "--single", "{prompt}"]),
     "ollama_local": AdapterSpec(
         "ollama_local", "ollama", ["{binary}", "run", "qwen3:8b", "{prompt}"],
         timeout=300),

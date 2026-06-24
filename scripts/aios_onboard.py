@@ -34,11 +34,21 @@ SCAN_PATH = ROOT / ".aios" / "capability_observations" / "env_scan.json"
 MANIFEST_PATH = ROOT / ".aios" / "onboard_manifest.json"
 OLLAMA = "http://127.0.0.1:11434"
 
-# Provider families AIOS can actually EXECUTE (an adapter exists in aios_adapters).
-# A detected capability outside this set is absorbed-but-not-yet-executable — a
-# gap we surface honestly rather than hide.
-EXECUTABLE_CLIS = {"claude", "codex", "gemini"}   # CLI providers with adapters
 SELF_OR_TOOL = {"aios", "pipx", "uvx"}            # not LLM providers
+
+
+def _executable_clis() -> set[str]:
+    """CLI binaries AIOS can actually EXECUTE — derived from the adapter registry
+    so 'write an adapter → it becomes usable' holds with no edit here. A detected
+    capability outside this set is absorbed-but-not-yet-executable (surfaced, not hidden)."""
+    try:
+        scripts_dir = str(ROOT / "scripts")
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        import aios_adapters  # noqa: PLC0415
+        return {s.binary for s in aios_adapters.SPECS.values() if s.binary != "ollama"}
+    except Exception:  # noqa: BLE001 — fall back to the known CLI adapters
+        return {"claude", "codex", "gemini"}
 
 
 # ── absorb ────────────────────────────────────────────────────────────────────
@@ -91,6 +101,7 @@ def onboard(probe: bool = True, refresh: bool = True) -> dict:
     clis = by("cli")
     llms = by("ollama_model")
 
+    executable_clis = _executable_clis()
     usable: list[str] = []
     ready: list[dict] = []
     not_executable: list[str] = []
@@ -106,7 +117,7 @@ def onboard(probe: bool = True, refresh: bool = True) -> dict:
     # provider CLIs
     for c in clis:
         nm = c.get("name", "")
-        if nm in EXECUTABLE_CLIS:
+        if nm in executable_clis:
             usable.append(nm)
             ok = probe_cli(nm) if probe else True
             if ok:
