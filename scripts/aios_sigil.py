@@ -47,7 +47,12 @@ def active_line() -> str:
 
 
 if __name__ == "__main__":
-    print(mark())
-    print(mark("onboard"))
-    print(badge())
-    print(active_line())
+    arg = sys.argv[1] if len(sys.argv) > 1 else ""
+    if arg == "active":
+        print(active_line())
+    elif arg == "badge":
+        print(badge(" ".join(sys.argv[2:]) or "AIOS"))
+    elif arg == "mark":
+        print(mark(" ".join(sys.argv[2:])))
+    else:
+        print(mark()); print(mark("onboard")); print(badge()); print(active_line())

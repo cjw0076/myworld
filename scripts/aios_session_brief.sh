@@ -5,6 +5,10 @@
 # design — surfaces state into context; never fails the session.
 set +e
 cd "$(dirname "$0")/.." || exit 0
+# Ambient presence signal — every AIOS-wired session opens with a visible mark
+# that AIOS is active in this session (single source: aios_sigil).
+python3 scripts/aios_sigil.py active 2>/dev/null || echo "✦ AIOS active · every run becomes a star"
+echo
 # Token-lean digest, not the full 10KB harness doc. Deferred loading (the same
 # pattern AIOS reverse-engineered from Claude tool-search): inject NAMES + live state
 # now (~a few hundred tokens), load detail on demand via Read. Set AIOS_BRIEF=full to
