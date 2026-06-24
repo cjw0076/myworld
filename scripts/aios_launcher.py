@@ -333,6 +333,7 @@ _CORE_COMMANDS = [
 ]
 _MEMORY_COMMANDS = [
     ("behavior",   "Behavioral memory: predict / contribute / status"),
+    ("sources",    "Attach app/data sources to the memory ledger (pluggable)"),
     ("dream",      "Consolidate memory (dream cycle)"),
     ("self-model", "What AIOS knows about itself"),
 ]
@@ -502,6 +503,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd in ("cli", "shell"):
         return run_delegate(
             [sys.executable, (root / "scripts" / "aios_shell.py").as_posix(), *args.args],
+            cwd=root)
+
+    if args.cmd == "sources":
+        return run_delegate(
+            [sys.executable, (root / "scripts" / "aios_sources.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "dispatch-reconcile":
