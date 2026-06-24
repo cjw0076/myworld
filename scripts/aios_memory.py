@@ -18,20 +18,27 @@ import sys
 from pathlib import Path
 
 
-def _from_memoryos(task: str, root: Path, limit: int) -> list[str]:
+def memoryos_context(task: str, root: Path, timeout: int = 20) -> dict:
+    """The single MemoryOS `context build` call. Returns the parsed payload (or {}).
+    Every caller that needs MemoryOS recall goes through here — one subprocess
+    invocation, no duplicate copies scattered across runners/tools."""
     try:
         p = subprocess.run(
             [sys.executable, "-m", "memoryos", "--root", ".", "context",
              "build", "--task", task[:200], "--json"],
-            cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20)
+            cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=timeout)
         if p.returncode == 0:
-            data = json.loads(p.stdout)
-            items = (data.get("constraints") or []) + (data.get("decisions") or [])
-            return [(it.get("content") or it.get("text") or "").strip()
-                    for it in items if isinstance(it, dict)][:limit]
+            return json.loads(p.stdout)
     except Exception:  # noqa: BLE001
         pass
-    return []
+    return {}
+
+
+def _from_memoryos(task: str, root: Path, limit: int) -> list[str]:
+    data = memoryos_context(task, root)
+    items = (data.get("constraints") or []) + (data.get("decisions") or [])
+    return [(it.get("content") or it.get("text") or "").strip()
+            for it in items if isinstance(it, dict)][:limit]
 
 
 def _from_local(task: str, root: Path, limit: int) -> list[str]:

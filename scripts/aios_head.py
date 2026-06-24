@@ -599,11 +599,11 @@ def _organ_preamble(goal: str, root: Path) -> dict:
         sem_results.extend(_semantic_retrieve(goal, root, top_n=8))
 
     def _run_mem() -> None:
-        mem_box[0] = _shell(
-            [sys.executable, "-m", "memoryos", "--root", ".", "context", "build",
-             "--task", mem_task, "--json"],
-            root / "memoryOS",
-        )
+        # Cycle 11 — one memory: the MemoryOS context call now lives in aios_memory
+        # (single invocation point). Downstream extraction below is unchanged.
+        _mem = _load("aios_memory")
+        data = _mem.memoryos_context(mem_task, root)
+        mem_box[0] = {"status": "ok", "data": data} if data else {"status": "unavailable"}
 
     def _run_cap() -> None:
         cap_box[0] = _shell(
