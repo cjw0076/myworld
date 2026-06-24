@@ -31,6 +31,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import sys
 import time
 from pathlib import Path
@@ -675,18 +676,12 @@ def predict_behavior(context: str, candidates: list[str],
     t0 = time.time()
     memories = load_behavior_memories()
 
-    # Pull global patterns (non-blocking: failure → empty list).
-    # P0 privacy: query the global corpus by a STRUCTURAL summary only — the caller's
-    # raw context (which may carry a prompt/output via the aios_predict_behavior MCP tool)
-    # must never reach the third-party embedder. Structural query keeps it content-free.
+    # Pull global patterns (non-blocking: failure → empty list). Privacy is enforced at
+    # the sink (sync_from_global sanitizes its query), so passing the raw context here is
+    # safe — it is classified to a content-free structural summary before any egress.
     global_patterns: list[dict] = []
     if use_global:
-        try:
-            import aios_capture_args as _CAP  # noqa: PLC0415
-            safe_q = _CAP.safe_summary(_classify_context(context))
-        except Exception:  # noqa: BLE001
-            safe_q = "category:unknown"
-        raw = sync_from_global(safe_q, top_k=6)
+        raw = sync_from_global(context, top_k=6)
         for g in raw:
             tool_freq = g.get("tool_freq") or {}
             if isinstance(tool_freq, str):
@@ -1089,15 +1084,23 @@ def contribute_to_global(
                 mem.get("loop_type"))
         except Exception:  # noqa: BLE001
             safe_content = f"category:{mem.get('category','unknown')}"
+        # defense-in-depth: dataset/tool_freq carry metadata, not goals — but a malformed
+        # memory could stuff free text there. Allowlist by SHAPE (a clean slug), dropping
+        # anything else entirely — free text with spaces/@/etc. fails the pattern, so a
+        # secret or prose can never ride along (a char-class strip would keep "sk-LIVE-…").
+        _ds = str(mem.get("dataset", ""))
+        safe_dataset = _ds if re.fullmatch(r"[A-Za-z0-9_.-]{0,40}", _ds) else ""
+        safe_freq = {str(k): int(v) for k, v in tool_freq.items()
+                     if isinstance(v, (int, float)) and re.fullmatch(r"[A-Za-z0-9_:./-]{1,40}", str(k))}
         payload = {
             "id":         mem["id"],
             "content":    safe_content,
             "category":   mem.get("category", "unknown"),
-            "provider":   mem.get("provider", "unknown"),
-            "dataset":    mem.get("dataset", ""),
+            "provider":   str(mem.get("provider", "unknown"))[:20],
+            "dataset":    safe_dataset,
             "os_origin":  mem.get("os_origin", "myworld"),
-            "tool_freq":  tool_freq,
-            "top_tools":  mem.get("top_tools", [])[:10],
+            "tool_freq":  safe_freq,
+            "top_tools":  [str(t)[:40] for t in (mem.get("top_tools", []) or [])[:10]],
             "confidence": float(mem.get("confidence", 0.75)),
         }
         try:
@@ -1146,7 +1149,16 @@ def sync_from_global(
     if server:
         AKASHIC_SERVER = server
 
-    payload: dict[str, Any] = {"query": query[:500], "top_k": top_k}
+    # P0 privacy (sink-level, DNA #7): sanitize HERE so EVERY caller — present and
+    # future, incl. the `aios behavior sync --query` CLI — is covered. The query that
+    # reaches the third-party embedder is a content-free structural summary, never raw
+    # user text. /sync has no server-side backstop, so this sink is the only gate.
+    try:
+        import aios_capture_args as _CAP  # noqa: PLC0415
+        safe_query = _CAP.safe_summary(_classify_context(query))
+    except Exception:  # noqa: BLE001
+        safe_query = "category:unknown"
+    payload: dict[str, Any] = {"query": safe_query, "top_k": top_k}
     if category:
         payload["category"] = category
     try:

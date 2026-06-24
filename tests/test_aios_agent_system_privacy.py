@@ -124,6 +124,22 @@ class GlobalBoundaryPrivacyTest(unittest.TestCase):
         B.predict_behavior(SECRET_GOAL, ["Bash", "Edit", "Read"], use_global=True)
         self._assert_clean()
 
+    def test_behavior_sync_from_global_sink_no_leak(self):
+        # the SINK itself must sanitize, so the `aios behavior sync --query` CLI and any
+        # other direct caller are covered (NEW-1 from the second security review).
+        import aios_agent_behavior as B
+        B.sync_from_global(SECRET_GOAL, top_k=3)
+        self._assert_clean()
+
+    def test_contribute_to_global_dataset_freedtext_not_leaked(self):
+        # defense-in-depth: free text stuffed into dataset/tool_freq keys must not egress
+        import aios_agent_behavior as B
+        mem = {"id": "x2", "content": "category:code", "category": "code",
+               "top_tools": ["Bash"], "tool_freq": {"deploy prod /dain/private": 1},
+               "dataset": "ceo@corp.com sk-LIVE-9f3a", "loop_type": "react_code"}
+        B.contribute_to_global(memories=[mem], api_key="k")
+        self._assert_clean()
+
 
 if __name__ == "__main__":
     unittest.main()
