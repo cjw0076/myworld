@@ -1,0 +1,150 @@
+/* ═══════════════════════════════════════════════════════════════
+   AIOS — Colors & Type  (v1 · Cosmic Ledger)
+   토큰 아키텍처는 Uri Design System(최재원)을 그대로 계승 — 같은 구조,
+   같은 craft 기준(레이어드 haze · SVG grain · 커스텀 ease · semantic type).
+   정체성만 Cosmic Ledger: 심우주 배경 · cyan/violet 성운 · "매 실행이 별".
+   기본 = "deep". 모드: deep(밤) · void(가장 어둠) · aurora(성운 강조).
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Fonts ────────────────────────────────────────────────── */
+/* 한국어 본문은 Uri와 동일하게 Pretendard. 디스플레이/모노는 AIOS 정체성. */
+@font-face { font-family: 'Pretendard'; font-weight: 400; src: url('fonts/Pretendard-Regular.ttf') format('truetype'); font-display: swap; }
+@font-face { font-family: 'Pretendard'; font-weight: 600; src: url('fonts/Pretendard-SemiBold.ttf') format('truetype'); font-display: swap; }
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ─────────────────────────────────────────────────────────
+     DEFAULT THEME · DEEP (밤하늘)
+     심우주 배경 + cyan 수면 + violet 성운 — 기억이 빛나는 은하.
+     ───────────────────────────────────────────────────────── */
+  --color-bg:            #05070F;   /* 가장 깊은 우주 */
+  --color-surface:       #0A0F1F;   /* 카드 — 성운 가장자리 */
+  --color-surface-alt:   #101628;   /* 한 톤 강한 표면 (glass 베이스) */
+  --color-ink:           #EEF1FA;   /* 별빛 흰 */
+  --color-ink-soft:      rgba(238,241,250,0.72);
+  --color-muted:         #8B94B2;   /* 희미한 파란-회색 */
+  --color-border:        rgba(120,140,200,0.16);
+  --color-border-strong: rgba(120,140,200,0.30);
+
+  /* ─ Primary · Cyan (살아있는 노드) ─ */
+  --color-primary:       #5EEAD4;   /* 빛나는 cyan */
+  --color-primary-soft:  #8FF3E3;
+  --color-primary-pale:  rgba(94,234,212,0.18);
+
+  /* ─ Violet (성운 / active 상태) ─ */
+  --color-violet:        #A78BFA;
+  --color-violet-soft:   #C4B5FD;
+
+  /* ─ Accent ─ */
+  --color-amber:         #FFD166;   /* 점화하는 별 / 경고 */
+  --color-rose:          #FB7185;   /* 에러 */
+
+  /* ─ Semantic legacy aliases ─ */
+  --color-dark:          var(--color-ink);
+  --color-mid:           var(--color-ink-soft);
+  --color-accent:        var(--color-violet);
+  --color-primary-light: var(--color-primary-pale);
+
+  /* ─ Gradients ─ */
+  --grad-cosmic:   linear-gradient(120deg, #5EEAD4 0%, #A78BFA 80%);
+  --grad-nebula:   linear-gradient(135deg, #101628 0%, #1a2142 45%, #05070F 100%);
+  --grad-aurora:   linear-gradient(95deg, #5EEAD4 0%, #A78BFA 55%, #FFD166 110%);
+  --grad-progress: linear-gradient(90deg, #5EEAD4, #A78BFA);
+
+  /* ─ Nebula haze (Uri의 painterly haze에 대응 — cosmic 버전) ─ */
+  --haze-deep:
+      radial-gradient(ellipse at 72% 18%, rgba(94,234,212,0.12) 0%, transparent 55%),
+      radial-gradient(ellipse at 22% 72%, rgba(167,139,250,0.14) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 40%, rgba(26,33,66,0.55)   0%, transparent 60%);
+  --haze-void:
+      radial-gradient(ellipse at 50% 30%, rgba(94,234,212,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 70% 70%, rgba(167,139,250,0.07) 0%, transparent 55%);
+  --haze-aurora:
+      radial-gradient(ellipse at 20% 20%, rgba(94,234,212,0.22) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 75%, rgba(167,139,250,0.22) 0%, transparent 50%),
+      radial-gradient(ellipse at 55% 45%, rgba(255,209,102,0.08) 0%, transparent 45%);
+
+  /* ─ Shadows — glow 기반 (Uri의 --shadow-blue/rose에 대응) ─ */
+  --shadow-xs:     0 1px 4px rgba(0,0,0,0.4);
+  --shadow-sm:     0 2px 12px rgba(0,0,0,0.45);
+  --shadow-md:     0 8px 28px rgba(0,0,0,0.5);
+  --shadow-lg:     0 20px 50px rgba(0,0,0,0.55);
+  --glow-cyan:     0 0 24px rgba(94,234,212,0.45);
+  --glow-violet:   0 0 24px rgba(167,139,250,0.40);
+
+  /* ─ Type Families ─ */
+  --font-display: 'Space Grotesk', 'Pretendard', system-ui, sans-serif;
+  --font-body:    'Pretendard', 'Space Grotesk', -apple-system, system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* ─ Type Scale (Uri와 동일 스케일) ─ */
+  --text-xs:  11px; --text-sm:  13px; --text-base: 15px; --text-md: 17px;
+  --text-lg:  22px; --text-xl:  32px; --text-2xl:  48px; --text-3xl: 72px;
+
+  --weight-regular:400; --weight-medium:500; --weight-semibold:600; --weight-bold:700;
+
+  /* ─ Spacing (base 4) ─ */
+  --space-1:4px;  --space-2:8px;  --space-3:12px; --space-4:16px;
+  --space-5:20px; --space-6:24px; --space-8:32px; --space-10:40px;
+  --space-12:48px; --space-16:64px; --space-20:80px;
+
+  /* ─ Radii ─ */
+  --radius-xs:2px; --radius-sm:6px; --radius-md:12px; --radius-lg:18px; --radius-pill:9999px;
+
+  /* ─ Motion (Uri의 ease-watery에 대응하는 AIOS 고유 ease) ─ */
+  --ease-out:    cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-orbit:  cubic-bezier(0.33, 1, 0.68, 1);   /* 궤도에 안착하듯 */
+  --dur-fast:180ms; --dur-base:300ms; --dur-slow:600ms; --dur-xslow:1200ms;
+}
+
+/* ─── THEME · VOID (가장 어둠 — 집중 모드) ───────────────────── */
+[data-theme='void'] {
+  --color-bg: #02030A; --color-surface: #070A14; --haze-deep: var(--haze-void);
+}
+/* ─── THEME · AURORA (성운 강조 — 쇼케이스 모드) ─────────────── */
+[data-theme='aurora'] { --haze-deep: var(--haze-aurora); }
+
+/* ─── Semantic type classes (Uri 패턴 계승) ───────────────────── */
+.t-display-xl { font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 700; line-height: 1.02; letter-spacing: -2px;   color: var(--color-ink); }
+.t-display-lg { font-family: var(--font-display); font-size: var(--text-2xl); font-weight: 700; line-height: 1.08; letter-spacing: -1.5px; color: var(--color-ink); }
+.t-display-md { font-family: var(--font-display); font-size: var(--text-xl);  font-weight: 700; line-height: 1.2;  letter-spacing: -1px;   color: var(--color-ink); }
+.t-section    { font-family: var(--font-display); font-size: var(--text-lg);  font-weight: 500; line-height: 1.35; color: var(--color-ink); }
+.t-eyebrow    { font-family: var(--font-body); font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--color-primary); }
+.t-body-lg    { font-family: var(--font-body); font-size: var(--text-md);  font-weight: 400; line-height: 1.8;  color: var(--color-ink-soft); }
+.t-body       { font-family: var(--font-body); font-size: var(--text-base);font-weight: 400; line-height: 1.7;  color: var(--color-ink-soft); }
+.t-caption    { font-family: var(--font-body); font-size: var(--text-sm); font-weight: 400; line-height: 1.6;  color: var(--color-muted); }
+.t-mono       { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--color-primary); }
+
+/* ─── Texture overlays (Uri의 grain/haze 계승 — cosmic) ──────── */
+
+/* Starfield grain — Uri의 grain-overlay에 대응 (미세 별 노이즈) */
+.star-grain::before {
+  content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
+}
+
+/* Nebula haze background — Uri의 haze-bg 계승 */
+.haze-bg { position: relative; background: var(--color-bg); overflow: hidden; }
+.haze-bg::before {
+  content: ''; position: absolute; inset: -10%;
+  background: var(--haze-deep); filter: blur(32px);
+  pointer-events: none; z-index: 0;
+}
+.haze-bg > * { position: relative; z-index: 1; }
+
+/* Glass surface — 심우주 위 유리 패널 */
+.glass {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+/* Entry + star motion (Uri의 anim-fadeup/bloom 계승) */
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px);} to { opacity:1; transform:none;} }
+.anim-fadeup { animation: fadeUp 0.8s var(--ease-out) both; }
+@keyframes twinkle { 0%,100%{opacity:.6; transform:scale(1);} 50%{opacity:1; transform:scale(1.2);} }
+.anim-twinkle { animation: twinkle 3s var(--ease-orbit) infinite; }
+@keyframes pulseGlow { 0%,100%{box-shadow:var(--glow-cyan);} 50%{box-shadow:var(--glow-violet);} }
+.anim-pulse { animation: pulseGlow 4s ease-in-out infinite; }
