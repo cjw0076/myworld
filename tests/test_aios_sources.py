@@ -52,6 +52,25 @@ class SourceFrameworkTest(unittest.TestCase):
         out = self.m.ingest_source("nope", ROOT, frozenset(["personal"]))
         self.assertEqual(out["status"], "unknown_source")
 
+    def test_harvest_registers_provider_mcp_adapters(self):
+        # harvest reads the providers' wired MCP configs and auto-registers adapters
+        summary = self.m.harvest_provider_adapters()
+        self.assertIn("mcp", summary)
+        self.assertIsInstance(summary["mcp"], list)
+        # whatever was harvested is registered + flagged harvested with an origin
+        for nm in summary["mcp"]:
+            a = self.m.SOURCES[nm]
+            self.assertTrue(a.available())            # wired into a provider
+            self.assertEqual(a.kind, "mcp")
+            self.assertIn(getattr(a, "origin", ""), ("claude", "codex"))
+            self.assertEqual(a.pull(), [])            # honest: protocol harvested, pull binds later
+
+    def test_harvested_adapter_listed_with_origin(self):
+        self.m.register(self.m._HarvestedMcp("notion", origin="claude"))
+        row = next(r for r in self.m.list_sources() if r["name"] == "notion")
+        self.assertTrue(row["harvested"])
+        self.assertEqual(row["origin"], "claude")
+
 
 if __name__ == "__main__":
     unittest.main()
