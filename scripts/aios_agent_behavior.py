@@ -109,31 +109,57 @@ _KNOWN_TOOLS = frozenset({
 })
 
 
-def _parse_claude_session(path: Path) -> list[str]:
-    """Parse Claude Code JSONL → tool name sequence. Privacy-safe."""
-    tools: list[str] = []
+# Provider-specific feature surfaces (Q6) — capture which the session used (names only).
+_FEATURE_TOOLS = frozenset({"Task", "Agent", "Skill", "Workflow", "Monitor", "ScheduleWakeup"})
+
+
+def _parse_claude_structured(path: Path) -> dict:
+    """Parse Claude Code JSONL into a sub-episode-aware structure (Phase A2 / Q6).
+    Privacy-safe: tool NAMES only, never content/args.
+
+    Returns: main_tools (the main agent), subagent_tools (isSidechain spans),
+    subagents (distinct sub-agent episodes by parentUuid), features (provider-
+    specific surfaces used — Task/Skill/Workflow/MCP/…), and tools (main+sub, flat,
+    for backward-compatible downstream scoring)."""
+    main_tools: list[str] = []
+    sub_tools: list[str] = []
+    sub_parents: set[str] = set()
+    features: set[str] = set()
     try:
         for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()
             if not line:
                 continue
             obj = json.loads(line)
-            ev_type = obj.get("type", "")
-
-            if ev_type == "assistant":
-                # Nested: message.content[].type==tool_use → extract .name only
-                msg = obj.get("message") or {}
-                for block in msg.get("content") or []:
-                    if isinstance(block, dict) and block.get("type") == "tool_use":
-                        name = str(block.get("name", ""))[:40]
-                        if name:
-                            tools.append(name)
-            # "queue-operation" and "last-prompt" are internal Claude Code
-            # event types, NOT tool names — skip them to avoid polluting
-            # tool-sequence data (was causing garbage in top_tools predictions)
-    except Exception:
+            is_sub = bool(obj.get("isSidechain"))
+            if is_sub and obj.get("parentUuid"):
+                sub_parents.add(str(obj["parentUuid"]))
+            if obj.get("type") != "assistant":
+                continue
+            msg = obj.get("message") or {}
+            for block in msg.get("content") or []:
+                if isinstance(block, dict) and block.get("type") == "tool_use":
+                    name = str(block.get("name", ""))[:40]
+                    if not name:
+                        continue
+                    (sub_tools if is_sub else main_tools).append(name)
+                    if name in _FEATURE_TOOLS or name.startswith("mcp__"):
+                        features.add(name)
+    except Exception:  # noqa: BLE001
         pass
-    return tools
+    return {
+        "tools": main_tools + sub_tools,
+        "main_tools": main_tools,
+        "subagent_tools": sub_tools,
+        "subagents": len(sub_parents) or (1 if sub_tools else 0),
+        "features": sorted(features),
+    }
+
+
+def _parse_claude_session(path: Path) -> list[str]:
+    """Parse Claude Code JSONL → flat tool name sequence (compat wrapper over the
+    sub-episode-aware structured parser). Privacy-safe."""
+    return _parse_claude_structured(path)["tools"]
 
 
 def _parse_codex_session(path: Path) -> list[str]:
@@ -260,7 +286,9 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
     memories: list[dict] = []
     doom_skipped = 0
     for sf in session_files:
-        tools = parse(sf)
+        # Phase A2 (Q6): claude sessions parse into a sub-episode-aware structure.
+        structured = _parse_claude_structured(sf) if provider == "claude" else {}
+        tools = structured.get("tools") if structured else parse(sf)
         if not tools:
             continue
 
@@ -308,6 +336,10 @@ def ingest_sessions(provider: str, opt_in: frozenset[str],
             "tool_freq": freq,
             "top_tools": top5,
             "tool_sequence": tools[:200],  # ordered sequence (capped, for transition probs)
+            # Phase A2 (Q6) sub-episode structure — sub-agents + provider features (names/counts only)
+            "subagents": structured.get("subagents", 0),
+            "subagent_tools": _top_n(_freq_table(structured.get("subagent_tools", [])), 5),
+            "features": structured.get("features", []),
             "evidence_refs": [f"session:{sf.name}"],
             "relations": [],
         })

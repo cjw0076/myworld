@@ -24,6 +24,34 @@ def _load(name: str):
     return m
 
 
+class SubAgentStructureTest(unittest.TestCase):
+    """Phase A2 / Q6: ingest recognizes sub-agents (sidechain) as sub-episodes."""
+    def setUp(self):
+        self.m = _load("aios_agent_behavior")
+
+    def test_separates_main_sub_and_captures_features(self):
+        rows = [
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Bash"}]}},
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Task"}]}},
+            {"type": "assistant", "isSidechain": True, "parentUuid": "p1",
+             "message": {"content": [{"type": "tool_use", "name": "Grep"}]}},
+            {"type": "assistant", "isSidechain": True, "parentUuid": "p1",
+             "message": {"content": [{"type": "tool_use", "name": "Read"}]}},
+            {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "mcp__aios__aios_route"}]}},
+        ]
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "s.jsonl"
+            p.write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+            s = self.m._parse_claude_structured(p)
+        self.assertEqual(s["main_tools"], ["Bash", "Task", "mcp__aios__aios_route"])
+        self.assertEqual(s["subagent_tools"], ["Grep", "Read"])
+        self.assertEqual(s["subagents"], 1)            # one parentUuid
+        self.assertIn("Task", s["features"])
+        self.assertIn("mcp__aios__aios_route", s["features"])
+        # compat wrapper returns the flat list
+        self.assertEqual(self.m._parse_claude_session(p), s["tools"])
+
+
 class DoomLoopDetectionTest(unittest.TestCase):
     def setUp(self):
         self.m = _load("aios_agent_behavior")
