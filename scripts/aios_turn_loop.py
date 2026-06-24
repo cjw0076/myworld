@@ -219,7 +219,9 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
              turn_sink: Callable[[dict], None] | None = None,
              run_log: Path | None = None,
              session_id: str | None = None,
-             contract_receipts: list[dict] | None = None) -> dict:
+             contract_receipts: list[dict] | None = None,
+             constraint_provider: "Callable[[str, list], list] | None" = None,
+             resurface_every: int = 3) -> dict:
     """Run the agent loop. Returns a structured outcome with a named exit.
 
     turn_sink (optional) receives per-turn `turn_context` + each `trajectory` entry as
@@ -247,6 +249,19 @@ def run_loop(goal: str, sampler: Sampler, registry: Registry, *,
 
     try:
         for turn in range(1, max_turns + 1):
+            # Pillar 4: periodically re-surface long-range constraints from memory
+            # into the active context, so they don't fade as the trajectory grows
+            # (catastrophic forgetting is the design-level 27.5% — arXiv 2604.11978).
+            if constraint_provider and turn > 1 and (turn - 1) % resurface_every == 0:
+                try:
+                    cons = constraint_provider(goal, trajectory) or []
+                except Exception:  # noqa: BLE001 — memory is best-effort, never blocks the loop
+                    cons = []
+                fresh = [str(c)[:300] for c in cons[:3] if c]
+                for c in fresh:
+                    history.append({"role": "system", "kind": "constraint", "content": c})
+                if fresh:
+                    emit({"kind": "constraint_resurfaced", "turn": turn, "count": len(fresh)})
             emit({"kind": "turn_context", "turn": turn})
             resp = sampler(history)
             calls = [c if isinstance(c, ToolCall) else ToolCall(**c) for c in (resp.get("tool_calls") or [])]

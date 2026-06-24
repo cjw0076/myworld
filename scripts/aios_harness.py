@@ -548,6 +548,37 @@ def select_model_by_horizon(task: str, base_url: str) -> str:
     return "qwen3:8b"
 
 
+# ── Renewal pillar 4: long-range constraint re-surfacing ───────────────────────
+# Catastrophic forgetting is the design-level 27.5% of long-horizon failures
+# (arXiv 2604.11978). During a long run the constraints retrieved at the start
+# fade out of the active context. This provider re-surfaces them: it queries
+# MemoryOS once for constraints relevant to the goal, caches them, and the
+# turn-loop re-injects them every few turns so they stay fresh.
+def make_memory_constraint_provider(root: Path):
+    cache: dict = {"loaded": False, "constraints": []}
+
+    def provider(goal: str, trajectory: list) -> list:
+        if not cache["loaded"]:
+            cache["loaded"] = True  # one query per run; best-effort, never blocks
+            try:
+                p = subprocess.run(
+                    [sys.executable, "-m", "memoryos", "--root", ".", "context",
+                     "build", "--task", goal[:200], "--json"],
+                    cwd=str(root / "memoryOS"), capture_output=True, text=True, timeout=20)
+                if p.returncode == 0:
+                    data = json.loads(p.stdout)
+                    items = (data.get("constraints") or []) + (data.get("decisions") or [])
+                    cache["constraints"] = [
+                        (it.get("content") or it.get("text") or "").strip()
+                        for it in items if isinstance(it, dict)
+                    ][:3]
+            except Exception:  # noqa: BLE001
+                pass
+        return [c for c in cache["constraints"] if c]
+
+    return provider
+
+
 def make_llm_sampler(goal: str, base_url: str | None = None,
                      model: str | None = None, api_key: str = "none",
                      provider: str | None = None) -> Callable:
@@ -619,6 +650,8 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
                 parts.append(f"Observation ({h.get('tool','?')}): {out_snippet}")
             elif role == "system" and h.get("kind") == "plan_repair":
                 parts.append(f"[PLAN REPAIR] {h.get('content','')}")
+            elif role == "system" and h.get("kind") == "constraint":
+                parts.append(f"[REMEMBER] {h.get('content','')}")
 
         parts.append("Assistant:")
         prompt = "\n".join(parts)
@@ -780,6 +813,10 @@ def main(argv: list[str] | None = None) -> int:
         if routed_role:
             print(f"[harness] role_router → role={routed_role}  provider={resolved_provider}")
 
+    # Pillar 4: re-surface long-range constraints from MemoryOS during the run.
+    _constraint_provider = (make_memory_constraint_provider(ROOT)
+                            if (ROOT / "memoryOS").exists() else None)
+
     t0 = time.time()
     outcome = tl.run_loop(
         args.task, sampler, reg,
@@ -788,6 +825,7 @@ def main(argv: list[str] | None = None) -> int:
         turn_sink=ts,
         record_sink=rs,
         session_id=sid,
+        constraint_provider=_constraint_provider,
     )
     outcome["wall_s"] = round(time.time() - t0, 2)
 

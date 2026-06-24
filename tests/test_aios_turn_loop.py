@@ -61,6 +61,32 @@ class TurnLoopTests(unittest.TestCase):
         self.assertGreaterEqual(len(repairs), 1)
         self.assertTrue(seen["v"])
 
+    def test_constraint_provider_resurfaces_into_context(self) -> None:
+        # Renewal pillar 4 (arXiv 2604.11978, catastrophic forgetting): the loop
+        # periodically re-injects long-range constraints so they stay in context.
+        self.reg.register("noop", lambda a: "ok")
+        seen = {"v": False}
+        events = []
+        calls = {"n": 0}
+
+        def provider(goal, traj):
+            return ["never touch prod DB", "keep PII local"]
+
+        def sampler(history):
+            if any(h.get("kind") == "constraint" for h in history):
+                seen["v"] = True
+            calls["n"] += 1
+            if calls["n"] >= 5:
+                return {"tool_calls": []}
+            # vary args so the loop-detector doesn't fire before re-surfacing
+            return {"tool_calls": [L.ToolCall("noop", {"i": calls["n"]}, call_id=f"c{calls['n']}")]}
+
+        L.run_loop("task", sampler, self.reg, gate=lambda n, a: L.ALLOW, max_turns=8,
+                   constraint_provider=provider, resurface_every=2,
+                   turn_sink=lambda r: events.append(r) if r.get("kind") == "constraint_resurfaced" else None)
+        self.assertGreaterEqual(len(events), 1)
+        self.assertTrue(seen["v"])
+
     def test_finishes_when_model_emits_no_tool_call(self) -> None:
         r = L.run_loop("x", scripted([
             {"tool_calls": [L.ToolCall("aios_read", {"p": "1"}, call_id="c1")]},
