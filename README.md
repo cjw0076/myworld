@@ -133,6 +133,17 @@ aios behavior contribute --opt-in code,docs
 
 ---
 
+## Build on AIOS
+
+AIOS has four small, self-contained extension seams — provider adapters, domain
+minds, capability cards, and behavioral memory. Run `aios onboard`: its
+`absorbed_not_executable` list is a live good-first-issue backlog (write the
+`grok` adapter in ~5 lines and watch it move to `verified_ready`).
+
+→ **[docs/BUILD_ON_AIOS.md](docs/BUILD_ON_AIOS.md)** — the contributor guide.
+
+---
+
 ## Architecture (for developers)
 
 ```
