@@ -648,10 +648,10 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
                 result = h.get("result", {})
                 out_snippet = str(result.get("output", result.get("status", "?")))[:300]
                 parts.append(f"Observation ({h.get('tool','?')}): {out_snippet}")
-            elif role == "system" and h.get("kind") == "plan_repair":
-                parts.append(f"[PLAN REPAIR] {h.get('content','')}")
-            elif role == "system" and h.get("kind") == "constraint":
-                parts.append(f"[REMEMBER] {h.get('content','')}")
+        # Renewal pillars 3 & 4 via the shared kernel renderer (one format, every path)
+        _directives = _load("aios_turn_loop").render_directives(history)
+        if _directives:
+            parts.append(_directives.rstrip())
 
         parts.append("Assistant:")
         prompt = "\n".join(parts)

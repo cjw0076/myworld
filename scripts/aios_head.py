@@ -435,12 +435,8 @@ def make_provider_sampler(provider: str, adapters: dict[str, Callable[[str], str
             + genesis_hint
             + done_hint
             + no_repeat_hint
-            # Renewal pillars 3 & 4: surface plan-repair + re-surfaced constraints
-            # explicitly (not just buried in the trajectory JSON) so the model acts on them.
-            + "".join(f"[PLAN REPAIR] {h.get('content','')}\n" for h in recent
-                      if h.get("role") == "system" and h.get("kind") == "plan_repair")
-            + "".join(f"[REMEMBER] {h.get('content','')}\n" for h in recent
-                      if h.get("role") == "system" and h.get("kind") == "constraint")
+            # Renewal pillars 3 & 4 (shared kernel renderer — one format on every path)
+            + tl.render_directives(recent)
             + "Trajectory:\n"
             + json.dumps(recent, ensure_ascii=False) + "\n"
             'Emit ONLY JSON: {"tool":"<name>","arguments":{...}} for the next single '

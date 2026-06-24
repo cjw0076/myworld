@@ -114,6 +114,17 @@ def is_error_entry(h: dict) -> bool:
     return h.get("role") == "tool" and _entry_status(h) in _ERROR_STATUSES
 
 
+def render_directives(history: list[dict]) -> str:
+    """Render the kernel's in-context directives (pillars 3 & 4) into prompt lines —
+    plan-repair re-plans and re-surfaced constraints. One format, shared by every
+    runner's sampler so the pillars look identical on every execution path."""
+    repairs = "".join(f"[PLAN REPAIR] {h.get('content','')}\n" for h in history
+                      if h.get("role") == "system" and h.get("kind") == "plan_repair")
+    constraints = "".join(f"[REMEMBER] {h.get('content','')}\n" for h in history
+                          if h.get("role") == "system" and h.get("kind") == "constraint")
+    return repairs + constraints
+
+
 def decondition_history(history: list[dict], keep_recent_errors: int = 1) -> list[dict]:
     """Return a self-conditioning-safe view of history: successful observations are
     kept verbatim, but all-but-the-most-recent error traces are compressed to a
