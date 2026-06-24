@@ -91,6 +91,48 @@ _WRITE_TOOLS = frozenset({"Write", "Edit", "aios_observe", "aios_ingest_cli_sess
 _READ_TOOLS = frozenset({"Read", "aios_retrieve", "aios_route"})
 
 
+# ── Renewal pillar 1: self-conditioning defense ────────────────────────────────
+# Frontier research (arXiv 2509.09677): an LLM errs MORE after seeing its own past
+# errors in context — and this persists in 200B+ models; scaling does not fix it.
+# So accumulated error traces in the active context are a reliability tax. The
+# cheapest high-leverage fix is to keep old error traces OUT of the prompt: keep
+# the most recent failure (the model must know the last attempt failed) but elide
+# older ones to a terse marker so mistakes don't compound. (2604.11978: 72.5% of
+# long-horizon failures are process-level — clean context helps planning recover.)
+_ERROR_STATUSES = frozenset({
+    "error", "denied", "denied_scope", "timeout", "no_results", "unavailable",
+    "not_found", "empty", "failed", "non_json_output", "script_missing",
+})
+
+
+def _entry_status(h: dict) -> str:
+    return str((h.get("result") or {}).get("status") or h.get("status") or "")
+
+
+def is_error_entry(h: dict) -> bool:
+    """True if a history tool-entry represents a failed/empty observation."""
+    return h.get("role") == "tool" and _entry_status(h) in _ERROR_STATUSES
+
+
+def decondition_history(history: list[dict], keep_recent_errors: int = 1) -> list[dict]:
+    """Return a self-conditioning-safe view of history: successful observations are
+    kept verbatim, but all-but-the-most-recent error traces are compressed to a
+    terse marker so the model does not self-condition on accumulated mistakes.
+
+    Pure function (no mutation of the input). Research: arXiv 2509.09677.
+    """
+    err_positions = [i for i, h in enumerate(history) if is_error_entry(h)]
+    keep = set(err_positions[-keep_recent_errors:]) if keep_recent_errors > 0 else set()
+    out: list[dict] = []
+    for i, h in enumerate(history):
+        if is_error_entry(h) and i not in keep:
+            out.append({**h, "result": {"status": "(earlier failed attempt elided)",
+                                        "_deconditioned": True}})
+        else:
+            out.append(h)
+    return out
+
+
 def _completion_audit(trajectory: list[dict],
                        contract_receipts: list[dict] | None = None) -> dict:
     """Ralph-style prompt-to-artifact audit: did the loop actually produce evidence?

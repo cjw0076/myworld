@@ -553,6 +553,10 @@ def make_llm_sampler(goal: str, base_url: str | None = None,
     def sampler(history: list[dict]) -> dict:
         nonlocal first_turn
 
+        # Renewal pillar 1: strip accumulated error traces before they reach the
+        # model, so it doesn't self-condition on its own past mistakes (2509.09677).
+        history = _load("aios_turn_loop").decondition_history(history)
+
         # Build conversation text
         parts = [system_prompt, ""]
         is_first = first_turn

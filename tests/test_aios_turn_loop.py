@@ -21,6 +21,28 @@ class TurnLoopTests(unittest.TestCase):
         self.reg.register("aios_read", lambda a: "data")
         self.reg.register("aios_write", lambda a: "written")
 
+    def test_decondition_history_elides_old_errors_keeps_recent_and_success(self) -> None:
+        # Renewal pillar 1 (self-conditioning defense, arXiv 2509.09677): old error
+        # traces are compressed so the model doesn't self-condition; the most recent
+        # error and all successful observations survive verbatim.
+        hist = [
+            {"role": "user"},
+            {"role": "tool", "tool": "Bash", "status": "error",
+             "result": {"status": "error", "output": "OLD-ERR-1"}},
+            {"role": "tool", "tool": "Read", "status": "no_results",
+             "result": {"status": "no_results", "output": "OLD-ERR-2"}},
+            {"role": "tool", "tool": "Edit", "status": "ok",
+             "result": {"status": "ok", "output": "GOOD"}},
+            {"role": "tool", "tool": "Bash", "status": "timeout",
+             "result": {"status": "timeout", "output": "RECENT-ERR"}},
+        ]
+        out = L.decondition_history(hist)
+        elided = [h for h in out if (h.get("result") or {}).get("_deconditioned")]
+        self.assertEqual(len(elided), 2)                         # both old errors compressed
+        self.assertEqual(out[-1]["result"]["output"], "RECENT-ERR")  # recent error kept
+        self.assertTrue(any((h.get("result") or {}).get("output") == "GOOD" for h in out))
+        self.assertEqual(hist[1]["result"]["output"], "OLD-ERR-1")   # input not mutated
+
     def test_finishes_when_model_emits_no_tool_call(self) -> None:
         r = L.run_loop("x", scripted([
             {"tool_calls": [L.ToolCall("aios_read", {"p": "1"}, call_id="c1")]},
