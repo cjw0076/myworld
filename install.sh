@@ -103,6 +103,18 @@ if [ "${AIOS_NO_AMBIENT:-0}" != "1" ] && [ -f "$AIOS_HOME/myworld/scripts/aios_a
   fi
 fi
 
+# --- 4c. absorb the device's capabilities (one-shot) -----------------------
+# The "absorb everything in one download" property: scan the device's local LLMs
+# (Ollama models), agent CLIs (claude/codex/gemini/grok/cursor), MCP servers and
+# skills NOW, so they are catalogued and routable on the very first `aios` run —
+# not lazily on first use. Best-effort: a failure just defers to the lazy scan.
+if [ -f "$AIOS_HOME/myworld/scripts/aios_capability_scanner.py" ]; then
+  if _scan=$("$PY" "$AIOS_HOME/myworld/scripts/aios_capability_scanner.py" 2>/dev/null \
+              | grep -E 'scanned:|Ollama|CLIs:' | head -4); then
+    [ -n "$_scan" ] && say "absorbed device capabilities (local LLMs + agent CLIs + MCPs + skills)"
+  fi
+fi
+
 # --- 5. done ----------------------------------------------------------------
 if [ -n "$failed" ]; then
   # Separate expected-absent from truly failed

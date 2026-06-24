@@ -136,10 +136,12 @@ def scan_ollama_models() -> list[dict]:
 
 def scan_clis() -> list[dict]:
     cli_defs = [
-        ("gemini",  "Google Gemini CLI — multimodal AI, web search, code, files"),
+        ("claude",  "Anthropic Claude Code CLI — agentic coding, hooks, MCP, skills"),
         ("codex",   "OpenAI Codex CLI — code generation, autonomous agent"),
-        ("aider",   "Aider — AI pair programmer, git-aware code editing"),
+        ("gemini",  "Google Gemini CLI — multimodal AI, web search, code, files"),
+        ("grok",    "xAI Grok CLI — chat, code, reasoning"),
         ("cursor",  "Cursor — AI-native code editor (headless invoke possible)"),
+        ("aider",   "Aider — AI pair programmer, git-aware code editing"),
         ("aios",    "AIOS kernel head — 5-OS organic pipeline, goal runner"),
         ("pipx",    "pipx — isolated Python tool installer"),
         ("uvx",     "uv tool runner — fast Python package execution"),
