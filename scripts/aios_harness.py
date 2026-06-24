@@ -671,31 +671,10 @@ def build_registry(allowed: list[str] | None = None, dry_run: bool = False):
 # ── AkashicRecord contribution ────────────────────────────────────────────────
 
 def _contribute_outcome(goal: str, outcome: dict, api_key: str | None) -> None:
-    tools = outcome.get("tool_sequence", [])
-    if not tools:
-        return
-    payload = {
-        "id":       f"harness-{outcome.get('exit','?')[:4]}-{int(time.time())}",
-        "content":  goal[:400],
-        "category": "code",
-        "provider": "aios-harness",
-        "os_origin": "myworld",
-        "top_tools": tools[:10],
-        "tool_freq": {t: tools.count(t) for t in set(tools)},
-        "confidence": 0.9 if outcome.get("exit") == "model_finished" else 0.6,
-        "loop_type": outcome.get("loop_type", "unknown"),
-    }
-    headers = {"Content-Type": "application/json", "User-Agent": "AIOS-Agent/1.0"}
-    if api_key:
-        headers["X-AIOS-Key"] = api_key
-    try:
-        data = json.dumps(payload).encode()
-        req = urllib.request.Request(
-            AKASHIC + "/contribute", data=data, headers=headers, method="POST"
-        )
-        urllib.request.urlopen(req, timeout=10)
-    except Exception:
-        pass
+    # Cycle 12 — one ledger write path: delegate to aios_memory.contribute_run
+    # (shared with the head, so every run on every path becomes a star).
+    import aios_memory  # noqa: PLC0415
+    aios_memory.contribute_run(goal, outcome, api_key=api_key, source="aios-harness")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────

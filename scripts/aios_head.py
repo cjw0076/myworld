@@ -763,6 +763,13 @@ def _organ_postamble(goal: str, result: dict, root: Path, *, run_id: str | None 
 
     preamble_errors: list[str] = []
 
+    # Cycle 12 — every run becomes a star: the head's organic runs now contribute
+    # to the global AkashicRecord ledger too (was harness-only). Shared write path.
+    try:
+        _load("aios_memory").contribute_run(goal, result, source="aios-head")
+    except Exception:  # noqa: BLE001 — best-effort, never blocks the postamble
+        pass
+
     # 1. MemoryOS run import — write the run as draft MemoryObjects to the real graph.
     #    Uses make_memory_object + GraphStore directly (avoid import-run format mismatch:
     #    import-run expects .runs/<id>/run_state.json; RunLog writes .aios/runs/<id>.jsonl).
