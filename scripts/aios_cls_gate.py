@@ -235,6 +235,38 @@ def gate_promote(base_acc: float, candidate_acc: float | None, *, margin: float 
             "status": "promote" if promote else "stays_draft (eval not beaten)"}
 
 
+# ── Phase E — close the CLS loop (capture→gate→replay→eval→promote) ──────────────
+
+def run_cycle(memories: list[dict], *, frac: float = 0.2,
+              candidate_acc: float | None = None, epoch_size: int = 0,
+              at: str | None = None) -> dict:
+    """One full draft-first CLS cycle, GPU step excepted. Closes the loop:
+      capture (A/B, upstream) → corpus gate (C) → replay policy (D)
+      → held-out eval + promotion gate (E).
+
+    Everything here runs without a GPU and emits ONE provenance-stamped report.
+    The only open step is the dream→weights QLoRA run (founder-gated): pass its
+    held-out acc@1 as candidate_acc to get a real promote/discard decision; omit it
+    and the gate reports 'awaiting training'. The baseline acc is the benchmark the
+    trained adapter must beat — recorded with the corpus hash so it is auditable."""
+    eligible, manifest = select_corpus(memories)
+    schedule, replay = replay_schedule(eligible, epoch_size=epoch_size)
+    train, holdout = split_holdout(eligible, frac=frac)
+    baseline = eval_behavior(train, holdout)
+    gate = gate_promote(baseline["acc"], candidate_acc)
+    return {
+        "schema": "aios.cls_cycle.v1",
+        "at": at,
+        "corpus": manifest,
+        "replay": replay,
+        "split": {"train": len(train), "holdout": len(holdout)},
+        "baseline": baseline,
+        "gate": gate,
+        "loop_closed": manifest["training_ready"] and len(holdout) > 0,
+        "open_step": "dream→weights QLoRA run (founder GO for GPU)",
+    }
+
+
 # ── CLI ──────────────────────────────────────────────────────────────────────────
 
 def _load_memories() -> list[dict]:
@@ -260,12 +292,25 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("replay")
     r.add_argument("--epoch-size", type=int, default=0,
                    help="if >0, emit replay_count per run for one replay epoch")
+    cy = sub.add_parser("cycle")
+    cy.add_argument("--frac", type=float, default=0.2)
+    cy.add_argument("--candidate", type=float, default=None,
+                    help="trained-adapter held-out acc@1 (omit = awaiting founder-gated run)")
+    cy.add_argument("--epoch-size", type=int, default=0)
     args = p.parse_args(argv)
 
     mems = _load_memories()
     eligible, manifest = select_corpus(
         mems, min_tools=getattr(args, "min_tools", 5),
         max_per_bucket=getattr(args, "max_per_bucket", 200))
+
+    if args.cmd == "cycle":
+        from datetime import datetime, timezone
+        rep = run_cycle(mems, frac=args.frac, candidate_acc=args.candidate,
+                        epoch_size=getattr(args, "epoch_size", 0),
+                        at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        print(json.dumps(rep, ensure_ascii=False, indent=2))
+        return 0
 
     if args.cmd == "replay":
         sched, summary = replay_schedule(eligible, epoch_size=getattr(args, "epoch_size", 0))

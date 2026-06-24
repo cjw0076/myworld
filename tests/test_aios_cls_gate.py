@@ -162,5 +162,37 @@ class ReplayPolicyTest(unittest.TestCase):
         self.assertEqual(summary["items"], 0)
 
 
+class CycleTest(unittest.TestCase):
+    def setUp(self):
+        self.m = _load()
+
+    def test_cycle_closes_loop_and_awaits_training(self):
+        mems = [_mem(f"r{i}", "react_code", {"Edit": 6, "Bash": 4, "Read": 2}) for i in range(6)]
+        mems += [_mem(f"e{i}", "exploration", {"Read": 6, "Grep": 3, "Glob": 2, "WebFetch": 1}) for i in range(4)]
+        rep = self.m.run_cycle(mems, at="2026-06-24T00:00:00+00:00")
+        self.assertEqual(rep["schema"], "aios.cls_cycle.v1")
+        self.assertTrue(rep["corpus"]["training_ready"])
+        self.assertTrue(rep["loop_closed"])
+        self.assertFalse(rep["gate"]["promote"])             # no trained adapter yet
+        self.assertIn("awaiting_training", rep["gate"]["status"])
+        self.assertIn("QLoRA", rep["open_step"])
+
+    def test_cycle_with_candidate_makes_real_decision(self):
+        # supplying a trained-adapter score moves the gate OUT of 'awaiting' into a
+        # real promote/stays-draft decision (the value depends on the held-out baseline).
+        mems = [_mem(f"r{i}", "react_code", {"Edit": 6, "Bash": 4}) for i in range(6)]
+        rep = self.m.run_cycle(mems, candidate_acc=0.9)
+        self.assertEqual(rep["gate"]["candidate"], 0.9)
+        self.assertNotIn("awaiting_training", rep["gate"]["status"])
+        self.assertIn(rep["gate"]["status"], ("promote", "stays_draft (eval not beaten)"))
+        # gate decision is consistent with the margin rule
+        g = rep["gate"]
+        self.assertEqual(g["promote"], g["candidate"] >= g["base"] + g["margin"])
+
+    def test_cycle_empty_corpus_not_closed(self):
+        rep = self.m.run_cycle([])
+        self.assertFalse(rep["loop_closed"])
+
+
 if __name__ == "__main__":
     unittest.main()
