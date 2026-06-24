@@ -2512,3 +2512,23 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   SHOWCASE_IS_CURATION_NOT_ADDITION: presentability는 기능 추가가 아니라 표면 정리(40→core 7) + 정직성(README claim ↔ 실제 일치) 검증.
 - self-correction-of-prior-observation:
   연구자 프레임(novelty=가치)으로 peer 시스템을 위협으로 본 것 → founder 교정: 같아도 됨, peer 존재=수요검증, moat=ownership. [[feedback_founder_frame_not_researcher_frame]] 신규 기록.
+
+## 2026-06-24 (2차) KST — claude@myworld — AIOS Renewal arc: research→build→verify ×10 사이클
+
+- session_id: /loop 리뉴얼 루프 (founder: "하나의 생태계/foundation으로 build, 저질러놓고 만들고 고친다")
+- mode_breakdown: decide:10 / intervene(build):65 / verify:25 (분 비율 대략, LLM 부하로 코드 위주)
+- tools_used: Workflow(deep-research 106 agents/3M tokens), Bash(build/test/git), Edit/Write, headless chromium(쇼케이스 렌더 검증), memory writes
+- substrate_specific_behaviors_observed:
+  - 머신 공유 부하(load 237, GPU 96%)로 라이브 LLM 호출 ~8s/trivial → 코드/단위테스트 위주로 검증 전환. 부하는 코드 회귀와 무관.
+- failures_recovered (검증이 "실패처럼 보이는 것"을 코드 탓 아닌 것으로 격리한 사례 다수):
+  - aios do timeout → GPU 96%/load 237 환경부하 격리(하드 증거), pillar 3 무관
+  - memoryOS pingpong stderr_bytes 21≠136 → dain_fake2 env libtinfo 경고 115바이트 주입 격리, 코드 정상
+  - pillar4/head 테스트 "실패" 2건 → 테스트 아티팩트(loop-detection 트립, provider 키 mismatch) 격리
+- key_decision: frontier 연구로 4 reliability pillar 결정(self-conditioning 방어/horizon routing/plan repair/constraint resurface); AIOS가 이미 그 모양이라 한 세션에 응축.
+- new_invariant_or_pattern_discovered:
+  RESEARCH_BACKED_RENEWAL: deep-research로 frontier 고질병(long-horizon 비선형 붕괴: self-conditioning 2509.09677 + 72.5% process 실패 2604.11978) 진단 → 처방을 pillar로 직접 빌드. speculative 아닌 evidence-driven build.
+  SEED_AND_CONVERGE: 파편화 통합은 "씨앗 모듈(aios_routing/aios_memory) 만들고 → 소비자를 하나씩 그리로 수렴" 패턴이 안전·점진적(한 사이클=한 수렴, 매번 테스트). big-bang merge보다 우월.
+  VERIFY_ISOLATES_ENV_FROM_CODE: 부하 높은 공유머신에선 "실패"의 대부분이 env/test 아티팩트. 타이밍·바이트·로그 하드 증거로 격리하면 거짓 회귀 보고 방지.
+- self-correction-of-prior-observation:
+  "데모/아직 아님" 자기한정 → founder 교정 "더 크게 봐, 저질러놓고 만들고 고친다". foundation 스케일 + action-bias로 전환. [[feedback_operate_at_foundation_scale]] 신규.
+- 산출물: AIOS_RENEWAL.md (research-grounded pillars + status), 15+ 커밋, aios_routing.py/aios_memory.py 신규 spine.
