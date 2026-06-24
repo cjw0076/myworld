@@ -81,7 +81,22 @@ into the launcher. The only open step is the founder-gated GPU training run.
 | C — gates | ✅ corpus gate + corpus_quality + held-out eval + draft-first promotion | `aios_cls_gate.py` → `aios cls-gate corpus|eval` |
 | D — replay policy | ✅ prioritized replay (value × diversity × inverse-redundancy) | `aios_cls_gate.py` → `aios cls-gate replay` |
 | E — close the loop | ✅ `run_cycle()` end-to-end, provenance-stamped report | `aios cls-gate cycle` |
-| **GPU QLoRA run** | ⛔ **founder GO** (GPU-heavy, near-irreversible weight artifact) | — |
+| C — training organ | ✅ corpus→QLoRA dataset (GPU-free) + config + founder-gated train() | `aios cls-train export|config|run` |
+| **GPU QLoRA run** | ⛔ **founder GO** + corpus ≥20 distinct runs (GPU-heavy, near-irreversible) | — |
+
+### The structural corpus limit (2026-06-25)
+
+The trainer's readiness gate refuses on <20 distinct runs (replay inflates count, not
+diversity). Current corpus: 5 session-derived runs. Attempts to grow it from available
+logs fail at the doom-loop filter — even induced to threshold 12, claude yields 2 and
+codex 0, because with tool-NAMES only (privacy: tool명만), a productive "Bash×12" (12
+distinct git/grep commands) is indistinguishable from 12 stuck retries. So the corpus
+cannot reach training scale at the current capture granularity.
+
+Unblocking a meaningful QLoRA run requires deepening Phase A capture to be **arg-aware**
+(distinguish productive vs stuck repetition; also the only source of tool-call FORMAT
+training signal) — which captures more per-call detail and is therefore a privacy-scope
+decision for the founder, not an autonomous change.
 
 Also: source-adapter framework + provider-MCP harvest (`aios sources`), and the
 doom-loop threshold induced 3→12 from real session data (the 3-name rule was a
