@@ -110,5 +110,40 @@ class EvalGateTest(unittest.TestCase):
         self.assertTrue(self.m.gate_promote(0.5, 0.55, margin=0.02)["promote"])
 
 
+class ReplayPolicyTest(unittest.TestCase):
+    def setUp(self):
+        self.m = _load()
+
+    def _c(self, ref, loop_type, freq, weight=1.0):
+        return {"ref": ref, "loop_type": loop_type, "tool_freq": freq, "weight": weight}
+
+    def test_rare_mode_replayed_more_than_dominant(self):
+        # 3 react_code runs (same dominant tool Edit) + 1 rare exploration run
+        corpus = [self._c(f"r{i}", "react_code", {"Edit": 6}) for i in range(3)]
+        corpus.append(self._c("x", "exploration", {"Read": 6}))
+        sched, summary = self.m.replay_schedule(corpus)
+        top = sched[0]
+        self.assertEqual(top["ref"], "x")                 # rarest mode replayed most
+        self.assertEqual(summary["items"], 4)
+
+    def test_intervention_weight_carries_into_replay(self):
+        corpus = [self._c("plain", "react_code", {"Edit": 6}, weight=1.0),
+                  self._c("steered", "react_code", {"Edit": 6}, weight=3.0)]
+        sched, _ = self.m.replay_schedule(corpus)
+        self.assertEqual(sched[0]["ref"], "steered")      # supervision → replayed more
+
+    def test_epoch_counts_emitted(self):
+        corpus = [self._c("a", "react_code", {"Edit": 6}),
+                  self._c("b", "exploration", {"Read": 6})]
+        sched, summary = self.m.replay_schedule(corpus, epoch_size=10)
+        self.assertEqual(summary["epoch_size"], 10)
+        self.assertTrue(all("replay_count" in s and s["replay_count"] >= 1 for s in sched))
+
+    def test_empty_corpus_is_safe(self):
+        sched, summary = self.m.replay_schedule([])
+        self.assertEqual(sched, [])
+        self.assertEqual(summary["items"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

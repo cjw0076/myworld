@@ -148,6 +148,50 @@ def eval_behavior(train: list[dict], holdout: list[dict]) -> dict:
             "baseline": "freq_prior", "predicts": pred_global}
 
 
+def replay_schedule(corpus: list[dict], *, epoch_size: int = 0) -> tuple[list[dict], dict]:
+    """Phase D — replay selection policy. Decide which eligible runs to replay during
+    dream→train, and how often. Prioritized replay (CLS analogue of prioritized
+    experience replay): replay_weight = base value × diversity balance × inverse
+    redundancy, so high-supervision, under-represented, non-duplicate runs are
+    replayed more — preventing the fine-tune from overfitting the dominant mode.
+
+    - base value: the select_corpus weight (intervention-boosted).
+    - diversity balance: inverse frequency of the run's loop_type bucket.
+    - inverse redundancy: inverse frequency of its dominant tool (near-dup profiles
+      share a dominant tool; downweight so duplicates don't dominate replay).
+
+    Returns (schedule, summary). schedule is corpus sorted by replay_weight desc, each
+    item carrying replay_weight + (if epoch_size>0) replay_count for one epoch."""
+    if not corpus:
+        return [], {"schema": "aios.cls_replay.v1", "items": 0, "epoch_size": epoch_size}
+    bucket_n: dict[str, int] = {}
+    domtool_n: dict[str, int] = {}
+    for c in corpus:
+        bucket_n[c.get("loop_type") or "unknown"] = bucket_n.get(c.get("loop_type") or "unknown", 0) + 1
+        dt = _dominant_tool(c.get("tool_freq") or {}) or "none"
+        domtool_n[dt] = domtool_n.get(dt, 0) + 1
+
+    scored = []
+    for c in corpus:
+        base = float(c.get("weight", 1.0))
+        bucket = c.get("loop_type") or "unknown"
+        dt = _dominant_tool(c.get("tool_freq") or {}) or "none"
+        diversity = 1.0 / bucket_n[bucket]          # rarer mode → replayed more
+        redundancy = 1.0 / domtool_n[dt]            # rarer dominant tool → replayed more
+        rw = base * diversity * redundancy
+        scored.append({**c, "replay_weight": round(rw, 5)})
+
+    total = sum(s["replay_weight"] for s in scored) or 1.0
+    if epoch_size > 0:
+        for s in scored:
+            s["replay_count"] = max(1, round(epoch_size * s["replay_weight"] / total))
+    scored.sort(key=lambda s: s["replay_weight"], reverse=True)
+    summary = {"schema": "aios.cls_replay.v1", "items": len(scored),
+               "epoch_size": epoch_size, "buckets": bucket_n,
+               "top_ref": scored[0]["ref"], "top_weight": scored[0]["replay_weight"]}
+    return scored, summary
+
+
 def gate_promote(base_acc: float, candidate_acc: float | None, *, margin: float = 0.02) -> dict:
     """Draft-first for weights: promote a fine-tune ONLY if its held-out score beats
     the baseline by >= margin. candidate_acc=None ⇒ no trained adapter yet (awaiting
@@ -184,12 +228,21 @@ def main(argv: list[str] | None = None) -> int:
     e.add_argument("--frac", type=float, default=0.2)
     e.add_argument("--candidate", type=float, default=None,
                    help="held-out acc@1 of a trained adapter (omit = none yet)")
+    r = sub.add_parser("replay")
+    r.add_argument("--epoch-size", type=int, default=0,
+                   help="if >0, emit replay_count per run for one replay epoch")
     args = p.parse_args(argv)
 
     mems = _load_memories()
     eligible, manifest = select_corpus(
         mems, min_tools=getattr(args, "min_tools", 5),
         max_per_bucket=getattr(args, "max_per_bucket", 200))
+
+    if args.cmd == "replay":
+        sched, summary = replay_schedule(eligible, epoch_size=getattr(args, "epoch_size", 0))
+        print(json.dumps({"corpus": manifest, "replay": summary, "top": sched[:5]},
+                         ensure_ascii=False, indent=2))
+        return 0
 
     if args.cmd == "eval":
         train, holdout = split_holdout(eligible, frac=args.frac)
