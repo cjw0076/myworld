@@ -69,6 +69,31 @@ Forgetting is a feature (abstraction), not a bug.
 over time on a fixed behavior benchmark (the README promise, at the parameter
 level). Fast memory → slow weights → better next run → richer memory.
 
+## Build status (2026-06-24)
+
+The program is **structurally complete** — every stage runs, is tested, and is wired
+into the launcher. The only open step is the founder-gated GPU training run.
+
+| Phase | State | Where |
+|---|---|---|
+| A — episodic capture | ✅ A1 (hippocampal onboarding status), A2 (sub-agent/sidechain + provider features) | `aios_agent_behavior.py`, `aios_onboard.py` |
+| B — dual modeling | ✅ human intervention vs agent policy (`intervention_rate` = supervision signal) | `aios_agent_behavior.py` |
+| C — gates | ✅ corpus gate + corpus_quality + held-out eval + draft-first promotion | `aios_cls_gate.py` → `aios cls-gate corpus|eval` |
+| D — replay policy | ✅ prioritized replay (value × diversity × inverse-redundancy) | `aios_cls_gate.py` → `aios cls-gate replay` |
+| E — close the loop | ✅ `run_cycle()` end-to-end, provenance-stamped report | `aios cls-gate cycle` |
+| **GPU QLoRA run** | ⛔ **founder GO** (GPU-heavy, near-irreversible weight artifact) | — |
+
+Also: source-adapter framework + provider-MCP harvest (`aios sources`), and the
+doom-loop threshold induced 3→12 from real session data (the 3-name rule was a
+false-positive on every real session).
+
+**Two honest open items** (neither is a missing feature):
+1. *Corpus scale/diversity.* Only ~5–7 session-derived per-run records exist; the
+   1032 agentbank rows are aggregates (excluded). The cycle's held-out eval is
+   degenerate until routine ingestion accumulates diverse sessions. The cap is data
+   availability, not the pipeline.
+2. *The GPU run itself* — gated on (1) being met and on founder GO.
+
 ## Memory activation: sparse at runtime, full at sleep (the optimization layer)
 
 The AkashicRecord must not be scanned whole on every inference — it grows without
