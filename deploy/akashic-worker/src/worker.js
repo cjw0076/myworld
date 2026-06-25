@@ -10,7 +10,9 @@
  *
  * Privacy guarantee:
  *   - content field is never stored raw — only its embedding vector
- *   - tool_freq (structural metadata) stored
+ *   - tool_freq (numeric distribution) is REJECTED server-side — never stored
+ *   - top_tools hard-capped to 3 entries server-side
+ *   - k-anonymity floor: rows served only when contributors >= min_contributors (5)
  *   - No PII accepted; server rejects any content with email/key patterns
  *
  * Storage: Cloudflare D1 (SQLite) + Workers AI (@cf/baai/bge-base-en-v1.5)
@@ -167,20 +169,29 @@ function hasSensitiveData(text) {
 // ── DB schema (run once via /init) ────────────────────────────────────────────
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS memories (
-  id          TEXT PRIMARY KEY,
-  schema_ver  TEXT NOT NULL DEFAULT 'aios.agent_behavior.v1',
-  category    TEXT,
-  provider    TEXT,
-  dataset     TEXT,
-  top_tools   TEXT,          -- JSON array of top tool names
-  tool_freq   TEXT,          -- JSON object {tool: count}
-  embedding   TEXT NOT NULL, -- JSON array [float, ...]  (768-dim)
-  confidence  REAL DEFAULT 0.75,
-  contributed_at TEXT NOT NULL
+  id               TEXT PRIMARY KEY,
+  schema_ver       TEXT NOT NULL DEFAULT 'aios.agent_behavior.v1',
+  category         TEXT,
+  provider         TEXT,
+  dataset          TEXT,
+  os_origin        TEXT,
+  top_tools        TEXT,          -- JSON array, server-capped to 3 entries
+  tool_freq        TEXT,          -- retained column; no longer written (privacy)
+  embedding        TEXT NOT NULL, -- JSON array [float, ...]  (768-dim)
+  confidence       REAL DEFAULT 0.75,
+  contributors     INTEGER DEFAULT 1,
+  min_contributors INTEGER DEFAULT 5,
+  contributed_at   TEXT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_category ON memories(category);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_category ON memories(category);
 CREATE INDEX IF NOT EXISTS idx_provider ON memories(provider);
 CREATE INDEX IF NOT EXISTS idx_contributed ON memories(contributed_at);
+CREATE TABLE IF NOT EXISTS merkle_nodes (
+  position       INTEGER PRIMARY KEY AUTOINCREMENT,
+  entry_id       TEXT NOT NULL UNIQUE,
+  leaf_hash      TEXT NOT NULL,
+  contributed_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS checkpoints (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   root_hash    TEXT NOT NULL,
@@ -191,6 +202,13 @@ CREATE TABLE IF NOT EXISTS checkpoints (
 `;
 
 // ── Merkle tree (pure JS, no deps) ───────────────────────────────────────────
+//
+// APPEND-STABLE design: leaves are stored in insertion order and never resorted.
+// A proof issued when the tree had N leaves verifies against root_at_N forever:
+// appending more entries extends the sequence but never shifts existing positions.
+//
+// Callers pass pre-computed leaf hashes (from merkle_nodes table) so that
+// /root and /proof never need to re-read the large memories table.
 
 async function sha256hex(text) {
   const buf = await crypto.subtle.digest("SHA-256",
@@ -198,10 +216,15 @@ async function sha256hex(text) {
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function buildMerkleRoot(ids) {
-  // ids → sorted leaves → pairwise hash until root
-  if (!ids || ids.length === 0) return null;
-  let layer = await Promise.all(ids.slice().sort().map(id => sha256hex(id)));
+async function leafHash(entryId) {
+  // Domain-separated leaf hash prevents second-preimage confusion with internal nodes
+  return sha256hex("leaf:" + entryId);
+}
+
+async function buildMerkleRoot(leafHashes) {
+  // leafHashes: pre-computed hashes in INSERTION ORDER — never sorted
+  if (!leafHashes || leafHashes.length === 0) return null;
+  let layer = leafHashes.slice();
   while (layer.length > 1) {
     if (layer.length % 2 === 1) layer.push(layer[layer.length - 1]);
     const next = [];
@@ -212,11 +235,11 @@ async function buildMerkleRoot(ids) {
   return layer[0];
 }
 
-async function buildMerkleProof(targetId, ids) {
-  const sorted = ids.slice().sort();
-  let idx = sorted.indexOf(targetId);
-  if (idx === -1) return null;
-  let layer = await Promise.all(sorted.map(id => sha256hex(id)));
+async function buildMerkleProof(leafIdx, leafHashes) {
+  // leafIdx: 0-based insertion-order index of the target leaf
+  if (leafIdx < 0 || leafIdx >= leafHashes.length) return null;
+  let layer = leafHashes.slice();
+  let idx = leafIdx;
   const proof = [];
   while (layer.length > 1) {
     if (layer.length % 2 === 1) layer.push(layer[layer.length - 1]);
@@ -228,7 +251,7 @@ async function buildMerkleProof(targetId, ids) {
     layer = next;
     idx = Math.floor(idx / 2);
   }
-  return { root: layer[0], proof, leaf_index: sorted.indexOf(targetId) };
+  return { root: layer[0], proof, leaf_index: leafIdx };
 }
 
 // ── Cosine similarity (JS, no external deps) ──────────────────────────────────
@@ -267,8 +290,10 @@ async function handleContribute(req, env) {
   const provider  = String(body.provider  || "unknown").slice(0, 20);
   const dataset   = String(body.dataset   || "").slice(0, 40);
   const osOrigin  = String(body.os_origin || "myworld").slice(0, 20);
-  const toolFreq  = body.tool_freq || {};
-  const topTools  = (body.top_tools || []).slice(0, 10);
+  // Server-side privacy enforcement:
+  //   body.tool_freq is intentionally DISCARDED — never stored (M1 fix)
+  //   top_tools is hard-capped to 3 server-side regardless of client value (M2 fix)
+  const topTools  = (body.top_tools || []).slice(0, 3);
   const confidence= Math.min(1, Math.max(0, Number(body.confidence) || 0.75));
 
   const VALID_OS  = new Set(["myworld","hivemind","memoryos","capabilityos","genesisos"]);
@@ -279,14 +304,12 @@ async function handleContribute(req, env) {
 
   // ── Autonomous quality gate — no human operator needed ────────────────────
   // Reject ReAct/chain-of-thought pseudo-tools that contaminate predictions.
-  // This runs on every contribution; the system self-enforces without manual cleanup.
   const REAL_TOOL_RE = /^(Bash|Read|Edit|Write|Agent|WebSearch|WebFetch|Task|Skill|bash:|python|grep|find|ls|git|npm|curl|pip|make|docker|kubectl|sql:|fs\.|web\.|memory\.|cap\.|note\.|aios_)/i;
   const PSEUDO_TOOL_MARKERS = ["Thought:", "Think:", "Action Input:", "Observation:", "Final Answer:", "Final:", "click[", "type[", "scroll[", "goto[", "search[", "go_back"];
   const toolsArr = Array.isArray(topTools) ? topTools : [];
   const pseudoCount = toolsArr.filter(t => PSEUDO_TOOL_MARKERS.some(m => String(t).startsWith(m))).length;
   const realCount   = toolsArr.filter(t => REAL_TOOL_RE.test(String(t))).length;
   if (toolsArr.length > 0 && pseudoCount > 0 && pseudoCount >= realCount) {
-    // AKR stake slash: if key provided, deduct 2 AKR penalty for bad contribution
     const badKey = req.headers.get("X-AIOS-Key") || "";
     if (badKey) {
       const acct = await getAccount(env, badKey);
@@ -304,25 +327,62 @@ async function handleContribute(req, env) {
   }
   // ── End quality gate ───────────────────────────────────────────────────────
 
-  // Dedup
-  const existing = await env.DB.prepare("SELECT id FROM memories WHERE id = ?").bind(id).first();
-  if (existing) return json({ status: "duplicate", id });
+  // Dedup via Merkle audit log (individual contribution IDs)
+  const alreadyLogged = await env.DB.prepare(
+    "SELECT entry_id FROM merkle_nodes WHERE entry_id = ?"
+  ).bind(id).first();
+  if (alreadyLogged) return json({ status: "duplicate", id });
 
   // Embed
   const vector = await embed(env.AI, content);
   const now    = new Date().toISOString();
 
-  await env.DB.prepare(`
-    INSERT INTO memories (id, category, provider, dataset, os_origin, top_tools, tool_freq, embedding, confidence, contributed_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    id, category, provider, dataset, safeOS,
-    JSON.stringify(topTools),
-    JSON.stringify(toolFreq),
-    JSON.stringify(vector),
-    confidence,
-    now,
-  ).run();
+  // Aggregate write: one row per category bucket; increment contributors on match.
+  // This enforces k-anonymity: rows are private until contributors >= min_contributors.
+  const existing = await env.DB.prepare(
+    "SELECT id, embedding, top_tools, contributors FROM memories WHERE category = ?"
+  ).bind(category).first();
+
+  if (existing) {
+    // Running-average embedding; union top_tools (keep top 3)
+    const oldVec      = JSON.parse(existing.embedding || "[]");
+    const n           = existing.contributors || 1;
+    const avgVec      = oldVec.map((v, i) => (v * n + (vector[i] || 0)) / (n + 1));
+    const oldTools    = JSON.parse(existing.top_tools || "[]");
+    const mergedTools = [...new Set([...oldTools, ...topTools])].slice(0, 3);
+
+    await env.DB.prepare(`
+      UPDATE memories
+      SET contributors = contributors + 1,
+          embedding    = ?,
+          top_tools    = ?,
+          confidence   = (confidence + ?) / 2.0
+      WHERE category = ?
+    `).bind(
+      JSON.stringify(avgVec),
+      JSON.stringify(mergedTools),
+      confidence,
+      category,
+    ).run();
+  } else {
+    await env.DB.prepare(`
+      INSERT INTO memories
+        (id, category, provider, dataset, os_origin, top_tools, embedding, confidence, contributed_at, contributors, min_contributors)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 5)
+    `).bind(
+      id, category, provider, dataset, safeOS,
+      JSON.stringify(topTools),
+      JSON.stringify(vector),
+      confidence,
+      now,
+    ).run();
+  }
+
+  // Always append individual ID to Merkle audit log (insertion order preserved)
+  const lh = await leafHash(id);
+  await env.DB.prepare(
+    "INSERT INTO merkle_nodes (entry_id, leaf_hash, contributed_at) VALUES (?, ?, ?)"
+  ).bind(id, lh, now).run();
 
   // Credit tokens if key provided
   const apiKey = req.headers.get("X-AIOS-Key") || "";
@@ -331,8 +391,6 @@ async function handleContribute(req, env) {
     const account = await getAccount(env, apiKey);
     if (account) {
       let reward = CONTRIBUTE_REWARD;
-      // Bonus signals
-      const toolsArr = Array.isArray(topTools) ? topTools : [];
       if (toolsArr.some(t => String(t).toLowerCase().includes("doom"))) reward += DOOM_LOOP_BONUS;
       const validOS = new Set(["hivemind","memoryos","capabilityos","genesisos"]);
       if (validOS.has(safeOS)) reward += CROSS_OS_BONUS;
@@ -366,12 +424,12 @@ async function handleSync(req, env) {
 
   const qVec = await embed(env.AI, query);
 
-  // Load memories (D1 doesn't have native vector search yet — do it in JS)
-  const conds = [], binds = [];
+  // k-anonymity floor: only serve rows with sufficient contributors
+  const conds = ["contributors >= min_contributors"], binds = [];
   if (category) { conds.push("category = ?");  binds.push(category); }
   if (osFilter) { conds.push("os_origin = ?"); binds.push(osFilter); }
-  const where = conds.length ? " WHERE " + conds.join(" AND ") : "";
-  let stmt = `SELECT id, category, provider, os_origin, top_tools, tool_freq, embedding, confidence FROM memories${where} LIMIT 2000`;
+  const where = " WHERE " + conds.join(" AND ");
+  const stmt = `SELECT id, category, provider, os_origin, top_tools, embedding, confidence FROM memories${where} LIMIT 2000`;
 
   const rows = await env.DB.prepare(stmt).bind(...binds).all();
 
@@ -379,11 +437,11 @@ async function handleSync(req, env) {
     const vec = JSON.parse(row.embedding);
     const sim = cosine(qVec, vec);
     return {
-      id: row.id,
-      category: row.category,
-      provider: row.provider,
-      top_tools: JSON.parse(row.top_tools || "[]"),
-      tool_freq: JSON.parse(row.tool_freq || "{}"),
+      id:         row.id,
+      category:   row.category,
+      provider:   row.provider,
+      top_tools:  JSON.parse(row.top_tools || "[]"),
+      // tool_freq intentionally omitted — never returned to clients
       confidence: row.confidence,
       similarity: sim,
     };
@@ -417,9 +475,9 @@ async function handlePredict(req, env) {
 
   const qVec = await embed(env.AI, context);
 
-  // Sample memories (random sample for performance; Vectorize would replace this)
+  // k-anonymity floor: only sample rows with sufficient contributors
   const rows = await env.DB.prepare(
-    "SELECT id, category, top_tools, tool_freq, confidence, embedding FROM memories ORDER BY RANDOM() LIMIT 300"
+    "SELECT id, category, top_tools, confidence, embedding FROM memories WHERE contributors >= min_contributors ORDER BY RANDOM() LIMIT 300"
   ).all();
 
   // Score by similarity, keep top-nSim
@@ -428,18 +486,14 @@ async function handlePredict(req, env) {
     .sort((a, b) => b.sim - a.sim)
     .slice(0, nSim);
 
-  // Aggregate tool frequencies weighted by similarity
+  // Aggregate tool frequencies weighted by similarity — top_tools only (tool_freq stripped)
   const toolScores = {};
   scored.forEach(mem => {
     const w  = mem.sim;
     const tt = JSON.parse(mem.top_tools || "[]");
-    const tf = JSON.parse(mem.tool_freq  || "{}");
     // top_tools: position-decayed weight
     tt.forEach((t, i) => { toolScores[t] = (toolScores[t] || 0) + w * Math.max(0.1, 1 - i * 0.12); });
-    // tool_freq: count-scaled weight
-    Object.entries(tf).forEach(([t, cnt]) => {
-      toolScores[t] = (toolScores[t] || 0) + w * (Math.min(cnt, 20) / 20) * 0.5;
-    });
+    // tool_freq no longer stored; count-scaled weight path removed
   });
 
   // Normalize
@@ -479,7 +533,7 @@ async function handleStatus(env) {
     env.DB.prepare("SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC LIMIT 10").all(),
     env.DB.prepare("SELECT provider, COUNT(*) as n FROM memories GROUP BY provider ORDER BY n DESC LIMIT 10").all(),
     env.DB.prepare("SELECT COALESCE(os_origin,'myworld') as os, COUNT(*) as n FROM memories GROUP BY os_origin ORDER BY n DESC").all(),
-    env.DB.prepare("SELECT contributed_at FROM memories ORDER BY contributed_at DESC LIMIT 1").first(),
+    env.DB.prepare("SELECT contributed_at FROM merkle_nodes ORDER BY position DESC LIMIT 1").first(),
   ]);
 
   return json({
@@ -494,43 +548,53 @@ async function handleStatus(env) {
 }
 
 async function handleRoot(env) {
-  const rows = await env.DB.prepare("SELECT id, contributed_at FROM memories ORDER BY contributed_at ASC").all();
-  const ids = (rows.results || []).map(r => r.id);
-  const root = await buildMerkleRoot(ids);
-  const latest = ids.length > 0 ? (rows.results[ids.length - 1].contributed_at) : null;
+  // Read leaf hashes from dedicated Merkle audit table (insertion order, no full memories scan)
+  const rows = await env.DB.prepare(
+    "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
+  ).all();
+  const leafHashes = (rows.results || []).map(r => r.leaf_hash);
+  const root = await buildMerkleRoot(leafHashes);
   return json({
     root_hash:   root,
-    entry_count: ids.length,
+    entry_count: leafHashes.length,
     timestamp:   new Date().toISOString(),
-    latest_entry: latest,
-    schema: "aios.akashic_record.v1",
+    schema: "aios.akashic_record.v2",
   });
 }
 
 async function handleProof(env, entryId) {
-  const row = await env.DB.prepare(
-    "SELECT id, category, provider, top_tools, confidence, contributed_at FROM memories WHERE id = ?"
+  // Look up in Merkle audit log (individual contribution IDs live here)
+  const nodeRow = await env.DB.prepare(
+    "SELECT position FROM merkle_nodes WHERE entry_id = ?"
   ).bind(entryId).first();
-  if (!row) return json({ error: "entry not found", id: entryId }, 404);
+  if (!nodeRow) return json({ error: "entry not found", id: entryId }, 404);
 
-  const allRows = await env.DB.prepare("SELECT id FROM memories").all();
-  const ids = (allRows.results || []).map(r => r.id);
-  const result = await buildMerkleProof(entryId, ids);
+  const allNodes = await env.DB.prepare(
+    "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
+  ).all();
+  const leafHashes = (allNodes.results || []).map(r => r.leaf_hash);
+  // AUTOINCREMENT positions are 1-based; proof leaf_index is 0-based
+  const leafIdx = nodeRow.position - 1;
+
+  const result = await buildMerkleProof(leafIdx, leafHashes);
   if (!result) return json({ error: "proof construction failed" }, 500);
+
+  // Memory details (present only if this id is the category-bucket anchor row)
+  const memRow = await env.DB.prepare(
+    "SELECT category, provider, confidence FROM memories WHERE id = ?"
+  ).bind(entryId).first();
 
   return json({
     entry: {
-      id: row.id,
-      category: row.category,
-      provider: row.provider,
-      top_tools: JSON.parse(row.top_tools || "[]"),
-      confidence: row.confidence,
-      contributed_at: row.contributed_at,
+      id:         entryId,
+      category:   memRow?.category   || null,
+      provider:   memRow?.provider   || null,
+      confidence: memRow?.confidence || null,
     },
-    merkle_root:  result.root,
-    merkle_proof: result.proof,
-    leaf_index:   result.leaf_index,
-    total_entries: ids.length,
+    merkle_root:   result.root,
+    merkle_proof:  result.proof,
+    leaf_index:    result.leaf_index,
+    total_entries: leafHashes.length,
     verified: true,
   });
 }
@@ -544,21 +608,27 @@ async function handleVerify(req, env) {
   const claimedRoot = body.root_hash || null;
   if (!id) return json({ error: "id required" }, 400);
 
-  const exists = await env.DB.prepare("SELECT id FROM memories WHERE id = ?").bind(id).first();
-  if (!exists) return json({ verified: false, reason: "entry not found", id });
+  const nodeRow = await env.DB.prepare(
+    "SELECT position FROM merkle_nodes WHERE entry_id = ?"
+  ).bind(id).first();
+  if (!nodeRow) return json({ verified: false, reason: "entry not found", id });
 
-  const allRows = await env.DB.prepare("SELECT id FROM memories").all();
-  const ids = (allRows.results || []).map(r => r.id);
-  const result = await buildMerkleProof(id, ids);
+  const allNodes = await env.DB.prepare(
+    "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
+  ).all();
+  const leafHashes = (allNodes.results || []).map(r => r.leaf_hash);
+  const leafIdx = nodeRow.position - 1;
+
+  const result = await buildMerkleProof(leafIdx, leafHashes);
   const actual_root = result?.root || null;
 
   return json({
-    verified:     !!actual_root && (!claimedRoot || claimedRoot === actual_root),
+    verified:      !!actual_root && (!claimedRoot || claimedRoot === actual_root),
     id,
     actual_root,
-    claimed_root: claimedRoot,
-    root_matches: !claimedRoot || claimedRoot === actual_root,
-    total_entries: ids.length,
+    claimed_root:  claimedRoot,
+    root_matches:  !claimedRoot || claimedRoot === actual_root,
+    total_entries: leafHashes.length,
   });
 }
 
@@ -567,18 +637,19 @@ async function handleCheckpoint(req, env) {
   try { body = await req.json(); } catch {}
   const submittedBy = String(body.submitted_by || "").slice(0, 40);
 
-  // Compute current Merkle root
-  const rows = await env.DB.prepare("SELECT id FROM memories").all();
-  const ids = (rows.results || []).map(r => r.id);
-  if (ids.length === 0) return json({ error: "no entries yet" }, 400);
-  const root = await buildMerkleRoot(ids);
+  const rows = await env.DB.prepare(
+    "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
+  ).all();
+  const leafHashes = (rows.results || []).map(r => r.leaf_hash);
+  if (leafHashes.length === 0) return json({ error: "no entries yet" }, 400);
+  const root = await buildMerkleRoot(leafHashes);
   const now  = new Date().toISOString();
 
   await env.DB.prepare(
     "INSERT INTO checkpoints (root_hash, entry_count, submitted_by, created_at) VALUES (?, ?, ?, ?)"
-  ).bind(root, ids.length, submittedBy || null, now).run();
+  ).bind(root, leafHashes.length, submittedBy || null, now).run();
 
-  return json({ status: "ok", root_hash: root, entry_count: ids.length, created_at: now });
+  return json({ status: "ok", root_hash: root, entry_count: leafHashes.length, created_at: now });
 }
 
 async function handleCheckpointsList(env) {
@@ -608,12 +679,10 @@ async function handleGraph(env, urlObj, ctx) {
 
   let rows;
   if (category) {
-    // Single category — random sample
     rows = await env.DB.prepare(
       "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? ORDER BY RANDOM() LIMIT ?"
     ).bind(category, limit).all();
   } else if (stratify) {
-    // Stratified: equal per category so no single category dominates the galaxy
     const cats = await env.DB.prepare(
       "SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC"
     ).all();
@@ -635,7 +704,6 @@ async function handleGraph(env, urlObj, ctx) {
 
   const raw  = rows.results || [];
 
-  // Parse and precompute norms (faster pairwise cosine)
   const entries = raw.map(r => {
     const vec = JSON.parse(r.embedding || "[]");
     let norm = 0;
@@ -652,7 +720,6 @@ async function handleGraph(env, urlObj, ctx) {
     };
   });
 
-  // Pairwise cosine — collect all valid pairs, then prune to top-K per node
   const topK   = Math.min(20, Math.max(2, parseInt(params.get("top_k") || "10")));
   const adjList = Array.from({ length: entries.length }, () => []);
 
@@ -670,7 +737,6 @@ async function handleGraph(env, urlObj, ctx) {
     }
   }
 
-  // Keep top-K strongest neighbors per node, deduplicate symmetric edges
   const edgeSet = new Set();
   const links   = [];
   adjList.forEach((neighbors, i) => {
@@ -686,7 +752,6 @@ async function handleGraph(env, urlObj, ctx) {
       });
   });
 
-  // Strip embeddings before returning
   const nodes = entries.map(({ vec, norm, ...rest }) => rest);
 
   const result = json({
@@ -695,7 +760,6 @@ async function handleGraph(env, urlObj, ctx) {
     meta: { total_nodes: nodes.length, total_links: links.length, min_sim: minSim, top_k: topK },
   });
 
-  // Cache at Cloudflare edge for 10 minutes — CDN pattern, avoids re-running O(N²)
   const toCache = result.clone();
   toCache.headers.set("Cache-Control", "s-maxage=600");
   if (ctx) ctx.waitUntil(cache.put(cacheKey, toCache));
@@ -704,7 +768,6 @@ async function handleGraph(env, urlObj, ctx) {
 }
 
 async function handleInit(env) {
-  // Create tables — safe to call multiple times
   const stmts = SCHEMA.trim().split(";").filter(s => s.trim());
   for (const stmt of stmts) {
     if (stmt.trim()) await env.DB.prepare(stmt).run();
