@@ -51,10 +51,12 @@ measurably better at each user's work over time — without ever leaking raw con
   worker hardening — append-stable Merkle + server-side k-anon enforcement
   (`66b6f20`, tests pass, deploy founder-gated, under review). Schema now 24 tables /
   23 tenant-scoped / all RLS-covered (`validate_schema.py` scans 0001–0007).
-- ⏳ Next: W1 outbox relay on fixtures (architect's linchpin) → A1 gateway; worker
-  DEPLOY + Lakebase apply remain founder-gated (creds / GO). External non-Claude
-  substrate arm: gemini tier-blocked; agy needs `! agy` founder login; local
-  qwen3-coder available as immediate fallback.
+- ✅ W1 outbox relay built + proven on a SQLite fixture (`21a5306`, 18 tests): at-least-once
+  + idempotent-consumer + no-starvation. Worker hardening re-fixed: k-anon now counts
+  DISTINCT contributors + /graph gated + atomic batch (`fad448d`, 2 review rounds).
+- ⏳ Next no-creds: W2 graph-compiler contract+idempotency (LLM step stubbed). Highest-
+  leverage needs founder: **Lakebase creds → L1 schema apply + worker plane on the REAL
+  DB** (offered "지금 주겠다"); worker DEPLOY GO; `! agy` login for a non-Claude review arm.
 
 ## Vision-panel corrections (2026-06-26 — architect + genesis-challenger + critic, independent)
 
