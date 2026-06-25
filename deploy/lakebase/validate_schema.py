@@ -46,13 +46,16 @@ def main() -> int:
             if re.search(r"\btenant_id\b", body):
                 tenant_tables.add(name)
 
-    # the RLS file must list every tenant-scoped table (minus the ones with bespoke policies)
-    rls = (MIG / "0006_rls_policies.sql").read_text(encoding="utf-8")
-    covered = set(re.findall(r"'([\w]+\.[\w]+)'", rls))
+    # Every tenant-scoped table must be covered by an RLS policy.  0006 holds the
+    # original loop; later migrations (0007+) apply inline RLS for tables they add.
+    # Scan all migration files so tables added after 0006 can carry their own RLS
+    # without requiring a 0006 edit (which would violate the immutable-migration rule).
+    all_sql = "\n".join(f.read_text(encoding="utf-8") for f in files)
+    covered = set(re.findall(r"'([\w]+\.[\w]+)'", all_sql))
     expected = {t for t in tenant_tables if t not in GLOBAL_TABLES}
     missing = expected - covered
     if missing:
-        errs.append(f"RLS GAP: tenant tables not in 0006 policy loop: {sorted(missing)}")
+        errs.append(f"RLS GAP: tenant tables not covered in any migration: {sorted(missing)}")
 
     # sanity: global tables must NOT have a tenant_id (else they'd need RLS)
     for g in GLOBAL_TABLES & all_tables:
