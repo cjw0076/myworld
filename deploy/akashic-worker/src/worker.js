@@ -12,8 +12,18 @@
  *   - content field is never stored raw — only its embedding vector
  *   - tool_freq (numeric distribution) is REJECTED server-side — never stored
  *   - top_tools hard-capped to 3 entries server-side
- *   - k-anonymity floor: rows served only when contributors >= min_contributors (5)
+ *   - k-anonymity floor: rows served only when DISTINCT authenticated contributors
+ *     >= min_contributors (5); anonymous contributions are stored but never
+ *     increment the k-count — prevents single-tenant self-promotion
+ *   - contributor identity: sha256(salt + apiKey) pseudonym stored in
+ *     contributor_seen junction table; raw key never persisted
  *   - No PII accepted; server rejects any content with email/key patterns
+ *
+ * Follow-up LOWs (out of scope for this commit):
+ *   - Add node: URI prefix to embedding model name
+ *   - /status label improvements
+ *   - CVE-2012-2459 second-preimage via duplicate tree nodes (low-risk, mitigated
+ *     by domain-separated leafHash; full fix = use distinct "inner" prefix)
  *
  * Storage: Cloudflare D1 (SQLite) + Workers AI (@cf/baai/bge-base-en-v1.5)
  */
@@ -27,6 +37,11 @@ const CORS = {
   "Access-Control-Allow-Headers": "Content-Type, X-AIOS-Version, X-AIOS-Key",
 };
 
+// Fixed salt for contributor_id pseudonymization — public, not secret.
+// Purpose: one-way mapping from apiKey → category-scoped pseudonym so the
+// raw key is never stored. Changing this salt invalidates existing k-anon counts.
+const KANON_SALT = "akashic-kanon-v1";
+
 // ── Token Economy ─────────────────────────────────────────────────────────────
 const EARLY_THRESHOLD   = 1000;   // first N users get large airdrop
 const EARLY_BONUS       = 500;    // AKR — early adopter airdrop
@@ -36,6 +51,7 @@ const DOOM_LOOP_BONUS   = 5;      // AKR extra when doom_loop detected
 const CROSS_OS_BONUS    = 10;     // AKR extra for cross-OS sessions
 const PREDICT_COST      = 1;      // AKR per /predict call
 const SYNC_COST         = 1;      // AKR per /sync call
+const GRAPH_COST        = 1;      // AKR per /graph call
 const FREE_DAILY        = 10;     // free queries/day per IP (no key)
 
 async function generateApiKey() {
@@ -144,6 +160,7 @@ async function handleEconomy(env) {
     spend: {
       predict_per_query:       PREDICT_COST,
       sync_per_query:          SYNC_COST,
+      graph_per_query:         GRAPH_COST,
     },
     free_tier:                 { queries_per_day: FREE_DAILY },
     purchase:                  { "100_akr": "$1.00", minimum: "$5.00" },
@@ -166,8 +183,10 @@ function hasSensitiveData(text) {
   return BLOCKED.some(re => re.test(text));
 }
 
-// ── DB schema (run once via /init) ────────────────────────────────────────────
-const SCHEMA = `
+// ── DB schema ─────────────────────────────────────────────────────────────────
+// SCHEMA_TABLES: CREATE TABLE statements only — safe for fresh DBs.
+// Indexes are applied separately in handleInit (after dedup migration).
+const SCHEMA_TABLES = `
 CREATE TABLE IF NOT EXISTS memories (
   id               TEXT PRIMARY KEY,
   schema_ver       TEXT NOT NULL DEFAULT 'aios.agent_behavior.v1',
@@ -183,9 +202,11 @@ CREATE TABLE IF NOT EXISTS memories (
   min_contributors INTEGER DEFAULT 5,
   contributed_at   TEXT NOT NULL
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_category ON memories(category);
-CREATE INDEX IF NOT EXISTS idx_provider ON memories(provider);
-CREATE INDEX IF NOT EXISTS idx_contributed ON memories(contributed_at);
+CREATE TABLE IF NOT EXISTS contributor_seen (
+  category       TEXT NOT NULL,
+  contributor_id TEXT NOT NULL,
+  PRIMARY KEY (category, contributor_id)
+);
 CREATE TABLE IF NOT EXISTS merkle_nodes (
   position       INTEGER PRIMARY KEY AUTOINCREMENT,
   entry_id       TEXT NOT NULL UNIQUE,
@@ -199,6 +220,13 @@ CREATE TABLE IF NOT EXISTS checkpoints (
   submitted_by TEXT,
   created_at   TEXT NOT NULL
 );
+`;
+
+// Indexes applied after dedup migration (unique index requires clean data first)
+const SCHEMA_INDEXES = `
+CREATE UNIQUE INDEX IF NOT EXISTS idx_category ON memories(category);
+CREATE INDEX IF NOT EXISTS idx_provider ON memories(provider);
+CREATE INDEX IF NOT EXISTS idx_contributed ON memories(contributed_at);
 `;
 
 // ── Merkle tree (pure JS, no deps) ───────────────────────────────────────────
@@ -219,6 +247,12 @@ async function sha256hex(text) {
 async function leafHash(entryId) {
   // Domain-separated leaf hash prevents second-preimage confusion with internal nodes
   return sha256hex("leaf:" + entryId);
+}
+
+// Derive a one-way pseudonym for k-anon contributor tracking.
+// Raw apiKey is NEVER stored — only this derived hash.
+async function deriveContributorId(apiKey) {
+  return sha256hex(KANON_SALT + ":" + apiKey);
 }
 
 async function buildMerkleRoot(leafHashes) {
@@ -303,7 +337,6 @@ async function handleContribute(req, env) {
   if (hasSensitiveData(content)) return json({ error: "sensitive data detected — rejected" }, 422);
 
   // ── Autonomous quality gate — no human operator needed ────────────────────
-  // Reject ReAct/chain-of-thought pseudo-tools that contaminate predictions.
   const REAL_TOOL_RE = /^(Bash|Read|Edit|Write|Agent|WebSearch|WebFetch|Task|Skill|bash:|python|grep|find|ls|git|npm|curl|pip|make|docker|kubectl|sql:|fs\.|web\.|memory\.|cap\.|note\.|aios_)/i;
   const PSEUDO_TOOL_MARKERS = ["Thought:", "Think:", "Action Input:", "Observation:", "Final Answer:", "Final:", "click[", "type[", "scroll[", "goto[", "search[", "go_back"];
   const toolsArr = Array.isArray(topTools) ? topTools : [];
@@ -333,59 +366,71 @@ async function handleContribute(req, env) {
   ).bind(id).first();
   if (alreadyLogged) return json({ status: "duplicate", id });
 
+  // k-anon contributor identity: sha256(salt + apiKey) — raw key never stored.
+  // Anonymous (no key) contributions are stored but NEVER increment k-count,
+  // preventing self-promotion past the floor without a registered identity.
+  const apiKey = req.headers.get("X-AIOS-Key") || "";
+  const contributorId = apiKey ? await deriveContributorId(apiKey) : null;
+
   // Embed
   const vector = await embed(env.AI, content);
   const now    = new Date().toISOString();
 
-  // Aggregate write: one row per category bucket; increment contributors on match.
-  // This enforces k-anonymity: rows are private until contributors >= min_contributors.
+  // Pre-read the current category bucket for running-average embedding computation.
+  // The actual write is atomic (D1 batch); this read provides the base values.
   const existing = await env.DB.prepare(
-    "SELECT id, embedding, top_tools, contributors FROM memories WHERE category = ?"
+    "SELECT embedding, top_tools FROM memories WHERE category = ?"
   ).bind(category).first();
 
-  if (existing) {
-    // Running-average embedding; union top_tools (keep top 3)
-    const oldVec      = JSON.parse(existing.embedding || "[]");
-    const n           = existing.contributors || 1;
-    const avgVec      = oldVec.map((v, i) => (v * n + (vector[i] || 0)) / (n + 1));
-    const oldTools    = JSON.parse(existing.top_tools || "[]");
-    const mergedTools = [...new Set([...oldTools, ...topTools])].slice(0, 3);
+  const baseVec     = existing ? JSON.parse(existing.embedding || "[]") : null;
+  const avgVec      = baseVec
+    ? baseVec.map((v, i) => (v + (vector[i] || 0)) / 2)
+    : vector;
+  const oldTools    = existing ? JSON.parse(existing.top_tools || "[]") : [];
+  const mergedTools = [...new Set([...oldTools, ...topTools])].slice(0, 3);
 
-    await env.DB.prepare(`
-      UPDATE memories
-      SET contributors = contributors + 1,
-          embedding    = ?,
-          top_tools    = ?,
-          confidence   = (confidence + ?) / 2.0
-      WHERE category = ?
-    `).bind(
-      JSON.stringify(avgVec),
-      JSON.stringify(mergedTools),
-      confidence,
-      category,
-    ).run();
-  } else {
-    await env.DB.prepare(`
-      INSERT INTO memories
-        (id, category, provider, dataset, os_origin, top_tools, embedding, confidence, contributed_at, contributors, min_contributors)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 5)
+  // Leaf hash for Merkle audit log
+  const lh = await leafHash(id);
+
+  // Atomic batch (D1 executes all statements in a single serializable transaction):
+  //   1. INSERT OR IGNORE seeds the category bucket if new (contributors=0 — overwritten below)
+  //   2. INSERT OR IGNORE into contributor_seen records this tenant (no-op on repeat)
+  //   3. UPDATE merges embedding/tools and sets contributors = DISTINCT authenticated count
+  //   4. INSERT Merkle audit entry
+  // The INSERT OR IGNORE in step 1 means concurrent new-category requests never 500.
+  // contributors is always authoritative (derived from contributor_seen COUNT).
+  const batchStmts = [
+    env.DB.prepare(`
+      INSERT OR IGNORE INTO memories
+        (id, category, provider, dataset, os_origin, top_tools, embedding,
+         confidence, contributed_at, contributors, min_contributors)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 5)
     `).bind(
       id, category, provider, dataset, safeOS,
-      JSON.stringify(topTools),
-      JSON.stringify(vector),
-      confidence,
-      now,
-    ).run();
-  }
-
-  // Always append individual ID to Merkle audit log (insertion order preserved)
-  const lh = await leafHash(id);
-  await env.DB.prepare(
-    "INSERT INTO merkle_nodes (entry_id, leaf_hash, contributed_at) VALUES (?, ?, ?)"
-  ).bind(id, lh, now).run();
+      JSON.stringify(mergedTools), JSON.stringify(avgVec), confidence, now,
+    ),
+    ...(contributorId ? [
+      env.DB.prepare(
+        "INSERT OR IGNORE INTO contributor_seen (category, contributor_id) VALUES (?, ?)"
+      ).bind(category, contributorId),
+    ] : []),
+    env.DB.prepare(`
+      UPDATE memories
+      SET embedding    = ?,
+          top_tools    = ?,
+          confidence   = (confidence + ?) / 2.0,
+          contributors = (SELECT COUNT(*) FROM contributor_seen WHERE category = ?)
+      WHERE category = ?
+    `).bind(
+      JSON.stringify(avgVec), JSON.stringify(mergedTools), confidence, category, category,
+    ),
+    env.DB.prepare(
+      "INSERT INTO merkle_nodes (entry_id, leaf_hash, contributed_at) VALUES (?, ?, ?)"
+    ).bind(id, lh, now),
+  ];
+  await env.DB.batch(batchStmts);
 
   // Credit tokens if key provided
-  const apiKey = req.headers.get("X-AIOS-Key") || "";
   let earned = 0;
   if (apiKey) {
     const account = await getAccount(env, apiKey);
@@ -424,7 +469,7 @@ async function handleSync(req, env) {
 
   const qVec = await embed(env.AI, query);
 
-  // k-anonymity floor: only serve rows with sufficient contributors
+  // k-anonymity floor: only serve rows with sufficient DISTINCT contributors
   const conds = ["contributors >= min_contributors"], binds = [];
   if (category) { conds.push("category = ?");  binds.push(category); }
   if (osFilter) { conds.push("os_origin = ?"); binds.push(osFilter); }
@@ -475,12 +520,11 @@ async function handlePredict(req, env) {
 
   const qVec = await embed(env.AI, context);
 
-  // k-anonymity floor: only sample rows with sufficient contributors
+  // k-anonymity floor: only sample rows with sufficient DISTINCT contributors
   const rows = await env.DB.prepare(
     "SELECT id, category, top_tools, confidence, embedding FROM memories WHERE contributors >= min_contributors ORDER BY RANDOM() LIMIT 300"
   ).all();
 
-  // Score by similarity, keep top-nSim
   const scored = (rows.results || [])
     .map(r => ({ ...r, sim: cosine(qVec, JSON.parse(r.embedding || "[]")) }))
     .sort((a, b) => b.sim - a.sim)
@@ -491,12 +535,10 @@ async function handlePredict(req, env) {
   scored.forEach(mem => {
     const w  = mem.sim;
     const tt = JSON.parse(mem.top_tools || "[]");
-    // top_tools: position-decayed weight
     tt.forEach((t, i) => { toolScores[t] = (toolScores[t] || 0) + w * Math.max(0.1, 1 - i * 0.12); });
     // tool_freq no longer stored; count-scaled weight path removed
   });
 
-  // Normalize
   const total = Object.values(toolScores).reduce((s, v) => s + v, 0) || 1;
   let preds = Object.entries(toolScores)
     .map(([tool, score]) => ({ tool, score: parseFloat((score / total).toFixed(4)) }))
@@ -548,7 +590,6 @@ async function handleStatus(env) {
 }
 
 async function handleRoot(env) {
-  // Read leaf hashes from dedicated Merkle audit table (insertion order, no full memories scan)
   const rows = await env.DB.prepare(
     "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
   ).all();
@@ -563,7 +604,6 @@ async function handleRoot(env) {
 }
 
 async function handleProof(env, entryId) {
-  // Look up in Merkle audit log (individual contribution IDs live here)
   const nodeRow = await env.DB.prepare(
     "SELECT position FROM merkle_nodes WHERE entry_id = ?"
   ).bind(entryId).first();
@@ -573,13 +613,11 @@ async function handleProof(env, entryId) {
     "SELECT leaf_hash FROM merkle_nodes ORDER BY position ASC"
   ).all();
   const leafHashes = (allNodes.results || []).map(r => r.leaf_hash);
-  // AUTOINCREMENT positions are 1-based; proof leaf_index is 0-based
   const leafIdx = nodeRow.position - 1;
 
   const result = await buildMerkleProof(leafIdx, leafHashes);
   if (!result) return json({ error: "proof construction failed" }, 500);
 
-  // Memory details (present only if this id is the category-bucket anchor row)
   const memRow = await env.DB.prepare(
     "SELECT category, provider, confidence FROM memories WHERE id = ?"
   ).bind(entryId).first();
@@ -663,15 +701,20 @@ async function handleCheckpointsList(env) {
   });
 }
 
-async function handleGraph(env, urlObj, ctx) {
+async function handleGraph(env, urlObj, ctx, req) {
+  // Auth gate: same token model as /sync (prevents unauthenticated data exposure)
+  const apiKey = req.headers.get("X-AIOS-Key") || "";
+  const ipAddr = req.headers.get("CF-Connecting-IP") || "";
+  const tok = await checkTokens(env, apiKey, GRAPH_COST, ipAddr);
+  if (!tok.ok) return json({ error: tok.error, code: "insufficient_tokens" }, 402);
+
   const params   = urlObj.searchParams;
-  // Cap at 200 nodes — beyond this pairwise sim is O(N²) and takes >5s
   const limit    = Math.min(200, Math.max(20, parseInt(params.get("limit") || "120")));
   const minSim   = Math.max(0.5, Math.min(0.99, parseFloat(params.get("min_sim") || "0.75")));
   const category = params.get("category") || null;
-  const stratify = params.get("stratify") !== "false"; // default true
+  const stratify = params.get("stratify") !== "false";
 
-  // CDN pattern: serve from Cloudflare edge cache (10-min TTL) — avoids O(N²) per request
+  // CDN pattern: edge cache (10-min TTL)
   const cache    = caches.default;
   const cacheKey = new Request(urlObj.toString());
   const cached   = await cache.match(cacheKey);
@@ -679,26 +722,29 @@ async function handleGraph(env, urlObj, ctx) {
 
   let rows;
   if (category) {
+    // k-anonymity floor enforced on single-category branch
     rows = await env.DB.prepare(
-      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? ORDER BY RANDOM() LIMIT ?"
+      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? AND contributors >= min_contributors ORDER BY RANDOM() LIMIT ?"
     ).bind(category, limit).all();
   } else if (stratify) {
+    // k-anonymity floor enforced on category list AND per-category fetch
     const cats = await env.DB.prepare(
-      "SELECT category, COUNT(*) as n FROM memories GROUP BY category ORDER BY n DESC"
+      "SELECT category, COUNT(*) as n FROM memories WHERE contributors >= min_contributors GROUP BY category ORDER BY n DESC"
     ).all();
     const catList = (cats.results || []).map(r => r.category).filter(Boolean);
     const perCat  = Math.max(10, Math.floor(limit / Math.max(1, catList.length)));
     const allRows = [];
     for (const cat of catList) {
       const r = await env.DB.prepare(
-        "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? ORDER BY RANDOM() LIMIT ?"
+        "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE category = ? AND contributors >= min_contributors ORDER BY RANDOM() LIMIT ?"
       ).bind(cat, perCat).all();
       allRows.push(...(r.results || []));
     }
     rows = { results: allRows };
   } else {
+    // k-anonymity floor enforced on ungrouped fetch
     rows = await env.DB.prepare(
-      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories ORDER BY RANDOM() LIMIT ?"
+      "SELECT id, category, provider, top_tools, confidence, embedding FROM memories WHERE contributors >= min_contributors ORDER BY RANDOM() LIMIT ?"
     ).bind(limit).all();
   }
 
@@ -720,7 +766,7 @@ async function handleGraph(env, urlObj, ctx) {
     };
   });
 
-  const topK   = Math.min(20, Math.max(2, parseInt(params.get("top_k") || "10")));
+  const topK    = Math.min(20, Math.max(2, parseInt(params.get("top_k") || "10")));
   const adjList = Array.from({ length: entries.length }, () => []);
 
   for (let i = 0; i < entries.length; i++) {
@@ -768,10 +814,39 @@ async function handleGraph(env, urlObj, ctx) {
 }
 
 async function handleInit(env) {
-  const stmts = SCHEMA.trim().split(";").filter(s => s.trim());
-  for (const stmt of stmts) {
-    if (stmt.trim()) await env.DB.prepare(stmt).run();
+  // Phase 1: Create new tables (idempotent — CREATE TABLE IF NOT EXISTS)
+  for (const stmt of SCHEMA_TABLES.trim().split(";").map(s => s.trim()).filter(Boolean)) {
+    await env.DB.prepare(stmt).run();
   }
+
+  // Phase 2: Safe column additions for ALREADY-DEPLOYED DBs.
+  // SQLite does not support ADD COLUMN IF NOT EXISTS; we try/catch "duplicate column" errors.
+  const alterStmts = [
+    "ALTER TABLE memories ADD COLUMN contributors INTEGER DEFAULT 1",
+    "ALTER TABLE memories ADD COLUMN min_contributors INTEGER DEFAULT 5",
+    "ALTER TABLE memories ADD COLUMN os_origin TEXT",
+  ];
+  for (const stmt of alterStmts) {
+    try { await env.DB.prepare(stmt).run(); }
+    catch (_) { /* column already exists — ignore */ }
+  }
+
+  // Phase 3: Deduplicate memories by category before creating unique index.
+  // Existing DBs may have multiple rows per category (old schema had no unique constraint).
+  // Keep the row with the lowest rowid (earliest contribution) per category.
+  // Safe to run on empty tables.
+  await env.DB.prepare(
+    "DELETE FROM memories WHERE rowid NOT IN (SELECT MIN(rowid) FROM memories GROUP BY category)"
+  ).run();
+
+  // Phase 4: Create indexes — UNIQUE on category is safe after the dedup above.
+  // try/catch handles edge case where a non-unique idx_category already exists with the
+  // same name; IF NOT EXISTS makes this idempotent for the normal (no-conflict) path.
+  for (const stmt of SCHEMA_INDEXES.trim().split(";").map(s => s.trim()).filter(Boolean)) {
+    try { await env.DB.prepare(stmt).run(); }
+    catch (_) { /* index already exists with different options — skip */ }
+  }
+
   return json({ status: "schema initialized" });
 }
 
@@ -786,7 +861,6 @@ export default {
       return new Response(null, { status: 204, headers: CORS });
     }
 
-    // Routes
     if (url.pathname === "/health" && method === "GET") {
       return json({ status: "ok", service: "aios-akashic" });
     }
@@ -834,10 +908,9 @@ export default {
       return handlePredict(request, env);
     }
     if (url.pathname === "/graph" && method === "GET") {
-      return handleGraph(env, url, ctx);
+      return handleGraph(env, url, ctx, request);
     }
 
-    // Fall through to static assets (index.html, galaxy.html, etc.)
     if (env.ASSETS) return env.ASSETS.fetch(request);
 
     return json({ error: "not found" }, 404);
