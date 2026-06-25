@@ -105,7 +105,10 @@ def safe_summary(category: str, tools=None, loop_type: str | None = None) -> str
     semantic recall is the LOCAL private vault's job (no network)."""
     parts = [f"category:{category or 'unknown'}"]
     if tools:
-        parts.append("tools:" + ",".join(str(t) for t in list(tools)[:10]))
+        # cap at 3 (was 10): the server embeds this string, so the VECTOR must not encode
+        # a richer tool fingerprint than the visible top_tools egress (≤3). Keeps the
+        # embedded fingerprint consistent with the k-anon egress promise (review item 5).
+        parts.append("tools:" + ",".join(str(t) for t in list(tools)[:3]))
     if loop_type:
         parts.append(f"pattern:{loop_type}")
     return " ".join(parts)
