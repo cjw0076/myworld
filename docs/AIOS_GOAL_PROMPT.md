@@ -54,9 +54,16 @@ measurably better at each user's work over time — without ever leaking raw con
 - ✅ W1 outbox relay built + proven on a SQLite fixture (`21a5306`, 18 tests): at-least-once
   + idempotent-consumer + no-starvation. Worker hardening re-fixed: k-anon now counts
   DISTINCT contributors + /graph gated + atomic batch (`fad448d`, 2 review rounds).
-- ⏳ Next no-creds: W2 graph-compiler contract+idempotency (LLM step stubbed). Highest-
-  leverage needs founder: **Lakebase creds → L1 schema apply + worker plane on the REAL
-  DB** (offered "지금 주겠다"); worker DEPLOY GO; `! agy` login for a non-Claude review arm.
+- ✅ CQRS/event-sourcing SPINE proven on fixtures (team co-decided W2 then A1):
+  W1 outbox relay (`21a5306`) + W2 graph compiler (`a872efd`, idempotent draft claims) +
+  A1 command API (`99ca73e`, atomic one-tx write + optimistic concurrency + tenant
+  isolation). Full spine A1→W1→W2 end-to-end: one write_command → event+outbox+projection
+  in one tx → relay → compiler → draft claims, idempotent on redelivery. 60 tests green.
+- ⏳ No-creds foundation phase COMPLETE. Next phase needs founder-gated resources:
+  **Lakebase creds → L1 schema apply + port the fixture spine to the real DB**; worker
+  DEPLOY GO (k-anon/Merkle live); `! agy` login (non-Claude review arm). Remaining
+  no-creds units if continuing: A2 edge privacy gate, W3 embedding worker (model-compat
+  decision), INTEG harness — team to re-vote when load is low (was 139 at checkpoint).
 
 ## Vision-panel corrections (2026-06-26 — architect + genesis-challenger + critic, independent)
 
