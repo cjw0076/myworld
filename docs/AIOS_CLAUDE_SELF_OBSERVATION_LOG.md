@@ -2589,3 +2589,48 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
   guard must be a SHAPE allowlist + secret/path reject, never a char-class strip." A repo-wide
   egress test (monkeypatch urlopen, off-device hosts only) is the right guard granularity.
 - self-correction-of-prior-observation: prior local-first sovereignty framing superseded.
+
+## 2026-06-26 KST — claude@uri — field-bottleneck recognition: stop building, verify execution path is complete
+
+- handle: /loop URI autonomous CTO wakeup; 7 codex board sprints (URI-440~446) landed since last iteration
+- mode_breakdown: observe:verify:decide ≈ 3:5:2
+- tools_used: Bash(grep, git diff, npm test), Read, Edit, Write
+- substrate_specific_behaviors_observed:
+  - FIELD BOTTLENECK TEST before building: after each batch of sprints, the first move
+    should be to run evaluate:uri-work and check if 0 requested/0 paid is a CODE gap or
+    a FIELD gap. Here it was a field gap — all code was already complete. Almost built
+    two features (settle:uri-work CLI, requesterVerifiedHow capture form) before tracing
+    the actual execution path and confirming both were unnecessary (drawer has it, attestation
+    preview path already wired). YAGNI saved two false code additions.
+  - TRACE THE PATH END-TO-END: attestation_previews=0 looked like a code gap; it was actually
+    a data gap (no paid attempt with requesterVerifiedHow in the seed). The attestation
+    preview generates automatically once an attempt has paid status + requesterVerifiedHow.
+    No new code needed. Pattern: before building "missing feature X," trace the actual
+    execution path from current state to target and verify each step; only build when a
+    step is genuinely absent.
+  - BATCH REVIEW AS POLICY GATE: a codex burst of 7 sprints (URI-440~446) with no review
+    can accumulate policy drift. The CTO review pass (URI-447) found no P1 issues but
+    confirmed the contact gate chain, PIPA compliance, and identified the uncommitted state.
+    Cadence: review after every sprint burst (>3 sprints), not only when prompted.
+- failures_recovered: none; clean run
+- key_decision: no new code features this iteration — field execution is the bottleneck;
+  recommend codex commit the sprint batch and focus on first real paid job.
+- new_invariant_or_pattern_discovered: "field bottleneck test first" — before any loop
+  iteration adds code, check if the code gap is real by running evaluate:uri-work and
+  tracing the end-to-end execution path. Code is the wrong tool when the bottleneck is
+  human field execution.
+- self-correction-of-prior-observation: none
+
+## 2026-06-26 KST — claude@myworld — Team sprint: vision panel + dev team caught gameable k-anon a solo pass shipped
+
+- handle: founder /goal "혼자 말고 임원단(비전)+개발진 팀으로; 객관 평가도 안 됨"; SaaS-scale continue
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 1:5:2:3:1 (orchestration-heavy)
+- tools_used: Agent (architect/genesis-challenger/critic/executor×2/security-reviewer×2), SendMessage (resume agents w/ context), Bash, Edit, git, AskUserQuestion; agy/gemini external arm (both FAILED — gemini tier-blocked, agy needs founder login)
+- tools_NOT_used (CLI gap): no working non-Claude substrate arm this session — gemini IneligibleTier, agy headless-OAuth founder-gated. The whole panel was Claude; substrate diversity (the founder's actual objectivity lever) was UNAVAILABLE. Candidate gap: AIOS needs a logged-in non-Claude arm wired (agy via founder `! agy`, or route local qwen3-coder as the default external reviewer).
+- substrate_specific_behaviors_observed:
+  - The vision panel (architect+genesis+critic) produced an objective read I could NOT have self-generated: genesis surfaced demand=N=1 + "name the non-founder who breaks Tuesday"; critic found sink-gate-after-cutover ordering bug + missing data-lifecycle; architect found the privacy claim was only the LEXICAL channel (statistical/embedding-inversion channel wide open). All three independent, all correct.
+  - Review→fix loop at TEAM scale caught a gameable security claim: the worker "k-anonymity" counted CONTRIBUTIONS not distinct TENANTS, so one tenant self-promotes past the floor; and /graph bypassed the floor entirely. A solo pass (and the first executor) shipped it as "enforced." Two review rounds + a resume-with-context fix closed it (distinct-contributor junction table + atomic batch).
+- failures_recovered: executor's first worker pass overclaimed ("k-anon enforced"); independent review + resume-executor-with-findings fixed it. Pattern: implementer + independent reviewer must be different lanes, even for sub-agents.
+- failures_escalated_to_founder: strategic fork (validate-demand-first vs scale-now) — founder chose scale-now; team bigger.
+- new_invariant_or_pattern_discovered: "security/privacy claims from a single author (human OR agent) are presumed incomplete until an independent lane re-derives them." Across this session the review lane caught 8 distinct privacy/correctness defects a single pass missed (6 raw-goal egress + statistical channel + gameable k-anon). Build the reviewer into the loop by default for any egress/crypto/k-anon code.
+- self-correction-of-prior-observation: my earlier "P0#1 closed DNA#7" was wrong — only the lexical channel; the statistical (embedding/fingerprint) channel needed separate closure.
