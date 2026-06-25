@@ -44,7 +44,17 @@ measurably better at each user's work over time — without ever leaking raw con
 - ✅ P0 #2 schema designed: `deploy/lakebase/migrations/0001–0006` + `validate_schema.py`
   (21 tables, 20 tenant-scoped, all RLS-covered). Pending Lakebase creds to apply.
 - ✅ Plan of record: `docs/AIOS_SAAS_LAKEBASE_PLAN.md`. CLS program A→E: `docs/AIOS_SELF_IMPROVING.md`.
-- ⏳ Everything below.
+- ✅ Team sprint 2026-06-26 (founder: continue SaaS scale, bigger team): vision panel
+  (architect+genesis+critic) → corrections folded in; statistical-privacy channel
+  narrowed client-side (`027ca2d`) + embedded-summary capped to 3 (`f74d823`); data-
+  lifecycle crypto-erase + consent-revocation design + migration `0007` (`ad0c0df`);
+  worker hardening — append-stable Merkle + server-side k-anon enforcement
+  (`66b6f20`, tests pass, deploy founder-gated, under review). Schema now 24 tables /
+  23 tenant-scoped / all RLS-covered (`validate_schema.py` scans 0001–0007).
+- ⏳ Next: W1 outbox relay on fixtures (architect's linchpin) → A1 gateway; worker
+  DEPLOY + Lakebase apply remain founder-gated (creds / GO). External non-Claude
+  substrate arm: gemini tier-blocked; agy needs `! agy` founder login; local
+  qwen3-coder available as immediate fallback.
 
 ## Vision-panel corrections (2026-06-26 — architect + genesis-challenger + critic, independent)
 
