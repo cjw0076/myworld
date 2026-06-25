@@ -46,6 +46,36 @@ measurably better at each user's work over time — without ever leaking raw con
 - ✅ Plan of record: `docs/AIOS_SAAS_LAKEBASE_PLAN.md`. CLS program A→E: `docs/AIOS_SELF_IMPROVING.md`.
 - ⏳ Everything below.
 
+## Vision-panel corrections (2026-06-26 — architect + genesis-challenger + critic, independent)
+
+The executive panel objectively reviewed the plan. Binding revisions before the backlog runs:
+
+1. **Privacy is NOT closed — the statistical channel is open.** P0 #1 closed only the
+   *lexical* channel. `behavior.global_corpus` publishes a 768-dim embedding (invertible,
+   vec2text-class) + full `tool_freq` distribution + category → tenant fingerprinting /
+   re-identification, with NO k-anonymity floor. **Fix at schema/client stage before any
+   real data lands (irreversible):** k-anon floor (min_contributors), drop the numeric
+   tool_freq distribution from global egress (counts are the fingerprint), don't publish
+   raw per-tenant embeddings. [dev-team in progress]
+2. **Sink gate BEFORE cutover.** Move A2 (server-side privacy gate) ahead of L4 (cutover).
+   An append-only ledger + an unattributable cross-tenant corpus are irreversible; gate
+   them before real data flows.
+3. **Data-lifecycle is missing and mandatory.** Reconcile append-only (DNA #3) with
+   right-to-erasure + consent_global revocation (incl. already-contributed global rows).
+   Design before Phase 1.
+4. **Merkle is incorrect, not just slow.** `worker.js` sorts all ids per call → a
+   set-commitment, not an append-only log; a proof at N breaks at N+1. W4 must be
+   incremental AND append-stable, not merely faster.
+5. **Worker plane is the unbuilt linchpin** — build W1/W2/W4 on FIXTURES (no creds gate)
+   to prove the CQRS bet before the founder-gated cutover.
+6. **Schedule the load-test** (was a P0 bullet, no task) and add **cost/COGS** + **eval of
+   "measurably better each run"** + **observability (outbox-lag, dead-letter)** — all absent.
+7. **STRATEGIC (founder-owned): demand is N=1.** Accepted memory was 100% AIOS-internal;
+   one outside-value flow ever (founder himself). The panel's one question: *name the
+   non-founder who is worse off next Tuesday if this stack vanishes — and what breaks.*
+   Leaner falsifiable step: ship ONE app to ~10 real strangers on the EXISTING D1 path and
+   measure day-1 vs day-7 task improvement, before building the full stack. Founder call.
+
 ## Operating discipline (non-negotiable)
 
 - **Test before commit.** Every non-trivial change leaves one runnable check; run it and
