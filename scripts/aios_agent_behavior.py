@@ -1090,10 +1090,19 @@ def contribute_to_global(
         try:
             import aios_capture_args as _CAP3  # noqa: PLC0415
             safe_dataset = _CAP3.safe_metadata_token(mem.get("dataset", ""))
-            safe_freq = {k2: int(v) for k, v in tool_freq.items()
-                         if isinstance(v, (int, float)) and (k2 := _CAP3.safe_metadata_token(k))}
+            # Statistical-fingerprint mitigation (k-anon P0): the full {tool: count}
+            # distribution is a per-tenant fingerprint — it re-identifies a tenant via the
+            # joint probability of N tools at specific frequencies. The global endpoint
+            # receives ONLY the top-3 tool NAMES (presence only, no counts).  Counts remain
+            # available locally for prediction but NEVER egress to the global corpus.
+            all_top = sorted(
+                ((k2, int(v)) for k, v in tool_freq.items()
+                 if isinstance(v, (int, float)) and (k2 := _CAP3.safe_metadata_token(k))),
+                key=lambda x: x[1], reverse=True,
+            )
+            coarse_top3 = [name for name, _ in all_top[:3]]
         except Exception:  # noqa: BLE001
-            safe_dataset, safe_freq = "", {}
+            safe_dataset, coarse_top3 = "", []
         payload = {
             "id":         mem["id"],
             "content":    safe_content,
@@ -1101,8 +1110,9 @@ def contribute_to_global(
             "provider":   str(mem.get("provider", "unknown"))[:20],
             "dataset":    safe_dataset,
             "os_origin":  mem.get("os_origin", "myworld"),
-            "tool_freq":  safe_freq,
-            "top_tools":  [str(t)[:40] for t in (mem.get("top_tools", []) or [])[:10]],
+            # GLOBAL PAYLOAD: coarse top-3 tool NAMES only — no numeric counts.
+            # Full tool_freq is NOT sent globally (statistical fingerprint risk).
+            "top_tools":  coarse_top3,
             "confidence": float(mem.get("confidence", 0.75)),
         }
         try:

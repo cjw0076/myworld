@@ -164,8 +164,9 @@ def contribute(goal: str, tools_used: list[str], provider: str,
         "category":  category,
         "provider":  provider,
         "os_origin": "myworld",
-        "top_tools": tools_used[:10],
-        "tool_freq": {t: 1 for t in tools_used},
+        # Statistical-fingerprint mitigation (k-anon P0): send top-3 tool NAMES only
+        # (presence, no counts). Full tool_freq distribution is NOT sent globally.
+        "top_tools": list(dict.fromkeys(tools_used))[:3],
         "confidence": 0.8,
     }
     return _akashic_post("/contribute", payload, api_key)

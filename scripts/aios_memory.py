@@ -114,8 +114,9 @@ def contribute_run(goal: str, outcome: dict, api_key: str | None = None,
         "category":  "code",
         "provider":  source,
         "os_origin": "myworld",
-        "top_tools": tools[:10],
-        "tool_freq": {t: tools.count(t) for t in set(tools)},
+        # Statistical-fingerprint mitigation (k-anon P0): send top-3 tool NAMES only
+        # (presence, no counts). Full tool_freq distribution is NOT sent globally.
+        "top_tools": list(dict.fromkeys(tools))[:3],
         "confidence": 0.9 if outcome.get("exit") == "model_finished" else 0.6,
         "loop_type": outcome.get("loop_type", "unknown"),
     }

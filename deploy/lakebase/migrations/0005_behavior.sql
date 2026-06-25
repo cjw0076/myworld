@@ -49,14 +49,27 @@ CREATE TABLE IF NOT EXISTS behavior.provider_stats (
 -- Global aggregate corpus (cross-tenant, consent-gated, tool-names + embedding only).
 -- Populated by an aggregator worker from consenting tenants' behavior.patterns — never
 -- holds tenant_id-attributable raw content. This is the public Akashic surface.
+--
+-- k-ANONYMITY FLOOR: the aggregator MUST NOT serve or expose a row until
+-- contributors >= min_contributors (default 5). Rows below the floor remain
+-- in the table but must be withheld from all /sync and /predict query results.
+-- This prevents fingerprinting a tenant via a low-contributor corpus row.
+--
+-- EMBEDDING CONTRACT: the embedding column stores an embedding of the STRUCTURAL
+-- summary aggregated across >= min_contributors contributors. Raw per-tenant
+-- embeddings are NOT published individually — only the aggregate is stored here.
+-- A 768-dim embedding of a single tenant's structural summary is effectively
+-- invertible; aggregation over >= k contributors collapses that fingerprint.
 CREATE TABLE IF NOT EXISTS behavior.global_corpus (
-    id          text        PRIMARY KEY,                -- non-reversible hash
-    category    text,
-    tool_freq   jsonb       NOT NULL DEFAULT '{}'::jsonb,
-    top_tools   text[]      NOT NULL DEFAULT '{}',
-    embedding   vector(768),                            -- of the STRUCTURAL summary only
-    confidence  real        NOT NULL DEFAULT 0.75,
-    contributed_at timestamptz NOT NULL DEFAULT now()
+    id               text        PRIMARY KEY,           -- non-reversible hash
+    category         text,
+    tool_freq        jsonb       NOT NULL DEFAULT '{}'::jsonb,
+    top_tools        text[]      NOT NULL DEFAULT '{}',
+    embedding        vector(768),                       -- aggregate of structural summaries over >= min_contributors tenants
+    confidence       real        NOT NULL DEFAULT 0.75,
+    contributed_at   timestamptz NOT NULL DEFAULT now(),
+    contributors     int         NOT NULL DEFAULT 1,    -- number of distinct tenants in this aggregate row
+    min_contributors int         NOT NULL DEFAULT 5     -- k-anonymity floor; aggregator must not expose row until contributors >= min_contributors
 );
 CREATE INDEX IF NOT EXISTS idx_global_hnsw ON behavior.global_corpus
     USING hnsw (embedding vector_cosine_ops);

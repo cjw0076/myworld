@@ -49,3 +49,27 @@ leak; the check fails loudly). Real validation is `psql -f` on a Lakebase branch
 
 Schema designed and structure-validated. Pending founder Lakebase/Databricks creds to
 apply on a branch, then the D1→Lakebase dual-write migration (plan §Migration).
+
+## Residual: k-anonymity enforcement requires a Cloudflare worker deploy (founder-gated)
+
+The schema addition of `contributors` and `min_contributors` (migration 0005) and the
+client-side payload coarsening (top-3 tool names only, no numeric counts) close the
+statistical fingerprint channel at the egress layer.
+
+Two items remain that require changes to the Cloudflare worker (`deploy/akashic-worker/`)
+and a production deploy — both are **founder-gated** and not included here:
+
+1. **Worker-side k-anon query gate**: the `/sync` and `/predict` handlers must filter out
+   `global_corpus` rows where `contributors < min_contributors`. Until deployed, a row
+   with a single contributor's pattern is still servable even though the schema marks it
+   below the floor. Adding `WHERE contributors >= min_contributors` (or equivalent) to the
+   D1 queries closes this.
+
+2. **Worker-side aggregate write gate**: the `/contribute` handler currently upserts each
+   contribution as a new row. To use `contributors` correctly it must either (a) aggregate
+   contributions into a single row per `(category, loop_type)` bucket and increment
+   `contributors`, or (b) hold rows below the k-floor in a staging table and only promote
+   them once `contributors >= min_contributors`. This requires a worker schema migration
+   and worker logic change.
+
+Do not deploy these changes until the founder authorises the worker deploy.
