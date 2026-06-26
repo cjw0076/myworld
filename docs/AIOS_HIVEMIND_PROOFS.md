@@ -85,3 +85,53 @@ proves a theorem the solo agent couldn't)?
 
 So: build the Lean-gated proof-contribution DAG demo as a scoped track; keep the
 no-oracle / trustless / general-novelty parts as an explicitly-labeled research bet.
+
+---
+
+## Office-hour grounding (2026-06-26, tool-first — escaped weights)
+
+Per [[feedback_tool_first_escape_weights]]: pulled external knowledge via HF paper_search
+(A, faithful full-text extraction) + deep-research (B, sources good / verification
+rate-limited → UNVERIFIED leads) + local qwen (CUDA OOM, failed) + agy (empty, failed).
+Consensus pending founder /mcp auth. The single conclusion-changing update is #3 below.
+
+**Concrete mechanisms now grounded (A — faithful to papers):**
+- **Credit = bucket-brigade** (Economy of Minds, arXiv 2606.02859): wealth flows BACKWARD
+  through the actual execution path (`W_prev += bid_winner`) → recovers marginal causal
+  contribution with zero central bookkeeping. Ports onto `uri-ledger` DAG traversal.
+  Warning: keep BOTH exploration (new candidates) + exploitation (propagate winners) —
+  dropping either collapses performance.
+- **Uncommon = computable** (D3MAS, arXiv 2510.10585): `E_depend = {(v,w) | Premise(v) ∩
+  Conclusion(w) ≠ ∅}` — a contribution is novel iff its premises don't intersect any
+  existing conclusion node. Reward multiplier ∝ low dependency in-degree. (Baseline MAS =
+  47.3% redundant; this cut 46%, +16.5% MMLU.)
+- **Verifier MUST co-evolve** (Verification Horizon, arXiv 2606.26300): 37.76% of "resolved"
+  SWE-Bench were reward-hacked; behavior-monitoring loop (sample → detect new shortcut
+  patterns → add to monitor set → penalize → redeploy) cut it to 1.31% and +20.3pp clean.
+  Rice's theorem: no fixed verifier is complete. A static verifier is the #1 architecture mistake.
+- **Composition gap** (Meta-Agent 2605.25233 + MASFT 2503.13657): 3-level error attribution
+  (local retry → upstream re-run → structural re-decompose); verify at the SEMANTIC GOAL
+  level not just leaf schema (MASFT: +15.6%; "incorrect verification" is 9.1% of failures;
+  more verifier stages ≠ more correctness). Open: which subgraph to re-decompose is
+  UNSPECIFIED in all papers.
+
+**#3 — the conclusion my weights got WRONG (B leads — verify via Consensus/re-run):**
+"No exogenous oracle ⇒ uncommon-but-correct is unjudgeable" was TOO STRONG. Label-free
+peer-prediction mechanisms surface minority-correct signals WITHOUT ground truth:
+- **ISP (Inverse Surprising Popularity, arXiv 2510.01499)** — uses only 2nd-order
+  cross-model correlation, provably beats majority voting, label-free.
+- **RBTS / Bayesian Truth Serum** — incentive-compatible truthful reporting for n≥3 without
+  knowing the prior; rewards "surprisingly common."
+- **Numerai MMC** — orthogonalize vs the meta-model, credit only the non-redundant component.
+- **Bittensor weight-copying** (documented attack) — validators copy weights instead of
+  evaluating → empirically suppresses novelty (the consensus-low-pass thesis, confirmed).
+⇒ A possible THIRD path for the no-oracle leaf: peer-prediction surfacing, not just an
+exogenous checker. NEEDS verification (deep-research verify was rate-limited).
+
+**Two hardest unsolved (collective):** (1) verifier co-evolution WITHOUT ground truth —
+the shortcut-detector's own correctness is unverified (recursive regress); (2) selective
+re-decomposition — minimal-subgraph reconstruction after a structural error.
+
+**Tool-failure honesty:** qwen CUDA-OOM + agy empty + deep-research verification
+rate-limited (105 agents / 2.1M tokens). The B leads are PROMISING but UNVERIFIED; re-run
+verification or cross-check via Consensus before treating ISP/RBTS/MMC as settled.
