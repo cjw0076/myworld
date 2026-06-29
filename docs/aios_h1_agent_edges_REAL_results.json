@@ -1,0 +1,25 @@
+{
+  "params": {
+    "n_nodes": 300,
+    "max_pairs": 150,
+    "near_k": 4,
+    "model": "qwen2.5:7b"
+  },
+  "tally": {
+    "judged": 150,
+    "skipped": 0,
+    "supports": 7,
+    "contradicts": 3,
+    "unrelated": 140
+  },
+  "h1": {
+    "n_nodes": 16,
+    "n_signed_edges": 10,
+    "n_independent_cycles": 0,
+    "frustrated_cycle_count": 0,
+    "dim_h1_estimate": 0,
+    "frustrated_triangles": [],
+    "verdict": "TRIVIAL_H1",
+    "method": "direct_signed_cycle_gf2"
+  }
+}

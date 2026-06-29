@@ -1,0 +1,25 @@
+{
+  "params": {
+    "max_pairs": 600,
+    "near_k": 6,
+    "model": "qwen2.5:7b",
+    "corpus": "typed_claims"
+  },
+  "tally": {
+    "judged": 600,
+    "skipped": 0,
+    "supports": 50,
+    "contradicts": 15,
+    "unrelated": 535
+  },
+  "h1": {
+    "n_nodes": 74,
+    "n_signed_edges": 65,
+    "n_independent_cycles": 8,
+    "frustrated_cycle_count": 0,
+    "dim_h1_estimate": 0,
+    "frustrated_triangles": [],
+    "verdict": "TRIVIAL_H1",
+    "method": "direct_signed_cycle_gf2"
+  }
+}
