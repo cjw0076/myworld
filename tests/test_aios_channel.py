@@ -174,30 +174,45 @@ class TestGateSelection(unittest.TestCase):
         gate = make_gate(environ={"AIOS_CHANNEL": "none"})
         self.assertIsNone(gate)
 
-    def test_unset_aios_channel_defaults_to_runtime(self):
-        # Empty environ dict has no AIOS_CHANNEL key -> defaults to runtime
+    def test_unset_aios_channel_is_inert(self):
+        # Empty environ dict has no AIOS_CHANNEL key -> defaults to "none" (inert,
+        # opt-in). The bridge is OFF until explicitly activated.
         gate = make_gate(environ={})
-        self.assertIsNotNone(gate)
-        self.assertIsInstance(gate, RuntimeGate)
+        self.assertIsNone(gate)
 
     def test_telegram_without_token_degrades_cleanly(self):
         # No AIOS_TELEGRAM_TOKEN -> returns None, does not raise
         gate = make_gate(environ={"AIOS_CHANNEL": "telegram"})
         self.assertIsNone(gate)
 
-    def test_telegram_with_token_returns_telegram_gate(self):
+    def test_telegram_without_chat_id_fails_closed(self):
+        # Token present but NO allow-list (AIOS_TELEGRAM_CHAT_ID) -> the remote
+        # gate is refused (fail closed), NOT constructed wide-open. This is the
+        # critical trust-boundary fix: a remote command surface must never run
+        # unauthenticated.
         env = {
             "AIOS_CHANNEL": "telegram",
             "AIOS_TELEGRAM_TOKEN": "fake-token-for-test",
         }
         gate = make_gate(environ=env)
+        self.assertIsNone(gate)
+
+    def test_telegram_with_token_and_chat_id_returns_telegram_gate(self):
+        env = {
+            "AIOS_CHANNEL": "telegram",
+            "AIOS_TELEGRAM_TOKEN": "fake-token-for-test",
+            "AIOS_TELEGRAM_CHAT_ID": "founder-123",
+        }
+        gate = make_gate(environ=env)
         self.assertIsNotNone(gate)
         self.assertIsInstance(gate, TelegramGate)
+        self.assertTrue(getattr(gate, "remote", False))  # remote gate marker
 
     def test_telegram_gate_does_not_expose_token_in_repr(self):
         env = {
             "AIOS_CHANNEL": "telegram",
             "AIOS_TELEGRAM_TOKEN": "secret-abc-123",
+            "AIOS_TELEGRAM_CHAT_ID": "founder-123",
         }
         gate = make_gate(environ=env)
         assert gate is not None
@@ -241,13 +256,38 @@ class TestAllowList(unittest.TestCase):
         self.assertEqual(n, 0)
         self.assertEqual(len(mock.calls), 0)
 
-    def test_none_allow_list_with_no_env_passes_all(self):
-        # allow_list=None + no AIOS_TELEGRAM_CHAT_ID in environ -> no restriction
+    def test_local_gate_none_allow_list_passes_all(self):
+        # LOCAL (non-remote) gate + allow_list=None + no env -> no restriction.
+        # The local runtime queue keeps its convenience (it already requires
+        # local filesystem write access to drive).
         mock = MockDispatch("ok")
         _append_inbox(self.gate, "anyone", "hello")
         n = channel_once(self.gate, dispatch_fn=mock, allow_list=None, environ={})
         self.assertEqual(n, 1)
         self.assertEqual(len(mock.calls), 1)
+
+    def test_remote_gate_none_allow_list_fails_closed(self):
+        # CRITICAL trust-boundary: a REMOTE gate with no active allow-list must
+        # drop ALL messages (fail closed), even if such a gate is constructed
+        # outside make_gate(). Defense-in-depth beyond make_gate's refusal.
+        class FakeRemoteGate:
+            remote = True
+
+            def __init__(self):
+                self.sent = []
+
+            def poll(self):
+                return [InboundMsg(chat_id="stranger", text="hack")]
+
+            def send(self, chat_id, text):
+                self.sent.append((chat_id, text))
+
+        mock = MockDispatch("ok")
+        gate = FakeRemoteGate()
+        n = channel_once(gate, dispatch_fn=mock, allow_list=None, environ={})
+        self.assertEqual(n, 0)                 # nothing dispatched
+        self.assertEqual(len(mock.calls), 0)
+        self.assertEqual(gate.sent, [])        # no reply to the unauthorized chat
 
     def test_allow_list_from_env_is_respected(self):
         # allow_list=None but AIOS_TELEGRAM_CHAT_ID set in environ
@@ -312,6 +352,31 @@ class TestNotifyOutbound(unittest.TestCase):
         msgs = self.gate.poll()
         self.assertEqual(len(msgs), 1)
         self.assertEqual(msgs[0].text, "inbound")
+
+
+class TestDispatchGuards(unittest.TestCase):
+    """_default_dispatch argument-injection + empty-goal guards (no subprocess)."""
+
+    def test_rejects_goal_starting_with_dash(self):
+        # A goal that is a bare flag would be parsed as an option downstream
+        # (e.g. --root / --base-url redirection). It must be rejected before
+        # any subprocess dispatch.
+        for evil in ("--root=/tmp/evil", "--base-url=http://attacker/v1", "-x"):
+            out = ch._default_dispatch(InboundMsg(chat_id="founder", text="/do " + evil))
+            self.assertIn("rejected", out)
+            self.assertNotIn("output", out)  # never reached subprocess capture
+
+    def test_rejects_leading_dash_for_plain_text_too(self):
+        out = ch._default_dispatch(InboundMsg(chat_id="founder", text="--help"))
+        self.assertIn("rejected", out)
+
+    def test_empty_goal_is_not_dispatched(self):
+        # An empty / whitespace-only message strips to "" -> empty goal guard
+        # returns early (no subprocess). (A bare "/ask   " strips to "/ask" and
+        # is treated as plain text, so the empty path is reached via "" itself.)
+        for blank in ("", "   ", "\n\t"):
+            out = ch._default_dispatch(InboundMsg(chat_id="founder", text=blank))
+            self.assertIn("empty goal", out)
 
 
 if __name__ == "__main__":

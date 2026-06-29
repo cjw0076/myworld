@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """aios_channel -- messaging gateway: human-to-AIOS bridge via a channel gate.
 
-This module is opt-in (AIOS_CHANNEL must be set to "runtime" or "telegram").
-By default (AIOS_CHANNEL unset or "none") the bridge is inert.
+This module is opt-in.  By default (AIOS_CHANNEL unset or "none") the bridge is
+inert -- it must be explicitly set to "runtime" or "telegram" to activate.
 
 Trust boundary: ALL command dispatch from a remote channel passes through an
 allow-list (AIOS_TELEGRAM_CHAT_ID).  Only the founder's registered chat_id can
 issue commands to AIOS.  This allow-list is the sole authority gate for remote
 channel dispatch -- treat it as a trust boundary, not a convenience filter.
-Do NOT move allow-list enforcement into the dispatch function; it lives in
-channel_once() so no dispatch can bypass it.
+The allow-list FAILS CLOSED for remote gates on two layers: (1) make_gate()
+refuses to build a TelegramGate without a non-empty AIOS_TELEGRAM_CHAT_ID, and
+(2) channel_once() drops ALL messages from a gate marked `remote` when no
+allow-list is active.  Do NOT move allow-list enforcement into the dispatch
+function; it lives in channel_once() so no dispatch can bypass it.
 
 Gate selection (AIOS_CHANNEL env):
+    none      -- bridge is inert (returns immediately, does nothing).  DEFAULT
+                 (unset == none): the bridge is off until explicitly opted in.
     runtime   -- local file queue (~/.aios/channel/inbox.jsonl / outbox.jsonl).
-                 Default.  Zero network deps; lets AIOS processes + tests drive
-                 the bridge without any external service.
-    telegram  -- Telegram bot API (long-poll getUpdates / sendMessage).
-                 Requires AIOS_TELEGRAM_TOKEN.  Degrades cleanly if absent.
-    none      -- bridge is inert (returns immediately, does nothing).
+                 Zero network deps; lets AIOS processes + tests drive the bridge
+                 without any external service.  Local-only (not a remote gate).
+    telegram  -- Telegram bot API (long-poll getUpdates / sendMessage).  Remote
+                 gate.  Requires AIOS_TELEGRAM_TOKEN *and* AIOS_TELEGRAM_CHAT_ID
+                 (fail closed); degrades to inert if either is absent.
 
 DNA compliance:
     #4  named exit  -- channel_loop() has explicit max_iters stop bound.
@@ -101,6 +106,8 @@ class RuntimeGate:
     Optional field: "ts" (float unix timestamp).
     """
 
+    remote = False  # local-only gate: not subject to remote fail-closed
+
     def __init__(
         self,
         inbox_path: Path = _RUNTIME_INBOX,
@@ -165,6 +172,8 @@ class TelegramGate:
     enforcement point is uniform across all gate types.
     """
 
+    remote = True  # remote gate: channel_once() fails closed if no allow-list
+
     def __init__(self, token: str, allowed_chat_id: str = "") -> None:
         # Token held in memory only; never logged or echoed
         self._token = token
@@ -207,8 +216,16 @@ class TelegramGate:
         return messages
 
     def send(self, chat_id: str, text: str) -> None:
-        """Send a text message to chat_id via sendMessage."""
-        self._post("sendMessage", {"chat_id": chat_id, "text": text})
+        """Send a text message to chat_id via sendMessage.
+
+        Errors are swallowed: the request URL embeds the bot token, so a
+        propagated exception (whose .url could be logged upstream) must never
+        surface. Mirrors poll()'s degrade-cleanly contract.
+        """
+        try:
+            self._post("sendMessage", {"chat_id": chat_id, "text": text})
+        except (urllib.error.URLError, OSError):
+            return
 
 
 # ---------------------------------------------------------------------------
@@ -219,13 +236,17 @@ class TelegramGate:
 def make_gate(environ: Optional[dict] = None) -> Optional[ChannelGate]:
     """Create the configured ChannelGate from env.
 
-    AIOS_CHANNEL = "runtime" (default) | "telegram" | "none"
+    AIOS_CHANNEL = "none" (DEFAULT, unset == none) | "runtime" | "telegram"
 
-    Returns None for "none" or when a required credential is absent (clean
-    degrade -- never raises on missing config).
+    Opt-in: an unset AIOS_CHANNEL yields None (inert), matching the documented
+    "bridge is off until explicitly opted in" contract.  Returns None for "none"
+    or when a required credential is absent (clean degrade -- never raises on
+    missing config).  For the remote telegram gate, BOTH the token and a
+    non-empty allow-list (AIOS_TELEGRAM_CHAT_ID) are required -- the gate fails
+    CLOSED rather than constructing an unauthenticated remote-command surface.
     """
     env = environ if environ is not None else os.environ
-    channel = env.get("AIOS_CHANNEL", "runtime").lower().strip()
+    channel = env.get("AIOS_CHANNEL", "none").lower().strip()
     if channel in ("none", ""):
         return None
     if channel == "telegram":
@@ -237,8 +258,18 @@ def make_gate(environ: Optional[dict] = None) -> Optional[ChannelGate]:
             )
             return None
         allowed = env.get("AIOS_TELEGRAM_CHAT_ID", "").strip()
+        if not allowed:
+            # Fail closed: a remote gate without an allow-list would let any
+            # chat drive `aios do` (arbitrary agentic execution) + exfiltrate
+            # memory via `aios ask`.  Refuse to construct it.
+            print(
+                "[aios channel] AIOS_TELEGRAM_CHAT_ID not set -- refusing remote "
+                "telegram gate (allow-list is required for remote dispatch)",
+                file=sys.stderr,
+            )
+            return None
         return TelegramGate(token=token, allowed_chat_id=allowed)
-    # default: runtime
+    # explicit opt-in to the local runtime gate
     return RuntimeGate()
 
 
@@ -272,6 +303,14 @@ def _default_dispatch(msg: InboundMsg) -> str:
 
     if not goal:
         return "(empty goal -- nothing dispatched)"
+
+    # Argument-injection guard: the goal is passed as a single argv element, so
+    # it cannot inject multiple tokens or shell metacharacters -- but a goal that
+    # IS exactly one flag (e.g. "--root=/x", "--base-url=http://evil/v1") would be
+    # parsed as an option by the downstream argparse and redirect the control
+    # root / LLM endpoint.  Reject any goal that begins with "-" to close it.
+    if goal.startswith("-"):
+        return "(rejected: goal may not start with '-' -- argument-injection guard)"
 
     try:
         result = subprocess.run(
@@ -331,7 +370,10 @@ def channel_once(
 
     allow_list: explicit set of permitted chat_ids.  When None, the list is
     built from AIOS_TELEGRAM_CHAT_ID in environ/os.environ.  A None allow-list
-    (env var also absent) means no restriction -- all messages pass.
+    (env var also absent) means no restriction for a LOCAL gate -- but for a
+    gate marked `remote` it FAILS CLOSED (all messages dropped), so a remote
+    command surface can never run unauthenticated even if a gate is constructed
+    without an allow-list by some path other than make_gate().
 
     Trust boundary: messages whose chat_id is not in the active allow-list are
     silently dropped.  The reply is sent only to the originating chat_id.
@@ -341,6 +383,14 @@ def channel_once(
     _allow: Optional[set] = (
         allow_list if allow_list is not None else _build_allow_list(environ)
     )
+    # Defense-in-depth: a REMOTE gate with no active allow-list dispatches
+    # nothing (fail closed).  Local gates keep the no-restriction convenience.
+    if _allow is None and getattr(gate, "remote", False):
+        _allow = set()
+    # Normalize to str on both sides so a programmatic int allow-list (e.g.
+    # {12345}) still matches the always-str InboundMsg.chat_id.
+    if _allow is not None:
+        _allow = {str(x) for x in _allow}
 
     messages = gate.poll()
     processed = 0
