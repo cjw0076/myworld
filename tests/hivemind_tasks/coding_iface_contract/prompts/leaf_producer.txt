@@ -1,0 +1,24 @@
+Implement producer.py with one function:
+
+    def get_data() -> dict:
+        ...
+
+SHARED INTERFACE CONTRACT (both the producer and consumer agent are told this):
+    The pipeline passes a Python dict whose payload key is EXACTLY "value".
+    The producer MUST return {"value": <int>} — no other key name is valid.
+    The consumer reads data["value"] and will fail if the key is anything else.
+
+Requirements:
+- The function returns {"value": 42}.
+- The key name is exactly "value" (not "amount", "result", "data", or any other name).
+
+Unit test that must pass:
+    result = get_data()
+    assert isinstance(result, dict)
+    assert "value" in result, "key must be 'value'"
+    assert result["value"] == 42
+
+Output only the Python code block (no explanation):
+```python
+...
+```

@@ -1,0 +1,30 @@
+Implement two Python modules that form a data pipeline:
+
+1. producer.py — contains one function:
+
+       def get_data() -> dict:
+           """Return {"value": 42}."""
+
+2. consumer.py — contains one function:
+
+       def process(data: dict) -> int:
+           """Read data["value"] and return it doubled."""
+
+The modules will be imported together. The integration test calls:
+    process(get_data())
+and asserts the result equals 84.
+
+Output each module as a separate fenced Python code block, preceded by a comment line
+with the filename, exactly as shown:
+
+# producer.py
+```python
+def get_data() -> dict:
+    ...
+```
+
+# consumer.py
+```python
+def process(data: dict) -> int:
+    ...
+```

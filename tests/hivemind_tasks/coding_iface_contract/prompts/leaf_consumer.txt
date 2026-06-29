@@ -1,0 +1,23 @@
+Implement consumer.py with one function:
+
+    def process(data: dict) -> int:
+        ...
+
+SHARED INTERFACE CONTRACT (both the producer and consumer agent are told this):
+    The pipeline passes a Python dict whose payload key is EXACTLY "value".
+    The producer returns {"value": <int>} — the key is always "value".
+    The consumer MUST read data["value"] — no other key access is valid.
+
+Requirements:
+- Reads data["value"] (an int or float).
+- Returns it multiplied by 2.
+
+Unit tests that must pass:
+    assert process({"value": 42}) == 84
+    assert process({"value": 0}) == 0
+    assert process({"value": -5}) == -10
+
+Output only the Python code block (no explanation):
+```python
+...
+```

@@ -2,6 +2,10 @@
 """
 AIOS Hivemind v0 — smallest honest falsification probe.
 
+The hivemind is the coordination/verify/compose layer; the agent is a pluggable
+substrate — any product's agent attaches via an AgentAdapter.  The same experiment
+(ARM A vs ARM B) runs unchanged on any agent that exposes a generate(prompt) method.
+
 Tests ONE thesis: does pooled+verified (ARM B) beat a single agent (ARM A) on a coding
 Quest, under EQUAL compute, with a REAL machine oracle for both leaves and the whole?
 
@@ -11,12 +15,31 @@ Measures:
   composition_gap_rate_B  — fraction of trials where ALL leaf oracles passed AND the
                             parent oracle FAILED (the gap the thesis cares about)
 
-Each call to solve_fn(prompt, 1) is ONE compute unit. Budget N is respected exactly:
+Each call to solve(adapter, prompt, 1) is ONE compute unit. Budget N is respected exactly:
   ARM A: up to N calls total (stops early on success).
   ARM B: k leaves x floor(N/k) calls each = floor(N/k)*k <= N calls total.
 
-Usage:
+Plugging in a different agent (env vars — all optional):
+  AIOS_PROBE_AGENT     - "ollama" (default) | "openai"
+  AIOS_PROBE_BASE_URL  - base URL for openai adapter (e.g. http://localhost:8000)
+  AIOS_PROBE_MODEL     - model name (default: qwen3-coder:30b)
+  AIOS_PROBE_API_KEY   - API key (optional; for OpenAI / Claude-compatible endpoints)
+
+Examples:
+    # default (qwen3-coder:30b via local ollama)
     python3 scripts/aios_hivemind_probe.py --task coding_iface --budget 6 --trials 5
+
+    # vLLM server running Llama-3
+    AIOS_PROBE_AGENT=openai AIOS_PROBE_BASE_URL=http://localhost:8000 \\
+    AIOS_PROBE_MODEL=meta-llama/Llama-3.1-70B-Instruct \\
+    python3 scripts/aios_hivemind_probe.py --task coding_iface
+
+    # OpenAI cloud
+    AIOS_PROBE_AGENT=openai AIOS_PROBE_BASE_URL=https://api.openai.com \\
+    AIOS_PROBE_MODEL=gpt-4o AIOS_PROBE_API_KEY=sk-... \\
+    python3 scripts/aios_hivemind_probe.py --task coding_iface
+
+    # quick model override (ollama)
     AIOS_PROBE_MODEL=qwen3-coder:7b python3 scripts/aios_hivemind_probe.py --task coding_iface
 """
 
@@ -31,6 +54,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Callable, List, NamedTuple, Optional
+from typing import Protocol, runtime_checkable
 
 # ---------------------------------------------------------------------------
 # Config
@@ -41,38 +65,123 @@ DEFAULT_MODEL = os.environ.get("AIOS_PROBE_MODEL", "qwen3-coder:30b")
 TASK_ROOT = Path(__file__).resolve().parent.parent / "tests" / "hivemind_tasks"
 
 # ---------------------------------------------------------------------------
-# Agent substrate — local model via ollama HTTP
+# AgentAdapter — pluggable agent substrate
 # ---------------------------------------------------------------------------
 
 
-def solve(prompt: str, attempts: int, model: str = DEFAULT_MODEL) -> str:
-    """Call the local model up to `attempts` times (each = one compute unit).
+@runtime_checkable
+class AgentAdapter(Protocol):
+    """Pluggable agent substrate interface.
+
+    Any product agent attaches to the hivemind probe by implementing this
+    single method.  The hivemind (ARM A / ARM B / run_probe) is agnostic to
+    the underlying model, provider, or product — it only calls generate().
+    """
+
+    def generate(self, prompt: str) -> str:
+        """Send prompt to the agent; return the response text (empty on failure)."""
+        ...
+
+
+class OllamaAdapter:
+    """Agent substrate: local model via ollama HTTP API (http://localhost:11434)."""
+
+    def __init__(self, model: str = DEFAULT_MODEL, url: str = OLLAMA_URL) -> None:
+        self.model = model
+        self.url = url
+
+    def generate(self, prompt: str) -> str:
+        import urllib.request
+
+        payload = json.dumps(
+            {"model": self.model, "prompt": prompt, "stream": False}
+        ).encode()
+        req = urllib.request.Request(
+            self.url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+            return data.get("response", "")
+
+
+class OpenAICompatAdapter:
+    """Agent substrate: any OpenAI-compatible chat API.
+
+    Works for: vLLM, LM Studio, OpenAI, Anthropic-via-proxy, or any product
+    agent that exposes a POST /v1/chat/completions endpoint.
+
+    Example — plug in a vLLM server:
+        AIOS_PROBE_AGENT=openai AIOS_PROBE_BASE_URL=http://localhost:8000
+        AIOS_PROBE_MODEL=meta-llama/Llama-3.1-70B-Instruct
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        model: str,
+        api_key: Optional[str] = None,
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.api_key = api_key
+
+    def generate(self, prompt: str) -> str:
+        import urllib.request
+
+        headers: dict = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+        ).encode()
+        req = urllib.request.Request(
+            f"{self.base_url}/v1/chat/completions",
+            data=payload,
+            headers=headers,
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            data = json.loads(resp.read())
+            return data["choices"][0]["message"]["content"]
+
+
+def _default_adapter() -> AgentAdapter:
+    """Create an adapter from env vars (all optional; defaults to OllamaAdapter).
+
+    AIOS_PROBE_AGENT     - "ollama" (default) | "openai"
+    AIOS_PROBE_BASE_URL  - base URL for openai adapter
+    AIOS_PROBE_MODEL     - model name (default: qwen3-coder:30b)
+    AIOS_PROBE_API_KEY   - API key (optional)
+    """
+    agent_type = os.environ.get("AIOS_PROBE_AGENT", "ollama")
+    model = os.environ.get("AIOS_PROBE_MODEL", "qwen3-coder:30b")
+    if agent_type == "openai":
+        base_url = os.environ.get("AIOS_PROBE_BASE_URL", "http://localhost:8080")
+        api_key = os.environ.get("AIOS_PROBE_API_KEY") or None
+        return OpenAICompatAdapter(base_url=base_url, model=model, api_key=api_key)
+    return OllamaAdapter(model=model)
+
+
+def solve(adapter: AgentAdapter, prompt: str, attempts: int) -> str:
+    """Call adapter.generate(prompt) up to `attempts` times (each = one compute unit).
 
     Returns the first non-empty response text, or empty string if all fail.
-    The `attempts` parameter is intentionally exposed so callers can use it
-    directly for one-shot multi-retry without an external loop, or pass 1 for
-    fine-grained oracle-checked retry in run_arm_a / run_arm_b.
+    The `attempts` parameter allows callers to pass 1 for fine-grained
+    oracle-checked retry in run_arm_a / run_arm_b.
     """
-    import urllib.request
-
     last = ""
     for _ in range(attempts):
-        payload = json.dumps(
-            {"model": model, "prompt": prompt, "stream": False}
-        ).encode()
         try:
-            req = urllib.request.Request(
-                OLLAMA_URL,
-                data=payload,
-                headers={"Content-Type": "application/json"},
-                method="POST",
-            )
-            with urllib.request.urlopen(req, timeout=120) as resp:
-                data = json.loads(resp.read())
-                text = data.get("response", "")
-                if text:
-                    last = text
-                    return last
+            text = adapter.generate(prompt)
+            if text:
+                last = text
+                return last
         except Exception:
             continue
     return last
@@ -245,15 +354,24 @@ def run_arm_a(
     budget: int,
     solve_fn: Optional[Callable] = None,
     parent_oracle: Optional[OracleFn] = None,
+    adapter: Optional[AgentAdapter] = None,
 ) -> dict:
     """ARM A: one agent, up to `budget` compute units on the whole task.
 
     Each iteration calls solve_fn(whole_prompt, 1) — one compute unit — writes the
     produced artifacts to a tmpdir, and checks the parent oracle. Stops on first pass.
 
+    Pass `adapter` to attach any AgentAdapter substrate (OllamaAdapter,
+    OpenAICompatAdapter, or a custom product agent).  Pass `solve_fn` to inject
+    a mock callable (str, int) -> str for tests.  `solve_fn` takes precedence.
+
     Returns {"solved": bool, "attempts": int}.
     """
-    _solve = solve_fn or solve
+    if solve_fn is not None:
+        _solve = solve_fn
+    else:
+        _adapter = adapter if adapter is not None else _default_adapter()
+        _solve = lambda p, n: solve(_adapter, p, n)
     _oracle = parent_oracle or (
         lean_oracle(task.parent_test) if task.oracle_type == "lean"
         else pytest_oracle(task.parent_test)
@@ -290,6 +408,7 @@ def run_arm_b(
     solve_fn: Optional[Callable] = None,
     parent_oracle: Optional[OracleFn] = None,
     leaf_oracle_factory: Optional[Callable[[LeafSpec], OracleFn]] = None,
+    adapter: Optional[AgentAdapter] = None,
 ) -> dict:
     """ARM B: budget split across k leaves; each leaf oracle-checked per attempt.
 
@@ -302,9 +421,16 @@ def run_arm_b(
     composition_gap is True iff all leaf oracles passed AND parent oracle failed.
     This is the signal the thesis cares about: verified leaves that fail to compose.
 
+    Pass `adapter` to attach any AgentAdapter substrate.  Pass `solve_fn` for
+    test injection.  `solve_fn` takes precedence over `adapter`.
+
     Returns {"solved": bool, "all_leaves_passed": bool, "composition_gap": bool}.
     """
-    _solve = solve_fn or solve
+    if solve_fn is not None:
+        _solve = solve_fn
+    else:
+        _adapter = adapter if adapter is not None else _default_adapter()
+        _solve = lambda p, n: solve(_adapter, p, n)
     _parent_oracle = parent_oracle or (
         lean_oracle(task.parent_test) if task.oracle_type == "lean"
         else pytest_oracle(task.parent_test)
@@ -379,8 +505,12 @@ def run_probe(
     solve_fn: Optional[Callable] = None,
     parent_oracle: Optional[OracleFn] = None,
     leaf_oracle_factory: Optional[Callable[[LeafSpec], OracleFn]] = None,
+    adapter: Optional[AgentAdapter] = None,
 ) -> dict:
     """Run both arms `trials` times under equal budget; return aggregate metrics.
+
+    Pass `adapter` to run the same experiment on any AgentAdapter substrate.
+    Pass `solve_fn` to inject a mock callable for tests; it takes precedence.
 
     Returns:
         solve_rate_A           float in [0, 1]
@@ -394,13 +524,14 @@ def run_probe(
     b_gap = 0
 
     for _ in range(trials):
-        ra = run_arm_a(task, budget, solve_fn=solve_fn, parent_oracle=parent_oracle)
+        ra = run_arm_a(task, budget, solve_fn=solve_fn, parent_oracle=parent_oracle, adapter=adapter)
         rb = run_arm_b(
             task,
             budget,
             solve_fn=solve_fn,
             parent_oracle=parent_oracle,
             leaf_oracle_factory=leaf_oracle_factory,
+            adapter=adapter,
         )
         if ra["solved"]:
             a_solved += 1
@@ -439,16 +570,22 @@ if __name__ == "__main__":
     if args.model:
         os.environ["AIOS_PROBE_MODEL"] = args.model
 
+    _adapter = _default_adapter()
     task = load_task(args.task)
     k = len(task.leaves)
+    agent_label = (
+        f"openai:{_adapter.base_url}/{_adapter.model}"
+        if isinstance(_adapter, OpenAICompatAdapter)
+        else f"ollama:{_adapter.model}"
+    )
     print(
         f"probe: task={args.task} budget={args.budget} trials={args.trials} "
-        f"model={DEFAULT_MODEL} leaves={[l.name for l in task.leaves]}"
+        f"agent={agent_label} leaves={[l.name for l in task.leaves]}"
     )
     print(
         f"budget split: ARM A <= {args.budget} total | "
         f"ARM B {k} leaves x {args.budget // k} each = {k * (args.budget // k)} total"
     )
 
-    results = run_probe(task, args.budget, args.trials)
+    results = run_probe(task, args.budget, args.trials, adapter=_adapter)
     print(json.dumps(results, indent=2))

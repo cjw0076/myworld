@@ -1,0 +1,17 @@
+{
+  "name": "coding_iface_contract",
+  "description": "Two-module pipeline identical to coding_iface BUT with an explicit shared interface contract in both leaf prompts AND contract-enforcing leaf oracles. Leaf tests now assert the exact key name 'value' (not key-agnostic). Hypothesis: with the contract enforced at the leaf level, composition_gap should drop toward 0 and ARM B should be able to solve. Keep coding_iface (the contract-weak one) intact for A/B comparison.",
+  "leaves": [
+    {
+      "name": "producer",
+      "prompt_file": "leaf_producer.txt",
+      "test_file": "test_producer.py"
+    },
+    {
+      "name": "consumer",
+      "prompt_file": "leaf_consumer.txt",
+      "test_file": "test_consumer.py"
+    }
+  ],
+  "parent_test": "test_integration.py"
+}
