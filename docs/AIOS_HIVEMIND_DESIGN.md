@@ -60,24 +60,59 @@ not a solved claim.
 - **No over-claim**: the absorption-probe may only re-show known ensemble/proof-search gains
   — verify externally before claiming the hivemind itself is the cause (global rule #2/#5).
 
-## v0 falsifiable deliverable (the first thing to BUILD)
+## Architect pressure-test correction (2026-06-26) — readiness was OVERSTATED
 
-absorption-probe on ONE measurable Quest with checkable leaves (e.g. a multi-lemma Lean
-theorem, or a multi-module coding task with a test oracle):
-- **Arm A**: one strong agent solves the Quest end-to-end. Score.
-- **Arm B**: Quest → DAG (#1) → leaves dispatched (#2) → verified (#3) → bucket-brigade
-  credit (#5) → novelty-weighted (#6) → compose with #7 on failure.
-- **Measure**: (a) does B beat A (closes more / faster / solves what A can't)? (b) the
-  **composition-gap rate** — fraction of runs where all leaves verify but the Quest goal-check
-  fails. (b) is the real research signal — it directly tests the hardest unsolved part.
+The team pressure-test (architect, against the real code) found the component table mapped
+mechanisms onto primitives that share a NOUN but are the wrong SHAPE. Honest verdict:
+- **Ready (2):** #9 operator-gated governance (a stance), #10 absorption-probe (harness).
+- **Reusable INVARIANT, needs a new layer (3):** Merkle inclusion (#8, but it hashes IDs not
+  content + over the wrong dataset), conservation/append-only ledger (#5, but flat per-job —
+  no producer→consumer edge, so bucket-brigade is a NEW subsystem not an "add"), atomic
+  event→worker transport (#2, but single linear write — no fan-out/result-collection/join).
+- **Aspirational — needs a new subsystem first (5):** task-DAG schema (#1: `graph.claims`
+  are SPO triples, not task nodes with IO-contracts/dep-edges), verifier organ (#3) +
+  co-evolution organ (#4) (only a stub extractor exists), D3MAS novelty (#6: no
+  premise/conclusion fields; "no incoming edge" measures orphan-ness, not disjointness),
+  composition/attribution engine (#7).
 
-If B doesn't beat A, or the composition-gap rate is high and un-improvable, the thesis is
-falsified cheaply before any scale build. That is the point.
+**The composition algorithm restates the open problem, doesn't solve it.** In the *structural*
+case all leaves passed their own verifier by construction → "re-decompose the unsatisfied
+children" is the EMPTY set. The missing ingredient (which the papers also lack) is a **blame
+signal that propagates from the parent goal-check back to which child's CONTRACT was too
+weak** — not which child failed. v0 only bounds re-tries + escalates to operator (an honest
+DNA-#4 stop condition, NOT a solution). The earlier "our answer to the open problem" was an
+over-claim; corrected here.
 
-## What's reused vs new
+## v0 — the SMALLEST HONEST test (build this; no unbuilt subsystem, no confound)
 
-REUSE (already built): CQRS spine (A1/W1/W2), `uri-ledger` conservation credit, Merkle log,
-`graph.claims` DAG schema, absorption-probe. NEW (v0): planner→DAG organ, per-leaf verifier
-+ co-evolution organ, bucket-brigade payment along edges, D3MAS novelty score, the
-composition/re-decomposition algorithm. The novelty-without-oracle module (#6b) is gated on
-verifying the peer-prediction leads.
+Test ONLY the core thesis — *pooled+verified beats single* — with two REAL machine oracles:
+
+1. **Domain with an oracle for BOTH parts AND whole**: a multi-lemma Lean theorem (each lemma
+   Lean-checked AND the final theorem Lean-checked), or a coding task with per-module unit
+   tests AND an integration test. → real leaf verifier AND real parent goal-check for FREE
+   (sidesteps the unbuilt verifier organs #3/#4; makes the gap metric non-gameable).
+2. **Hand-fix the decomposition** (write the 2–3 node DAG manually) → removes planner quality
+   (#1) as a confound.
+3. **Hold TOTAL compute EQUAL** across arms. Arm A: one agent, budget N attempts/tokens.
+   Arm B: same N split across leaves, each leaf oracle-checked + retried within budget, then
+   compose + run the parent oracle. → kills the "B just had more compute = ensemble/self-repair"
+   confound (the exact thing gate #5 warns about).
+4. **DROP** bucket-brigade credit (#5), novelty (#6), peer-prediction (#6b), Merkle wiring
+   (#8) — incentive/accounting/audit layers, NOT on the thesis critical path; adding them now
+   only imports unbuilt subsystems + confounds.
+5. **Orchestrate the 2–3 leaves with a SCRIPT** (the CQRS join doesn't exist). Optionally reuse
+   `write_command`→outbox→compiler purely as the audit LOG of what happened; do not claim a
+   DAG executor exists.
+
+**Measure exactly two numbers under equal budget:** solve-rate (B vs A) and composition-gap
+rate (all leaves pass ∧ theorem/integration fails). If B does not beat A here — two real
+oracles, fixed decomposition, equal compute — the thesis is falsified cheaply. That is the point.
+
+## What's reused vs new (corrected)
+
+REUSE as INVARIANTS (not data structures): conservation/append-only (`uri-ledger`), Merkle
+inclusion (`akashic-worker`), atomic outbox transport (`aios_command_api`), absorption-probe
+harness. NEW subsystems the FULL system needs (deferred past v0): task-DAG schema, scatter/
+gather+join executor, verifier + co-evolution organs, DAG-edge marginal credit, structured
+premise/conclusion + dependency edges, composition/attribution engine + its blame signal.
+v0 deliberately builds NONE of these — it uses machine oracles + a script to test the thesis first.
