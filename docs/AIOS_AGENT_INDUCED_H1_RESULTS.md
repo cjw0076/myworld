@@ -68,3 +68,41 @@ dedup / supersede-suggestion pass on the memory graph, not a cohomological prune
   sheaf verdict (more signal ⇒ still balanced or fewer frustrations).
 - Results JSON: `docs/aios_h1_agent_edges_REAL_results.json`,
   `docs/aios_h1_agent_edges_CLAIMS_results.json` (counts only; no memory content).
+
+## World-scale reframe — adversarial verdict (2026-06-30)
+
+Under the founder directive "AIOS is for the whole WORLD, not for me"
+([[project_aios_for_the_world_not_founder]]), a reframe was raised: *single coherent user
+memory is H¹=0, but world-scale SHARED multi-tenant memory will have non-trivial H¹
+(frustrated cycles), so the sheaf detector is alive on the shared tier.* It was
+adversarially pressure-tested (genesis-challenger) → **RE-INFLATION (0.8 confidence)**:
+
+1. **It is 70-year-old structural balance theory** (Heider 1946; Cartwright–Harary 1956) in
+   sheaf vocabulary. Raw "H¹≠0" is **near-certain and uninformative** on any large/noisy
+   signed graph — real world-scale signed graphs (Epinions, Slashdot, Wikipedia RfA,
+   Bitcoin-OTC) are essentially never balanced (PNAS 2011, doi 1109521108). The informative
+   quantity is **frustration relative to a sign-marginal null**, never the raw nonzero.
+2. **The robustness argument inverts.** On the personal tier, "a noisy over-calling judge can
+   only ADD phantom frustration, and we still found none" *won* the H¹=0 result. At scale that
+   *same* property **guarantees H¹≠0 from noise alone** — so the reframe moved the goalpost to
+   a tier where the **null hypothesis also predicts the "win."** A claim the null also predicts
+   is not a finding.
+3. **The architectural killer:** AIOS sovereignty = tenant **isolation**
+   ([[project_aios_saas_lakebase_pivot]]). A partitioned store has no cross-tenant edges →
+   aggregate H¹ = Σ(per-tenant H¹) = 0. The cross-tenant shared graph the reframe needs is
+   **forbidden by AIOS's own privacy DNA** unless a deliberate **opt-in shared pool** with
+   cross-source entity resolution is built (it is not).
+
+**Corrected instrument (`frustration_vs_null`, the only honest version of this work):** raw
+frustrated-count is replaced by a topology- + sign-marginal-preserving permutation null →
+`z_score` / `percentile` / `BELOW_NULL|AT_NULL|ABOVE_NULL`. Applied to the personal claim
+graph: **F_obs=0 vs F_null_mean=3.48 (z=−2.36, p=0.011) → BELOW_NULL.** This is a *stronger*
+confirmation than raw H¹=0: the memory is **significantly more coherent than chance** (not just
+trivially acyclic-balanced; 8 independent cycles, z clears −2 though not overwhelmingly).
+
+**Decision:** sheaf/H¹ stays **parked at BOTH tiers** — personal (measured, below-null
+coherent) and shared (architecturally forbidden without an opt-in pool). The honest residual,
+if ever pursued, is the rewritten test: **below-null + localization + a non-factorization
+witness** (a frustrated cycle that pairwise contradiction detection MISSES — the only version
+where H¹ is not a renaming of pairwise NLI), calibrated first on a real SNAP signed graph
+(Bitcoin-OTC / Wikipedia RfA, published below-null answers). Not built; named for honesty.
