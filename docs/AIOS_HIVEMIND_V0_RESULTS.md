@@ -43,14 +43,48 @@ hand-decomposed into two *insufficient* leaves `p0 : 0+0=2*0`, `p1 : 1+1=2*1` (e
 but two instances cannot prove the universal — composition gap verified real: parent_compose.lean
 exits 1 while p0/p1/direct-proof exit 0). Cross-domain replication of the same thesis.
 
-*(result pending — run in progress)*
+```
+solve_rate_A (single, direct proof of the universal)  = 0.0
+solve_rate_B (pooled: p0,p1 then compose)             = 0.0
+composition_gap_rate_B                                 = 1.0
+```
 
-## Interpretation so far
+**Reading (honest):** the composition gap is again TOTAL (leaves p0/p1 Lean-checked, the
+parent-from-leaves rejected — by construction). BUT this run is dominated by an **agent
+capability ceiling**, not just the gap: `qwen3-coder:30b` could not produce even the direct
+`omega` proof of `∀ n, n+n=2*n` (Arm A = 0), although that proof checks
+(`solution/t_direct.lean` exits 0). So Arm A and Arm B are both 0 — the A-vs-B comparison is
+**degenerate** because the substrate is below the task's floor.
 
-The first data point is a clean *negative on the naive thesis and a clean positive on the
-team's diagnosis*: pooled+verified is not free lunch — its success is gated entirely by
-whether the decomposition carries strong enough interface/goal contracts to close the
-composition gap. This matches every source pulled in the office-hour (MASFT incorrect-
-verification 9.1%; Meta-Agent's whole point is IO-contracts + re-decomposition; the gap is
-the unsolved part). The probe is now the instrument to measure whether any proposed
-contract/composition mechanism actually closes the gap — which is the real research loop.
+**Lesson (a real one):** the experiment is only valid when the agent is ABOVE the task's
+capability floor. qwen3-coder is above the floor for the trivial coding task (Arm A = 1.0)
+but BELOW it for Lean (Arm A = 0.0). A meaningful Lean A-vs-B needs a stronger agent
+substrate (a frontier model, or a Lean-specialized prover) — route via multi-substrate, not
+local qwen, for the formal-proof domain.
+
+## Cross-domain synthesis
+
+| domain | agent capable (Arm A) | solve_A | solve_B | composition_gap_B | clean A-vs-B? |
+|---|---|---|---|---|---|
+| coding (pytest) | yes (1.0) | 1.0 | 0.0 | 1.0 | YES — pooled loses to single |
+| Lean (lean) | NO (0.0, below floor) | 0.0 | 0.0 | 1.0 | degenerate (agent ceiling) |
+
+Two robust facts across both domains: (1) **the composition gap is real** (gap_rate = 1.0
+both times — leaves verify, the whole does not); (2) **the instrument works** — it measures
+the gap and ranks the arms whenever the agent is above the task floor.
+
+The clean coding result is a *negative on the naive thesis, positive on the team's
+diagnosis*: pooled+verified is not free lunch — success is gated entirely by whether the
+decomposition carries strong enough interface/goal contracts to close the composition gap.
+This matches every office-hour source (MASFT incorrect-verification 9.1%; Meta-Agent =
+IO-contracts + re-decomposition; the gap is THE unsolved part).
+
+## Next experiments (the real research loop the probe now enables)
+
+1. **Close-the-gap test (coding):** add an explicit shared interface contract to the leaf
+   prompts + a contract-level leaf oracle; re-measure. Does composition_gap_B drop and does
+   B then beat A? This directly tests the design's composition mechanism.
+2. **Capable-agent Lean run:** swap the substrate to a frontier model for `lean_compose` so
+   Arm A is non-zero; then the A-vs-B + gap comparison becomes meaningful in the formal domain.
+3. **Good vs bad decomposition:** same task, a contract-strong decomposition vs the current
+   contract-weak one — quantify how much of B's failure is the decomposition, not pooling.
