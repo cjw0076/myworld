@@ -2634,3 +2634,18 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - failures_escalated_to_founder: strategic fork (validate-demand-first vs scale-now) — founder chose scale-now; team bigger.
 - new_invariant_or_pattern_discovered: "security/privacy claims from a single author (human OR agent) are presumed incomplete until an independent lane re-derives them." Across this session the review lane caught 8 distinct privacy/correctness defects a single pass missed (6 raw-goal egress + statistical channel + gameable k-anon). Build the reviewer into the loop by default for any egress/crypto/k-anon code.
 - self-correction-of-prior-observation: my earlier "P0#1 closed DNA#7" was wrong — only the lexical channel; the statistical (embedding/fingerprint) channel needed separate closure.
+
+---
+
+## 2026-06-29 19:10 KST — claude@myworld — separate security-review lane caught a fail-open on a remote trust boundary
+
+- session_id: self-paced operator session (compact resumption); ChannelAdapter + memory-backbone gate
+- mode_breakdown: observe:5 / verify:12 / decide:6 / intervene:14 / escalate:0 (min)
+- tools_used: Agent(executor opus, security-reviewer), Bash (pytest, live make_gate probe, git), Edit/Read, background task notifications + until-completion wait
+- tools_NOT_used (CLI gap): no `aios channel` existed before this session — the gap just filled (messaging/control creek; AIOS was reachable via CLI/web/MCP/hooks but not a phone-style channel). No automated security-gate in the build pipeline — the reviewer was a manual Agent spawn, not a wired step.
+- substrate_specific_behaviors_observed: I (the builder's operator) spot-checked the trust boundary myself (allow-list present, token env-only, no shell-injection, launcher wired) and would have PASSED it. The independent security-reviewer pass found a CRITICAL my spot-check missed: the allow-list FAILED OPEN — `_build_allow_list` returns None when AIOS_TELEGRAM_CHAT_ID is unset, and `channel_once` skips the check on None, so token-set + chat-id-unset = unauthenticated remote `aios do`. The builder had even encoded the fail-open as an intended test (`test_none_allow_list_with_no_env_passes_all`).
+- failures_recovered: (1) the fail-open itself — fixed two-layer (make_gate refuses TelegramGate without allow-list; channel_once fails closed for any gate marked `remote`). (2) my own added test was buggy (`/ask   ` strips to `/ask` → ran a REAL subprocess) — caught by the test failing, revealed the empty-goal guard is only reachable via truly-empty text; fixed test + removed the stray ask receipt.
+- failures_escalated_to_founder: none (reversible code on a not-yet-live opt-in feature; carried decisively per feedback_carry_risk_decisively)
+- key_decision: do NOT add a `--` arg-terminator (it breaks the launcher's `do` base-url substring-guard); the leading-`-` reject alone closes the single-flag injection vector — the reviewer's own fallback, chosen for zero side-effects.
+- new_invariant_or_pattern_discovered: the separate review lane earns its token cost SPECIFICALLY on trust boundaries — a same-context builder + operator spot-check share the blind spot that "the gate exists" ≠ "the gate fails closed when unconfigured." Candidate AIOS rule: any contract that opens a remote-command / external-egress surface MUST get an independent security-reviewer pass before close, and the default-unconfigured state must be asserted fail-CLOSED in tests, not fail-open.
+- self-correction-of-prior-observation: none
