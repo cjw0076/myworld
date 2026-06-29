@@ -108,6 +108,46 @@ shown with a controlled before/after on the same agent + budget.
   needs a Quest too large for one agent that decomposes (the GIMPS regime) — the next test.
 - Still one model, 3 trials. Directional, not definitive — but the before/after is clean.
 
+## Run 4 — GIMPS regime (5-module pipeline, can pooling BEAT single?) — honest negative
+
+Task `coding_pipeline`: a real CSV pipeline parse→filter→transform→enrich→aggregate→format,
+5 modules each with a contract-enforcing unit test + an exact-output integration test, shared
+interface contract in every leaf prompt. qwen3-coder:30b, equal budget 10, 5 trials.
+
+```
+solve_rate_A = 1.0    solve_rate_B = 1.0    composition_gap_rate_B = 0.0
+```
+
+**Honest negative on "pooling beats single": they TIED.** qwen solved all 5 modules in one
+generation within budget 10 (Arm A = 1.0), and the contract-enforced pooled run composed
+correctly (gap = 0). So this task is BELOW the agent's single-shot ceiling — you cannot beat a
+single agent on a task it already solves. No laundering: this does not show pooling superior;
+it shows the 5-module pipeline was not hard enough to exceed qwen3-coder's reach.
+
+**What it constrains (the real value of the negative):** pooling's advantage (the GIMPS payoff)
+appears ONLY past the single-agent ceiling — a Quest the single agent can't reliably do in one
+shot while each leaf stays tractable. Our task didn't reach that. Finding the regime needs one
+of: many more modules / deeper interdependencies; a context-length or coherence stress the
+single shot can't hold; a budget- or capability-constrained single agent; or a genuinely hard
+domain. Whether such a "decomposable-but-beyond-single" regime exists for a given agent is now
+the precise open empirical question — and the probe measures it directly.
+
+## Synthesis across all runs (honest)
+
+| run | task | agent above floor? | solve_A | solve_B | gap | what it shows |
+|---|---|---|---|---|---|---|
+| 1 | coding, weak contract | yes | 1.0 | 0.0 | 1.0 | gap is real & decisive |
+| 3 | coding, enforced contract | yes | 1.0 | 1.0 | 0.0 | **gap is CLOSEABLE** |
+| 4 | 5-module pipeline, contract | yes (solves whole) | 1.0 | 1.0 | 0.0 | pooling non-inferior; task below single's ceiling → no superiority |
+| 2 | Lean | NO | 0.0 | 0.0 | 1.0 | degenerate; need a stronger agent |
+
+**Two robust, earned facts:** (1) the composition gap is real and **closeable** by enforcing
+interface contracts at the leaf level (the central viability question — answered positively in
+principle). (2) Pooling SUPERIORITY (the GIMPS payoff) is **NOT yet demonstrated** — it requires
+a task beyond the single agent's ceiling, which we have not yet constructed. The honest status:
+the gap problem looks tractable; the "many-weak-agents beat one-strong-agent" claim remains
+unproven and is the next thing to actually test (or falsify).
+
 ## Plug into any agent (the "어떤 제품/agent에도 붙는다" requirement — built)
 
 The probe's agent substrate is now a pluggable `AgentAdapter` (`scripts/aios_hivemind_probe.py`):
