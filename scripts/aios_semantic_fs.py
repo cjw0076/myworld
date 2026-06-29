@@ -30,7 +30,9 @@ from pathlib import Path
 
 def _root() -> Path:
     raw = os.environ.get("AIOS_FS_ROOT", "")
-    return Path(raw).expanduser() if raw else Path.home() / ".aios" / "fs"
+    # .resolve() so a relative AIOS_FS_ROOT yields absolute node pointers (get() must not
+    # be cwd-dependent).
+    return (Path(raw).expanduser() if raw else Path.home() / ".aios" / "fs").resolve()
 
 
 def _paths():
@@ -123,7 +125,8 @@ def put(path_or_text: str, summary: str | None = None, tags: list[str] | None = 
     nid = "fsn-" + hashlib.sha256(f"{name}:{content[:200]}:{time.time()}".encode()).hexdigest()[:12]
     dst = blobs / f"{nid}__{name}"
     dst.write_text(content, encoding="utf-8")     # the pointed-to copy lives on disk
-    summ = (summary or content.strip().splitlines()[0] if content.strip() else "")[:200]
+    # parens matter: an explicit `summary` must win even when content is empty/whitespace.
+    summ = (summary or (content.strip().splitlines()[0] if content.strip() else ""))[:200]
     node = {
         "id": nid,
         "path": dst.as_posix(),               # POINTER to the file (content stays on disk)
@@ -170,8 +173,8 @@ def search(query: str, k: int = 5) -> list[dict]:
     scored.sort(key=lambda s: s[0], reverse=True)
     out = []
     for score, n in scored[:k]:
-        if method == "keyword" and score <= 0:
-            continue
+        if score <= 0:                       # drop no-embedding/dim-mismatch (-1.0) and
+            continue                         # zero-keyword hits in BOTH modes
         out.append({**n, "_score": round(score, 4), "_method": method})
     return out
 

@@ -73,6 +73,23 @@ class SemanticFsTest(unittest.TestCase):
         self.assertIn("pasta", hits[0]["tags"])
         # must not crash and must return the relevant one
 
+    def test_explicit_summary_kept_when_content_blank(self):
+        self.m._embed = lambda t: None
+        node = self.m.put("   \n  ", summary="MY EXPLICIT SUMMARY", tags=["t"])
+        self.assertEqual(node["summary"], "MY EXPLICIT SUMMARY")   # precedence fix
+
+    def test_semantic_mode_drops_no_embedding_node(self):
+        # one embedded node + one with embedding None; semantic query must not surface the
+        # no-embedding node (-1.0) as a result
+        self.m._embed = _fake_embed
+        good = self.m.put(SEEDS["solar"], summary=SEEDS["solar"], tags=["solar"])
+        self.m._embed = lambda t: None
+        self.m.put("unrelated note", summary="unrelated note", tags=["x"])
+        self.m._embed = _fake_embed
+        hits = self.m.search("sunlight energy", k=5)
+        self.assertTrue(all(h["_score"] > 0 for h in hits))
+        self.assertEqual(hits[0]["id"], good["id"])
+
     def test_link_and_neighbors(self):
         self.m._embed = lambda t: None
         a = self.m.put(SEEDS["solar"], tags=["solar"])
