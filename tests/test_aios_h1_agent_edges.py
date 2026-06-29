@@ -71,6 +71,69 @@ class FrustrationUnitTest(unittest.TestCase):
         self.assertEqual(r["verdict"], "TRIVIAL_H1")
 
 
+class FrustrationVsNullTest(unittest.TestCase):
+    """The honest gate: raw H1!=0 is uninformative at scale; what matters is frustration
+    RELATIVE TO a sign-marginal- and topology-preserving null (deterministic seed)."""
+
+    def setUp(self):
+        import aios_h1_agent_edges as HA
+        self.HA = HA
+
+    @staticmethod
+    def _k6(coloring):
+        """Complete graph on 6 nodes; edge sign = +1 if endpoints share a color else -1.
+        With balanced 2-coloring this is a BALANCED graph (F_obs=0) that still carries -1
+        edges in its marginal, so sign-shuffles can create frustration."""
+        import itertools
+        nodes = list(coloring)
+        edges = []
+        for u, v in itertools.combinations(nodes, 2):
+            same = coloring[u] == coloring[v]
+            edges.append({"src": u, "dst": v, "sign": 1 if same else -1})
+        return edges
+
+    def test_balanced_graph_is_below_null(self):
+        # K6, balanced 2-coloring {A,B,C}|{D,E,F}: 6 (+1) intra, 9 (-1) cross edges.
+        # Balanced => F_obs=0, but the shuffled-sign null produces frustration => BELOW_NULL.
+        coloring = {"A": 0, "B": 0, "C": 0, "D": 1, "E": 1, "F": 1}
+        r = self.HA.frustration_vs_null(self._k6(coloring), n_shuffles=1000, seed=12345)
+        self.assertEqual(r["F_obs"], 0)
+        self.assertEqual(r["n_independent_cycles"], 10)
+        self.assertGreater(r["F_null_mean"], 0.0)  # null must be able to create frustration
+        self.assertLess(r["z_score"], 0.0)
+        self.assertLessEqual(r["z_score"], -2.0)
+        self.assertEqual(r["verdict"], "BELOW_NULL")
+
+    def test_random_signs_are_at_null(self):
+        # Same K6 topology + same (6 +1, 9 -1) marginal, but signs scrambled w.r.t.
+        # structure by a fixed seed -> F_obs is a typical null draw -> z ~ 0, AT_NULL.
+        import itertools
+        import random as _r
+        nodes = ["A", "B", "C", "D", "E", "F"]
+        pairs = list(itertools.combinations(nodes, 2))
+        signs = [1] * 6 + [-1] * 9
+        _r.Random(2).shuffle(signs)
+        edges = [{"src": u, "dst": v, "sign": s} for (u, v), s in zip(pairs, signs)]
+        r = self.HA.frustration_vs_null(edges, n_shuffles=1000, seed=12345)
+        self.assertEqual(r["verdict"], "AT_NULL")
+        self.assertGreater(r["z_score"], -2.0)  # tolerance band
+        self.assertLess(r["z_score"], 2.0)
+
+    def test_forest_no_cycles_degrades(self):
+        # A tree (0 independent cycles): F_obs=0, null all 0, std 0, z 0.0, no crash.
+        edges = [
+            {"src": "A", "dst": "B", "sign": 1},
+            {"src": "B", "dst": "C", "sign": -1},
+            {"src": "C", "dst": "D", "sign": 1},
+        ]
+        r = self.HA.frustration_vs_null(edges, n_shuffles=500, seed=12345)
+        self.assertEqual(r["F_obs"], 0)
+        self.assertEqual(r["n_independent_cycles"], 0)
+        self.assertEqual(r["F_null_std"], 0.0)
+        self.assertEqual(r["z_score"], 0.0)
+        self.assertEqual(r["verdict"], "AT_NULL")
+
+
 class EndToEndGateTest(unittest.TestCase):
     """The instrument-validity gate: build edges via mock judge, then run frustration_h1."""
 

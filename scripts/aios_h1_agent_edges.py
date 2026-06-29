@@ -26,6 +26,8 @@ prints the verdict dict as JSON, and writes docs/aios_h1_agent_edges_results.jso
 from __future__ import annotations
 
 import json
+import random
+import statistics
 import sys
 from pathlib import Path
 
@@ -79,23 +81,22 @@ def _frustrated_triangles(signed: dict[tuple[str, str], int], adj_set: dict[str,
     return tris
 
 
-def frustration_h1(edges: list[dict]) -> dict:
-    """Frustration index = number of independent cycles whose sign-product is -1
-    (= dim H1 over GF(2) of the signed coboundary, w.r.t. the fundamental-cycle basis).
+def _count_frustrated(signed: dict[tuple[str, str], int]) -> tuple[int, int]:
+    """Core, topology-driven frustration count. Given a simple signed graph
+    (sorted-pair key -> sign), return (frustrated_cycle_count, n_independent_cycles).
 
     Method: spanning forest via union-find -> non-tree edges are the independent cycles
     (count = E - V + C). Gauge g(node) in {+1,-1} propagated along tree edges; a non-tree
     edge (u,v,s) closes a fundamental cycle with sign-product s*g(u)*g(v); -1 == frustrated.
+
+    The spanning tree is fixed by the iteration order of ``signed``; the null model in
+    frustration_vs_null permutes only the sign VALUES (keys/order unchanged), so each
+    shuffle reuses the same tree/cycle basis and differs only in the signs.
     """
-    signed = _simple_signed(edges)
     nodes: set[str] = set()
-    adj_set: dict[str, set[str]] = {}
     for (u, v) in signed:
         nodes.add(u)
         nodes.add(v)
-        adj_set.setdefault(u, set()).add(v)
-        adj_set.setdefault(v, set()).add(u)
-
     n_nodes = len(nodes)
     n_edges = len(signed)
 
@@ -145,12 +146,32 @@ def frustration_h1(edges: list[dict]) -> dict:
     for (u, v, s) in nontree:
         if s * gauge[u] * gauge[v] == -1:  # fundamental-cycle sign-product
             frustrated += 1
+    return frustrated, n_independent_cycles
 
+
+def frustration_h1(edges: list[dict]) -> dict:
+    """Frustration index = number of independent cycles whose sign-product is -1
+    (= dim H1 over GF(2) of the signed coboundary, w.r.t. the fundamental-cycle basis).
+
+    Method: spanning forest via union-find -> non-tree edges are the independent cycles
+    (count = E - V + C). Gauge g(node) in {+1,-1} propagated along tree edges; a non-tree
+    edge (u,v,s) closes a fundamental cycle with sign-product s*g(u)*g(v); -1 == frustrated.
+    """
+    signed = _simple_signed(edges)
+    nodes: set[str] = set()
+    adj_set: dict[str, set[str]] = {}
+    for (u, v) in signed:
+        nodes.add(u)
+        nodes.add(v)
+        adj_set.setdefault(u, set()).add(v)
+        adj_set.setdefault(v, set()).add(u)
+
+    frustrated, n_independent_cycles = _count_frustrated(signed)
     tris = _frustrated_triangles(signed, adj_set)
 
     return {
-        "n_nodes": n_nodes,
-        "n_signed_edges": n_edges,
+        "n_nodes": len(nodes),
+        "n_signed_edges": len(signed),
         "n_independent_cycles": n_independent_cycles,
         "frustrated_cycle_count": frustrated,
         "dim_h1_estimate": frustrated,
@@ -160,9 +181,76 @@ def frustration_h1(edges: list[dict]) -> dict:
     }
 
 
+def frustration_vs_null(edges: list[dict], n_shuffles: int = 1000, seed: int = 12345) -> dict:
+    """Frustration RELATIVE TO a sign-marginal- and topology-preserving null.
+
+    HONEST FRAMING (why this exists): raw ``frustrated_cycle_count > 0`` (H1 != 0) is
+    near-certain and UNINFORMATIVE on any large/noisy signed graph. Structural balance
+    theory (Aref & Wilson; PNAS 2011, doi:10.1073/pnas.1109521108) shows real signed
+    graphs are essentially never perfectly balanced, so H1 != 0 is almost guaranteed and
+    says nothing. The informative quantity is frustration measured AGAINST chance.
+
+    Null model: hold the graph TOPOLOGY fixed (same node pairs / same _simple_signed keys)
+    and hold the SIGN MARGINAL fixed (same #(-1) and #(+1)); for each of n_shuffles,
+    randomly PERMUTE which edges carry which sign and recompute the frustrated-cycle count
+    on the SAME topology. random.Random(seed) makes it reproducible.
+
+    Interpretation:
+      - BELOW_NULL (z <= -2): significantly LESS frustrated than chance -> this graph is
+        meaningfully COHERENT (the real "the agent's judgments hang together" signal).
+      - ABOVE_NULL (z >= +2): significantly MORE frustrated than chance.
+      - AT_NULL: indistinguishable from random signs (too few cycles, or genuinely random).
+
+    NOTE: this measures coherence vs chance. The VALUE test for a sheaf detector -- a
+    NON-FACTORIZATION WITNESS, i.e. a frustrated cycle that pairwise contradiction detection
+    would MISS -- is a SEPARATE test that is NOT YET IMPLEMENTED.
+
+    Returns: {F_obs, n_independent_cycles, F_null_mean, F_null_std, z_score, percentile,
+    n_shuffles, verdict}.
+    """
+    signed = _simple_signed(edges)
+    f_obs, n_independent_cycles = _count_frustrated(signed)
+
+    keys = list(signed.keys())
+    signs = list(signed.values())
+    rng = random.Random(seed)
+    f_null: list[int] = []
+    for _ in range(n_shuffles):
+        shuffled = signs[:]
+        rng.shuffle(shuffled)
+        f, _cyc = _count_frustrated(dict(zip(keys, shuffled)))
+        f_null.append(f)
+
+    mean = statistics.fmean(f_null) if f_null else 0.0
+    std = statistics.pstdev(f_null) if len(f_null) > 1 else 0.0
+    z = (f_obs - mean) / std if std else 0.0
+    percentile = (sum(1 for f in f_null if f <= f_obs) / len(f_null)) if f_null else 0.0
+    verdict = "BELOW_NULL" if z <= -2 else ("ABOVE_NULL" if z >= 2 else "AT_NULL")
+
+    return {
+        "F_obs": int(f_obs),
+        "n_independent_cycles": int(n_independent_cycles),
+        "F_null_mean": float(mean),
+        "F_null_std": float(std),
+        "z_score": float(z),
+        "percentile": float(percentile),
+        "n_shuffles": int(n_shuffles),
+        "verdict": verdict,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
+    import argparse  # noqa: PLC0415
+
     import aios_consistency_edges as CE  # noqa: PLC0415
-    result = frustration_h1(CE.load_signed_edges())
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--null", type=int, default=0, metavar="N",
+                        help="also run frustration_vs_null with N sign-shuffles")
+    args = parser.parse_args(argv)
+
+    edges = CE.load_signed_edges()
+    result = frustration_h1(edges)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     out = Path(__file__).resolve().parent.parent / "docs" / "aios_h1_agent_edges_results.json"
     try:
@@ -171,6 +259,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"\nJSON results -> {out}")
     except Exception as exc:  # noqa: BLE001
         print(f"\n(could not write results file: {exc})")
+
+    if args.null > 0:
+        null_result = frustration_vs_null(edges, n_shuffles=args.null)
+        print("\nfrustration_vs_null:")
+        print(json.dumps(null_result, ensure_ascii=False, indent=2))
     return 0
 
 
