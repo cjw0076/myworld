@@ -47,6 +47,8 @@ InboundMsg = ch.InboundMsg
 RuntimeGate = ch.RuntimeGate
 TelegramGate = ch.TelegramGate
 make_gate = ch.make_gate
+make_gate_for_tenant = ch.make_gate_for_tenant
+list_tenants = ch.list_tenants
 channel_once = ch.channel_once
 notify = ch.notify
 
@@ -377,6 +379,101 @@ class TestDispatchGuards(unittest.TestCase):
         for blank in ("", "   ", "\n\t"):
             out = ch._default_dispatch(InboundMsg(chat_id="founder", text=blank))
             self.assertIn("empty goal", out)
+
+
+# ---------------------------------------------------------------------------
+# Multi-tenant: per-tenant gate selection + isolation
+# ---------------------------------------------------------------------------
+
+
+class TestMultiTenant(unittest.TestCase):
+    def test_tenant_isolation_configured_vs_unset(self):
+        # tenant "alice" fully configured; tenant "bob" entirely unset.
+        env = {
+            "AIOS_TENANT_ALICE_CHANNEL": "telegram",
+            "AIOS_TENANT_ALICE_TELEGRAM_TOKEN": "alice-token",
+            "AIOS_TENANT_ALICE_TELEGRAM_CHAT_ID": "alice-chat",
+        }
+        alice = make_gate_for_tenant("alice", environ=env)
+        self.assertIsInstance(alice, TelegramGate)
+        self.assertTrue(getattr(alice, "remote", False))
+        # bob has no scoped keys -> inert (None), proving isolation
+        bob = make_gate_for_tenant("bob", environ=env)
+        self.assertIsNone(bob)
+
+    def test_tenant_token_but_no_chat_id_fails_closed(self):
+        # Per-tenant FAIL CLOSED: token present, allow-list absent -> None,
+        # NOT a wide-open remote-command surface for that tenant.
+        env = {
+            "AIOS_TENANT_ALICE_CHANNEL": "telegram",
+            "AIOS_TENANT_ALICE_TELEGRAM_TOKEN": "alice-token",
+        }
+        self.assertIsNone(make_gate_for_tenant("alice", environ=env))
+
+    def test_tenant_id_sanitized_to_env_key(self):
+        # Non-alnum chars in the tenant id -> "_" in the env key (upper-cased).
+        env = {"AIOS_TENANT_TEAM_EU_CHANNEL": "runtime"}
+        gate = make_gate_for_tenant("team.eu", environ=env)
+        self.assertIsInstance(gate, RuntimeGate)
+
+    def test_default_tenant_uses_legacy_bare_names(self):
+        # make_gate("default") == make_gate(): reads the bare AIOS_* names.
+        env = {
+            "AIOS_CHANNEL": "telegram",
+            "AIOS_TELEGRAM_TOKEN": "fake-token",
+            "AIOS_TELEGRAM_CHAT_ID": "founder-123",
+        }
+        legacy = make_gate(environ=env)
+        explicit = make_gate_for_tenant("default", environ=env)
+        self.assertIsInstance(legacy, TelegramGate)
+        self.assertIsInstance(explicit, TelegramGate)
+        # legacy fail-closed re-expressed: token but no chat_id on default -> None
+        self.assertIsNone(
+            make_gate(environ={"AIOS_CHANNEL": "telegram", "AIOS_TELEGRAM_TOKEN": "t"})
+        )
+        # unset default channel is inert
+        self.assertIsNone(make_gate(environ={}))
+
+
+class TestTenantAllowListIsolation(unittest.TestCase):
+    def setUp(self):
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.gate = _make_gate(Path(self._tmpdir.name))
+
+    def tearDown(self):
+        self._tmpdir.cleanup()
+
+    def test_tenant_allow_list_drops_other_tenants_chat_id(self):
+        # alice's allow-list comes from her scoped CHAT_ID key. A message whose
+        # chat_id is bob's id must NOT be dispatched under tenant "alice".
+        mock = MockDispatch("ok")
+        _append_inbox(self.gate, "alice-chat", "authorized for alice")
+        _append_inbox(self.gate, "bob-chat", "bob trying alice's gate")
+        env = {"AIOS_TENANT_ALICE_TELEGRAM_CHAT_ID": "alice-chat"}
+        n = channel_once(self.gate, dispatch_fn=mock, environ=env, tenant_id="alice")
+        self.assertEqual(n, 1)
+        self.assertEqual(len(mock.calls), 1)
+        self.assertEqual(mock.calls[0].chat_id, "alice-chat")
+        dispatched_ids = [c.chat_id for c in mock.calls]
+        self.assertNotIn("bob-chat", dispatched_ids)  # bob's id dropped
+
+
+class TestListTenants(unittest.TestCase):
+    def test_lists_default_and_configured_tenants(self):
+        env = {
+            "AIOS_CHANNEL": "runtime",
+            "AIOS_TENANT_ALICE_CHANNEL": "telegram",
+            "AIOS_TENANT_BOB_CHANNEL": "runtime",
+            "AIOS_TELEGRAM_TOKEN": "irrelevant",  # not a *_CHANNEL key
+        }
+        self.assertEqual(list_tenants(environ=env), ["alice", "bob", "default"])
+
+    def test_no_config_is_empty(self):
+        self.assertEqual(list_tenants(environ={}), [])
+
+    def test_only_tenants_no_default(self):
+        env = {"AIOS_TENANT_ALICE_CHANNEL": "runtime"}
+        self.assertEqual(list_tenants(environ=env), ["alice"])
 
 
 if __name__ == "__main__":
