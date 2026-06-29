@@ -538,5 +538,175 @@ class TestReferenceSolution(unittest.TestCase):
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+# ---------------------------------------------------------------------------
+# Lean oracle selection and accounting (mock lean — no real lean in unit tests)
+# ---------------------------------------------------------------------------
+
+LEAN_TASK_DIR = REPO_ROOT / "tests" / "hivemind_tasks" / "lean_compose"
+
+
+def _make_lean_mock_task(k: int = 2) -> TaskSpec:
+    """Build a minimal lean TaskSpec with oracle_type='lean'."""
+    leaves = [
+        LeafSpec(name=f"p{i}", prompt=f"prove p{i}", test_path=Path("/dev/null"))
+        for i in range(k)
+    ]
+    return TaskSpec(
+        name="lean_mock",
+        whole_prompt="prove T",
+        leaves=leaves,
+        parent_test=Path("/dev/null"),
+        oracle_type="lean",
+    )
+
+
+class TestLeanTaskDirectory(unittest.TestCase):
+    """Verify the lean_compose task directory is well-formed."""
+
+    def test_task_json_loads_with_oracle_field(self):
+        meta = json.loads((LEAN_TASK_DIR / "task.json").read_text())
+        self.assertIn("leaves", meta)
+        self.assertIn("parent_test", meta)
+        self.assertEqual(meta.get("oracle"), "lean")
+        self.assertEqual(len(meta["leaves"]), 2)
+
+    def test_prompt_files_exist(self):
+        for fname in ("whole.txt", "leaf_p0.txt", "leaf_p1.txt"):
+            self.assertTrue(
+                (LEAN_TASK_DIR / "prompts" / fname).exists(),
+                f"Missing prompt file: {fname}",
+            )
+
+    def test_lean_oracle_files_exist(self):
+        for fname in ("p0.lean", "p1.lean", "parent_compose.lean"):
+            self.assertTrue(
+                (LEAN_TASK_DIR / "tests" / fname).exists(),
+                f"Missing oracle file: {fname}",
+            )
+
+    def test_solution_files_exist(self):
+        for fname in ("p0.lean", "p1.lean", "t_direct.lean"):
+            self.assertTrue(
+                (LEAN_TASK_DIR / "solution" / fname).exists(),
+                f"Missing solution file: {fname}",
+            )
+
+    def test_load_task_returns_lean_oracle_type(self):
+        task = _probe.load_task("lean_compose")
+        self.assertEqual(task.oracle_type, "lean")
+        self.assertEqual(len(task.leaves), 2)
+        names = [l.name for l in task.leaves]
+        self.assertIn("p0", names)
+        self.assertIn("p1", names)
+
+    def test_load_task_leaf_test_paths_are_lean_files(self):
+        task = _probe.load_task("lean_compose")
+        for leaf in task.leaves:
+            self.assertTrue(
+                str(leaf.test_path).endswith(".lean"),
+                f"Leaf {leaf.name} test_path should be a .lean file: {leaf.test_path}",
+            )
+
+    def test_parent_test_is_lean_file(self):
+        task = _probe.load_task("lean_compose")
+        self.assertTrue(
+            str(task.parent_test).endswith(".lean"),
+            f"parent_test should be a .lean file: {task.parent_test}",
+        )
+
+
+class TestLeanOracleSelection(unittest.TestCase):
+    """Verify lean oracle is selected and accounting still works with mock lean oracle."""
+
+    def test_default_task_spec_oracle_type_is_pytest(self):
+        """TaskSpec without oracle_type defaults to 'pytest'."""
+        task = _make_mock_task()
+        self.assertEqual(task.oracle_type, "pytest")
+
+    def test_lean_task_spec_oracle_type_is_lean(self):
+        task = _make_lean_mock_task()
+        self.assertEqual(task.oracle_type, "lean")
+
+    def test_arm_a_lean_task_budget_accounting_with_mock_oracle(self):
+        """Budget accounting is unchanged for lean tasks."""
+        task = _make_lean_mock_task()
+        counter = CallCounter()
+        N = 4
+
+        result = run_arm_a(
+            task, budget=N, solve_fn=counter, parent_oracle=_always_fail
+        )
+
+        self.assertEqual(counter.calls, N)
+        self.assertFalse(result["solved"])
+
+    def test_arm_a_lean_task_stops_on_first_success(self):
+        """ARM A stops after first mock-oracle success on a lean task."""
+        task = _make_lean_mock_task()
+        counter = CallCounter()
+
+        result = run_arm_a(
+            task, budget=6, solve_fn=counter, parent_oracle=_always_pass
+        )
+
+        self.assertEqual(counter.calls, 1)
+        self.assertTrue(result["solved"])
+
+    def test_arm_b_lean_composition_gap_with_mock_oracles(self):
+        """Composition gap detected for lean task: all leaves pass, parent fails."""
+        task = _make_lean_mock_task()
+
+        result = run_arm_b(
+            task,
+            budget=6,
+            solve_fn=CallCounter(),
+            parent_oracle=_always_fail,
+            leaf_oracle_factory=lambda leaf: _always_pass,
+        )
+
+        self.assertTrue(result["all_leaves_passed"])
+        self.assertFalse(result["solved"])
+        self.assertTrue(
+            result["composition_gap"],
+            "composition_gap must be True when lean leaves pass and parent fails",
+        )
+
+    def test_arm_b_lean_budget_split_with_mock_oracles(self):
+        """k=2, N=6: each leaf gets 3 units, total=6; equal-budget rule holds for lean."""
+        task = _make_lean_mock_task(k=2)
+        counter = CallCounter()
+        N = 6
+        k = 2
+        expected = k * (N // k)
+
+        run_arm_b(
+            task,
+            budget=N,
+            solve_fn=counter,
+            parent_oracle=_always_fail,
+            leaf_oracle_factory=lambda leaf: _always_fail,
+        )
+
+        self.assertEqual(counter.calls, expected)
+        self.assertLessEqual(counter.calls, N)
+
+    def test_run_probe_lean_task_gap_rate_with_mock_oracles(self):
+        """gap_rate=1.0 when lean leaf mocks always pass and parent mock always fails."""
+        task = _make_lean_mock_task()
+        TRIALS = 3
+
+        results = run_probe(
+            task,
+            budget=4,
+            trials=TRIALS,
+            solve_fn=CallCounter(),
+            parent_oracle=_always_fail,
+            leaf_oracle_factory=lambda leaf: _always_pass,
+        )
+
+        self.assertEqual(results["composition_gap_rate_B"], 1.0)
+        self.assertEqual(results["solve_rate_B"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

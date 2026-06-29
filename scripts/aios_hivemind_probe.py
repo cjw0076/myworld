@@ -90,8 +90,6 @@ def pytest_oracle(test_path: Path) -> OracleFn:
 
     The PYTHONPATH injection is how the test file's bare `from producer import get_data`
     resolves to the generated artifact in artifact_dir rather than any installed module.
-
-    A lean_oracle can drop in behind the same signature later.
     """
 
     def _oracle(artifact_dir: Path) -> bool:
@@ -101,6 +99,37 @@ def pytest_oracle(test_path: Path) -> OracleFn:
             capture_output=True,
             env=env,
             timeout=30,
+        )
+        return result.returncode == 0
+
+    return _oracle
+
+
+def lean_oracle(lean_file: Path) -> OracleFn:
+    """Return an oracle that runs lean on a .lean file found in artifact_dir.
+
+    Checks artifact_dir / lean_file.name first (the model's generated .lean file).
+    Falls back to running lean_file itself when no generated file exists in
+    artifact_dir — this handles static composition-gap checks (e.g. parent_compose.lean)
+    where the oracle file never lands in the artifact directory.
+
+    Returns True iff lean exits with code 0 (proof accepted by Lean 4).
+    Mirrors pytest_oracle's signature and structure.
+    """
+    _lean_bin = Path.home() / ".elan" / "bin" / "lean"
+
+    def _oracle(artifact_dir: Path) -> bool:
+        generated = artifact_dir / lean_file.name
+        check = generated if generated.exists() else lean_file
+        env = {
+            **os.environ,
+            "PATH": str(_lean_bin.parent) + ":" + os.environ.get("PATH", ""),
+        }
+        result = subprocess.run(
+            [str(_lean_bin), str(check)],
+            capture_output=True,
+            env=env,
+            timeout=60,
         )
         return result.returncode == 0
 
@@ -123,13 +152,20 @@ class TaskSpec(NamedTuple):
     whole_prompt: str
     leaves: List[LeafSpec]
     parent_test: Path
+    oracle_type: str = "pytest"  # "pytest" | "lean"
 
 
 def load_task(task_name: str) -> TaskSpec:
-    """Load a TaskSpec from tests/hivemind_tasks/<task_name>/."""
+    """Load a TaskSpec from tests/hivemind_tasks/<task_name>/.
+
+    Reads optional "oracle" field from task.json ("pytest" | "lean"; default "pytest")
+    and sets oracle_type on the returned TaskSpec so run_arm_a / run_arm_b can select
+    the correct oracle factory without additional configuration.
+    """
     task_dir = TASK_ROOT / task_name
     whole_prompt = (task_dir / "prompts" / "whole.txt").read_text()
     meta = json.loads((task_dir / "task.json").read_text())
+    oracle_type = meta.get("oracle", "pytest")
 
     leaves: List[LeafSpec] = []
     for leaf in meta["leaves"]:
@@ -143,6 +179,7 @@ def load_task(task_name: str) -> TaskSpec:
         whole_prompt=whole_prompt,
         leaves=leaves,
         parent_test=parent_test,
+        oracle_type=oracle_type,
     )
 
 
@@ -154,6 +191,14 @@ def load_task(task_name: str) -> TaskSpec:
 def _extract_code(text: str) -> str:
     """Extract the first Python fenced code block; fall back to raw text."""
     matches = re.findall(r"```(?:python)?\n(.*?)```", text, re.DOTALL)
+    return matches[0].strip() if matches else text.strip()
+
+
+def _extract_lean_code(text: str) -> str:
+    """Extract the first Lean fenced code block; fall back to raw text."""
+    matches = re.findall(r"```(?:lean4?)\n(.*?)```", text, re.DOTALL)
+    if not matches:
+        matches = re.findall(r"```\n(.*?)```", text, re.DOTALL)
     return matches[0].strip() if matches else text.strip()
 
 
@@ -209,16 +254,24 @@ def run_arm_a(
     Returns {"solved": bool, "attempts": int}.
     """
     _solve = solve_fn or solve
-    _oracle = parent_oracle or pytest_oracle(task.parent_test)
+    _oracle = parent_oracle or (
+        lean_oracle(task.parent_test) if task.oracle_type == "lean"
+        else pytest_oracle(task.parent_test)
+    )
     leaf_names = [leaf.name for leaf in task.leaves]
 
     tmpdir = Path(tempfile.mkdtemp(prefix="aios_a_"))
     try:
         for attempt in range(1, budget + 1):
             text = _solve(task.whole_prompt, 1)
-            modules = _parse_whole_output(text, leaf_names)
-            for name, code in modules.items():
-                (tmpdir / f"{name}.py").write_text(code)
+            if task.oracle_type == "lean":
+                code = _extract_lean_code(text)
+                for name in leaf_names:
+                    (tmpdir / f"{name}.lean").write_text(code)
+            else:
+                modules = _parse_whole_output(text, leaf_names)
+                for name, code in modules.items():
+                    (tmpdir / f"{name}.py").write_text(code)
             if _oracle(tmpdir):
                 return {"solved": True, "attempts": attempt}
         return {"solved": False, "attempts": budget}
@@ -252,9 +305,13 @@ def run_arm_b(
     Returns {"solved": bool, "all_leaves_passed": bool, "composition_gap": bool}.
     """
     _solve = solve_fn or solve
-    _parent_oracle = parent_oracle or pytest_oracle(task.parent_test)
+    _parent_oracle = parent_oracle or (
+        lean_oracle(task.parent_test) if task.oracle_type == "lean"
+        else pytest_oracle(task.parent_test)
+    )
     _leaf_oracle_factory = leaf_oracle_factory or (
-        lambda leaf: pytest_oracle(leaf.test_path)
+        (lambda leaf: lean_oracle(leaf.test_path)) if task.oracle_type == "lean"
+        else (lambda leaf: pytest_oracle(leaf.test_path))
     )
 
     k = len(task.leaves)
@@ -274,8 +331,12 @@ def run_arm_b(
 
             for _ in range(leaf_budget):
                 text = _solve(leaf.prompt, 1)
-                code = _extract_code(text)
-                (leaf_dir / f"{leaf.name}.py").write_text(code)
+                if task.oracle_type == "lean":
+                    code = _extract_lean_code(text)
+                    (leaf_dir / f"{leaf.name}.lean").write_text(code)
+                else:
+                    code = _extract_code(text)
+                    (leaf_dir / f"{leaf.name}.py").write_text(code)
                 if oracle(leaf_dir):
                     passed = True
                     best_code = code
@@ -290,8 +351,9 @@ def run_arm_b(
         # Compose: place all leaf artifacts in one directory for the parent oracle
         compose_dir = tmpdir / "_compose"
         compose_dir.mkdir(exist_ok=True)
+        ext = ".lean" if task.oracle_type == "lean" else ".py"
         for leaf in task.leaves:
-            (compose_dir / f"{leaf.name}.py").write_text(leaf_artifacts[leaf.name])
+            (compose_dir / f"{leaf.name}{ext}").write_text(leaf_artifacts[leaf.name])
 
         parent_passed = _parent_oracle(compose_dir)
         composition_gap = all_leaves_passed and not parent_passed

@@ -1,0 +1,18 @@
+{
+  "name": "lean_compose",
+  "description": "Formal-proof composition gap. Leaf p0 proves 0+0=2*0 and leaf p1 proves 1+1=2*1 — both are trivially decidable instances. The leaves pass their individual oracles, but the composition check fails: Lean cannot derive the universal theorem forall n:Nat, n+n=2*n from two finite instances without induction.",
+  "oracle": "lean",
+  "leaves": [
+    {
+      "name": "p0",
+      "prompt_file": "leaf_p0.txt",
+      "test_file": "p0.lean"
+    },
+    {
+      "name": "p1",
+      "prompt_file": "leaf_p1.txt",
+      "test_file": "p1.lean"
+    }
+  ],
+  "parent_test": "parent_compose.lean"
+}
