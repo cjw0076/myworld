@@ -347,7 +347,7 @@ _ADVANCED_COMMANDS = [
     "ingest-conversations", "agent", "harness", "librarian", "capability-feedback",
     "device-profile", "dispatch-reconcile", "jobs", "hooks", "install",
     "uninstall", "up", "open", "stop", "root",
-    "channel",
+    "channel", "hygiene",
 ]
 _ALL_COMMANDS = (
     [n for n, _ in _CORE_COMMANDS]
@@ -526,6 +526,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "channel":
         return run_delegate(
             [sys.executable, (root / "scripts" / "aios_channel.py").as_posix(), *args.args],
+            cwd=root)
+
+    if args.cmd == "hygiene":
+        return run_delegate(
+            [sys.executable, (root / "scripts" / "aios_memory_hygiene.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "dispatch-reconcile":
