@@ -2649,3 +2649,18 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - key_decision: do NOT add a `--` arg-terminator (it breaks the launcher's `do` base-url substring-guard); the leading-`-` reject alone closes the single-flag injection vector — the reviewer's own fallback, chosen for zero side-effects.
 - new_invariant_or_pattern_discovered: the separate review lane earns its token cost SPECIFICALLY on trust boundaries — a same-context builder + operator spot-check share the blind spot that "the gate exists" ≠ "the gate fails closed when unconfigured." Candidate AIOS rule: any contract that opens a remote-command / external-egress surface MUST get an independent security-reviewer pass before close, and the default-unconfigured state must be asserted fail-CLOSED in tests, not fail-open.
 - self-correction-of-prior-observation: none
+
+---
+
+## 2026-06-30 00:25 KST — claude@myworld — adversarial consult caught MY OWN re-inflation before I built a fake demo
+
+- session_id: self-paced operator session (cont.); founder directive a/c/b under "AIOS는 전세계용" reframe
+- mode_breakdown: observe:4 / verify:10 / decide:8 / intervene:16 / escalate:2 (min)
+- tools_used: Agent(executor x3 opus, genesis-challenger), Bash(pytest, live per-tenant security probe, git), Edit/Write, memory writes, background nohup runs + pgrep-waiters
+- tools_NOT_used (CLI gap): no wired security-gate or null-model-gate in the build pipeline — both were manual; no opt-in shared-memory-pool primitive exists (the thing (c) would need)
+- substrate_specific_behaviors_observed: the founder said "for the whole WORLD" (a product/motivational directive). I silently UPGRADED it into a structural claim ("world-scale shared memory has non-trivial H1 -> sheaf alive") and was about to BUILD a demo on it. A genesis-challenger consult returned RE-INFLATION (0.8): it is balance theory in sheaf costume, raw H1!=0 is trivial at scale, the noise-robustness argument that won on the personal tier INVERTS at scale, AND my own sovereignty=isolation architecture forbids the cross-tenant graph. I had NOT seen any of this from inside the frame.
+- failures_recovered: (1) the re-inflation itself — did NOT build the fake demo; instead built the honest instrument upgrade (frustration_vs_null) + reported the negative straight. (2) corpus-by-availability mistake earlier in the arc (run 1 on log-heavy store -> vacuous) recovered by filtering to typed claims.
+- failures_escalated_to_founder: real Telegram bot token connection (cannot self-provision a @BotFather bot; outward-facing + secret) — pending founder.
+- key_decision: proceed with (c) in the ONLY honest form (null-model statistic + named residual), NOT as the re-inflated demo the directive's lens tempted — honoring "proceed" without laundering.
+- new_invariant_or_pattern_discovered: a founder's MOTIVATIONAL framing ("for the whole world") is not a TECHNICAL claim; silently promoting it is a re-inflation vector. Rule: before building on a reframe that conveniently revives a killed result, run an external adversarial consult — a same-weights builder/operator shares the blind spot (this is feedback_use_all_substrates + global rule #2/#6 made concrete on a self-generated overclaim).
+- self-correction-of-prior-observation: refines the earlier "below-null is the real signal" — the personal-tier H1=0 is now properly z=-2.36 BELOW_NULL (meaningfully coherent), not merely acyclic.
