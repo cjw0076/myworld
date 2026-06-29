@@ -1,0 +1,29 @@
+{
+  "title": "AIOS-native semantic memory filesystem v1",
+  "stories": [
+    {"id":"US-001","title":"core node model + put/get + append-only index + embed-or-fallback",
+     "passes":false,
+     "acceptanceCriteria":[
+       "put(path) registers a copy under the fs root and appends a node {id,path,summary,tags,embedding} to index.jsonl",
+       "put(text) writes a new file under the fs root and indexes it",
+       "get(node) returns the exact on-disk file content (pointer integrity)",
+       "embedding computed via local nomic-embed-text when ollama is up; embedding=None (graceful) when ollama is down — never crashes"]},
+    {"id":"US-002","title":"semantic search with keyword fallback",
+     "passes":false,
+     "acceptanceCriteria":[
+       "search(query) ranks nodes by cosine over embeddings and returns the topically-relevant file as top-1 (3-file seed, by MEANING not insertion order)",
+       "when embeddings unavailable, search falls back to keyword/substring match and still returns results",
+       "tombstoned nodes are excluded from results"]},
+    {"id":"US-003","title":"graph edges + CRUD tombstone",
+     "passes":false,
+     "acceptanceCriteria":[
+       "link(a,b,relation) appends an edge; neighbors(node) returns linked nodes",
+       "rm(node) appends a tombstone and the node stops appearing in search/ls WITHOUT destructively rewriting index.jsonl (append-only DNA #3)"]},
+    {"id":"US-004","title":"tests + demo + CLI + privacy",
+     "passes":false,
+     "acceptanceCriteria":[
+       "tests/test_aios_semantic_fs.py passes (semantic top-1, forced keyword fallback, get integrity, link/neighbors, rm tombstone)",
+       "CLI put|search|get|link|ls works; __main__ demo indexes 3 files and shows semantic search",
+       "index stores pointer+summary+embedding only; no file content egresses anywhere (local-only)"]}
+  ]
+}
