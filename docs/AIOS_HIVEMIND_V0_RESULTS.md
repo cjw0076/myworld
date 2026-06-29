@@ -79,6 +79,44 @@ decomposition carries strong enough interface/goal contracts to close the compos
 This matches every office-hour source (MASFT incorrect-verification 9.1%; Meta-Agent =
 IO-contracts + re-decomposition; the gap is THE unsolved part).
 
+## Run 3 — CLOSE-THE-GAP (coding, explicit interface contract) — the decisive test
+
+Task `coding_iface_contract`: identical pipeline, but the leaf PROMPTS state the shared
+interface contract (payload key is exactly `value`) AND the leaf ORACLES enforce it (the
+producer leaf test now asserts key `value`, not key-agnostic). Same agent (qwen3-coder:30b),
+same equal budget 6, 3 trials. Controlled before/after vs Run 1.
+
+| task | leaf contract | solve_A | solve_B | composition_gap_B |
+|---|---|---|---|---|
+| `coding_iface` | weak (key-agnostic) | 1.0 | **0.0** | **1.0** |
+| `coding_iface_contract` | enforced at leaf oracle | 1.0 | **1.0** | **0.0** |
+
+**The composition gap CLOSED: 1.0 → 0.0, and pooled+verified went 0.0 → 1.0.** Enforcing the
+interface contract at the leaf level made the leaves compose correctly. This is the first
+empirical evidence for the central viability question: **the composition gap is not a wall —
+it is a function of the interface/goal-contract quality.** It matches the team's diagnosis
+(the contract is the load-bearing variable) and Meta-Agent's whole thesis (IO-contracts), now
+shown with a controlled before/after on the same agent + budget.
+
+**Honest scope (do not over-claim — global rule #4/#5):**
+- This is a TINY task and a TRIVIAL contract (one key name). It shows the gap is closeable in
+  principle; it does NOT show contracts close ALL gaps (complex interfaces, emergent global
+  constraints, under-specified goals are harder — the open problem the architect named:
+  parent-goal→child-contract blame propagation is still unbuilt).
+- B now MATCHES A (1.0 = 1.0); it does not BEAT A. On a task a single agent already solves,
+  closing the gap makes pooling NON-INFERIOR, not superior. Showing pooling *beats* single
+  needs a Quest too large for one agent that decomposes (the GIMPS regime) — the next test.
+- Still one model, 3 trials. Directional, not definitive — but the before/after is clean.
+
+## Plug into any agent (the "어떤 제품/agent에도 붙는다" requirement — built)
+
+The probe's agent substrate is now a pluggable `AgentAdapter` (`scripts/aios_hivemind_probe.py`):
+`OllamaAdapter` (local) + `OpenAICompatAdapter` (any OpenAI-style endpoint — vLLM / LM Studio /
+a product's own agent / frontier APIs). Selected by env (`AIOS_PROBE_AGENT/BASE_URL/MODEL`).
+The hivemind is the coordination/verify/compose layer; the agent is swappable — the same
+experiment runs on ANY agent without code change. This is the AIOS thesis (operating layer
+wraps substrates) applied to the hivemind's participants.
+
 ## Next experiments (the real research loop the probe now enables)
 
 1. **Close-the-gap test (coding):** add an explicit shared interface contract to the leaf
