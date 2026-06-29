@@ -1,0 +1,18 @@
+Implement producer.py with one function:
+
+    def get_data() -> dict:
+        ...
+
+Requirements:
+- The function returns a non-empty dict.
+- The dict contains exactly one key whose value is the integer 42.
+
+Unit test that must pass:
+    result = get_data()
+    assert isinstance(result, dict) and len(result) > 0
+    assert any(v == 42 for v in result.values())
+
+Output only the Python code block (no explanation):
+```python
+...
+```

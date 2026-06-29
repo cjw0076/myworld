@@ -1,0 +1,17 @@
+{
+  "name": "coding_iface",
+  "description": "Two-module pipeline. Leaf tests have deliberately weak interface contracts so a composition gap is real: producer leaf test does not check the dict key name, consumer leaf test hard-codes the key 'value'. An agent implementing the producer leaf in isolation will likely emit a different key, passing the leaf oracle but breaking the integration test.",
+  "leaves": [
+    {
+      "name": "producer",
+      "prompt_file": "leaf_producer.txt",
+      "test_file": "test_producer.py"
+    },
+    {
+      "name": "consumer",
+      "prompt_file": "leaf_consumer.txt",
+      "test_file": "test_consumer.py"
+    }
+  ],
+  "parent_test": "test_integration.py"
+}
