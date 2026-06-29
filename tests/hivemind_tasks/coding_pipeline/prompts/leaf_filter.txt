@@ -1,0 +1,40 @@
+Implement filter.py with one function:
+
+    def keep(records: list) -> list:
+        ...
+
+SHARED INTERFACE CONTRACT (all five pipeline stages must respect this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+YOUR TASK — implement keep():
+  Input: a list of dicts, each with keys "id", "product", "qty", "price".
+  Output: a new list containing only the records where record["qty"] > 0.
+  The key name "qty" is mandatory; do not access any other key for the filter decision.
+
+Unit tests that must pass:
+    from filter import keep
+    records = [
+        {"id": 1, "product": "apple", "qty": 3, "price": 1.50},
+        {"id": 2, "product": "banana", "qty": 0, "price": 2.00},
+    ]
+    result = keep(records)
+    assert len(result) == 1
+    assert result[0]["id"] == 1
+    assert keep([{"id": 1, "product": "x", "qty": 0, "price": 1.0}]) == []
+    recs = [{"id": 1, "product": "a", "qty": 1, "price": 1.0},
+            {"id": 2, "product": "b", "qty": 2, "price": 2.0}]
+    assert keep(recs) == recs
+
+Output only the Python code block (no explanation):
+```python
+...
+```

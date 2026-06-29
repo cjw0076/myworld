@@ -1,0 +1,41 @@
+Implement aggregate.py with one function:
+
+    def summarize(records: list) -> dict:
+        ...
+
+SHARED INTERFACE CONTRACT (all five pipeline stages must respect this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+YOUR TASK — implement summarize():
+  Input: a list of enriched dicts (each has keys "id", "product", "qty", "price", "total").
+  Output: a dict with EXACTLY two keys: "count" (int, number of records) and "total_revenue" (float, sum of all record["total"]).
+  The key names "count" and "total_revenue" are mandatory; stage 5 reads summary["count"] and
+  summary["total_revenue"] and will fail if either key is missing or renamed.
+
+Unit tests that must pass:
+    from aggregate import summarize
+    records = [
+        {"id": 1, "product": "a", "qty": 3, "price": 1.50, "total": 4.50},
+        {"id": 3, "product": "c", "qty": 2, "price": 3.00, "total": 6.00},
+    ]
+    result = summarize(records)
+    assert result == {"count": 2, "total_revenue": 10.50}
+    assert summarize([]) == {"count": 0, "total_revenue": 0.0}
+    r = summarize([{"id": 1, "product": "a", "qty": 1, "price": 1.0, "total": 1.0}])
+    assert set(r.keys()) == {"count", "total_revenue"}
+    assert isinstance(r["count"], int)
+    assert isinstance(r["total_revenue"], float)
+
+Output only the Python code block (no explanation):
+```python
+...
+```

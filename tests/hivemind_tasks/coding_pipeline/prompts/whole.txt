@@ -1,0 +1,57 @@
+Implement five Python modules that form a data pipeline:
+
+  parse.py    -- parse(raw: str) -> list
+  filter.py   -- keep(records: list) -> list
+  transform.py -- enrich(records: list) -> list
+  aggregate.py -- summarize(records: list) -> dict
+  format.py   -- render(summary: dict) -> str
+
+SHARED INTERFACE CONTRACT (all five modules must agree on this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+The integration test wires all five stages on the input:
+    raw = "1,apple,3,1.50\n2,banana,0,2.00\n3,cherry,2,3.00"
+and asserts the final result is EXACTLY:
+    "count=2 revenue=10.50"
+
+Output each module as a separate fenced Python code block, preceded by a comment line
+with the filename, exactly as shown:
+
+# parse.py
+```python
+def parse(raw: str) -> list:
+    ...
+```
+
+# filter.py
+```python
+def keep(records: list) -> list:
+    ...
+```
+
+# transform.py
+```python
+def enrich(records: list) -> list:
+    ...
+```
+
+# aggregate.py
+```python
+def summarize(records: list) -> dict:
+    ...
+```
+
+# format.py
+```python
+def render(summary: dict) -> str:
+    ...
+```

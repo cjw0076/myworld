@@ -1,0 +1,13 @@
+{
+  "name": "coding_pipeline",
+  "description": "Five-module data pipeline: parse -> keep -> enrich -> summarize -> render. The WHOLE requires all five modules to be interface-consistent at once; each LEAF is trivially solvable in isolation. Tests the GIMPS regime: pooled+verified may beat single generation when k=5 modules must be produced consistently in one shot.",
+  "leaves": [
+    {"name": "parse",     "prompt_file": "leaf_parse.txt",     "test_file": "test_parse.py"},
+    {"name": "filter",    "prompt_file": "leaf_filter.txt",    "test_file": "test_filter.py"},
+    {"name": "transform", "prompt_file": "leaf_transform.txt", "test_file": "test_transform.py"},
+    {"name": "aggregate", "prompt_file": "leaf_aggregate.txt", "test_file": "test_aggregate.py"},
+    {"name": "format",    "prompt_file": "leaf_format.txt",    "test_file": "test_format.py"}
+  ],
+  "parent_test": "test_integration.py",
+  "oracle": "pytest"
+}

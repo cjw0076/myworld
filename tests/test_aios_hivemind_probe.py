@@ -1047,5 +1047,37 @@ class TestCodingIfaceContractTask(unittest.TestCase):
             shutil.rmtree(tmpdir, ignore_errors=True)
 
 
+# ---------------------------------------------------------------------------
+# coding_pipeline — 5-leaf pipeline task
+# ---------------------------------------------------------------------------
+
+CODING_PIPELINE_TASK_DIR = REPO_ROOT / "tests" / "hivemind_tasks" / "coding_pipeline"
+
+
+class TestCodingPipelineTask(unittest.TestCase):
+    """Verify coding_pipeline loads with 5 leaves and a resolvable parent test."""
+
+    def test_task_json_has_five_leaves(self):
+        meta = json.loads((CODING_PIPELINE_TASK_DIR / "task.json").read_text())
+        self.assertEqual(len(meta["leaves"]), 5, "coding_pipeline must declare exactly 5 leaves")
+
+    def test_load_task_builds_five_leaf_spec(self):
+        """load_task('coding_pipeline') returns a TaskSpec with 5 LeafSpecs."""
+        task = _probe.load_task("coding_pipeline")
+        self.assertEqual(task.name, "coding_pipeline")
+        self.assertEqual(len(task.leaves), 5)
+        names = [l.name for l in task.leaves]
+        for expected in ("parse", "filter", "transform", "aggregate", "format"):
+            self.assertIn(expected, names, f"Leaf '{expected}' missing from task spec")
+
+    def test_parent_test_resolves(self):
+        """The parent_test path must exist on disk."""
+        task = _probe.load_task("coding_pipeline")
+        self.assertTrue(
+            task.parent_test.exists(),
+            f"parent_test not found: {task.parent_test}",
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

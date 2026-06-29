@@ -1,0 +1,39 @@
+Implement parse.py with one function:
+
+    def parse(raw: str) -> list:
+        ...
+
+SHARED INTERFACE CONTRACT (all five pipeline stages must respect this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+YOUR TASK — implement parse():
+  Input: a multi-line string where each line is "id,product,qty,price" (comma-separated).
+  Output: list of dicts; EACH dict must have exactly the keys "id" (int), "product" (str),
+          "qty" (int), "price" (float) — and NO other keys.
+  The key names "id", "product", "qty", "price" are mandatory; any other names break the pipeline.
+
+Unit tests that must pass:
+    from parse import parse
+    result = parse("1,apple,3,1.50\n2,banana,0,2.00")
+    assert len(result) == 2
+    assert result[0] == {"id": 1, "product": "apple", "qty": 3, "price": 1.50}
+    assert result[1] == {"id": 2, "product": "banana", "qty": 0, "price": 2.00}
+    r = parse("1,apple,3,1.50")[0]
+    assert set(r.keys()) == {"id", "product", "qty", "price"}
+    assert isinstance(r["id"], int)
+    assert isinstance(r["qty"], int)
+    assert isinstance(r["price"], float)
+
+Output only the Python code block (no explanation):
+```python
+...
+```

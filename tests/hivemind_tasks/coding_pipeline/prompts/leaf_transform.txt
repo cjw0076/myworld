@@ -1,0 +1,41 @@
+Implement transform.py with one function:
+
+    def enrich(records: list) -> list:
+        ...
+
+SHARED INTERFACE CONTRACT (all five pipeline stages must respect this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+YOUR TASK — implement enrich():
+  Input: a list of dicts, each with keys "id", "product", "qty", "price".
+  Output: a new list where each dict has all the original keys PLUS a new key "total" (float).
+  "total" must equal float(record["qty"] * record["price"]).
+  The key name "total" is mandatory; stage 4 reads record["total"] and will fail if the key is missing or named differently.
+
+Unit tests that must pass:
+    from transform import enrich
+    records = [{"id": 1, "product": "apple", "qty": 3, "price": 1.50}]
+    result = enrich(records)
+    assert len(result) == 1
+    assert "total" in result[0]
+    assert result[0]["total"] == 4.50
+    assert set(result[0].keys()) == {"id", "product", "qty", "price", "total"}
+    records2 = [{"id": 1, "product": "a", "qty": 2, "price": 3.00},
+                {"id": 2, "product": "b", "qty": 1, "price": 5.00}]
+    result2 = enrich(records2)
+    assert result2[0]["total"] == 6.00
+    assert result2[1]["total"] == 5.00
+
+Output only the Python code block (no explanation):
+```python
+...
+```

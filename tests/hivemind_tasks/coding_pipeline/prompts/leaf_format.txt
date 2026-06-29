@@ -1,0 +1,33 @@
+Implement format.py with one function:
+
+    def render(summary: dict) -> str:
+        ...
+
+SHARED INTERFACE CONTRACT (all five pipeline stages must respect this schema exactly):
+  Stage 1  parse(raw: str) -> list[dict]
+             Each dict has EXACTLY these keys: "id" (int), "product" (str), "qty" (int), "price" (float).
+  Stage 2  keep(records: list[dict]) -> list[dict]
+             Same schema; drops records where qty == 0.
+  Stage 3  enrich(records: list[dict]) -> list[dict]
+             Adds key "total" (float = qty * price); all original keys preserved.
+  Stage 4  summarize(records: list[dict]) -> dict
+             Input records have keys id/product/qty/price/total; returns {"count": int, "total_revenue": float}.
+  Stage 5  render(summary: dict) -> str
+             Input: {"count": int, "total_revenue": float}; returns f"count={count} revenue={revenue:.2f}".
+
+YOUR TASK — implement render():
+  Input: a dict with exactly two keys: "count" (int) and "total_revenue" (float).
+  Output: a string formatted EXACTLY as: f"count={summary['count']} revenue={summary['total_revenue']:.2f}"
+  The output format is contractual: the integration test asserts the rendered string character-for-character.
+  "count" and "total_revenue" are the only keys you may read; any other key access breaks the pipeline.
+
+Unit tests that must pass:
+    from format import render
+    assert render({"count": 2, "total_revenue": 10.50}) == "count=2 revenue=10.50"
+    assert render({"count": 0, "total_revenue": 0.0}) == "count=0 revenue=0.00"
+    assert render({"count": 1, "total_revenue": 4.50}) == "count=1 revenue=4.50"
+
+Output only the Python code block (no explanation):
+```python
+...
+```
