@@ -1,0 +1,100 @@
+{
+  "part_a": {
+    "n_nodes": 9,
+    "n_edges": 11,
+    "obstruction_per_edge": {
+      "0->1 [CORRUPTED]": 0.1,
+      "1->2": 0.1,
+      "2->0": 0.1,
+      "2->3 [bridge_AB]": 0.0,
+      "3->4 [liar+0.10]": 0.0,
+      "4->5 [liar-0.10]": 0.0,
+      "5->3": 0.0,
+      "5->6 [bridge_BC]": 0.0,
+      "6->7 [atom+0.10]": 0.06666667,
+      "7->8 [atom+0.10]": 0.06666667,
+      "8->6": 0.06666667
+    },
+    "triangle_avg_obstruction": {
+      "triangle_A_avg": 0.1,
+      "triangle_B_liar_avg": 0.0,
+      "triangle_C_atom_avg": 0.06666667,
+      "bridge_avg": 0.0
+    },
+    "bad_edge_localization": {
+      "argmax_edge_index": 1,
+      "argmax_edge_name": "1->2",
+      "corrupted_edge_obs": 0.1,
+      "argmax_obs_value": 0.1,
+      "bad_edge_is_unique_argmax": false,
+      "note": "H1 distributes holonomy equally across the cycle. All cycle-A edges share the same obstruction; the corrupted edge is NOT uniquely identified within its cycle."
+    },
+    "liar_vs_atom": {
+      "liar_avg_obstruction": 0.0,
+      "atom_avg_obstruction": 0.06666667,
+      "atom_to_liar_ratio": "inf",
+      "liar_holonomy": 0.0,
+      "atom_holonomy": 0.2,
+      "claim_ratio_gt_10": true,
+      "explanation": "Coherent liar = gauge shift: errors cancel in cycle sum -> zero holonomy -> H1 obstruction ~0. Incoherent atom = non-cancelling errors -> non-zero holonomy -> H1 obstruction > 0. This is the key discriminator."
+    },
+    "cycle_holonomy": {
+      "cycle_A_holonomy": 0.3,
+      "cycle_B_holonomy (liar)": 0.0,
+      "cycle_C_holonomy (atom)": 0.2
+    },
+    "h1_vs_ls": {
+      "max_abs_diff_h1_minus_ls_edge_residual": 0.0,
+      "are_numerically_identical": true,
+      "ls_node_errors": {
+        "node_0": 0.79555556,
+        "node_1": 0.59555556,
+        "node_2": 0.69555556,
+        "node_3": 0.69555556,
+        "node_4": 0.59555556,
+        "node_5": 0.69555556,
+        "node_6": 0.69555556,
+        "node_7": 0.66222222,
+        "node_8": 0.62888889
+      },
+      "interpretation": "H1 obstruction IS the LS edge residual; both are (I-BB^+)\u00b7residual. LS 'smears' the holonomy as node-value corrections across the graph; H1 names the same projection as a cohomological obstruction per edge. For gap DETECTION both are equivalent; H1 adds a structural frame."
+    },
+    "threshold_baseline": {
+      "threshold": 0.08,
+      "catches_corrupted_edge": true,
+      "flags_liar_edges": true,
+      "catches_atom_edges": true,
+      "cycle_holonomy_via_threshold_possible": false,
+      "h1_advantage": "H1 detects cyclic holonomy STRUCTURALLY (via cycle-sum != 0), even when each individual edge error is sub-threshold. With threshold=0.08 and distributed error ~0.05/edge in a 3-cycle, threshold misses all edges but H1 reports holonomy = 0.15."
+    },
+    "sub_threshold_holonomy_demo": {
+      "edge_errors": {
+        "0->1 [CORRUPTED]": 0.04,
+        "1->2": 0.04,
+        "2->0": 0.04,
+        "2->3 [bridge_AB]": 0.0,
+        "3->4 [liar+0.10]": 0.0,
+        "4->5 [liar-0.10]": 0.0,
+        "5->3": 0.0,
+        "5->6 [bridge_BC]": 0.0,
+        "6->7 [atom+0.10]": 0.0,
+        "7->8 [atom+0.10]": 0.0,
+        "8->6": 0.0
+      },
+      "cycle_A_holonomy": 0.12,
+      "h1_obstruction_per_edge_A": 0.04,
+      "threshold_flags_any_A_edge": false,
+      "h1_detects_holonomy": true,
+      "interpretation": "Each triangle-A edge error = 0.04 < threshold 0.08, so threshold misses all. Cycle holonomy = 0.12. H1 obstruction on each cycle-A edge = 0.04 (non-zero). H1 detects the holonomy that threshold cannot."
+    }
+  },
+  "part_b": {
+    "total_records": 1438,
+    "has_scalar_and_relative": 0,
+    "has_scalar_only": 1,
+    "has_relative_only": 219,
+    "prose_only_approx": 1218,
+    "candidate_fraction": 0.0,
+    "interpretation": "NONE: no records carry both scalar-claim and relative-comparison language. H1 backbone does NOT apply to current AIOS memory as-is."
+  }
+}
