@@ -45,3 +45,11 @@ aios = "aios_launcher:main"
 # so launcher_relative_root() resolves to the correct myworld/ root.
 package-dir = {"" = "scripts"}
 py-modules  = ["aios_launcher"]
+
+[tool.pytest.ini_options]
+# tests/hivemind_tasks/ are self-contained research-probe FIXTURES (the GIMPS
+# composition-gap tasks) with their own producer/consumer modules + path setup;
+# they are not product tests and break a top-level `pytest tests/` collection.
+# Exclude them so the documented `pytest tests/` is green from a clean clone;
+# run the probe explicitly via its own harness when needed.
+addopts = "--ignore=tests/hivemind_tasks"

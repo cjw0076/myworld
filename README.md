@@ -2,7 +2,6 @@
 
 [![tests](https://github.com/cjw0076/myworld/actions/workflows/tests.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/tests.yml)
 [![docker](https://github.com/cjw0076/myworld/actions/workflows/docker.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/docker.yml)
-[![PyPI](https://img.shields.io/pypi/v/aios-os)](https://pypi.org/project/aios-os/)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
 **An AI agent that learns from every run — and from every other agent's runs.**
