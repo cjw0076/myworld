@@ -1,8 +1,10 @@
 # AIOS North Star
 
-MyWorld is a local-first AI operating system for turning a user goal into
-planned work, retrieved context, selected capabilities, verified execution, and
-durable memory.
+AIOS is a local-first **memory layer for AI agents**: it keeps a behavioral-memory
+ledger across runs and models so your agents carry forward what worked instead of
+starting each session from zero. Concretely, it turns a user goal into planned work,
+retrieved context, selected capabilities, verified execution, and durable memory —
+all local-first, through the provider CLIs you already use.
 
 See `AIOS_DEFINITION.md` for the strict definition and anti-cheat invariants.
 

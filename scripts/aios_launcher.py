@@ -371,8 +371,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="aios",
         usage="aios [--root ROOT] <command> [args...]",
-        description="✦ AIOS — local-first AI operating layer that wraps provider "
-                    "agent CLIs and learns from every run.",
+        description="✦ AIOS — a local-first memory layer for AI agents: learns from "
+                    "every run so your agents carry forward what worked, not start from zero.",
         epilog=_help_epilog(),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

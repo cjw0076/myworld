@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "aios-os"
 version = "0.2.0"
-description = "AIOS — personal AI Operating System: local-first agent head coordinating provider CLIs, local LLMs, memory, and capabilities"
+description = "AIOS — a local-first memory layer for AI agents: keeps a behavioral-memory ledger across runs and models so your agents carry forward what worked instead of starting from zero"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "Jaewon Choi", email = "cjw070690@gmail.com"}]

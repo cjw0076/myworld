@@ -4,9 +4,9 @@
 [![docker](https://github.com/cjw0076/myworld/actions/workflows/docker.yml/badge.svg)](https://github.com/cjw0076/myworld/actions/workflows/docker.yml)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/cjw0076/myworld)
 
-**An AI agent that learns from every run — and from every other agent's runs.**
+**Your AI agents learn from every run — instead of starting from zero.**
 
-Most AI agents are stateless. Each session starts from zero. AIOS keeps a behavioral memory ledger across sessions, across models, and across users — so the agent gets measurably smarter over time.
+Most AI agents are stateless: each session starts over. AIOS keeps a local behavioral-memory ledger across runs and across models, so your agents carry forward what worked instead of repeating the same mistakes. (The longer-term vision — a shared ledger where every agent's runs help every other's — is below; today the value is single-user and local.)
 
 ---
 
