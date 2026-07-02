@@ -212,6 +212,7 @@ If you run AI agents regularly, contributing your session patterns (opt-in, tool
 
 ## Learn more
 
+- [docs/RESEARCH_GROUNDING.md](docs/RESEARCH_GROUNDING.md) — the research spine: which design decisions come from which papers, and what our own experiments (including the negatives) showed
 - [`docs/AIOS_MINIMUM_KERNEL_AUDIT.md`](docs/AIOS_MINIMUM_KERNEL_AUDIT.md) — what the kernel actually does
 - [`docs/AIOS_CANONICAL_SHAPE.md`](docs/AIOS_CANONICAL_SHAPE.md) — what "AIOS", "complete", "production", and "service" mean
 - [`docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md`](docs/AIOS_AKASHIC_DISTRIBUTED_DESIGN.md) — ledger design and roadmap
