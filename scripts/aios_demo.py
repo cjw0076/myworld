@@ -413,7 +413,8 @@ def narrate(result: dict, receipt_path: Path | None) -> str:
         "",
         "  This is one of four working copilots (deadlines, grades, exams,",
         "  tuition), each with its own deterministic verifier. Next:",
-        "      aios status            # see the running system",
+        "      aios onboard           # guided setup: wire AIOS into your agent CLI",
+        "      aios behavior status   # your local behavioral-memory ledger",
         "      docs/AIOS_NORTHSTAR.md # where this is going",
         "",
     ]
