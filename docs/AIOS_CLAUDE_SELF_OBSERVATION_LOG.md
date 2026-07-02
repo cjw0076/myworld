@@ -2664,3 +2664,18 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - key_decision: proceed with (c) in the ONLY honest form (null-model statistic + named residual), NOT as the re-inflated demo the directive's lens tempted — honoring "proceed" without laundering.
 - new_invariant_or_pattern_discovered: a founder's MOTIVATIONAL framing ("for the whole world") is not a TECHNICAL claim; silently promoting it is a re-inflation vector. Rule: before building on a reframe that conveniently revives a killed result, run an external adversarial consult — a same-weights builder/operator shares the blind spot (this is feedback_use_all_substrates + global rule #2/#6 made concrete on a self-generated overclaim).
 - self-correction-of-prior-observation: refines the earlier "below-null is the real signal" — the personal-tier H1=0 is now properly z=-2.36 BELOW_NULL (meaningfully coherent), not merely acyclic.
+
+---
+
+## 2026-07-02 11:39 KST — claude@myworld — OSS release sprint: the adversarial walkthrough caught the CI badge lying
+
+- session_id: continuation (Fable 5); founder directives "AIOS를 완성 시켜줘" + "지능 폭발적으로, 절대 갇히지마" + "최신 정보 활용"
+- mode_breakdown: observe:6 / verify:22 / decide:10 / intervene:25 / escalate:3 (min)
+- tools_used: Agent(executor opus x3, verifier walkthrough, Explore x3 earlier), Bash(live curl/gh api/pip wheel/venv/pytest), Edit, TaskCreate/Update, local qwen substrate critique, background lanes saturated throughout
+- tools_NOT_used (CLI gap): no wired CI-lie detector (the pipefail bug sat green for weeks); no automated stranger-walkthrough gate in the release path — both were manual agent spawns this session
+- substrate_specific_behaviors_observed: (1) the adversarial stranger-walkthrough agent found what NO local verification could — the GitHub Actions badge was structurally lying (unittest piped through tail, exit code swallowed: 33 failures + 26 errors reported green). My local suite was 1547-green so I had no signal; only role-playing a stranger against LIVE infra exposed it. (2) Making the pipe truthful exposed 40 clean-clone failures (private-sibling/operator-state prerequisites) that the lie had hidden — fixed via one central conftest requirement map with named skip reasons, zero real bugs. (3) My own README k-anon sentence nearly shipped an overclaim; caught by re-deriving the floor semantics from the worker source (row-relative, min=5, legacy backfill=1 → proof the deployed worker predates the floor).
+- failures_recovered: pip install git+URL claim (verified BROKEN before writing it — pip forces recursive submodule init); demo receipts written inside the venv in packaged mode (redirected to AIOS_HOME); -co flag typo creating a false collection-failure signal (caught by rereading pytest semantics).
+- failures_escalated_to_founder: 3 GO items — push 122 commits (the actual release act), deploy the k-anon worker (privacy floor must precede stranger contributions), tag v0.2.0 (+optional PyPI OIDC).
+- key_decision: ship honesty over polish everywhere — truthful red-capable CI over a lying green badge; "rolling out" language over present-tense privacy claims; skip-with-named-reason over hidden failures.
+- new_invariant_or_pattern_discovered: a PUBLIC trust signal (badge, live API example, privacy claim) must be verified against the LIVE artifact it points to, never against local state — local-green ≠ public-true. Candidate AIOS rule: release gates must include one lane that exercises only what a stranger can reach.
+- self-correction-of-prior-observation: my earlier "k-anon not deployed" was initially a weak inference (invalid signal test), then re-established as PROOF via backfill semantics — record the distinction.
