@@ -1,0 +1,10 @@
+{
+  "name": "ipv4_lenient",
+  "split": "test",
+  "module": "solution",
+  "function": "ipv4_lenient",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "3/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}

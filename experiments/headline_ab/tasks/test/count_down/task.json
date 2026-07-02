@@ -1,0 +1,10 @@
+{
+  "name": "count_down",
+  "split": "test",
+  "module": "solution",
+  "function": "count_down",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "1/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}

@@ -1,0 +1,10 @@
+{
+  "name": "fizzbuzz_swapped",
+  "split": "train",
+  "module": "solution",
+  "function": "fizzbuzz_swapped",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "3/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}

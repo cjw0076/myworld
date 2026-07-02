@@ -1,0 +1,10 @@
+{
+  "name": "keep_every_third",
+  "split": "train",
+  "module": "solution",
+  "function": "keep_every_third",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "5/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}

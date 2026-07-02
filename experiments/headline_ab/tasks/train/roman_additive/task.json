@@ -1,0 +1,10 @@
+{
+  "name": "roman_additive",
+  "split": "train",
+  "module": "solution",
+  "function": "roman_additive",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "4/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}

@@ -1,0 +1,1002 @@
+{
+  "config": {
+    "model": "phi4-mini:latest",
+    "trials_per_arm_per_task": 8,
+    "r_attempts": 2,
+    "seed_runs_per_train_task": 2,
+    "temperature": 0.6,
+    "num_predict": 768,
+    "seed_base": 20260702,
+    "n_train_tasks": 3,
+    "n_test_tasks": 5,
+    "n_per_arm": 40,
+    "dry_run": false,
+    "aios_home": "/tmp/aios_ab_home_rz9qmvad"
+  },
+  "seeding": {
+    "runs": 6,
+    "records_written": 6,
+    "solved_runs": 4,
+    "solve_rate": 0.667,
+    "mean_attempts": 1.5,
+    "fix_runs": 3,
+    "record_ids": [
+      "beh-abseed-0-0",
+      "beh-abseed-0-1",
+      "beh-abseed-1-0",
+      "beh-abseed-1-1",
+      "beh-abseed-2-0",
+      "beh-abseed-2-1"
+    ]
+  },
+  "guidance": {
+    "text": "## Behavioral memory (retrieved from your local ledger)\nAcross 6 recorded runs on similar small-Python tasks your agent solved 4/6 (mean 1.5 attempts).\nMost effective action pattern carried forward: WriteCode -> RunOracle -> ReadError.\nLesson from past runs: first attempts most often failed on unhandled edge cases (empty input, empty collections, boundary characters); handling the edge/empty cases the task describes explicitly — then verifying — is what turned failures into passes.",
+    "ranked_actions": [
+      "WriteCode",
+      "RunOracle",
+      "ReadError"
+    ],
+    "memories_used": 6,
+    "predict_method": "hybrid_freq_descent"
+  },
+  "arm_A_bare": {
+    "trials": 40,
+    "solved": 33,
+    "solve_rate": 0.825,
+    "first_attempt_solved": 18,
+    "first_attempt_solve_rate": 0.45,
+    "mean_attempts_to_solve": 1.455,
+    "mean_attempts_all": 1.55,
+    "total_out_tokens": 4965,
+    "total_in_tokens": 9743,
+    "errored_runs": 0
+  },
+  "arm_B_ledger": {
+    "trials": 40,
+    "solved": 27,
+    "solve_rate": 0.675,
+    "first_attempt_solved": 24,
+    "first_attempt_solve_rate": 0.6,
+    "mean_attempts_to_solve": 1.111,
+    "mean_attempts_all": 1.4,
+    "total_out_tokens": 4848,
+    "total_in_tokens": 13644,
+    "errored_runs": 0
+  },
+  "per_task": {
+    "caesar_backward": {
+      "A": {
+        "trials": 8,
+        "solved": 7,
+        "solve_rate": 0.875,
+        "first_attempt_solved": 4,
+        "first_attempt_solve_rate": 0.5,
+        "mean_attempts_to_solve": 1.429,
+        "mean_attempts_all": 1.5,
+        "total_out_tokens": 1389,
+        "total_in_tokens": 1668,
+        "errored_runs": 0
+      },
+      "B": {
+        "trials": 8,
+        "solved": 7,
+        "solve_rate": 0.875,
+        "first_attempt_solved": 7,
+        "first_attempt_solve_rate": 0.875,
+        "mean_attempts_to_solve": 1.0,
+        "mean_attempts_all": 1.125,
+        "total_out_tokens": 1027,
+        "total_in_tokens": 1783,
+        "errored_runs": 0
+      }
+    },
+    "count_down": {
+      "A": {
+        "trials": 8,
+        "solved": 4,
+        "solve_rate": 0.5,
+        "first_attempt_solved": 0,
+        "first_attempt_solve_rate": 0.0,
+        "mean_attempts_to_solve": 2.0,
+        "mean_attempts_all": 2.0,
+        "total_out_tokens": 791,
+        "total_in_tokens": 2876,
+        "errored_runs": 0
+      },
+      "B": {
+        "trials": 8,
+        "solved": 0,
+        "solve_rate": 0.0,
+        "first_attempt_solved": 0,
+        "first_attempt_solve_rate": 0.0,
+        "mean_attempts_to_solve": null,
+        "mean_attempts_all": 2.0,
+        "total_out_tokens": 696,
+        "total_in_tokens": 4456,
+        "errored_runs": 0
+      }
+    },
+    "factorial_zero": {
+      "A": {
+        "trials": 8,
+        "solved": 7,
+        "solve_rate": 0.875,
+        "first_attempt_solved": 4,
+        "first_attempt_solve_rate": 0.5,
+        "mean_attempts_to_solve": 1.429,
+        "mean_attempts_all": 1.5,
+        "total_out_tokens": 648,
+        "total_in_tokens": 1677,
+        "errored_runs": 0
+      },
+      "B": {
+        "trials": 8,
+        "solved": 6,
+        "solve_rate": 0.75,
+        "first_attempt_solved": 4,
+        "first_attempt_solve_rate": 0.5,
+        "mean_attempts_to_solve": 1.333,
+        "mean_attempts_all": 1.5,
+        "total_out_tokens": 921,
+        "total_in_tokens": 2845,
+        "errored_runs": 0
+      }
+    },
+    "ipv4_lenient": {
+      "A": {
+        "trials": 8,
+        "solved": 7,
+        "solve_rate": 0.875,
+        "first_attempt_solved": 2,
+        "first_attempt_solve_rate": 0.25,
+        "mean_attempts_to_solve": 1.714,
+        "mean_attempts_all": 1.75,
+        "total_out_tokens": 1483,
+        "total_in_tokens": 2738,
+        "errored_runs": 0
+      },
+      "B": {
+        "trials": 8,
+        "solved": 6,
+        "solve_rate": 0.75,
+        "first_attempt_solved": 5,
+        "first_attempt_solve_rate": 0.625,
+        "mean_attempts_to_solve": 1.167,
+        "mean_attempts_all": 1.375,
+        "total_out_tokens": 1494,
+        "total_in_tokens": 2984,
+        "errored_runs": 0
+      }
+    },
+    "lower_middle": {
+      "A": {
+        "trials": 8,
+        "solved": 8,
+        "solve_rate": 1.0,
+        "first_attempt_solved": 8,
+        "first_attempt_solve_rate": 1.0,
+        "mean_attempts_to_solve": 1.0,
+        "mean_attempts_all": 1.0,
+        "total_out_tokens": 654,
+        "total_in_tokens": 784,
+        "errored_runs": 0
+      },
+      "B": {
+        "trials": 8,
+        "solved": 8,
+        "solve_rate": 1.0,
+        "first_attempt_solved": 8,
+        "first_attempt_solve_rate": 1.0,
+        "mean_attempts_to_solve": 1.0,
+        "mean_attempts_all": 1.0,
+        "total_out_tokens": 710,
+        "total_in_tokens": 1576,
+        "errored_runs": 0
+      }
+    }
+  },
+  "raw_runs": [
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 116,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 125,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 125,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 1,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 247,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 2,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 224,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 2,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 95,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 3,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 97,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 3,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 268,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 4,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 205,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 4,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 126,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 5,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 236,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 5,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 116,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 6,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 91,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 6,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 120,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "B",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 103,
+      "ok": true
+    },
+    {
+      "task": "caesar_backward",
+      "arm": "A",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 122,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 0,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 107,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 0,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 1,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 1,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 84,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 2,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 2,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 84,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 3,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 3,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 84,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 4,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 81,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 4,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 5,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 84,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 5,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 92,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 6,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 164,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 6,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "B",
+      "trial": 7,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 88,
+      "ok": true
+    },
+    {
+      "task": "count_down",
+      "arm": "A",
+      "trial": 7,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 91,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 55,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 50,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 1,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 123,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 58,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 2,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 110,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 2,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 112,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 3,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 50,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 3,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 92,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 4,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 55,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 4,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 50,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 5,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 293,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 5,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 97,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 6,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 123,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 6,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 188,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "B",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 55,
+      "ok": true
+    },
+    {
+      "task": "factorial_zero",
+      "arm": "A",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 58,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 0,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 217,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 158,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 102,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 81,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 2,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 223,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 2,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 244,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 3,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 459,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 3,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 257,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 4,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 184,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 4,
+      "solved": false,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 257,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 5,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 100,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 5,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 255,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 6,
+      "solved": true,
+      "solved_first": false,
+      "attempts": 2,
+      "out_tokens": 179,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 6,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 94,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "B",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 80,
+      "ok": true
+    },
+    {
+      "task": "ipv4_lenient",
+      "arm": "A",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 87,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 110,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 0,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 65,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 174,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 1,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 57,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 2,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 62,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 2,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 79,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 3,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 73,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 3,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 118,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 4,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 53,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 4,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 100,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 5,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 61,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 5,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 120,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 6,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 61,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 6,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 85,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "B",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 73,
+      "ok": true
+    },
+    {
+      "task": "lower_middle",
+      "arm": "A",
+      "trial": 7,
+      "solved": true,
+      "solved_first": true,
+      "attempts": 1,
+      "out_tokens": 73,
+      "ok": true
+    }
+  ],
+  "elapsed_s": 106.2,
+  "substrate": "ollama"
+}

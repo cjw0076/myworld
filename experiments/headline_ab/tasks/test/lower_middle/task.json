@@ -1,0 +1,10 @@
+{
+  "name": "lower_middle",
+  "split": "test",
+  "module": "solution",
+  "function": "lower_middle",
+  "oracle": "oracle.py",
+  "prompt": "prompt.md",
+  "bare_pass1_calibration": "5/6",
+  "kind": "counter-prior spec (contradicts convention)"
+}
