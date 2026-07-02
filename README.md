@@ -37,14 +37,25 @@ pip install -e .
 aios demo
 ```
 
-Output:
+Output (abridged):
 
 ```
-  Checker says: PASS ✓  (3 courses scheduled, no deadline violated)
-  Checker says: CAUGHT ✗ — the AI scheduled work after the deadline
+  ── Run 1 — a brand-new agent, empty memory ───────────────────
+    predictor: no_data  (0 prior runs)
+    → no prior runs — starting from zero.
+
+  ── AIOS records what the agent just did ──────────────────────
+    ingested 1 run → ledger   (what worked: Read, Edit, Bash, Grep)
+
+  ── Run 2 — same task, same question, now WITH memory ─────────
+    → top suggestion: Edit   (grounded in the run recorded moments ago)
+
+  ── Closing act — AI proposes, code verifies ──────────────────
+    Checker says: PASS ✓  (3 courses scheduled, no deadline violated)
+    Checker says: CAUGHT ✗ — the AI scheduled work after the deadline
 ```
 
-The demo shows the core idea: AI proposes, deterministic code verifies, wrong answers are rejected. Every run leaves a provenance record.
+Act one is the headline: the ledger turns run 1's experience into run 2's head start — offline, deterministic, using the real ingest/predict machinery. Act two shows the safety idea: AI proposes, deterministic code verifies, wrong answers are rejected. Every run leaves a provenance record.
 
 ---
 
@@ -128,7 +139,7 @@ Every session you run makes the global ledger smarter for everyone:
 aios behavior contribute --opt-in code,docs
 ```
 
-**Privacy guarantee:** only structural metadata is stored — tool names, sequence, category. No prompts, no outputs, no file contents. Verified by the Worker's privacy gate before any entry reaches D1.
+**Privacy guarantee:** only structural metadata is stored — tool names, sequence, category. No prompts, no outputs, no file contents. Verified by the Worker's privacy gate before any entry reaches D1. Contributions are **public and pseudonymous**: entries land in the shared ledger under a one-way salted pseudonym (your API key is never stored), and sparse categories are additionally protected by a k-anonymity floor before being served back out.
 
 ---
 
@@ -159,13 +170,17 @@ Your agent CLI (Claude Code / Codex / local LLM)
 
 Five OS modules, each owning a distinct authority layer:
 
-| Module | Role |
-|--------|------|
-| **myworld** | Contracts, dispatch, operator kernel |
-| **hivemind** | Execution harness, verification, run receipts |
-| **memoryOS** | Append-only memory graph, provenance, retrieval |
-| **CapabilityOS** | Tool/API routing recommendations |
-| **GenesisOS** | Assumption mutation, cross-domain reasoning |
+| Module | Role | Availability |
+|--------|------|--------------|
+| **myworld** | Contracts, dispatch, operator kernel | public (this repo) |
+| **hivemind** | Execution harness, verification, run receipts | public |
+| **memoryOS** | Append-only memory graph, provenance, retrieval | private research repo |
+| **CapabilityOS** | Tool/API routing recommendations | private research repo |
+| **GenesisOS** | Assumption mutation, cross-domain reasoning | private research repo |
+
+The OSS core in this repo is **self-contained**: the behavioral ledger, demo, and
+`aios` CLI run without the private modules (they add the deeper memory graph and
+routing research, and are being opened progressively).
 
 ---
 

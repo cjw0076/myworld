@@ -3,6 +3,46 @@
 All notable changes to AIOS (`aios-os`). Format: themed summaries per release.
 Tag `vX.Y.Z` → `publish.yml` builds + publishes to PyPI.
 
+## [0.2.0] — OSS-release addendum (2026-07-01)
+
+The open-source readiness pass — one identity, a real installable package, and a
+first run that shows the product.
+
+### Identity — one sentence everywhere
+- README, `docs/AIOS_NORTHSTAR.md`, the CLI banner, and the package description now
+  lead with the same memory-led identity: *"a local-first memory layer for AI agents:
+  learns from every run so your agents carry forward what worked, not start from zero."*
+  Cross-agent network effects are framed as the explicit longer-term vision, not a
+  present-tense claim.
+
+### Packaging — plain `pip install .` now actually works
+- The wheel previously shipped a single file (`aios_launcher.py`) and resolved every
+  script from the repo clone — a non-editable install was broken. It now ships the
+  35-module stdlib-only core (+ `aios_primitives` package); the launcher self-roots
+  in site-packages (`resolve_root` "packaged" mode + `script_path()` fallback).
+- Packaged installs never write state into the venv: launcher state and provenance
+  receipts (`aios demo`) go to `AIOS_HOME` (default `~/.aios`).
+- Commands outside the shipped core fail with a clean one-line "requires a full
+  AIOS checkout" message instead of a traceback.
+- Verified end-to-end: fresh venv, non-repo cwd — `aios --help`, `aios demo`,
+  `aios behavior status` all exit 0; plain clone (no submodules) + `pip install .` works.
+
+### First run — the demo now shows the headline
+- `aios demo` leads with a MEMORY ACT on an isolated temp ledger: Run 1 on an empty
+  ledger ("starting from zero") → the run is recorded through the real
+  ingest→ledger pipeline → Run 2 answers the same question grounded in that recording
+  (offline keyword/frequency fallback — no GPU, no key, no network). The verify-first
+  copilot demo closes ("AI proposes, code verifies").
+
+### Honesty & hygiene
+- Removed the dead PyPI badge (package not yet published); re-add when it is.
+- `pytest tests/` is green from a clean clone (research-probe fixtures under
+  `tests/hivemind_tasks/` excluded from default collection).
+- `aios behavior contribute` prints a consent notice: contributions are public +
+  pseudonymous, tool-name metadata only.
+- README documents module availability honestly (public core is self-contained;
+  memoryOS/CapabilityOS/GenesisOS are private research repos, opened progressively).
+
 ## [0.2.0] — 2026-06-24
 
 The "one foundation" release: a research-backed reliability core, two unifying

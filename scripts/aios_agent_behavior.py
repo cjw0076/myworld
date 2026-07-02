@@ -1506,6 +1506,12 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.cmd == "contribute":
+        # Consent notice (trust boundary): contributions leave the machine.
+        print(
+            "note: contributions go to the shared PUBLIC ledger, pseudonymously — "
+            "tool-name metadata only (no prompts, no outputs, no file contents).",
+            file=sys.stderr,
+        )
         opt_in_set: frozenset | None = None
         if hasattr(args, "opt_in") and args.opt_in:
             opt_in_set = frozenset(c.strip() for c in args.opt_in.split(",")) & OPT_IN_CATEGORIES
