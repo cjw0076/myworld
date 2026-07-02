@@ -38,8 +38,38 @@ def nearest_aios_root(start: Path) -> Path | None:
     return None
 
 
+def script_path(root: Path, name: str) -> Path:
+    """Resolve a dispatch-target script.
+
+    Repo layout first (``root/scripts/<name>``); packaged fallback second (the
+    module shipped flat in site-packages, adjacent to this launcher). If neither
+    exists the command is not part of the shipped OSS core (a fossil/advanced
+    operator script) — fail with a clean one-line message instead of a traceback.
+    """
+    p = root / "scripts" / name
+    if p.exists():
+        return p
+    packaged = Path(__file__).resolve().parent / name
+    if packaged.exists():
+        return packaged
+    print(
+        "aios: this command requires a full AIOS checkout — "
+        "git clone https://github.com/cjw0076/myworld and run `aios` from there.",
+        file=sys.stderr,
+    )
+    raise SystemExit(2)
+
+
 def resolve_root(explicit_root: str | None = None, *, cwd: Path | None = None, environ: dict[str, str] | None = None) -> tuple[Path, str]:
     env = environ if environ is not None else os.environ
+    launcher_dir = Path(__file__).resolve().parent
+    lr = launcher_relative_root()
+    # Packaged (wheel) install signature: the launcher sits flat in site-packages
+    # next to aios_runtime.py, and its parent dir is NOT an AIOS repo root. Running
+    # from a repo checkout is never "packaged" because launcher_relative_root() is
+    # the repo root there and wins below.
+    is_packaged = (not is_aios_root(lr)) and (launcher_dir / "aios_runtime.py").exists()
+
     if explicit_root:
         root = Path(explicit_root).expanduser().resolve()
         if not is_aios_root(root):
@@ -53,26 +83,30 @@ def resolve_root(explicit_root: str | None = None, *, cwd: Path | None = None, e
 
     if env.get("AIOS_HOME"):
         root = Path(env["AIOS_HOME"]).expanduser().resolve()
-        if not is_aios_root(root):
+        if is_aios_root(root):
+            return root, "AIOS_HOME"
+        if not is_packaged:
             raise SystemExit(f"AIOS_HOME is not an AIOS root: {root}")
-        return root, "AIOS_HOME"
+        # Packaged install: AIOS_HOME denotes the state home, not a repo root.
+        # Fall through to packaged self-rooting; state is redirected in main().
 
-    root = launcher_relative_root()
-    if not is_aios_root(root):
-        raise SystemExit(f"launcher-relative root is not an AIOS root: {root}")
-    return root, "launcher_relative"
+    if is_aios_root(lr):
+        return lr, "launcher_relative"
+    if is_packaged:
+        return launcher_dir, "packaged"
+    raise SystemExit(f"launcher-relative root is not an AIOS root: {lr}")
 
 
 def runtime_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_runtime.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_runtime.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def ask_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_ask.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_ask.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def chat_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_chat.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_chat.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def provider_loop_command(root: Path, argv: list[str]) -> tuple[list[str], Path]:
@@ -99,109 +133,109 @@ def discover_command(root: Path, argv: list[str]) -> list[str]:
     # `aios discover` works instead of erroring on a missing arg the user can't guess.
     if args and args[0] == "scan" and "--root" not in args:
         args = [args[0], "--root", Path.cwd().as_posix(), *args[1:]]
-    return [sys.executable, (root / "scripts" / "aios_project_discovery.py").as_posix(), "--control-root", root.as_posix(), *args]
+    return [sys.executable, script_path(root, "aios_project_discovery.py").as_posix(), "--control-root", root.as_posix(), *args]
 
 
 def init_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_workbench_init.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_workbench_init.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def workbench_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_workbench.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_workbench.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def emit_recap_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_emit_recap.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_emit_recap.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def helper_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_helper.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_helper.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def dream_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_dream.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_dream.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def research_fetch_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_research_fetch.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_research_fetch.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def mcp_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_mcp_server.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_mcp_server.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def sovereignty_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_sovereignty.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_sovereignty.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def local_operator_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_local_operator.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_local_operator.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def self_evolve_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_self_evolve.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_self_evolve.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def verify_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_verify.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_verify.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def complete_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_completion.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_completion.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def ingest_conversations_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_ingest_conversations.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_ingest_conversations.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def librarian_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_librarian.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_librarian.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def setup_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_setup.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_setup.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def capability_feedback_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_capability_feedback.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_capability_feedback.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def device_profile_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_device_profile.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_device_profile.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def self_model_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_self_model.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_self_model.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def demo_command(root: Path, argv: list[str]) -> list[str]:
     if argv and argv[0] == "agent":
-        return [sys.executable, (root / "scripts" / "aios_agent_demo.py").as_posix(), *argv[1:]]
-    return [sys.executable, (root / "scripts" / "aios_demo.py").as_posix(), *argv]
+        return [sys.executable, script_path(root, "aios_agent_demo.py").as_posix(), *argv[1:]]
+    return [sys.executable, script_path(root, "aios_demo.py").as_posix(), *argv]
 
 
 def dispatch_reconcile_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_dispatch_reconcile.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_dispatch_reconcile.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def jobs_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_jobs.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_jobs.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def hooks_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_hooks.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_hooks.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def install_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_install.py").as_posix(), "--root", root.as_posix(), "install", *argv]
+    return [sys.executable, script_path(root, "aios_install.py").as_posix(), "--root", root.as_posix(), "install", *argv]
 
 
 def uninstall_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_install.py").as_posix(), "--root", root.as_posix(), "uninstall", *argv]
+    return [sys.executable, script_path(root, "aios_install.py").as_posix(), "--root", root.as_posix(), "uninstall", *argv]
 
 
 def local_app_command(root: Path, argv: list[str]) -> list[str]:
-    return [sys.executable, (root / "scripts" / "aios_local_app.py").as_posix(), "--root", root.as_posix(), *argv]
+    return [sys.executable, script_path(root, "aios_local_app.py").as_posix(), "--root", root.as_posix(), *argv]
 
 
 def open_control_app(root: Path, argv: list[str]) -> int:
@@ -252,7 +286,7 @@ def _serve(root: Path, argv: list[str]) -> int:
                    help="expose via cloudflared quick tunnel (requires cloudflared)")
     opts = p.parse_args(argv)
 
-    api_script = root / "scripts" / "aios_serving_api.py"
+    api_script = script_path(root, "aios_serving_api.py")
     if not api_script.exists():
         print(f"[aios serve] error: {api_script} not found — run from AIOS root", flush=True)
         return 1
@@ -395,6 +429,16 @@ def main(argv: list[str] | None = None) -> int:
 
     root, source = resolve_root(args.root)
 
+    if source == "packaged":
+        # State safety: in a wheel install `root` (site-packages) is where the
+        # code lives, not where state belongs. Never write runtime state into
+        # site-packages. Root all child-command state at AIOS_HOME (~/.aios);
+        # dispatch scripts are still resolved adjacent to the launcher by
+        # script_path()'s packaged fallback, independent of this value.
+        state_home = Path(os.environ.get("AIOS_HOME") or (Path.home() / ".aios")).expanduser()
+        state_home.mkdir(parents=True, exist_ok=True)
+        root = state_home
+
     if args.cmd == "root":
         payload = root_report(root, source)
         if "--json" in args.args:
@@ -462,15 +506,15 @@ def main(argv: list[str] | None = None) -> int:
         return run_delegate(ingest_conversations_command(root, args.args), cwd=Path.cwd())
 
     if args.cmd == "behavior":
-        cmd = [sys.executable, (root / "scripts" / "aios_agent_behavior.py").as_posix(), *args.args]
+        cmd = [sys.executable, script_path(root, "aios_agent_behavior.py").as_posix(), *args.args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "agent":
-        cmd = [sys.executable, (root / "scripts" / "aios_agent_system.py").as_posix(), *args.args]
+        cmd = [sys.executable, script_path(root, "aios_agent_system.py").as_posix(), *args.args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "harness":
-        cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *args.args]
+        cmd = [sys.executable, script_path(root, "aios_harness.py").as_posix(), *args.args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "do":
@@ -480,7 +524,7 @@ def main(argv: list[str] | None = None) -> int:
         harness_args = list(args.args)
         if "--base-url" not in " ".join(harness_args) and "--model" not in " ".join(harness_args):
             harness_args += ["--base-url", "http://localhost:11434"]
-        cmd = [sys.executable, (root / "scripts" / "aios_harness.py").as_posix(), *harness_args]
+        cmd = [sys.executable, script_path(root, "aios_harness.py").as_posix(), *harness_args]
         return run_delegate(cmd, cwd=Path.cwd())
 
     if args.cmd == "librarian":
@@ -500,37 +544,37 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "onboard":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_onboard.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_onboard.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd in ("cli", "shell"):
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_shell.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_shell.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "sources":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_sources.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_sources.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "cls-gate":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_cls_gate.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_cls_gate.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "cls-train":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_cls_train.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_cls_train.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "channel":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_channel.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_channel.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "hygiene":
         return run_delegate(
-            [sys.executable, (root / "scripts" / "aios_memory_hygiene.py").as_posix(), *args.args],
+            [sys.executable, script_path(root, "aios_memory_hygiene.py").as_posix(), *args.args],
             cwd=root)
 
     if args.cmd == "dispatch-reconcile":
@@ -566,7 +610,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.cmd == "stop":
         rc_app = run_delegate(local_app_command(root, ["stop", "--json", *args.args]), cwd=root)
-        rc_round = run_delegate([sys.executable, (root / "scripts" / "aios_round_controller.py").as_posix(), "stop", "--root", root.as_posix()], cwd=root)
+        rc_round = run_delegate([sys.executable, script_path(root, "aios_round_controller.py").as_posix(), "stop", "--root", root.as_posix()], cwd=root)
         return rc_app or rc_round
 
     parser.error(f"unknown command: {args.cmd}")

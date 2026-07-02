@@ -40,11 +40,56 @@ ollama  = []          # Ollama is a local binary — install via aios setup appl
 aios = "aios_launcher:main"
 
 [tool.setuptools]
-# aios_launcher lives in scripts/ — expose it as a top-level module for the
-# entry_point. Editable install (-e) keeps the launcher at its original path
-# so launcher_relative_root() resolves to the correct myworld/ root.
+# The functional AIOS core is a set of flat, stdlib-only modules under scripts/.
+# With package-dir mapping "" -> scripts, every name below lands FLAT in
+# site-packages (adjacent to aios_launcher.py), so a plain `pip install .` wheel
+# is self-contained: the launcher resolves its dispatch targets adjacent to
+# itself (see script_path() in aios_launcher.py) with no repo clone required.
+# Editable install (-e) still keeps the launcher at its original path so
+# launcher_relative_root() resolves to the myworld/ root.
 package-dir = {"" = "scripts"}
-py-modules  = ["aios_launcher"]
+py-modules  = [
+    "aios_launcher",
+    "aios_runtime",
+    "aios_harness",
+    "aios_memory",
+    "aios_routing",
+    "aios_adapters",
+    "aios_local_memory",
+    "aios_capture_args",
+    "aios_ask",
+    "aios_invoke",
+    "aios_few_shot_injector",
+    "aios_pattern_extractor",
+    "aios_founder_capture",
+    "aios_work_praxis",
+    "aios_chat",
+    "aios_chat_router",
+    "aios_onboard",
+    "aios_cli_style",
+    "aios_demo",
+    "aios_capability_base",
+    "aios_substrate_router",
+    "aios_deadline_copilot",
+    "aios_serving_api",
+    "aios_setup",
+    "aios_shell",
+    "aios_head",
+    "aios_akashic",
+    "aios_capability_scanner",
+    "aios_helper",
+    "aios_device_profile",
+    "aios_install",
+    "aios_completion",
+    "aios_local_app",
+    "aios_agent_behavior",
+]
+# aios_primitives is a stdlib-only PACKAGE (not a flat module): aios_runtime does
+# `from aios_primitives import events`, so it must ship as a package, not via
+# py-modules. Its flat sibling shim scripts/aios_primitives.py is only for
+# explicit `python scripts/aios_primitives.py` invocation (never used by the
+# launcher) and is intentionally not shipped.
+packages = ["aios_primitives"]
 
 [tool.pytest.ini_options]
 # tests/hivemind_tasks/ are self-contained research-probe FIXTURES (the GIMPS
