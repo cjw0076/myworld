@@ -229,10 +229,23 @@ def run_arm(task: Task, model: str, guidance: str, seed_slot: int,
 
 
 def _behavior_module():
-    """Import aios_agent_behavior AFTER AIOS_HOME is set (module reads it at import)."""
+    """Load a FRESH aios_agent_behavior bound to the CURRENT AIOS_HOME.
+
+    Private-name spec import (NOT `import aios_agent_behavior`): the module reads
+    AIOS_HOME into module-level store paths at import time, so caching a tmp-bound
+    instance under the canonical name in sys.modules would poison every later
+    importer in the same process (this exact leak broke unrelated privacy tests
+    in CI). Mirrors aios_demo._load_behavior.
+    """
+    import importlib.util  # noqa: PLC0415
     if str(SCRIPTS_DIR) not in sys.path:
         sys.path.insert(0, str(SCRIPTS_DIR))
-    import aios_agent_behavior as bh  # noqa: PLC0415
+    spec = importlib.util.spec_from_file_location(
+        f"aios_agent_behavior_ab_{abs(hash(os.environ.get('AIOS_HOME', '')))}",
+        SCRIPTS_DIR / "aios_agent_behavior.py",
+    )
+    bh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bh)
     return bh
 
 

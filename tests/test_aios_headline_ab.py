@@ -6,20 +6,24 @@ tests cover battery loading, the code extractor, the no-train/test-leakage guard
 metric math — not the empirical experiment (that lives in docs/AIOS_HEADLINE_AB_RESULTS.md).
 """
 import json
-import os
 import sys
-import tempfile
 from pathlib import Path
 
-# Isolate AIOS_HOME BEFORE the harness lazily imports aios_agent_behavior, and force the
-# global akashic server unreachable so nothing can egress during import/seed.
-_TMP_HOME = tempfile.mkdtemp(prefix="aios_ab_test_home_")
-os.environ["AIOS_HOME"] = _TMP_HOME
-os.environ["AIOS_AKASHIC_URL"] = "http://127.0.0.1:9"
+import pytest
 
 _SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(_SCRIPTS))
-import aios_headline_ab as h  # noqa: E402
+import aios_headline_ab as h  # noqa: E402  (reads no env at import; behavior loads lazily)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_env(monkeypatch, tmp_path):
+    """Per-test isolation with AUTOMATIC restore (monkeypatch): AIOS_HOME to a tmp
+    ledger + akashic egress blocked. Never mutate os.environ at module level — a
+    module-level set leaks into every later test module in the same process (this
+    exact leak broke the global-privacy tests in CI)."""
+    monkeypatch.setenv("AIOS_HOME", str(tmp_path / "abhome"))
+    monkeypatch.setenv("AIOS_AKASHIC_URL", "http://127.0.0.1:9")
 
 
 def test_load_battery_disjoint_counts():
