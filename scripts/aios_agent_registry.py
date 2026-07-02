@@ -42,6 +42,34 @@ def empty_registry() -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "agents": {}, "updated_at": now_iso()}
 
 
+# The canonical AIOS cast — the fixed operator pair + sibling child agents the
+# system is built around (see CLAUDE.md / AGENTS.md / WORKSTREAMS.md). These are
+# STRUCTURAL to AIOS itself, not machine-specific customisations. The authority
+# layer treats them as recognised on any machine (see aios_authority.registry_payload)
+# so a fresh clone with no `~/.aios/agents.json` still has a working authority model
+# instead of treating AIOS's own agents as outsiders. A machine-local registry file
+# always overrides these defaults.
+DEFAULT_AGENTS: dict[str, dict[str, Any]] = {
+    "claude@myworld": {"agent_id": "claude@myworld", "substrate": "claude_code",
+                       "capabilities": ["operator", "reviewer", "verifier"]},
+    "codex@myworld": {"agent_id": "codex@myworld", "substrate": "codex_cli",
+                      "capabilities": ["child_agent", "operator", "reviewer"]},
+    "codex@hivemind": {"agent_id": "codex@hivemind", "substrate": "codex_cli",
+                       "capabilities": ["child_agent", "executor"]},
+    "codex@memoryOS": {"agent_id": "codex@memoryOS", "substrate": "codex_cli",
+                       "capabilities": ["child_agent", "reviewer"]},
+    "codex@CapabilityOS": {"agent_id": "codex@CapabilityOS", "substrate": "codex_cli",
+                           "capabilities": ["child_agent", "researcher"]},
+    "codex@GenesisOS": {"agent_id": "codex@GenesisOS", "substrate": "codex_cli",
+                        "capabilities": ["critic", "researcher"]},
+}
+
+
+def default_agents() -> dict[str, dict[str, Any]]:
+    """A fresh copy of the canonical AIOS cast (see ``DEFAULT_AGENTS``)."""
+    return {aid: dict(entry) for aid, entry in DEFAULT_AGENTS.items()}
+
+
 def load_registry() -> dict[str, Any]:
     path = registry_path()
     if not path.exists():

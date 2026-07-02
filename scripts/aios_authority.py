@@ -13,9 +13,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from scripts.aios_agent_registry import load_registry
+    from scripts.aios_agent_registry import default_agents, load_registry
 except ModuleNotFoundError:  # pragma: no cover - direct script execution
-    from aios_agent_registry import load_registry
+    from aios_agent_registry import default_agents, load_registry
 
 
 SCHEMA_VERSION = "aios.authority.v1"
@@ -76,9 +76,15 @@ def normalize_capabilities(entry: dict[str, Any] | None) -> list[str]:
 
 def registry_payload() -> tuple[dict[str, Any] | None, bool]:
     try:
-        return load_registry(), True
+        payload = load_registry()
     except (OSError, ValueError, json.JSONDecodeError):
         return None, False
+    # Recognise AIOS's own canonical cast (operator pair + sibling child agents)
+    # even before a machine-local `~/.aios/agents.json` exists, so authority works
+    # identically on a fresh clone and on an operator machine. The machine-local
+    # file always overrides these structural defaults.
+    payload["agents"] = {**default_agents(), **(payload.get("agents") or {})}
+    return payload, True
 
 
 def verify_authority(agent_id: str, action: str) -> AuthorityResult:

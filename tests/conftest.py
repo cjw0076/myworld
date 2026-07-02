@@ -62,6 +62,21 @@ _REQUIREMENTS: dict[str, tuple[str, str]] = {
     "test_aios_live_hosted_proof.py": _HIVE,
     # Single tests: the file also has clean-clone-safe tests that must keep running.
     "test_aios_akashic.py::TestAiosAkashicParity::test_list_count_matches_load_indexes": _MEMORY_AKASHIC,
+    # The akashic CLI exec-s scripts/aios_akashic.py, which imports the memoryOS
+    # akashic_ledger. On a clean clone (empty memoryOS submodule) that import raises
+    # ModuleNotFoundError. Key each CLI test that actually reaches the import; the two
+    # argparse-only tests (missing --work-id / --goal) fail before importing and keep
+    # running. (The dev-machine leak that hid this: memoryos was importable via the
+    # populated sibling, so these passed instead of being skipped.)
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_list_json_returns_count": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_list_json_entries_are_list": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_list_plain_outputs_lines": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_append_dry_run_no_write": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_append_dry_run_json": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_show_missing_work_id_exits_nonzero": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_reconstruct_missing_returns_not_resumable": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_reconstruct_json_has_resumable_field": _MEMORY_AKASHIC,
+    "test_aios_akashic.py::TestAiosAkashicCLI::test_root_auto_detected": _MEMORY_AKASHIC,
     "test_aios_capability_mcp.py::CapabilityMcpTest::test_audit_returns_catalog_state": _CAPABILITY,
     "test_aios_chat_router.py::AiosChatRouterTest::test_action_turn_projects_genesis_friction_when_available": _GENESIS,
     "test_aios_chat_router.py::AiosChatRouterTest::test_genesis_friction_question_answers_without_provider_turn": _GENESIS,

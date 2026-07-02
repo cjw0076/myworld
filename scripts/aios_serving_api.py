@@ -181,7 +181,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json({
                 "status": "ok", "service": "aios_serving_api",
                 "providers": {
-                    "ollama": {"available": ollama_ok},
+                    "ollama": {
+                        "available": ollama_ok,
+                        "hint": None if ollama_ok else "run `aios setup apply` to install ollama + a local model (free, no API key)",
+                    },
                     "gemini_rest": {
                         "available": gemini_ok,
                         "hint": None if gemini_ok else "set GEMINI_API_KEY (free tier available)",

@@ -15,6 +15,14 @@ class AiosInstallTests(unittest.TestCase):
     def run_install(self, *args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
         merged_env = os.environ.copy()
         merged_env["AIOS_INSTALL_SKIP_SYSTEMCTL"] = "1"
+        # These tests sandbox the install under a temp --home and assert files land
+        # in `<home>/.config/...`. The installer honours ambient XDG_CONFIG_HOME/
+        # XDG_DATA_HOME (correct XDG behaviour for real users), so an ambient value
+        # — present on CI runners, absent on the dev machine — would redirect the
+        # config files out of the sandbox and fail the assertion. Drop them so the
+        # sandbox is hermetic regardless of the host environment.
+        for _xdg in ("XDG_CONFIG_HOME", "XDG_DATA_HOME"):
+            merged_env.pop(_xdg, None)
         if env:
             merged_env.update(env)
         return subprocess.run(
