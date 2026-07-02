@@ -5,7 +5,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.aios_capability_observation_memory_review import build_review_packet, validate_review_packet
+import pytest
+
+# The module under test imports the CapabilityOS sibling repo (private research
+# module) at import time; on a clean public clone it is absent — skip, don't error.
+try:
+    from scripts.aios_capability_observation_memory_review import build_review_packet, validate_review_packet
+except ImportError:
+    pytest.skip("requires the CapabilityOS sibling repo (private research module)", allow_module_level=True)
 
 
 ROOT = Path(__file__).resolve().parents[1]

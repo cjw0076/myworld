@@ -411,6 +411,12 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--root", help="AIOS control-plane root. Defaults to nearest ancestor, AIOS_HOME, then launcher-relative root.")
+    try:
+        from importlib.metadata import version as _pkg_version  # noqa: PLC0415
+        _version = _pkg_version("aios-os")
+    except Exception:  # noqa: BLE001  (repo checkout without an installed dist)
+        _version = "0.2.0-dev"
+    parser.add_argument("--version", action="version", version=f"aios {_version}")
     # metavar keeps argparse from dumping the full 40-item choices blob in usage;
     # nargs='?' lets a bare `aios` print help instead of erroring.
     parser.add_argument("cmd", nargs="?", metavar="<command>", choices=_ALL_COMMANDS,

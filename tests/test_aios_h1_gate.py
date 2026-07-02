@@ -9,12 +9,18 @@ import sys
 from pathlib import Path
 
 import pytest
-import torch
+
+# Research-machine test: needs torch + the descentnet research repo (neither is a
+# product dependency; on a clean public clone both are absent — skip, don't error).
+torch = pytest.importorskip("torch", reason="research test: needs torch")
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "universe" / "descentnet"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from api import SheafCover, project_edge_field, coboundary  # noqa: E402
+try:
+    from api import SheafCover, project_edge_field, coboundary  # noqa: E402
+except ImportError:
+    pytest.skip("requires the descentnet research repo", allow_module_level=True)
 from aios_h1_gate import (  # noqa: E402
     ATOM_ERROR,
     CORRUPT_ERROR,

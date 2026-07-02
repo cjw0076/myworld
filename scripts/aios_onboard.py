@@ -22,6 +22,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import time
@@ -77,7 +78,10 @@ def _behavioral_status() -> dict:
     self-improving CLS plan (docs/AIOS_SELF_IMPROVING.md): make capture visible."""
     home = Path.home()
     ingested = 0
-    store = home / ".aios" / "memory" / "objects.jsonl"
+    # Respect AIOS_HOME like the rest of the CLI (aios behavior status does);
+    # only the ~/.claude session scan below is genuinely home-anchored.
+    aios_home = Path(os.environ.get("AIOS_HOME", str(home / ".aios"))).expanduser()
+    store = aios_home / "memory" / "objects.jsonl"
     try:
         if store.exists():
             ingested = sum(1 for _ in store.open(encoding="utf-8"))

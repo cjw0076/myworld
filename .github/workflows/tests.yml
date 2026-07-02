@@ -48,9 +48,17 @@ jobs:
         run: |
           python -m compileall -q scripts tests
 
-      - name: Run unittest discover
+      # The suite runs under pytest — the SAME command the docs give users
+      # (`pytest tests/`; pyproject's addopts excludes research-probe fixtures).
+      # `set -o pipefail` is load-bearing: a plain `cmd | tail` reports tail's
+      # exit code, which once let 33 failures + 26 errors show a green badge.
+      - name: Install pytest
+        run: python -m pip install pytest
+
+      - name: Run pytest
         run: |
-          python -m unittest discover -s tests -p 'test_*.py' -v 2>&1 | tail -80
+          set -o pipefail
+          python -m pytest tests/ -q 2>&1 | tail -80
 
       - name: Smoke-check CC4 organ CLI
         run: |

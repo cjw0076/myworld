@@ -75,7 +75,7 @@ https://aios-akashic.cjw070690.workers.dev/
 https://aios-akashic.cjw070690.workers.dev/galaxy
 ```
 
-**Prediction API** — open endpoint, no auth:
+**Prediction API** — open endpoint:
 
 ```sh
 curl -X POST https://aios-akashic.cjw070690.workers.dev/predict \
@@ -93,6 +93,13 @@ curl -X POST https://aios-akashic.cjw070690.workers.dev/predict \
   "n_similar": 30
 }
 ```
+
+> The keyless free tier is small (10 requests/day, shared per IP) — if you get a
+> `402 free tier exhausted`, register a free API key and pass it as `X-AIOS-Key`:
+>
+> ```sh
+> curl -X POST https://aios-akashic.cjw070690.workers.dev/register
+> ```
 
 **Merkle verification** — every entry is content-addressed and provable:
 
@@ -139,7 +146,7 @@ Every session you run makes the global ledger smarter for everyone:
 aios behavior contribute --opt-in code,docs
 ```
 
-**Privacy guarantee:** only structural metadata is stored — tool names, sequence, category. No prompts, no outputs, no file contents. Verified by the Worker's privacy gate before any entry reaches D1. Contributions are **public and pseudonymous**: entries land in the shared ledger under a one-way salted pseudonym (your API key is never stored), and sparse categories are additionally protected by a k-anonymity floor before being served back out.
+**Privacy guarantee:** only structural metadata is stored — tool names, sequence, category. No prompts, no outputs, no file contents. Verified by the Worker's privacy gate before any entry reaches D1. Contributions are **public and pseudonymous**: entries land in the shared ledger under a one-way salted pseudonym (your API key is never stored). The worker is additionally designed to enforce a k-anonymity floor (sparse rows served only once enough distinct contributors back them) — rolling out with the next worker deploy.
 
 ---
 
@@ -148,7 +155,7 @@ aios behavior contribute --opt-in code,docs
 AIOS has four small, self-contained extension seams — provider adapters, domain
 minds, capability cards, and behavioral memory. Run `aios onboard`: its
 `absorbed_not_executable` list is a live good-first-issue backlog (write the
-`grok` adapter in ~5 lines and watch it move to `verified_ready`).
+`cursor` adapter in ~5 lines and watch it move to `verified_ready`).
 
 → **[docs/BUILD_ON_AIOS.md](docs/BUILD_ON_AIOS.md)** — the contributor guide.
 
