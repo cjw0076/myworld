@@ -32,7 +32,10 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 import aios_capability_base as base
@@ -130,6 +133,180 @@ def narrate_chat(chat: dict) -> str:
         "",
     ]
     return "\n".join(lines)
+
+# ── MEMORY ACT — the headline: an agent that learns from every run ───────────
+# The one idea AIOS is built around: the ledger LEARNS. Run the same task twice —
+# once with an empty ledger (starts from zero), once after the first run is
+# recorded (carries forward what worked). No GPU, no key, no network: the whole
+# act runs against an isolated temp ledger via the real behavioral-memory engine,
+# pinned to its offline keyword/frequency fallback so it's identical everywhere.
+
+MEMORY_SCHEMA_VERSION = "aios.demo.memory.v1"
+MEMORY_TASK = "fix the failing test in the auth module"
+MEMORY_CANDIDATES = ["Read", "Edit", "Bash", "Grep", "Write"]
+
+# A tiny, fixed, synthetic "successful fix-the-test" agent run, in the same
+# privacy-safe Claude-session shape (assistant tool_use events, tool NAMES only)
+# that `aios behavior ingest` reads from real CLI logs: read the code, grep the
+# symbol, edit the fix, run pytest — the loop that resolved the failure.
+_SYNTHETIC_RUN_TOOLS = ["Read", "Grep", "Read", "Edit", "Bash", "Edit", "Bash"]
+
+
+def _load_behavior(home: Path):
+    """Load a FRESH aios_agent_behavior bound to an ISOLATED AIOS_HOME.
+
+    The engine reads AIOS_HOME at import time into its module-level store paths, so
+    we set the env var and import a fresh instance — the stranger's real ~/.aios is
+    never touched, and the demo is reproducible. We then pin the module to the
+    OFFLINE first-run reality of a fresh install:
+      • no embeddings  — ollama absent → the real keyword/frequency fallback
+      • no DescentNet  — a private research repo, not part of the OSS core
+    This is faithful to a real external install (NOT a fake): the code that runs
+    below is the real machinery, just held to the no-GPU/no-network path so the
+    result is deterministic and identical on every machine.
+    """
+    if str(_SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(_SCRIPTS_DIR))
+    os.environ["AIOS_HOME"] = str(home)
+    spec = importlib.util.spec_from_file_location(
+        f"aios_agent_behavior_demo_{abs(hash(str(home)))}",
+        _SCRIPTS_DIR / "aios_agent_behavior.py",
+    )
+    beh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(beh)
+    beh._embed_batch = lambda texts: None  # ollama unavailable → offline fallback
+    beh.DESCENTNET = None                  # no torch/GPU scorer on a fresh install
+    return beh
+
+
+def _record_run(beh, home: Path) -> tuple[list[dict], int]:
+    """Record one agent run into the ledger via the REAL ingest → write path.
+
+    Writes a synthetic Claude-session JSONL, points the engine's session scan at
+    it, and runs the actual ingest_sessions() + write_to_akashic() pipeline — so
+    parse → classify → loop-typing → AkashicRecord append all really execute, not a
+    shortcut that hand-crafts the stored object.
+    """
+    sessions_dir = home / "synthetic_sessions"
+    sessions_dir.mkdir(parents=True, exist_ok=True)
+    events = [
+        {"type": "assistant", "message": {"content": [{"type": "tool_use", "name": t}]}}
+        for t in _SYNTHETIC_RUN_TOOLS
+    ]
+    (sessions_dir / "fix-failing-test.jsonl").write_text(
+        "\n".join(json.dumps(e) for e in events), encoding="utf-8"
+    )
+    beh.SESSION_PATHS = {"claude": [sessions_dir]}
+    mems = beh.ingest_sessions("claude", frozenset({"code"}))
+    written = beh.write_to_akashic(mems)
+    return mems, written
+
+
+def run_memory_act(home: Path | None = None) -> dict:
+    """Run the SAME task twice against an isolated ledger: empty first, learned second.
+
+    Returns a structured result. `memory_ok` is the honesty gate: True only when
+    run 1 is genuinely empty (no prior data) AND run 2 is genuinely grounded in the
+    run recorded between them (a real frequency signal contributed).
+    """
+    home = home or Path(tempfile.mkdtemp(prefix="aios-demo-mem-"))
+    prev_home = os.environ.get("AIOS_HOME")
+    try:
+        beh = _load_behavior(home)
+
+        # ── Run 1 — brand-new agent, empty ledger ──
+        run1 = beh.predict_behavior(MEMORY_TASK, MEMORY_CANDIDATES, use_global=False)
+
+        # ── Record the run (real ingest → AkashicRecord append) ──
+        t_rec = time.time()
+        mems, written = _record_run(beh, home)
+
+        # ── Run 2 — same task, same question, now with memory ──
+        run2 = beh.predict_behavior(MEMORY_TASK, MEMORY_CANDIDATES, use_global=False)
+        age_s = time.time() - t_rec
+
+        recorded = mems[0] if mems else {}
+        run1_empty = run1.get("method") == "no_data" and run1.get("memories_used", 0) == 0
+        run2_grounded = (
+            written >= 1
+            and run2.get("memories_used", 0) >= 1
+            and bool(run2.get("ranked"))
+            and any(r.get("freq_score", 0) > 0 for r in run2.get("ranked", []))
+        )
+        return {
+            "schema_version": MEMORY_SCHEMA_VERSION,
+            "task": MEMORY_TASK,
+            "candidates": MEMORY_CANDIDATES,
+            "aios_home": str(home),
+            "run1": {
+                "method": run1.get("method"),
+                "memories_used": run1.get("memories_used", 0),
+                "top": run1["ranked"][0]["action"] if run1.get("ranked") else None,
+                "ranked": run1.get("ranked", []),
+            },
+            "recorded": {
+                "written": written,
+                "id": recorded.get("id"),
+                "content": recorded.get("content"),
+                "top_tools": recorded.get("top_tools", []),
+                "evidence_refs": recorded.get("evidence_refs", []),
+                "age_s": round(age_s, 1),
+            },
+            "run2": {
+                "method": run2.get("method"),
+                "memories_used": run2.get("memories_used", 0),
+                "top": run2["ranked"][0]["action"] if run2.get("ranked") else None,
+                "ranked": run2.get("ranked", []),
+            },
+            "memory_ok": bool(run1_empty and run2_grounded),
+        }
+    finally:
+        # Restore the process env; the fresh module already bound its store to `home`.
+        if prev_home is None:
+            os.environ.pop("AIOS_HOME", None)
+        else:
+            os.environ["AIOS_HOME"] = prev_home
+
+
+def narrate_memory(mem: dict) -> str:
+    r1, rec, r2 = mem["run1"], mem["recorded"], mem["run2"]
+    lines = [
+        "",
+        "  ┌─────────────────────────────────────────────────────────────┐",
+        "  │  AIOS — a memory layer for AI agents  (no GPU, no key)       │",
+        "  └─────────────────────────────────────────────────────────────┘",
+        "",
+        "  The idea: an AIOS agent learns from every run, so the next run",
+        "  carries forward what worked instead of starting from zero.",
+        "",
+        f"  Task:      {mem['task']}",
+        "  Question:  which tool should the agent reach for next?",
+        f"  (isolated demo ledger: {mem['aios_home']})",
+        "",
+        "  ── Run 1 — a brand-new agent, empty memory ───────────────────",
+        f"    predictor: {r1['method']}  ({r1['memories_used']} prior runs)",
+        "    → no prior runs — starting from zero (nothing to ground a suggestion on).",
+        "",
+        "  ── AIOS records what the agent just did ──────────────────────",
+        f"    ingested 1 run → ledger   (id {rec['id']}, {rec['written']} written)",
+        f"    what worked:  {', '.join(rec['top_tools'])}",
+        f"    provenance:   {', '.join(rec['evidence_refs'])}",
+        "",
+        "  ── Run 2 — same task, same question, now WITH memory ─────────",
+        f"    predictor: {r2['method']}  "
+        f"({r2['memories_used']} prior run recalled, recorded {rec['age_s']}s ago)",
+        f"    → top suggestion: {r2['top']}",
+    ]
+    for r in r2["ranked"][:3]:
+        lines.append(f"        {r['action']:<8} score={r['score']:.3f}   {r['explanation'][:52]}")
+    lines += [
+        "",
+        "    Run 1 started from zero; Run 2 carried forward what worked —",
+        "    grounded in the run recorded moments ago, no model call needed.",
+        "",
+    ]
+    return "\n".join(lines)
+
 
 # A fixed, deterministic scenario so the demo shows the same thing for everyone,
 # every time, with no clock or randomness involved.
@@ -271,17 +448,25 @@ def main(argv: list[str] | None = None) -> int:
             print(narrate_chat(chat))
         return 0 if chat.get("ok") else 1
 
+    # Act 1+2 — the headline: memory that learns (isolated temp ledger, offline).
+    memory = run_memory_act()
+
+    # Act 3 (closing) — the verify-first copilot demo: AI proposes, code verifies.
     result = run_demo()
     receipt_path: Path | None = None
     if not args.no_receipt:
         out_dir, stamp = base.write_receipt("demo", result)
         receipt_path = out_dir / f"receipt-{stamp}.json"
     if args.json:
-        print(json.dumps({**result, "receipt": receipt_path.as_posix() if receipt_path else None},
-                         ensure_ascii=False, indent=2))
+        print(json.dumps(
+            {"memory": memory, **result,
+             "receipt": receipt_path.as_posix() if receipt_path else None},
+            ensure_ascii=False, indent=2))
     else:
+        print(narrate_memory(memory))
+        print("  ── Closing act — AI proposes, code verifies ─────────────────")
         print(narrate(result, receipt_path))
-    return 0 if result["demo_ok"] else 1
+    return 0 if (memory["memory_ok"] and result["demo_ok"]) else 1
 
 
 if __name__ == "__main__":
