@@ -171,13 +171,20 @@ def run_oracle(oracle_path: Path, code: str, module: str) -> tuple[bool, str]:
 
 
 def run_arm(task: Task, model: str, guidance: str, seed_slot: int,
-            r_attempts: int = R_ATTEMPTS) -> dict:
+            r_attempts: int = R_ATTEMPTS, guidance_first_only: bool = False) -> dict:
     """Run one arm on one task. `guidance` is prepended to the prompt (empty for bare arm).
+
+    If guidance_first_only is True, the guidance prefix is used on attempt 1 ONLY and
+    dropped on the oracle-feedback retry — the headline-A/B design correction: the
+    always-on prefix anchors the model against the concrete oracle error (retry
+    recovery 68% -> 19% in the first run), so guidance should inform the first shot
+    and get out of the way once there is real feedback.
 
     Returns {solved, attempts, out_tokens, in_tokens, ok, seq} where seq is the
     observed behavioral action sequence (used when seeding the ledger).
     """
     base = (guidance + "\n" if guidance else "") + task.prompt
+    retry_base = task.prompt if (guidance_first_only and guidance) else base
     prompt = base
     total_out = total_in = 0
     seq: list[str] = []
@@ -210,7 +217,7 @@ def run_arm(task: Task, model: str, guidance: str, seed_slot: int,
         if attempt < r_attempts:
             seq += ["ReadError", "FixEdgeCase"]
             prompt = (
-                base
+                retry_base
                 + "\n\nYour previous attempt FAILED the tests with this output:\n"
                 + "```\n" + last_err.strip() + "\n```\n"
                 + "Fix the function. Output ONLY one fenced python code block."
@@ -412,20 +419,25 @@ def run_experiment(model: str, trials: int, dry_run: bool = False) -> dict:
     per_task: dict[str, dict] = {}
     arm_a_runs: list[dict] = []
     arm_b_runs: list[dict] = []
+    arm_c_runs: list[dict] = []
     raw_runs: list[dict] = []
 
+    # Arm C = the headline-A/B design correction: ledger guidance on attempt 1 only.
+    ORDERS = [["A", "B", "C"], ["B", "C", "A"], ["C", "A", "B"]]
     for task_idx, task in enumerate(test_tasks):
         a_runs: list[dict] = []
         b_runs: list[dict] = []
+        c_runs: list[dict] = []
         for trial in range(trials):
-            # matched seed slot per (task,trial) — same for both arms. Deterministic
+            # matched seed slot per (task,trial) — same for all arms. Deterministic
             # (task_idx, not hash()) so the whole run is reproducible across processes.
             slot = 1000 + task_idx * 100 + trial
-            order = ["A", "B"] if trial % 2 == 0 else ["B", "A"]
+            order = ORDERS[trial % 3]
             results: dict[str, dict] = {}
             for arm in order:
                 g = "" if arm == "A" else guidance["text"]
-                res = run_arm(task, model, guidance=g, seed_slot=slot)
+                res = run_arm(task, model, guidance=g, seed_slot=slot,
+                              guidance_first_only=(arm == "C"))
                 results[arm] = res
                 raw_runs.append({
                     "task": task.name, "arm": arm, "trial": trial,
@@ -435,16 +447,20 @@ def run_experiment(model: str, trials: int, dry_run: bool = False) -> dict:
                 })
             a_runs.append(results["A"])
             b_runs.append(results["B"])
+            c_runs.append(results["C"])
         arm_a_runs += a_runs
         arm_b_runs += b_runs
+        arm_c_runs += c_runs
         per_task[task.name] = {
             "A": _arm_metrics(a_runs),
             "B": _arm_metrics(b_runs),
+            "C": _arm_metrics(c_runs),
         }
 
     elapsed = round(time.time() - t0, 1)
     agg_a = _arm_metrics(arm_a_runs)
     agg_b = _arm_metrics(arm_b_runs)
+    agg_c = _arm_metrics(arm_c_runs)
 
     return {
         "config": {
@@ -469,6 +485,7 @@ def run_experiment(model: str, trials: int, dry_run: bool = False) -> dict:
         },
         "arm_A_bare": agg_a,
         "arm_B_ledger": agg_b,
+        "arm_C_ledger_first_only": agg_c,
         "per_task": per_task,
         "raw_runs": raw_runs,
         "elapsed_s": elapsed,
@@ -505,11 +522,14 @@ def main(argv: Optional[list[str]] = None) -> int:
     results["config"]["aios_home"] = home
 
     a, b = results["arm_A_bare"], results["arm_B_ledger"]
+    c = results["arm_C_ledger_first_only"]
     print(f"[headline_ab] done in {results['elapsed_s']}s  "
-          f"solve A={a['solve_rate']} B={b['solve_rate']}  "
-          f"pass@1 A={a['first_attempt_solve_rate']} B={b['first_attempt_solve_rate']}  "
-          f"meanAtt A={a['mean_attempts_all']} B={b['mean_attempts_all']}  "
-          f"tok A={a['total_out_tokens']} B={b['total_out_tokens']}", file=sys.stderr)
+          f"solve A={a['solve_rate']} B={b['solve_rate']} C={c['solve_rate']}  "
+          f"pass@1 A={a['first_attempt_solve_rate']} B={b['first_attempt_solve_rate']} C={c['first_attempt_solve_rate']}  "
+          f"meanAtt A={a['mean_attempts_all']} B={b['mean_attempts_all']} C={c['mean_attempts_all']}  "
+          f"tok A={a['total_out_tokens']} B={b['total_out_tokens']} C={c['total_out_tokens']}", file=sys.stderr)
+    print("[headline_ab] C = ledger guidance on attempt-1 ONLY (design correction). "
+          "Target: keep B's first-shot lift, recover A's retry recovery.", file=sys.stderr)
 
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)

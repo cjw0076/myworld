@@ -45,6 +45,24 @@ These are experiments *we* ran, with their artifacts. The sheaf park chain (rows
 
 ---
 
+### Follow-up (2026-07-02) — the prescribed correction, tested (Arm C)
+
+The headline verdict prescribed a fix: inject ledger guidance on **attempt 1 only**. Re-ran the same battery with a third arm — **C = ledger guidance on attempt-1 only, dropped on the oracle-feedback retry** — matched-seed vs A(bare)/B(always-on), phi4-mini, N=40/arm.
+
+| Arm | solve (2-attempt budget) | pass@1 | mean attempts | out tokens |
+|---|---|---|---|---|
+| A — bare | **0.85** | 0.55 | 1.45 | 4907 |
+| B — ledger always-on | 0.70 | **0.65** | 1.35 | 4281 |
+| C — ledger attempt-1 only | 0.775 | 0.625 | 1.35 | **4200** |
+
+**Confirmed (positive):** C beats B on every axis — solve 0.70→0.775, pass@1 ~held, tokens 4281→4200 (cheapest arm). The always-on-prefix harm reproduced (A 0.85 → B 0.70) and gating to attempt-1 recovered ~half of it. **Design rule landed: ledger guidance is injected on attempt 1 only, never as an always-on prefix** (`scripts/aios_headline_ab.py`, Arm C / `guidance_first_only`).
+
+**Honest boundary (not laundered up):** even corrected, the ledger does **not** beat bare on within-budget solve (A 0.85 > C 0.775). Its genuine measured win is a **better and cheaper first shot** (pass@1 +0.07, −14% tokens vs bare), not a higher final solve rate. n=40, one 3.8B model, synthetic battery, single run.
+
+**Next pivot (loop continues):** ledger still trails bare on final solve → the generic "what worked" prefix likely still mildly anchors. Candidate hypotheses: (a) retrieval-on-demand instead of a standing prefix; (b) difficulty-gated injection; (c) guidance = concrete failure-mode avoidance, not a generic pattern. Artifact: `docs/aios_headline_ab_C_results.json`.
+
+---
+
 ## Section 3 — Deliberately design-chosen (not empirical claims)
 
 These are engineering / organizational decisions. They are *not* validated results and should not be read as such — they are how we chose to build, adopted for consistency and safety, not because an experiment ranked them best.

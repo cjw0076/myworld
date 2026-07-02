@@ -2679,3 +2679,16 @@ localStorage 히스토리 → 페이지 새로고침 후 대화 복원
 - key_decision: ship honesty over polish everywhere — truthful red-capable CI over a lying green badge; "rolling out" language over present-tense privacy claims; skip-with-named-reason over hidden failures.
 - new_invariant_or_pattern_discovered: a PUBLIC trust signal (badge, live API example, privacy claim) must be verified against the LIVE artifact it points to, never against local state — local-green ≠ public-true. Candidate AIOS rule: release gates must include one lane that exercises only what a stranger can reach.
 - self-correction-of-prior-observation: my earlier "k-anon not deployed" was initially a weak inference (invalid signal test), then re-established as PROOF via backfill semantics — record the distinction.
+
+## 2026-07-02 — claude@myworld — headline ledger A/B: prescribed fix tested (Arm C)
+
+- session_id: portfolio→AIOS pivot session (Fable 5)
+- mode_breakdown: observe:verify:decide:intervene:escalate ≈ 25:20:10:40:5
+- tools_used: Bash, Read, Edit, ollama(phi4-mini), background-waiter, Workflow(earlier turns)
+- tools_NOT_used (CLI gap): heterogeneous adversarial lane (Codex/agy/local) on THIS result — single-substrate verify only; flagged as next-turn debt
+- substrate_specific_behaviors_observed: launched N=40/arm A/B/C in nohup background + a run_in_background waiter to avoid blocking main context; matched-seed 3-arm design to keep the comparison fair; dry-run first caught model-ceiling (qwen2.5-coder solves 1.0) → used phi4-mini for discrimination
+- failures_recovered: dry-run ceiling → model swap (no wasted full run)
+- failures_escalated_to_founder: none
+- key_decision: implement the experiment-prescribed correction (guidance attempt-1-only) as ENGINEERING, no new ASC contract (Founder Alignment Override freeze respected)
+- new_invariant_or_pattern_discovered: ledger guidance must be injected attempt-1-only, never always-on (always-on reproduced retry-anchoring harm A 0.85→B 0.70; C recovered to 0.775 + cheapest tokens). AND no-launder applies UPWARD: C beats B on every axis but does NOT beat bare on final solve (A 0.85 > C 0.775) — reported straight, next pivot named.
+- self-correction-of-prior-observation: prior portfolio framing laundered positives→nulls; new CLAUDE.md rule 9 (earn-the-keystone / negative→pivot) applied here — closed the mixed A/B positive over B via the pivot, without over-claiming vs bare
